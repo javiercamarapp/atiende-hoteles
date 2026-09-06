@@ -202,10 +202,12 @@ Convención de estado por ADR: **[DECIDIDO]** aplica ya en el código; **[PENDIE
 | CFDI hospedaje (PAC, H16-007) | `CfdiPort` (timbrado idempotente, `ImpuestosLocales`) | Requiere PAC contratado + CSD del hotel | **[PENDIENTE DE CREDENCIALES]** |
 | Voz (LiveKit+Deepgram+TTS, BP-040) | `VoicePort` | Requiere cuentas Telnyx/LiveKit/Deepgram/TTS | **[PENDIENTE DE CREDENCIALES]** |
 | Correo/fallback (BP-012) | `MessagingPort` (mismo puerto, otro canal) | SMTP propio o proveedor | **[PENDIENTE DE CREDENCIALES]** (más barato de habilitar primero si el usuario provee SMTP) |
+| Energía/HVAC edge (H14-001/003, REQ-INT-007) | `EnergyPort` (lectura de medidores, control HVAC — ver ADR-011) | Requiere hardware físico (hub local, medidores Shelly, kit de sensores H07-040) | **[PENDIENTE DE HARDWARE]** (adaptador simulado etiquetado disponible, ver ADR-011) |
+| Cerraduras digitales (H15-011, REQ-INT-008) | `LockPort` (emisión/revocación de llave — ver ADR-011) | Requiere cuenta Seam/fabricante + cerradura física | **[PENDIENTE DE HARDWARE/CREDENCIALES]** (adaptador simulado etiquetado disponible, ver ADR-011) |
 
 **Evidencia.** `docs/referencia/03-investigacion-H12-H21.md` §5 (tabla maestra de integraciones), H15-016, H15-017 (contratos versionados, feature flags por propiedad); `docs/referencia/04-gobierno-y-protocolo.md` GOB-027, GOB-059.
 
-**Requisitos que cubre.** REQ-INT-001 (PMS, P0), REQ-INT-002 (pagos, P0), REQ-INT-003 (WhatsApp, P0), REQ-INT-005 (CFDI, P0), REQ-INT-006 (voz/PBX), REQ-INT-009 (contabilidad), REQ-INT-012, REQ-INT-013. REQ-INT-007 (energía/IoT, P0) y REQ-INT-008 (cerraduras) no están cubiertos por esta tabla — ver hallazgo de auditoría-0 "Energía/IoT/HVAC/cerraduras sin ADR" y su corrección.
+**Requisitos que cubre.** REQ-INT-001 (PMS, P0), REQ-INT-002 (pagos, P0), REQ-INT-003 (WhatsApp, P0), REQ-INT-005 (CFDI, P0), REQ-INT-006 (voz/PBX), REQ-INT-009 (contabilidad), REQ-INT-012, REQ-INT-013. REQ-INT-007 (energía/IoT, P0) y REQ-INT-008 (cerraduras) se cubren en ADR-011 (puerto edge/IoT dedicado, con adaptador simulado etiquetado mientras no haya hardware piloto).
 
 **Consecuencias.** El código de cada puerto y su adaptador se construye completo (incluyendo manejo de `Retry-After`, HMAC de webhooks — GOB-042 — y rate limiting) aunque no pueda ejecutarse contra el proveedor real sin credenciales; el criterio "10 de 10" del encargo se satisface para estos módulos con evidencia de la prueba de contrato contra fixture, no con una ejecución real, y así se declara.
 
@@ -285,6 +287,27 @@ Cada ronda produce `docs/auditoria-N/` (un archivo por rubro + `00-SINTESIS.md` 
 
 ---
 
+## ADR-011 — Puerto edge/IoT (energía, HVAC, cerraduras): contrato + adaptador simulado, PENDIENTE DE HARDWARE/CREDENCIALES
+
+**Contexto.** `REQUISITOS.md` fija como P0 varios requisitos de energía/IoT/HVAC: lectura de telemetría de energía (`REQ-BO-027`), control de HVAC por estado del PMS (`REQ-BO-028`), ejecución local de reglas de seguridad de energía con prioridad de huésped (`REQ-BO-029`), integración obligatoria de hardware IoT de energía/edge (`REQ-INT-007`, "como edge obligatorio"), y que las cerraduras nunca se gestionen por reglas automáticas (`REQ-SEG-015`, `REQ-REC-009`). Hasta este ADR, ninguna tabla de integraciones de ADR-007 ni ninguna fila de la tabla de hitos H1-H10 asignaba puerto, adaptador ni hito a este dominio, pese a tener 5+ requisitos P0 (hallazgo de auditoría-0 "Energía/IoT/HVAC/cerraduras sin ADR"). Esta máquina de desarrollo no tiene hardware edge (mini-PC/Home Assistant/medidores Shelly/hub Zigbee) ni cerraduras conectadas: no hay forma de verificar un adaptador real en esta sesión.
+
+**Decisión.** Se define el puerto edge/IoT como dos interfaces separadas (una de energía/HVAC, otra de cerraduras — nunca deben compartir el mismo canal de comandos, GOB-044/REQ-SEG-015), cada una con adaptador real construido contra el protocolo documentado por la fuente y un **adaptador simulado explícitamente etiquetado como tal**, nunca presentado como integración completa:
+
+- `EnergyPort` (`REQ-BO-027`/`028`/`029`/`033`, `REQ-INT-007`): `readMeter(circuitId): {kWh, kW, powerFactor, ts}` vía REST/MQTT/Modbus (Shelly EM/3EM u homólogo), `setHvacState(roomId, state)` vía hub local tipo Home Assistant + Tuya/Zigbee/ESPHome, con guarda física de límites (20-27°C) codificada **localmente en el edge** (no en la nube) y override manual siempre disponible. El adaptador real requiere hardware físico presente en un hotel piloto; mientras tanto, `SimulatedEnergyAdapter` (etiquetado `// SIMULADO — no ejecuta contra hardware real` en el código) reproduce lecturas y aplica las mismas reglas de límite/override para poder probar el motor de decisión sin hardware.
+- `LockPort` (`REQ-RES-017`, `REQ-REC-009`, `REQ-SEG-015`, `REQ-INT-008`): `issueKey(reservationId, method)`/`revokeKey(keyId)` vía una capa de abstracción tipo Seam (nunca conectando un fabricante directo), exigiendo autenticación fuerte por canal autenticado + evento del PMS (check-in pagado + identidad verificada) antes de emitir; **estructuralmente inalcanzable desde `EnergyPort`, desde el motor de reglas automáticas o desde el canal de voz** (ninguna función de esos módulos importa `LockPort`, verificado por análisis estático). El adaptador real requiere una cuenta Seam/fabricante y una cerradura física; `SimulatedLockAdapter` (mismo etiquetado) permite probar el flujo de check-in digital sin hardware, rechazando siempre las peticiones que las pruebas adversariales de `REQ-SEG-015`/`REQ-REC-009` exigen rechazar (voz, reglas de energía).
+
+**Estado.** **[PENDIENTE DE HARDWARE/CREDENCIALES]** — mismo criterio que ADR-007: el contrato (interfaces TS + esquema Zod) y el adaptador simulado se construyen completos y se prueban; el adaptador real contra hardware/Seam queda pendiente hasta que exista un hotel piloto con el kit de sensores (`H07-040`) o una cuenta de cerraduras, y nunca se declara "integración completa" con el simulador.
+
+**Evidencia.** `docs/REQUISITOS.md` REQ-BO-027/028/029/032/033, REQ-INT-007, REQ-RES-017, REQ-REC-009, REQ-SEG-015; `docs/referencia/03-investigacion-H12-H21.md` H14-001/002/003/007, H15-009/010/011; `docs/referencia/04-gobierno-y-protocolo.md` GOB-044.
+
+**Requisitos que cubre.** REQ-BO-027, REQ-BO-028, REQ-BO-029 (P0, SEG), REQ-BO-032, REQ-BO-033, REQ-INT-007 (P0), REQ-INT-008, REQ-RES-017, REQ-REC-009 (P0, SEG), REQ-SEG-015 (P0).
+
+**Consecuencias.** Añade un hito propio (H11, ver tabla de hitos) que no existía; hasta que haya hardware piloto, todo reporte de ahorro de energía (`REQ-BO-030`) y todo flujo de llave digital (`REQ-RES-017`) se ejecuta y prueba solo contra el adaptador simulado, quedando explícitamente `pendiente de credenciales/hardware` en `docs/ACEPTACION.md` — nunca `hecho`.
+
+**Prueba que lo verifica.** Test de arquitectura (análisis estático) que confirma que ningún módulo de reglas automáticas de energía ni la ruta de voz importa `LockPort`; suite de laboratorio edge en CI (contenedor con hub local simulado + simuladores MQTT, ver REQ-QA-005) que confirma límites físicos de temperatura/humedad y que ninguna regla puede accionar una cerradura; prueba de contrato del `SimulatedEnergyAdapter`/`SimulatedLockAdapter` contra el esquema Zod del puerto, etiquetada explícitamente como simulada en el reporte de evidencia.
+
+---
+
 ## Estructura de carpetas propuesta
 
 ```
@@ -302,7 +325,9 @@ atiende-hoteles-staging/
 │   │   ├── pms/               # puerto + adaptador Cloudbeds (ADR-007)
 │   │   ├── whatsapp/          # puerto + adaptador Meta Cloud API (ADR-007)
 │   │   ├── payments/          # puerto + adaptador Stripe MX/Conekta (ADR-007)
-│   │   └── cfdi/               # puerto + adaptador PAC (ADR-007)
+│   │   ├── cfdi/               # puerto + adaptador PAC (ADR-007)
+│   │   ├── energy/             # EnergyPort + adaptador simulado etiquetado (ADR-011)
+│   │   └── locks/              # LockPort + adaptador simulado etiquetado (ADR-011)
 │   ├── ui/                    # primitivos shadcn + tokens + AtiendeLogo + ThemeSelector (ADR-002)
 │   └── config/                 # tsconfig/eslint compartidos
 ├── tests/
@@ -331,6 +356,7 @@ atiende-hoteles-staging/
 | **H8** | Observabilidad (logs/métricas/health/runbooks/backups) + CI GitHub Actions + `npm audit` + Playwright E2E + adversariales | ADR-008/009 completos; GOB-011 — **REQ-OBS-001, REQ-OBS-002, REQ-OBS-003, REQ-OBS-004, REQ-OBS-005, REQ-QA-007, REQ-QA-008, REQ-QA-009** |
 | **H9** | Adaptadores reales de integración (PMS/WhatsApp/pagos/CFDI/voz) en cuanto existan credenciales — hasta entonces solo contrato+fixture | H15 catálogo completo (§5), marcado **[PENDIENTE DE CREDENCIALES]** — **REQ-INT-001..REQ-INT-015** (todas pendientes de credenciales salvo REQ-INT-012..015, verificables offline) |
 | **H10** | Bucle de auditoría hotelero (12 rubros, `docs/auditoria-N/`) cada 8 tareas cerradas | GOB-009, ADR-010 — **REQ-OBS-003, REQ-OBS-004, REQ-OBS-009, REQ-OBS-010, REQ-GOB-015** |
+| **H11** | Puerto edge/IoT (energía/HVAC/cerraduras, ADR-011): `EnergyPort`/`LockPort` + adaptadores simulados etiquetados + laboratorio edge en CI — adaptadores reales en cuanto exista hardware piloto | H14-001/002/003/007, H15-009/010/011, GOB-044 — **REQ-BO-027, REQ-BO-028, REQ-BO-029, REQ-INT-007, REQ-INT-008, REQ-RES-017, REQ-REC-009, REQ-SEG-015** (todas quedan **pendiente de hardware/credenciales** salvo lo verificable con el adaptador simulado) |
 
 ## Tabla de desvíos respecto a H20, con justificación
 
@@ -344,9 +370,10 @@ atiende-hoteles-staging/
 | 6 | Langfuse para trazabilidad de LLM | Logs estructurados + tabla de trazas propia (tenant/reservation-tagged) | Requiere cuenta/credenciales externas no disponibles en esta fase |
 | 7 | PowerSync para sincronización offline-first del edge | No implementado en esta fase; queda como integración pendiente completa | No hay hardware edge (mini-PC/Home Assistant) presente en este entorno de desarrollo |
 | 8 | PMS/WhatsApp/pagos/CFDI/voz reales operando en producción | Puerto + adaptador + prueba de contrato, sin ejecución contra el proveedor real | Todas exigen credenciales que el encargo prohíbe fabricar o simular como si estuvieran completas |
+| 9 | Edge obligatorio por hotel con hardware real (Home Assistant + medidores + cerraduras, §3.2) | `EnergyPort`/`LockPort` (ADR-011) con adaptador simulado etiquetado explícitamente como tal; adaptador real pendiente de hardware piloto | No hay hardware edge (mini-PC/Home Assistant/medidores Shelly/cerraduras) presente en este entorno de desarrollo; ninguna regla de energía ni de voz puede accionar `LockPort` (verificado por análisis estático) |
 
 ---
 
 ## Resumen (≤12 líneas)
 
-Stack decidido: monorepo **npm workspaces + Turborepo**; frontend **Vite+React+TS+shadcn+Tailwind** portando identidad/tokens/primitivos de `atiende-restaurantes` con navegación hotelera y mobile real (bottom-nav) que Restaurantes no tiene; backend **Hono + JWT propio (`jose`)** con RLS por sesión (`set_config` de claims), tenant=hotel, matriz de 9 roles, idempotencia y `pg_advisory_xact_lock`; persistencia de **producción: Supabase** (H20, sin decisión de cambio — ver ADR-003); **entorno local de desarrollo/pruebas**: PGlite para RLS/unitarias rápidas y `embedded-postgres` 18.4 (Postgres real, concurrencia verificada 302 ms) para integración/contención, con esquema compatible con Supabase; agentes con patrón Likida (tools sin datos del modelo, loop-guard, presupuesto, `needs_approval` obligatorio, aislamiento de contexto por tenant REQ-AGT-022) y runtime Sonnet/Haiku/Opus por rol vía variable de entorno, con modo "sin credenciales" honesto; integraciones PMS/WhatsApp/pagos/CFDI/voz/energía-IoT/cerraduras como puerto+adaptador+contrato, **pendientes de credenciales/hardware** sin marcarse completas. Tres desvíos principales respecto a H20: (1) npm workspaces en vez de pnpm por B-002; (2) entorno **local** con Postgres propio (PGlite+`embedded-postgres`) en vez de Supabase gestionado, porque Docker/Supabase CLI no funcionan en esta máquina — producción sigue apuntando a Supabase, ver `docs/BLOQUEOS.md` D-001; (3) cola de aprobación propia en vez de Inngest, por no haberse verificado su ejecución sin credenciales en este entorno.
+Stack decidido: monorepo **npm workspaces + Turborepo**; frontend **Vite+React+TS+shadcn+Tailwind** portando identidad/tokens/primitivos de `atiende-restaurantes` con navegación hotelera y mobile real (bottom-nav) que Restaurantes no tiene; backend **Hono + JWT propio (`jose`)** con RLS por sesión (`set_config` de claims), **tenant=org** (hotel=`location` bajo esa org, REQ-TEN-002), matriz de 8 roles de `hotel_staff` (REQ-TEN-003) + `superadmin`/`huesped` como conceptos aparte, idempotencia y `pg_advisory_xact_lock`; persistencia de **producción: Supabase** (H20, sin decisión de cambio — ver ADR-003); **entorno local de desarrollo/pruebas**: PGlite para RLS/unitarias rápidas y `embedded-postgres` 18.4 (Postgres real, concurrencia verificada 302 ms) para integración/contención, con esquema compatible con Supabase; agentes con patrón Likida (tools sin datos del modelo, loop-guard, presupuesto, `needs_approval` obligatorio, aislamiento de contexto por tenant REQ-AGT-022) y runtime Sonnet/Haiku/Opus por rol vía variable de entorno, con modo "sin credenciales" honesto; integraciones PMS/WhatsApp/pagos/CFDI/voz como puerto+adaptador+contrato pendientes de credenciales (ADR-007), y energía/HVAC/cerraduras como puerto+adaptador simulado etiquetado pendiente de hardware (ADR-011) — ninguna se marca completa. Cuatro desvíos principales respecto a H20: (1) npm workspaces en vez de pnpm por B-002; (2) entorno **local** con Postgres propio (PGlite+`embedded-postgres`) en vez de Supabase gestionado, porque Docker/Supabase CLI no funcionan en esta máquina — producción sigue apuntando a Supabase, ver `docs/BLOQUEOS.md` D-001; (3) cola de aprobación propia en vez de Inngest, por no haberse verificado su ejecución sin credenciales en este entorno; (4) energía/IoT/cerraduras sin hardware piloto disponible en esta sesión, cubiertas por adaptador simulado etiquetado (ADR-011) hasta que exista un hotel piloto.
