@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listarHoteles, type Hotel } from "../lib/api";
+import { useAuth } from "./useAuth";
 
 const CLAVE_HOTEL = "atiende-hoteles-hotel-activo";
 
@@ -15,9 +16,18 @@ interface HotelContextValue {
 const HotelContext = createContext<HotelContextValue | null>(null);
 
 export function HotelProvider({ children }: { children: ReactNode }) {
+  // `HotelProvider` envuelve TODA la app, incluida /login (App.tsx): sin gatear esta
+  // query a que exista sesión, dispararía GET /hoteles sin token en cuanto se monta,
+  // recibiría 401 y (con `retry:false`) react-query dejaría esa consulta cacheada como
+  // error para siempre bajo la misma `queryKey` -- ni el login exitoso posterior la
+  // reintenta automáticamente (no hay remount ni invalidación). La `queryKey` incluye
+  // el token para que iniciar sesión cuente como una consulta NUEVA (nunca reutiliza el
+  // error pre-login) y `enabled` evita la llamada mientras no hay sesión.
+  const { sesion } = useAuth();
   const { data, isLoading, error } = useQuery({
-    queryKey: ["hoteles"],
+    queryKey: ["hoteles", sesion?.token],
     queryFn: listarHoteles,
+    enabled: Boolean(sesion),
     retry: false,
   });
 
