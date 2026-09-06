@@ -1,0 +1,78 @@
+=== Comando 1: npx tsc --noEmit -p packages/email/tsconfig.json ===
+(sin salida -- exit code 0, sin errores de tipos)
+
+=== Comando 2: npx eslint packages/email ===
+(sin salida -- exit code 0, sin errores/warnings de lint)
+
+=== Comando 3: npx vitest run --config vitest.config.ts tests/unit/email ===
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/.claude/worktrees/agent-a2d02cb802a33a660
+
+ ✓ tests/unit/email/adaptadores.spec.ts (4 tests) 5ms
+ ✓ tests/unit/email/sanitizacion.spec.ts (3 tests) 14ms
+ ✓ tests/unit/email/plantillas.spec.ts (12 tests) 15ms
+
+ Test Files  3 passed (3)
+      Tests  19 passed (19)
+   Start at  11:53:51
+   Duration  304ms (transform 61ms, setup 0ms, collect 183ms, tests 34ms, environment 0ms, prepare 114ms)
+
+=== Comando 4: node --experimental-strip-types packages/email/scripts/preview.ts ===
+OK  verificacion-cuenta
+OK  magic-link
+OK  bienvenida-hotel
+OK  invitacion-staff
+OK  restablecer-contrasena
+OK  cambio-correo
+OK  confirmacion-reserva
+OK  recordatorio-prellegada
+OK  agradecimiento-poststay
+OK  recibo-pago
+OK  cfdi-disponible
+OK  prospeccion-comercial
+
+12 plantillas renderizadas.
+Archivos generados en /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/.claude/worktrees/agent-a2d02cb802a33a660/docs/correos/preview:
+  - verificacion-cuenta.html / .png / -movil.png
+  - magic-link.html / .png / -movil.png
+  - bienvenida-hotel.html / .png / -movil.png
+  - invitacion-staff.html / .png / -movil.png
+  - restablecer-contrasena.html / .png / -movil.png
+  - cambio-correo.html / .png / -movil.png
+  - confirmacion-reserva.html / .png / -movil.png
+  - recordatorio-prellegada.html / .png / -movil.png
+  - agradecimiento-poststay.html / .png / -movil.png
+  - recibo-pago.html / .png / -movil.png
+  - cfdi-disponible.html / .png / -movil.png
+  - prospeccion-comercial.html / .png / -movil.png
+
+NOTA: esta corrida ya incluye el fix de layout.ts descrito abajo (verificado antes de
+generar este log final -- una primera corrida detectó el problema de overflow móvil,
+se corrigió layout.ts, y se volvió a correr preview.ts para confirmar el fix).
+
+=== Problema visual encontrado y corregido tras revisar las capturas ===
+Al revisar confirmacion-reserva.png, prospeccion-comercial.png y
+verificacion-cuenta-movil.png con la herramienta Read, las capturas -movil.png (viewport
+375px) se generaban con un ancho real de 632px en vez de 375px: la tabla principal de
+600px en packages/email/src/layout.ts usaba `width="600"` (atributo HTML) junto con
+`style="width:600px;max-width:100%"`. El algoritmo de "auto table layout" de Chromium
+propaga ese ancho fijo hacia los contenedores ancestros como mínimo de contenido, así
+que `max-width:100%` nunca llegaba a aplicarse y la tabla no se encogía en pantallas
+angostas (se confirmó con page.evaluate() midiendo document.documentElement.scrollWidth
+= 632 en viewport 375).
+
+Fix aplicado en packages/email/src/layout.ts (única línea cambiada, con comentario
+explicando el porqué): se cambió la tabla principal de
+`width="600" style="width:600px;max-width:100%;..."` a
+`width="100%" style="width:100%;max-width:600px;..."` -- ahora la tabla es fluida por
+defecto (100%) y solo tiene un TOPE de 600px, en vez de partir de un ancho fijo de
+600px con un tope de 100% que nunca se aplicaba. Se verificó con un script de prueba
+aislado (tabla mínima con el mismo patrón) que este cambio sí produce
+scrollWidth = 375 en viewport 375, y se volvió a correr preview.ts completo:
+confirmacion-reserva.png ahora mide 600x900 (desktop) y
+confirmacion-reserva-movil.png mide 375x1133 (móvil real, sin desbordamiento). Se
+revisaron visualmente de nuevo verificacion-cuenta-movil.png,
+confirmacion-reserva-movil.png y prospeccion-comercial-movil.png tras el fix: el texto
+envuelve correctamente dentro de la tarjeta, el botón CTA se ve completo y centrado, y
+la tabla de detalle (llegada/salida/habitación/total/dirección) se lee bien en dos
+columnas sin recortes ni overflow horizontal.

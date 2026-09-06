@@ -39,12 +39,18 @@ export class ApiUnavailableError extends Error {
   integracion: string;
   /** true cuando la causa es la ausencia de configuración/credenciales, no un error transitorio. */
   pendienteCredenciales: boolean;
+  /** H12a · código HTTP real de la respuesta (cuando lo hubo), para que las pantallas de
+   *  registro/login distingan casos de negocio (409 correo duplicado, 429 límite de
+   *  tasa, 403 correo sin verificar) del resto en vez de mostrar siempre el mismo texto
+   *  genérico. `undefined` cuando el fallo fue de red (nunca llegó a haber respuesta). */
+  status?: number;
 
-  constructor(message: string, opts?: { integracion?: string; pendienteCredenciales?: boolean }) {
+  constructor(message: string, opts?: { integracion?: string; pendienteCredenciales?: boolean; status?: number }) {
     super(message);
     this.name = "ApiUnavailableError";
     this.integracion = opts?.integracion ?? "API de Atiende Hoteles";
     this.pendienteCredenciales = opts?.pendienteCredenciales ?? false;
+    this.status = opts?.status;
   }
 }
 
@@ -84,6 +90,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const cuerpo = await res.json().catch(() => null);
     throw new ApiUnavailableError((cuerpo as { message?: string } | null)?.message ?? `La API respondió con el estado ${res.status}.`, {
       integracion: "API de Atiende Hoteles",
+      status: res.status,
     });
   }
 
@@ -863,4 +870,161 @@ export interface RoiResumen {
 export async function obtenerRoi(hotelId: string, agente?: string): Promise<RoiResumen> {
   const qs = agente ? `?agente=${agente}` : "";
   return request<RoiResumen>(`/hoteles/${hotelId}/roi${qs}`);
+}
+
+// ---- H12a: alta autoservicio, Google OAuth, invitaciones de staff, onboarding ----
+// (apps/api/src/routes/registro.ts, correo.ts, auth-google.ts — contrato exacto,
+// backend ya implementado y probado por otro agente en paralelo). Mismo patrón
+// `request<T>()` de arriba: nunca se duplica la lógica de fetch.
+
+export const HOTEL_ROLES = [
+  "owner",
+  "gm",
+  "frontdesk",
+  "reservations",
+  "housekeeping",
+  "maintenance",
+  "fnb",
+  "accountant",
+] as const;
+
+export type HotelRole = (typeof HOTEL_ROLES)[number];
+
+/** Mismas etiquetas en español que ya usa el correo de invitación del backend
+ *  (routes/correo.ts, ROLE_LABELS) — se duplican aquí a propósito (un valor pequeño y
+ *  estable) en vez de importar código de apps/api desde apps/web. */
+export const ETIQUETA_ROL: Record<HotelRole, string> = {
+  owner: "Propietario",
+  gm: "Gerente general",
+  frontdesk: "Recepción",
+  reservations: "Reservas",
+  housekeeping: "Ama de llaves",
+  maintenance: "Mantenimiento",
+  fnb: "Alimentos y bebidas",
+  accountant: "Contabilidad",
+};
+
+export interface RegistroHotelInput {
+  hotelName: string;
+  city: string;
+  stateName: string;
+  ownerFullName: string;
+  ownerEmail: string;
+  password: string;
+}
+
+export interface RegistroHotelResultado {
+  hotelId: string;
+  mensaje: string;
+}
+
+export async function registrarHotel(input: RegistroHotelInput): Promise<RegistroHotelResultado> {
+  return request<RegistroHotelResultado>("/registro", { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function reenviarVerificacion(email: string): Promise<{ mensaje: string }> {
+  return request("/registro/reenviar-verificacion", { method: "POST", body: JSON.stringify({ email }) });
+}
+
+export async function verificarCorreo(token: string): Promise<{ mensaje: string; hotelId: string }> {
+  return request("/registro/verificar", { method: "POST", body: JSON.stringify({ token }) });
+}
+
+/**
+ * H12a · No existe un `GET /auth/google/status` dedicado: `GET /auth/google/iniciar`
+ * responde 302 (redirige a Google/al servidor OAuth falso de pruebas) cuando está
+ * configurado, o 503 `no_configurado` cuando no lo está — y una navegación real
+ * (`window.location.href`) siempre "sigue" ese 302, así que no sirve para *preguntar*
+ * sin navegar. El truco: `fetch(..., { redirect: "manual" })` (soportado nativamente
+ * por los navegadores) le pide a fetch que NO siga la redirección — cuando sí hubo un
+ * 302 real, la especificación de fetch obliga a devolver una respuesta "opaca"
+ * (`type: "opaqueredirect"`, `status: 0`), imposible de leer en detalle pero suficiente
+ * para saber que la ruta existe y funciona. Si en cambio no está configurado, la API
+ * responde 503 explícito de verdad (no una redirección), que sí se puede leer tal cual.
+ * Cualquier otro resultado (red caída, `VITE_API_URL` sin configurar, un error
+ * inesperado) se trata como "no configurado" — más honesto deshabilitar el botón que
+ * arriesgarse a que el usuario navegue a un error en blanco.
+ */
+export async function verificarGoogleConfigurado(): Promise<boolean> {
+  if (!API_BASE_URL) return false;
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/google/iniciar?purpose=login`, { redirect: "manual" });
+    if (res.type === "opaqueredirect" || res.status === 0) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+export interface InvitacionStaff {
+  id: string;
+  email: string;
+  rol: HotelRole;
+  estado: string;
+  expiraEn: string;
+  creadoEn: string;
+}
+
+export async function crearInvitacionStaff(
+  hotelId: string,
+  input: { email: string; role: HotelRole },
+): Promise<{ mensaje: string; email: string; role: HotelRole }> {
+  return request(`/hoteles/${hotelId}/staff/invitaciones`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function listarInvitacionesStaff(hotelId: string): Promise<InvitacionStaff[]> {
+  return request<InvitacionStaff[]>(`/hoteles/${hotelId}/staff/invitaciones`);
+}
+
+export async function revocarInvitacionStaff(hotelId: string, tokenId: string): Promise<{ mensaje: string }> {
+  return request(`/hoteles/${hotelId}/staff/invitaciones/${tokenId}`, { method: "DELETE" });
+}
+
+export async function aceptarInvitacion(input: {
+  token: string;
+  fullName?: string;
+  password?: string;
+}): Promise<{ mensaje: string; hotelId: string }> {
+  return request("/registro/invitacion/aceptar", { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function olvidePassword(email: string): Promise<{ mensaje: string }> {
+  return request("/auth/olvide-password", { method: "POST", body: JSON.stringify({ email }) });
+}
+
+export async function restablecerPassword(input: { token: string; newPassword: string }): Promise<{ mensaje: string }> {
+  return request("/auth/restablecer-password", { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function cambiarCorreo(newEmail: string): Promise<{ mensaje: string }> {
+  return request("/auth/me/cambiar-correo", { method: "POST", body: JSON.stringify({ newEmail }) });
+}
+
+export async function confirmarCambioCorreo(token: string): Promise<{ mensaje: string }> {
+  return request("/auth/cambiar-correo/confirmar", { method: "POST", body: JSON.stringify({ token }) });
+}
+
+export interface CrearTipoHabitacionOnboardingInput {
+  name: string;
+  maxOccupancy?: number;
+  totalRooms: number;
+  basePrice: number;
+}
+
+export interface TipoHabitacionOnboarding {
+  roomTypeId: string;
+  name: string;
+  totalRooms: number;
+  basePrice: number;
+}
+
+export async function crearTipoHabitacionOnboarding(
+  hotelId: string,
+  input: CrearTipoHabitacionOnboardingInput,
+): Promise<TipoHabitacionOnboarding> {
+  return request(`/hoteles/${hotelId}/onboarding/tipos-habitacion`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function actualizarZonaHorariaOnboarding(hotelId: string, timezone: string): Promise<{ timezone: string }> {
+  return request(`/hoteles/${hotelId}/onboarding/zona-horaria`, { method: "PATCH", body: JSON.stringify({ timezone }) });
 }

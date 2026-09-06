@@ -5,6 +5,10 @@ import { borrarSesion, leerSesion, guardarSesion, login as apiLogin, type Sesion
 interface AuthContextValue {
   sesion: Sesion | null;
   iniciarSesion: (email: string, password: string) => Promise<void>;
+  /** H12a · para flujos que arman la sesión FUERA de `POST /auth/login` (el callback de
+   *  Google OAuth, que llega con `token`/`email`/`rol` ya emitidos por la API en la
+   *  query string de la redirección) — edición aditiva, no cambia `iniciarSesion`. */
+  establecerSesion: (sesion: Sesion) => void;
   cerrarSesion: () => void;
 }
 
@@ -19,12 +23,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSesion(nueva);
   }, []);
 
+  const establecerSesion = useCallback((nueva: Sesion) => {
+    guardarSesion(nueva);
+    setSesion(nueva);
+  }, []);
+
   const cerrarSesion = useCallback(() => {
     borrarSesion();
     setSesion(null);
   }, []);
 
-  const value = useMemo(() => ({ sesion, iniciarSesion, cerrarSesion }), [sesion, iniciarSesion, cerrarSesion]);
+  const value = useMemo(
+    () => ({ sesion, iniciarSesion, establecerSesion, cerrarSesion }),
+    [sesion, iniciarSesion, establecerSesion, cerrarSesion],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
