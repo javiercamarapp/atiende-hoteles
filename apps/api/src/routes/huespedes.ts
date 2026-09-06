@@ -16,13 +16,16 @@ const createGuestSchema = z.object({
 export function huespedesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
   const app = new Hono<HonoEnvBindings>();
 
+  // RENDIMIENTO: un solo `app.use` (patrón "path*") -- registrar la ruta exacta Y
+  // "/huespedes/*" por separado ejecutaba AMBOS middlewares para
+  // "/hoteles/:hotelId/huespedes" (Hono hace match de "/huespedes/*" incluso sin
+  // segmento adicional), abriendo dos conexiones del pool por request.
   app.use(
-    "/hoteles/:hotelId/huespedes/*",
+    "/hoteles/:hotelId/huespedes*",
     authMiddleware(deps.env),
     dbSession(deps.engine),
     requireHotelMembership("hotelId"),
   );
-  app.use("/hoteles/:hotelId/huespedes", authMiddleware(deps.env), dbSession(deps.engine), requireHotelMembership("hotelId"));
 
   app.get("/hoteles/:hotelId/huespedes", async (c) => {
     const db = c.get("db");

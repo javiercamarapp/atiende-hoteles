@@ -134,14 +134,14 @@ interface ReservationDetailRow {
 export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
   const app = new Hono<HonoEnvBindings>();
 
+  // RENDIMIENTO: un solo `app.use` (patrón "path*", sin "/" antes del comodín) para
+  // que la ruta exacta y cualquier ruta anidada compartan UNA sola sesión de BD por
+  // request -- registrar la ruta exacta Y "/reservas/*" por separado los ejecuta
+  // AMBOS para "/hoteles/:hotelId/reservas" (Hono hace match de "/reservas/*" incluso
+  // sin segmento adicional), abriendo dos conexiones del pool por request y
+  // colapsando el pool compartido bajo concurrencia real.
   app.use(
-    "/hoteles/:hotelId/reservas",
-    authMiddleware(deps.env),
-    dbSession(deps.engine),
-    requireHotelMembership("hotelId"),
-  );
-  app.use(
-    "/hoteles/:hotelId/reservas/*",
+    "/hoteles/:hotelId/reservas*",
     authMiddleware(deps.env),
     dbSession(deps.engine),
     requireHotelMembership("hotelId"),
