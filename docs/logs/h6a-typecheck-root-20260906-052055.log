@@ -1,0 +1,19 @@
+NOTA H6a: los 6 errores de abajo son TODOS en tests/e2e/** (axe-accesibilidad.spec.ts,
+paridad-visual.spec.ts, utils/session.ts). Son DEF-001, un defecto de integracion
+PRE-EXISTENTE documentado en docs/PROGRESO.md ("MERGE H3->main ... typecheck ROJO ...
+defecto de integracion DEF-001 asignado a H2 paso 0"), confirmado con
+`git log --oneline -- tests/e2e/...` (commit 1719e49, feat(h3), anterior a este hito).
+Este hito (H6a) no toca tests/e2e/** (fuera del alcance permitido: solo
+packages/agent-core/**, tests/unit/agent-core/**, docs/logs/h6a-*.log y una linea de
+docs/PROGRESO.md) y por tanto no puede corregirlo. La prueba de que packages/agent-core
+en si mismo tipa limpio esta en h6a-typecheck-agent-core-20260906-052055.log (0 errores).
+
+> atiende-hoteles@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+
+tests/e2e/axe-accesibilidad.spec.ts(3,36): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean './utils/session.js'?
+tests/e2e/axe-accesibilidad.spec.ts(21,34): error TS2351: This expression is not constructable.
+  Type 'typeof import("/Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/.claude/worktrees/agent-a8c095c0f7cfec9a5/node_modules/@axe-core/playwright/dist/index")' has no construct signatures.
+tests/e2e/axe-accesibilidad.spec.ts(22,50): error TS7006: Parameter 'v' implicitly has an 'any' type.
+tests/e2e/paridad-visual.spec.ts(3,36): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean './utils/session.js'?
+tests/e2e/utils/session.ts(14,5): error TS2304: Cannot find name 'window'.

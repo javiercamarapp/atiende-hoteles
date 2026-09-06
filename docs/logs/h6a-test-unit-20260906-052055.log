@@ -1,0 +1,59 @@
+
+> atiende-hoteles@0.0.0 test:unit
+> vitest run --config vitest.config.ts tests/unit
+
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/.claude/worktrees/agent-a8c095c0f7cfec9a5
+
+ ✓ tests/unit/agent-core/runner.spec.ts (12 tests) 7ms
+ ✓ tests/unit/agent-core/tool.spec.ts (10 tests) 4ms
+ ✓ tests/unit/agent-core/trace.spec.ts (3 tests) 2ms
+ ✓ tests/unit/agent-core/approval.spec.ts (11 tests) 5ms
+ ✓ tests/unit/agent-core/context.spec.ts (6 tests) 5ms
+ ✓ tests/unit/agent-core/provider.spec.ts (8 tests) 6ms
+ ✓ tests/unit/agent-core/redact.spec.ts (10 tests) 7ms
+ ✓ tests/unit/agent-core/roles.spec.ts (9 tests) 4ms
+ ✓ tests/unit/agent-core/pricing.spec.ts (4 tests) 3ms
+ ✓ tests/unit/schema/dinero-numeric.spec.ts (6 tests) 3256ms
+ ✓ tests/unit/idempotency-key.spec.ts (3 tests) 6106ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > un INSERT plano con la misma clave dos veces es rechazado por el constraint UNIQUE  3579ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > INSERT ... ON CONFLICT DO NOTHING con la misma clave no duplica la fila (patron real de la app)  1206ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > la misma clave en dos tenants distintos NO colisiona (unicidad es por tenant)  1320ms
+ ✓ tests/unit/rls/tenant-isolation.spec.ts (4 tests) 7041ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > SELECT: solo devuelve filas del hotel del usuario  3351ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > INSERT: rechazado con violacion de politica al escribir en el hotel ajeno  1420ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > UPDATE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  1218ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > DELETE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  1051ms
+ ✓ tests/unit/rls/money-role.spec.ts (4 tests) 7079ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer folio  3311ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer charge ni payment  1411ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede insertar un payment  1392ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > gm (rol con acceso a dinero) si puede leer folio/charge/payment de su hotel  964ms
+ ✓ tests/unit/rls/org-isolation.spec.ts (4 tests) 7172ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org compartido del fixture no ve nada del org independiente  3461ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org independiente tampoco ve el org compartido del fixture  1376ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > current_tenant_ids() del usuario del org independiente NO incluye el org del fixture  1390ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > INSERT: rechazado al intentar escribir en el hotel de otro org  944ms
+ ✓ tests/unit/migrations.spec.ts (4 tests) 6596ms
+   ✓ runner de migraciones (PGlite) > aplica todas las migraciones desde una base vacia  3314ms
+   ✓ runner de migraciones (PGlite) > es idempotente: correrlo dos veces no reaplica nada la segunda vez  1163ms
+   ✓ runner de migraciones (PGlite) > rechaza continuar si una migracion ya aplicada fue editada (expand-only)  1267ms
+   ✓ runner de migraciones (PGlite) > db:reset (dropAllMigratedObjects) deja la base lista para re-aplicar desde cero  850ms
+ ✓ tests/unit/audit-log.spec.ts (5 tests) 7950ms
+   ✓ audit_log: append-only + cadena de hash > cada fila referencia el hash de la fila anterior del mismo tenant y el primero no tiene prev_hash  3773ms
+   ✓ audit_log: append-only + cadena de hash > el hash almacenado es verificable de forma independiente (recalculado desde las columnas persistidas coincide)  1273ms
+   ✓ audit_log: append-only + cadena de hash > una alteracion manual del payload rompe la verificacion del hash (detectada, no silenciosa)  1386ms
+   ✓ audit_log: append-only + cadena de hash > rechaza UPDATE incluso ejecutado con el rol admin/propietario  950ms
+   ✓ audit_log: append-only + cadena de hash > rechaza DELETE incluso ejecutado con el rol admin/propietario  567ms
+ ✓ tests/unit/reservation-state-machine.spec.ts (5 tests) 7956ms
+   ✓ maquina de estados de reservation > una reserva nueva arranca en 'cotizada' y queda registrada en el evento inicial  3701ms
+   ✓ maquina de estados de reservation > permite la cadena de transiciones valida completa  1298ms
+   ✓ maquina de estados de reservation > rechaza un salto invalido (cotizada -> en_estancia, saltandose confirmada/check_in)  1378ms
+   ✓ maquina de estados de reservation > rechaza reabrir una reserva cerrada (estado terminal)  1023ms
+   ✓ maquina de estados de reservation > rechaza confirmar una reserva ya cancelada  555ms
+
+ Test Files  17 passed (17)
+      Tests  108 passed (108)
+   Start at  05:21:32
+   Duration  8.30s (transform 343ms, setup 0ms, collect 1.69s, tests 53.20s, environment 1ms, prepare 1.12s)
+
