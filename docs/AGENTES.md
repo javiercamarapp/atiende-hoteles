@@ -15,3 +15,5 @@ Regla: Fable (claude-fable-5-1) solo orquesta. Todo despacho usa `Agent(model="s
 Orquestador de esta sesión: claude-fable-5-1 (verificado por el entorno). Ningún subagente Fable creado.
 
 **Verificación de herencia (2026-09-05):** grep del campo `model` en los 12 transcripts de agentes de la sesión (7 principales + sub-agentes anidados que lanzó el #2 y el #3): todos `claude-sonnet-5`; `grep -l claude-fable` → ninguno.
+| 8 | 2026-09-05 18:52 | consolidar docs/REQUISITOS.md (matriz canónica) | sonnet | verificación en curso (grep model al arrancar) | en curso |
+| 9 | 2026-09-05 18:52 | decidir docs/ARQUITECTURA.md (ADR-001..010) | sonnet | verificación en curso | en curso |
