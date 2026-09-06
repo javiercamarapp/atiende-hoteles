@@ -70,5 +70,36 @@ export function toErrorBody(err: unknown, requestId: string): { status: number; 
     };
   }
 
+  // auditoria-2/seguridad (S2/S3/S4, migraciones 0062/0063/0065): funciones
+  // SECURITY DEFINER que ahora validan la membresia real del actor contra el recurso
+  // (nunca contra un parametro que el llamador podria inventar) levantan estos
+  // errcodes 42501 con un mensaje propio -- se mapean a 403 igual que la RLS nativa,
+  // sin filtrar detalle interno.
+  if (/tenant_no_autorizado|hotel_no_autorizado|rol_no_autorizado|acceso_boveda_no_autorizado/.test(message)) {
+    return {
+      status: 403,
+      body: { code: "forbidden", message: "No tienes permiso para realizar esta acción.", request_id: requestId },
+    };
+  }
+  // auditoria-2/datos (D3, migracion 0066): un folio cerrado no admite nuevos cargos, y
+  // un cierre 'saldo_cero' se rechaza si el saldo recalculado en el momento del cierre
+  // ya no es cero (carrera cargo-vs-cierre resuelta con lock de fila en la base).
+  // auditoria-2/seguridad (S3, migracion 0063): una corrida de night audit ya
+  // 'completado' nunca se re-termina/reemplaza.
+  // auditoria-2/legal (ALTO, migracion 0067): retencion de bóveda de identidad mayor a
+  // 30 días sin motivo justificado.
+  if (/motivo_retencion_requerido/.test(message)) {
+    return {
+      status: 400,
+      body: { code: "validation_error", message: "Una retención mayor a 30 días requiere justificar el motivo.", request_id: requestId },
+    };
+  }
+  if (/folio_cerrado_no_admite_cargos|cierre_balance_invalido|night_audit_run_ya_completado/.test(message)) {
+    return {
+      status: 409,
+      body: { code: "conflict", message: "La operación entró en conflicto con el estado actual del recurso.", request_id: requestId },
+    };
+  }
+
   return { status: 500, body: { code: "internal_error", message: "Ocurrió un error interno.", request_id: requestId } };
 }
