@@ -19,5 +19,5 @@ Orquestador de esta sesión: claude-fable-5-1 (verificado por el entorno). Ning�
 | 9 | 2026-09-05 18:52 | decidir docs/ARQUITECTURA.md (ADR-001..010) | sonnet | verificación en curso → claude-sonnet-5 (6/6) | COMPLETADO: ADR-001..010, 323 líneas, 8 desvíos vs H20 justificados |
 | 10 | 2026-09-05 18:58 | docs/auditoria/RUBROS.md + AUDITOR-PROMPT.md (protocolo hotelero) | sonnet | ver grep al arrancar → claude-sonnet-5 | COMPLETADO: 12 rubros hoteleros + prompt de auditor + condición de ronda |
 | 11 | 2026-09-05 18:58 | evidencia ampliada B-001 (wiki/memoria/historial) | sonnet | ver grep al arrancar → claude-sonnet-5 | COMPLETADO: sin mención local en wiki/memoria/historial/Drive |
-| 12 | 2026-09-05 19:23 | docs/ACEPTACION.md (criterio por REQ, compuertas por hito, adversariales, paridad visual) | sonnet | ver grep al arrancar | en curso |
+| 12 | 2026-09-05 19:23 | docs/ACEPTACION.md (criterio por REQ, compuertas por hito, adversariales, paridad visual) | sonnet | ver grep al arrancar → claude-sonnet-5 (9/9) | COMPLETADO: 270 filas (diff de IDs vacío), compuertas H1–H10, 15 adversariales, 12 pantallas de paridad; 102 REQ dependen de credenciales, 168 verificables offline |
 | 13 | 2026-09-05 19:23 | auditoría-0 adversarial de documentos → docs/auditoria-0/documentos.md (contexto fresco, sin arreglar) | sonnet | ver grep al arrancar | en curso |

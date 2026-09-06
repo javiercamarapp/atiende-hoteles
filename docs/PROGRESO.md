@@ -16,3 +16,4 @@ Formato: requisito · acción · archivos/commit · prueba · resultado · sigui
 - B-001 · búsqueda ampliada (Sonnet #11) · docs/evidencia-B-001-busqueda-ampliada.md · sin mención local · bloqueo confirmado, 2 intentos · siguiente: esperar ruta del usuario.
 - R-GOB/QA · protocolo de auditoría hotelero (Sonnet #10) · docs/auditoria/RUBROS.md, AUDITOR-PROMPT.md · — · listo para rondas docs/auditoria-N · siguiente: ACEPTACION.md y auditoría-0 de documentos al llegar REQUISITOS.md (#8).
 - R-ALL · REQUISITOS.md (Sonnet #8) · docs/REQUISITOS.md (439 líneas) · 270 canónicos trazados a ~517 IDs origen; 5 contradicciones para arquitectura · siguiente: ACEPTACION.md + auditoría-0 de documentos (Sonnet, paralelo).
+- R-ALL · ACEPTACION.md (Sonnet #12) · docs/ACEPTACION.md · 270 criterios, 168 verificables sin credenciales / 102 dependientes (pendientes hasta integración real) · siguiente: auditoría-0 (#13) → corrección de hallazgos (Sonnet) → decisión sobre H1.
