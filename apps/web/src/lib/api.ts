@@ -216,14 +216,6 @@ export interface Huesped {
   estancias: number;
 }
 
-export interface TicketOperativo {
-  id: string;
-  titulo: string;
-  area: "housekeeping" | "mantenimiento";
-  prioridad: "baja" | "media" | "alta";
-  estado: string;
-}
-
 export interface DisponibilidadFila {
   tipoHabitacionId: string;
   tipoHabitacion: string;
@@ -295,10 +287,6 @@ export async function listarReservas(hotelId: string): Promise<Reserva[]> {
 
 export async function listarHuespedes(hotelId: string): Promise<Huesped[]> {
   return request<Huesped[]>(`/hoteles/${hotelId}/huespedes`);
-}
-
-export async function listarTickets(hotelId: string, area: "housekeeping" | "mantenimiento"): Promise<TicketOperativo[]> {
-  return request<TicketOperativo[]>(`/hoteles/${hotelId}/tickets?area=${area}`);
 }
 
 export async function obtenerModulo<T>(hotelId: string, modulo: string): Promise<T> {
