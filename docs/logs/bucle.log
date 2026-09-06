@@ -67,3 +67,4 @@
 2026-09-06 10:46:32 ciclo=31 evento=despacho correccion aud-2 lotes A(#50 main) y B(#51 wt); pendientes 4 informes
 2026-09-06 10:47:47 ciclo=31 evento=aud-2 datos=3/10(3C) trazabilidad=hecho18/276 P0=15/128 faltan=3(backend,pruebas,rendimiento)
 2026-09-06 10:47:59 ciclo=31 evento=aud-2 backend=4/10(2C/6A) faltan=2(pruebas,rendimiento)
+2026-09-06 10:50:06 ciclo=32 evento=aud-2 rendimiento=4/10(1C) falta=pruebas
