@@ -79,7 +79,7 @@ Convención de estado por ADR: **[DECIDIDO]** aplica ya en el código; **[PENDIE
 
 ---
 
-## ADR-004 — Backend/API: Hono + JWT propio + tenant=hotel + matriz de roles + RLS por sesión + idempotencia + advisory locks + outbox + rate limits
+## ADR-004 — Backend/API: Hono + JWT propio + tenant=org + matriz de roles (REQ-TEN-003) + RLS por sesión + idempotencia + advisory locks + outbox + rate limits
 
 **Contexto.** `07-stack-viabilidad.md` Experimento 4 confirma que `hono@4.13.7`, `fastify@5.12.3` y `jose@6.2.12` resuelven en el registro npm, y recomienda "servidor Node/TS propio (Hono o Fastify) + JWT propio (`jose`) + Postgres RLS", reproduciendo el patrón de Restaurantes (`set local role authenticated` + `set_config('request.jwt.claim.sub', …)` por transacción). H15-016 fija el pipeline de integración obligatorio: Ingress universal → RawEvent inmutable → `Adapter.normalize` → command bus idempotente → Reducer transaccional → Outbox → stream. GOB-010/038/042/043 fijan RLS+tenant_id obligatorios, idempotencia `[tenant_id, idempotency_key]`, rate limits por número/tenant/país. `docs/referencia/06-backoffice-agentes-likida.md` §2.2-2.3 documenta patrones de producción verificados en código real (no solo teoría): mutex con tres estados (`obtenido|ocupado|indeterminado`, fail-cerrado ante error transitorio), presupuesto de tiempo por invocación compartido entre etapas (`acotada()` como techo duro de toda consulta).
 
@@ -91,19 +91,24 @@ Convención de estado por ADR: **[DECIDIDO]** aplica ya en el código; **[PENDIE
 
 **Tenant y organización (corregido: tenant = `org`, no `hotel`).** El límite de aislamiento multi-tenant (`tenant_id`, RLS) es la `org` — igual que exige `REQ-TEN-002` y la fuente H20 (`docs/referencia/03-investigacion-H12-H21.md:151`, "Multi-tenant sobre Postgres/Supabase con RLS (`org → location`)"). Cada hotel es una `location` con `kind='hotel'` **bajo** esa `org`; una `org` de un solo hotel sigue existiendo como fila propia (no es un caso especial). `tenant_id` en toda tabla del dominio (`REQ-TEN-001`) referencia el `org_id`, nunca el `hotel_id` directamente. Dentro de un mismo `org` con varios hoteles, el acceso se acota además por `hotel_id` (scope secundario, no de aislamiento entre tenants): un usuario tiene rol por `hotel` vía la tabla `hotel_staff` (mismo patrón que el experimento de 07-stack-viabilidad, `is_hotel_staff` security-definer calco de `is_restaurant_staff`), y la política RLS exige `org_id = ANY(current_tenant_ids())` **y**, cuando el recurso es de un hotel específico, `hotel_id = ANY(current_hotel_ids())`. Esto corrige la lectura anterior de este ADR (que invertía tenant/hotel respecto a `REQ-TEN-002`); ver hallazgo de auditoría-0 "modelo de tenencia contradictorio".
 
-**Matriz mínima de roles** (deriva de H16 §USALI/roles, H13 personal, 06 §3.3 separación de áreas por rol de Likida, GOB-052 control físico/dinero):
+**Matriz de roles de `hotel_staff` (corregida: alineada 1:1 con `REQ-TEN-003`, fuente BP-109).** `REQ-TEN-003` fija exactamente 8 roles hoteleros: `owner, gm, frontdesk, reservations, housekeeping, maintenance, fnb, accountant`. La matriz anterior de este ADR agregaba `superadmin`/`revenue`/`huesped` sin citar fuente propia y omitía `owner`/`reservations` sin declarar la divergencia — corregido aquí: la tabla `hotel_staff.role` usa exactamente el enum de `REQ-TEN-003`, ni un rol más ni uno menos.
 
-| Rol | Alcance | Puede aprobar dinero/efectos externos | Ve back office multi-hotel |
-|---|---|---|---|
-| `superadmin` | Plataforma, cross-tenant | Sí (auditoría, no operación diaria) | Sí — única función cross-tenant, aislada (patrón `getResumenNegocio` de Likida, 06 §3.2) |
-| `gerente` (GM) | Un hotel | Sí (Daily Flash, tarifas ±10-15%, revenue) | No |
-| `recepcion` | Un hotel | Aprobación de 1er nivel (check-in/out, cargos) | No |
-| `housekeeping` | Un hotel | No | No |
-| `mantenimiento` | Un hotel | No | No |
-| `ayb` (alimentos y bebidas) | Un hotel | Cargos a folio (con límite) | No |
-| `revenue` | Un hotel (o grupo) | Propuestas de tarifa (nunca autopilot sin gate, BP-054) | No |
-| `contabilidad` | Un hotel (o grupo) | Conciliación, CFDI (nunca presentación SAT sin aprobación humana, GOB-014/BP-070) | No |
-| `huesped` | Su propia reserva/folio únicamente | No | No |
+| Rol (`hotel_staff.role`, = REQ-TEN-003) | Alcance | Puede aprobar dinero/efectos externos |
+|---|---|---|
+| `owner` | Un hotel (dueño de una sola propiedad) | Sí (nivel más alto de aprobación local: tarifas, reembolsos sobre umbral, revenue) |
+| `gm` | Un hotel | Sí (Daily Flash, tarifas ±10-15%, revenue) |
+| `frontdesk` | Un hotel | Aprobación de 1er nivel (check-in/out, cargos) |
+| `reservations` | Un hotel | Cotizar/confirmar reservas y grupos; no aprueba dinero fuera del flujo de reserva |
+| `housekeeping` | Un hotel | No |
+| `maintenance` | Un hotel | No |
+| `fnb` (alimentos y bebidas) | Un hotel | Cargos a folio (con límite) |
+| `accountant` | Un hotel (o grupo, ver abajo) | Conciliación, CFDI (nunca presentación SAT sin aprobación humana, GOB-014/BP-070) |
+
+**Conceptos distintos de `hotel_staff.role`, declarados explícitamente (no forman parte del enum de REQ-TEN-003):**
+- `superadmin`: rol de **plataforma**, cross-tenant (fuera de `hotel_staff`, en una tabla propia de operadores de plataforma) — necesario para soporte/auditoría interna de Atiende Hoteles, no para el catálogo de roles de un hotel. Ve back office multi-hotel solo con fines de auditoría, nunca de operación diaria (patrón `getResumenNegocio` de Likida, 06 §3.2).
+- `huesped`: no es staff del hotel; es el propio huésped autenticado contra su reserva/folio (RLS distinta, por `reservation_id`/`guest_id`, no por `hotel_staff`).
+- Un rol dedicado de "revenue" (distinto de `accountant`/`gm`) **no existe** en `REQ-TEN-003`; si el producto necesita separar esa función de `gm` en el futuro, requiere primero ampliar `REQ-TEN-003` (y su fuente) antes de añadirlo al esquema, no al revés.
+- `accountant`/`gm` con alcance "un hotel (o grupo)" reutilizan la misma fila de `hotel_staff` repetida por cada hotel del grupo que el usuario cubre; no es un rol distinto.
 
 **RLS por sesión.** Cada request abre una transacción que ejecuta `set local role authenticated` + `select set_config('request.jwt.claim.sub', <user_id>, true)` + `set_config('app.tenant_id', <org_id>, true)` + `set_config('app.hotel_id', <hotel_id>, true)` (este último solo cuando el request opera sobre un hotel concreto) antes de correr la query de negocio — mismo patrón verificado en el experimento de PGlite (07-stack-viabilidad.md Experimento 1) y en Restaurantes, ajustado para que `tenant_id` sea siempre el `org_id` (ver "Tenant y organización" arriba).
 
