@@ -45,8 +45,49 @@ describe("folio: cargos por concepto, descuentos, reverso (H5)", () => {
     });
     expect(res.status).toBe(201);
     const body = (await res.json()) as { impuesto: number };
-    // ivaRate 0.16 + ishRate 0.03 sobre 200 = 38.
-    expect(body.impuesto).toBe(38);
+    // H16-010: ISH grava solo hospedaje -- "ab" solo lleva IVA (0.16 sobre 200 = 32).
+    expect(body.impuesto).toBe(32);
+  });
+
+  it("F1/REQ-BO-001: un rol de dinero (frontdesk) NO puede fijar el impuesto a mano -- 422 si no coincide con el motor", async () => {
+    const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
+      roomTypeId,
+      checkInDate: "2026-09-20",
+      checkOutDate: "2026-09-21",
+    });
+
+    // Escenario del hallazgo CRÍTICO: hospedaje 1000, ivaRate 0.16 + ishRate 0.03 =>
+    // el motor calcula 190 de impuesto; el cliente manda 0 (patrón de fraude interno).
+    const res = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cargos`, {
+      method: "POST",
+      headers: { ...auth(frontdeskToken), "idempotency-key": randomUUID() },
+      body: JSON.stringify({ descripcion: "Noche de hotel", monto: 1000, concepto: "hospedaje", impuesto: 0 }),
+    });
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { code: string };
+    expect(body.code).toBe("impuesto_no_coincide");
+
+    // El folio NO debe tener ningún cargo con el impuesto fraudulento posteado.
+    const folioRes = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}`, { headers: auth(gmToken) });
+    const folio = (await folioRes.json()) as { cargos: Array<{ descripcion: string }> };
+    expect(folio.cargos.some((c) => c.descripcion === "Noche de hotel")).toBe(false);
+  });
+
+  it("F1: un impuesto explícito que SÍ coincide exacto con el motor se acepta (compatibilidad)", async () => {
+    const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
+      roomTypeId,
+      checkInDate: "2026-09-22",
+      checkOutDate: "2026-09-23",
+    });
+
+    const res = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cargos`, {
+      method: "POST",
+      headers: { ...auth(gmToken), "idempotency-key": randomUUID() },
+      body: JSON.stringify({ descripcion: "Noche de hotel", monto: 1000, concepto: "hospedaje", impuesto: 190 }),
+    });
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { impuesto: number };
+    expect(body.impuesto).toBe(190);
   });
 
   it("descuento bajo el umbral lo aplica frontdesk directamente", async () => {

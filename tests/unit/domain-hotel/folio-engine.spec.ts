@@ -18,10 +18,28 @@ describe("computeChargeAmounts (REQ-BO-001/H16-003)", () => {
     expect(r.totalAmount).toBe(1190);
   });
 
-  it("A&B/extras/ajuste llevan IVA + ISH igual que hospedaje (mismo motor único)", () => {
+  it("A&B/extras/ajuste llevan IVA pero NUNCA ISH (H16-010: el ISH de Quintana Roo grava solo la contraprestación por hospedaje, excluye alimentos/otros servicios desglosados)", () => {
     const ab = computeChargeAmounts({ concept: "ab", netAmount: 250, taxConfig });
-    expect(ab.taxAmount).toBe(47.5);
-    expect(ab.totalAmount).toBe(297.5);
+    expect(ab.taxAmount).toBe(40); // solo 16% IVA, 0 ISH
+    expect(ab.totalAmount).toBe(290);
+
+    const extras = computeChargeAmounts({ concept: "extras", netAmount: 250, taxConfig });
+    expect(extras.taxAmount).toBe(40);
+
+    const ajuste = computeChargeAmounts({ concept: "ajuste", netAmount: 250, taxConfig });
+    expect(ajuste.taxAmount).toBe(40);
+
+    const otro = computeChargeAmounts({ concept: "otro", netAmount: 250, taxConfig });
+    expect(otro.taxAmount).toBe(40);
+  });
+
+  it("ISH a la tasa real de la fuente (H16, p.16: 5% para Quintana Roo) solo aplica sobre hospedaje", () => {
+    const fuenteTaxConfig = { ivaRate: 0.16, ishRate: 0.05 };
+    const hospedaje = computeChargeAmounts({ concept: "hospedaje", netAmount: 1000, taxConfig: fuenteTaxConfig });
+    expect(hospedaje.taxAmount).toBe(210); // 160 IVA + 50 ISH (5%)
+
+    const ab = computeChargeAmounts({ concept: "ab", netAmount: 1000, taxConfig: fuenteTaxConfig });
+    expect(ab.taxAmount).toBe(160); // solo IVA, sin ISH
   });
 
   it("propina NUNCA lleva impuesto (REQ-BO-001: excluida del CFDI)", () => {

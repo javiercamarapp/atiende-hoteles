@@ -16,8 +16,8 @@ export interface ApiFixture {
   deps: AppDeps;
 }
 
-export async function createApiFixture(): Promise<ApiFixture> {
-  const engine = await openEmbeddedPostgres();
+export async function createApiFixture(options: { poolMax?: number } = {}): Promise<ApiFixture> {
+  const engine = await openEmbeddedPostgres({ poolMax: options.poolMax });
   await applyMigrations(engine.admin);
   const seed = await seedDev(engine.admin);
 

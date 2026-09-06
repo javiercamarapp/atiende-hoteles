@@ -120,6 +120,11 @@ export interface TransactionalTemplateCheckParams {
   readonly hotelId: string;
   readonly toolName: string;
   readonly input: unknown;
+  /** T2 (auditoria-2 tool-calling CRÍTICO): quién/qué generó la solicitud
+   * (`RequestApprovalParams.requestedBy`) -- necesario para verificar que, cuando la
+   * pidió un AGENTE, el destinatario sea el huésped de la conversación en curso y no
+   * uno que el modelo eligió libremente. */
+  readonly requestedBy: string;
 }
 
 export type TransactionalTemplateCheck = (
@@ -149,6 +154,7 @@ export function createTransactionalTemplateApprovalQueue(
         hotelId: params.hotelId,
         toolName: params.toolName,
         input: params.input,
+        requestedBy: params.requestedBy,
       });
       if (!autoApprove) return created;
       return inner.decide({
@@ -162,18 +168,44 @@ export function createTransactionalTemplateApprovalQueue(
     decide: (params) => inner.decide(params),
     get: (id) => inner.get(id),
     expirePending: (now) => inner.expirePending(now),
+    markExecuted: (id, now) => inner.markExecuted(id, now),
   };
 }
+
+// T2 (auditoria-2 tool-calling CRÍTICO): `runner.ts` codifica el TIPO de actor en
+// `requestedBy` (`agent:<agentName>:<actorType>:<actorId>`) -- cuando `actorType` es
+// "guest", `actorId` es el telefono del huesped de ESA conversacion (unica fuente de
+// verdad de "a quien le esta hablando el agente ahora", nunca lo que el modelo ponga
+// en el input de la tool).
+const AGENT_GUEST_REQUESTED_BY_RE = /^agent:[^:]+:guest:(.+)$/;
 
 /** Helper de wiring: construye el `isTransactional` para
  * `createTransactionalTemplateApprovalQueue` a partir de la config real del hotel
  * (`hotel_messaging_config.transactional_templates`), solo para la tool de WhatsApp --
- * cualquier otra tool (p.ej. `autorizar_gasto_mantenimiento`) nunca se auto-aprueba aqui. */
+ * cualquier otra tool (p.ej. `autorizar_gasto_mantenimiento`) nunca se auto-aprueba aqui.
+ *
+ * T2: cuando la solicitud la generó un AGENTE, el destinatario (`input.guestPhone`)
+ * DEBE coincidir exactamente con el huésped de la conversación en curso -- el modelo
+ * puede elegir la plantilla (de la lista permitida) pero NUNCA el destinatario. Un
+ * agente invocado sin huésped vinculado (p.ej. prueba operativa de staff) o cuyo
+ * `guestPhone` no coincide con el de la conversación NUNCA se auto-aprueba, sin
+ * importar que la plantilla esté en la lista -- cae al flujo normal de aprobación
+ * humana. Un envío directo de un STAFF (`requestedBy` "staff:...", panel de
+ * mensajería) no cambia: el humano ya eligió el destinatario al escribirlo. */
 export function transactionalTemplateCheckFromDb(db: SqlClient): TransactionalTemplateCheck {
-  return async ({ hotelId, toolName, input }) => {
+  return async ({ hotelId, toolName, input, requestedBy }) => {
     if (toolName !== SEND_WHATSAPP_TEMPLATE_TOOL_NAME) return false;
     const templateName = (input as { templateName?: unknown } | null)?.templateName;
     if (typeof templateName !== "string") return false;
+
+    if (requestedBy.startsWith("agent:")) {
+      const guestMatch = AGENT_GUEST_REQUESTED_BY_RE.exec(requestedBy);
+      const guestPhone = (input as { guestPhone?: unknown } | null)?.guestPhone;
+      if (!guestMatch || typeof guestPhone !== "string" || guestPhone !== guestMatch[1]) {
+        return false;
+      }
+    }
+
     const { rows } = await db.query<{ transactional_templates: string[] }>(
       "select transactional_templates from public.hotel_messaging_config where hotel_id = $1;",
       [hotelId],

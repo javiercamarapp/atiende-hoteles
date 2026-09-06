@@ -50,6 +50,19 @@ export async function runNightAudit(
 
   const taxConfig = await loadHotelMoneyConfig(db, params.hotelId);
 
+  // P1/auditoria-2 pruebas [ALTO]: el resumen de caja debe agrupar por la FECHA DE
+  // NEGOCIO del cierre (hora local del hotel), no por `created_at::date` crudo -- el
+  // night audit normalmente cierra "el día de ayer" corriendo hoy de madrugada
+  // (`businessDateToClose`, nightAuditScheduler.ts), así que comparar
+  // `created_at::date` (casteado en la zona de sesión, típicamente UTC) contra
+  // `businessDate` casi nunca coincide: un cargo hecho a las 23:00 hora local puede
+  // caer en el día calendario SIGUIENTE en UTC, y viceversa para cargos de madrugada.
+  const { rows: hotelRows } = await db.query<{ timezone: string }>(
+    "select timezone from public.hotel where id = $1;",
+    [params.hotelId],
+  );
+  const timezone = hotelRows[0]?.timezone ?? "America/Mexico_City";
+
   // Reservas "en casa" la noche de `businessDate`: check_in_date <= businessDate <
   // check_out_date, ya con check-in hecho (check_in/en_estancia). La tarifa de la
   // noche se lee de `rate_plan` para esa fecha exacta (misma fuente que el motor de
@@ -96,16 +109,16 @@ export async function runNightAudit(
   const { rows: chargesByConceptRows } = await db.query<{ concept: string; total: string }>(
     `select concept, sum(amount + tax_amount)::text as total
      from public.charge
-     where hotel_id = $1 and created_at::date = $2::date
+     where hotel_id = $1 and (created_at at time zone $3)::date = $2::date
      group by concept;`,
-    [params.hotelId, params.businessDate],
+    [params.hotelId, params.businessDate, timezone],
   );
   const { rows: paymentsByMethodRows } = await db.query<{ method: string; total: string }>(
     `select method, sum(amount)::text as total
      from public.payment
-     where hotel_id = $1 and created_at::date = $2::date and status = 'capturado'
+     where hotel_id = $1 and (created_at at time zone $3)::date = $2::date and status = 'capturado'
      group by method;`,
-    [params.hotelId, params.businessDate],
+    [params.hotelId, params.businessDate, timezone],
   );
 
   const summary: NightAuditSummary = {

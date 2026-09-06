@@ -150,6 +150,58 @@ describe("AgentRunner", () => {
     expect(approval?.inputSummary).toContain("12340.5");
   });
 
+  it("T1 (auditoria-2 tool-calling CRÍTICO): el teléfono destinatario queda PARCIALMENTE visible (últimos 4 dígitos) para que el aprobador detecte un destinatario equivocado, no oculto por completo como '[TARJETA]'/'[TEL]'", async () => {
+    const runSpy = vi.fn(() => ({ ok: true, summary: "enviado" }));
+    const tools = new ToolRegistry();
+    tools.register(
+      defineTool({
+        name: "enviar_mensaje_whatsapp_plantilla",
+        description: "envia una plantilla al huesped",
+        inputSchema: z.object({
+          guestPhone: z.string(),
+          templateName: z.string(),
+          languageCode: z.string(),
+          parameters: z.array(z.string()),
+        }),
+        effect: "external",
+        needsApproval: true,
+        run: runSpy,
+      }),
+    );
+    const approvalQueue = new InMemoryApprovalQueue();
+    const provider = new FakeProvider([
+      {
+        kind: "tool_calls",
+        calls: [
+          {
+            name: "enviar_mensaje_whatsapp_plantilla",
+            input: {
+              guestPhone: "+5215599998888",
+              templateName: "confirmacion_pago",
+              languageCode: "es",
+              parameters: ["Maria Lopez", "$8,750.00 MXN pagado, folio F-900"],
+            },
+          },
+        ],
+      },
+    ]);
+    const runner = new AgentRunner(baseOptions({ provider, tools, approvalQueue, gate: "propone" }));
+    const result = await runner.run(ctxFor(), "confirma el pago de Maria");
+    expect(result.status).toBe("esperando_aprobacion");
+    const approval = await approvalQueue.get(result.pendingApprovalIds[0]!);
+
+    // NUNCA "[TARJETA]"/"[TEL]" (ciego, inútil para verificar) -- el aprobador debe
+    // poder ver que el número termina en 8888.
+    expect(approval?.inputSummary).not.toMatch(/\[TARJETA\]|\[TEL\]/);
+    expect(approval?.inputSummary).toContain("8888");
+    // Tampoco el número COMPLETO en claro -- enmascarado, no expuesto sin más.
+    expect(approval?.inputSummary).not.toContain("+5215599998888");
+    // El nombre del huésped (para cruzar "es Maria, ¿por qué manda a este número?")
+    // sigue visible, junto con el resto del contexto de negocio.
+    expect(approval?.inputSummary).toContain("Maria Lopez");
+    expect(approval?.inputSummary).toContain("F-900");
+  });
+
   it("una tool con needsApproval=true y alwaysApprove=true se ejecuta SIN pasar por la " +
     "ApprovalQueue (aud-1 agentico.md BAJO #8: alwaysApprove dejaba de ser una funcion " +
     "fantasma)", async () => {
@@ -199,7 +251,7 @@ describe("AgentRunner", () => {
       input: {},
       orgId: "org-1",
       hotelId: "hotel-1",
-      requestedBy: "agent:recepcionista:staff-1",
+      requestedBy: "agent:recepcionista:staff:staff-1",
       isMoney: true,
       textoMostrado: "cerrar folio",
     });
@@ -241,7 +293,7 @@ describe("AgentRunner", () => {
       // Debe coincidir con el ambito de conversacion/actor que el AgentRunner usara al
       // pedir la aprobacion (`agent:${agentName}:${ctx.actor.id}`, ver runner.ts) -- la
       // llave de idempotencia ahora incluye ese ambito (aud-1 tool-calling.md CRITICO #1).
-      requestedBy: "agent:recepcionista:staff-1",
+      requestedBy: "agent:recepcionista:staff:staff-1",
       isMoney: false,
       textoMostrado: "aprobar ajuste",
     });
@@ -260,6 +312,54 @@ describe("AgentRunner", () => {
     const result = await runner.run(ctxFor(), "ajusta la tarifa");
     expect(result.status).toBe("completado");
     expect(runSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("A4 (auditoria-2): una aprobacion YA EJECUTADA no vuelve a correr la tool aunque el modelo la re-proponga dentro del TTL", async () => {
+    const runSpy = vi.fn(() => ({ ok: true, summary: "plantilla enviada" }));
+    const tools = new ToolRegistry();
+    tools.register(
+      defineTool({
+        name: "enviar_mensaje_whatsapp_plantilla",
+        description: "envia una plantilla al huesped",
+        inputSchema: z.object({}),
+        effect: "external",
+        needsApproval: true,
+        run: runSpy,
+      }),
+    );
+    const approvalQueue = new InMemoryApprovalQueue();
+    const pre = await approvalQueue.request({
+      toolName: "enviar_mensaje_whatsapp_plantilla",
+      input: {},
+      orgId: "org-1",
+      hotelId: "hotel-1",
+      requestedBy: "agent:recepcionista:staff:staff-1",
+      isMoney: false,
+      textoMostrado: "enviar plantilla",
+    });
+    await approvalQueue.decide({
+      approvalId: pre.id,
+      actor: "gerente-1",
+      decision: "aprobar",
+      textoExacto: "enviar plantilla",
+    });
+    // Simula que la aprobación YA se ejecutó antes (p.ej. ya la corrió
+    // `decidirYEjecutarAprobacion` fuera de banda, o un turno anterior de esta misma
+    // conversación) -- `request()` de todos modos reusa esta MISMA fila "aprobada"
+    // (misma tool+input+hotel+ámbito dentro del TTL, comportamiento documentado e
+    // intencional para no duplicar la SOLICITUD humana).
+    await approvalQueue.markExecuted(pre.id);
+
+    const provider = new FakeProvider([
+      { kind: "tool_calls", calls: [{ name: "enviar_mensaje_whatsapp_plantilla", input: {} }] },
+      { kind: "final", text: "listo" },
+    ]);
+    const runner = new AgentRunner(baseOptions({ provider, tools, approvalQueue, gate: "propone" }));
+    const result = await runner.run(ctxFor(), "reenvía la confirmación");
+    expect(result.status).toBe("completado");
+    // El punto central del hallazgo: la tool NUNCA se re-ejecuta sin una decisión
+    // humana nueva, aunque el runner vea "aprobada" de nuevo.
+    expect(runSpy).not.toHaveBeenCalled();
   });
 
   it("loop-guard: repetir la misma tool+input corta la corrida sin re-ejecutar", async () => {
@@ -471,6 +571,21 @@ describe("AgentRunner", () => {
     const runner = new AgentRunner(baseOptions({ provider }));
     await runner.run(ctxFor(), "hola");
     expect(completeSpy).toHaveBeenCalledWith(expect.objectContaining({ disableParallelToolUse: true }));
+  });
+
+  it("MEDIO (auditoria-2 agentico): AgentRunnerOptions.effort SÍ llega al proveedor en cada llamada (antes, LlmCompleteParams no tenía dónde recibirlo)", async () => {
+    const completeSpy = vi.fn(async () => ({
+      modelSlug: "claude-sonnet-5",
+      text: "listo",
+      toolCalls: [],
+      usage: { inputTokens: 1, outputTokens: 1 },
+      truncated: false,
+      stopReason: "end_turn" as const,
+    }));
+    const provider = { id: "fake", isAvailable: () => true, complete: completeSpy };
+    const runner = new AgentRunner(baseOptions({ provider, effort: "low" }));
+    await runner.run(ctxFor(), "hola");
+    expect(completeSpy).toHaveBeenCalledWith(expect.objectContaining({ effort: "low" }));
   });
 
   it("el presupuesto se comprueba tambien DESPUES de contabilizar el costo real de la " +

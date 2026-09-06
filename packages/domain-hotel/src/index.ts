@@ -38,6 +38,7 @@ export { assertBenchmarkQueryAllowed, BenchmarkGuardError, type BenchmarkQueryRe
 export {
   CHARGE_CONCEPTS,
   computeChargeAmounts,
+  computeNoShowPenaltyAmounts,
   evaluateDiscountAuthorization,
   evaluateFolioClose,
   type ChargeConcept,
@@ -50,6 +51,11 @@ export {
   type FolioCloseResult,
 } from "./folioEngine.ts";
 export { looksLikeCheckinDataInFreeText } from "./checkinFreeTextGuard.ts";
+export {
+  detectAndRedactPaymentData,
+  luhnValid,
+  type PaymentSensitiveDataResult,
+} from "./paymentFreeTextGuard.ts";
 export {
   computeMrzCheckDigit,
   parsePassportMrz,

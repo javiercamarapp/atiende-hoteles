@@ -339,5 +339,41 @@ export function runApprovalQueueContractSuite(
         queue.decide({ approvalId: "00000000-0000-0000-0000-000000000000", actor: "x", decision: "aprobar", textoExacto: "x" }),
       ).rejects.toThrow(ApprovalError);
     });
+
+    // A4 (auditoria-2 agentico/tool-calling): una aprobacion "aprobada" se consume UNA
+    // sola vez -- markExecuted() es la reclamacion atomica que evita que un reintento
+    // del modelo, o una segunda ejecucion fuera de banda, vuelva a correr la tool sin
+    // una decision humana nueva.
+    it("markExecuted(): la primera llamada devuelve true, cualquier llamada posterior devuelve false (idempotencia del EFECTO, no solo de la solicitud)", async () => {
+      const { orgId, hotelId } = getIds();
+      const queue = createQueue();
+      const req = await queue.request({
+        toolName: "cobrar_folio",
+        input: {},
+        orgId,
+        hotelId,
+        requestedBy: "agent:contralor",
+        isMoney: false,
+        textoMostrado: "cobrar",
+      });
+      const decided = await queue.decide({ approvalId: req.id, actor: "gerente-1", decision: "aprobar", textoExacto: "cobrar" });
+      expect(decided.status).toBe("aprobada");
+      expect(decided.executedAt).toBeUndefined();
+
+      const primera = await queue.markExecuted(req.id);
+      expect(primera).toBe(true);
+      const segunda = await queue.markExecuted(req.id);
+      expect(segunda).toBe(false);
+      const tercera = await queue.markExecuted(req.id);
+      expect(tercera).toBe(false);
+
+      const fetched = await queue.get(req.id);
+      expect(fetched?.executedAt).toBeTruthy();
+    });
+
+    it("markExecuted() sobre un id inexistente devuelve false, nunca lanza", async () => {
+      const queue = createQueue();
+      await expect(queue.markExecuted("00000000-0000-0000-0000-000000000000")).resolves.toBe(false);
+    });
   });
 }

@@ -1,0 +1,359 @@
+
+> atiende-hoteles@0.0.0 test:adversarial
+> vitest run --config vitest.config.ts tests/adversarial --pool=forks --poolOptions.forks.singleFork
+
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/.claude/worktrees/agent-aaf2f0432a5117a2a
+
+ ❯ tests/adversarial/reserva-concurrencia-y-limites.spec.ts (5 tests | 5 skipped) 1819ms
+   ↓ adversarial: concurrencia real de reservas (última habitación) vía HTTP > dos POST /reservas concurrentes por la última habitación: exactamente 1x201 y 1x409, sin sobreventa
+   ↓ adversarial: inyección en campos de texto > un nombre de huésped con carga SQL/HTML se guarda como texto literal, no se ejecuta ni rompe la query
+   ↓ adversarial: inyección en campos de texto > un email con formato inválido en el body de login es rechazado por validación (400), nunca llega a SQL
+   ↓ adversarial: límite de tasa por IP y por usuario > una IP que excede el límite configurado recibe 429 con formato uniforme
+   ↓ adversarial: límite de tasa por IP y por usuario > una IP distinta no se ve afectada por el límite de la primera
+ ❯ tests/adversarial/auditoria-1-bd-criticos.spec.ts (9 tests | 9 skipped) 1884ms
+   ↓ auditoria-1/bd: hallazgos CRÍTICOS de seguridad.md y datos.md > [S-C1] record_audit_log() ya NO permite falsificar el audit_log de otra organización > una sesión real de housekeeping no puede insertar una fila de audit_log para un org/hotel ajeno
+   ↓ auditoria-1/bd: hallazgos CRÍTICOS de seguridad.md y datos.md > [S-C1] record_audit_log() ya NO permite falsificar el audit_log de otra organización > una sesión real SÍ puede seguir escribiendo audit_log de su propio org/hotel (no rompe el uso legítimo)
+   ↓ auditoria-1/bd: hallazgos CRÍTICOS de seguridad.md y datos.md > [S-C1] record_audit_log() ya NO permite falsificar el audit_log de otra organización > un owner de Hotel Demo Centro NO puede firmar un audit_log a nombre de Hotel Demo Playa (mismo org, otro hotel)
+   ↓ auditoria-1/bd: hallazgos CRÍTICOS de seguridad.md y datos.md > [S-C2] outbox / idempotency_key ya NO se leen ni escriben entre hoteles de la misma org, ni por roles sin acceso a dinero > housekeeping del Hotel Demo Centro no lee outbox/idempotency_key del Hotel Demo Playa
+   ↓ auditoria-1/bd: hallazgos CRÍTICOS de seguridad.md y datos.md > [S-C2] outbox / idempotency_key ya NO se leen ni escriben entre hoteles de la misma org, ni por roles sin acceso a dinero > housekeeping del Hotel Demo Centro no puede INSERTAR un outbox falsificado contra el Hotel Demo Playa
+   ↓ auditoria-1/bd: hallazgos CRÍTICOS de seguridad.md y datos.md > [S-C2] outbox / idempotency_key ya NO se leen ni escriben entre hoteles de la misma org, ni por roles sin acceso a dinero > gm (rol con acceso a dinero) del Hotel Demo Centro SÍ lee su propio outbox (no rompe el uso legítimo)
+   ↓ auditoria-1/bd: hallazgos CRÍTICOS de seguridad.md y datos.md > [D-C1] room_type_id ya no puede cruzar hoteles en room/rate_plan/availability/reservation > una sesión real de reservations no puede insertar availability con room_type de OTRO hotel
+   ↓ auditoria-1/bd: hallazgos CRÍTICOS de seguridad.md y datos.md > [D-C1] room_type_id ya no puede cruzar hoteles en room/rate_plan/availability/reservation > el admin tampoco puede insertar (a nivel de esquema) un room/rate_plan/reservation cuyo room_type_id sea de otro hotel
+   ↓ auditoria-1/bd: hallazgos CRÍTICOS de seguridad.md y datos.md > [D-C2] hotel_staff.org_id ya no se puede fabricar contra un org ajeno al hotel > un owner real no puede dar de alta un colega con org_id de un tenant ajeno al hotel_id real
+ ❯ tests/adversarial/presentacion-sat-aprobacion.spec.ts (4 tests | 4 skipped) 594ms
+   ↓ adversarial: presentación SAT con e.firma requiere aprobación humana (REQ-BO-006) > UPDATE status='presentada' SIN fila de aprobación se rechaza (0 presentaciones ejecutadas)
+   ↓ adversarial: presentación SAT con e.firma requiere aprobación humana (REQ-BO-006) > accountant NO puede insertar la aprobación (solo prepara, no autoriza) -- rechazado por RLS
+   ↓ adversarial: presentación SAT con e.firma requiere aprobación humana (REQ-BO-006) > con aprobación de gm registrada, la presentación SÍ se permite
+   ↓ adversarial: presentación SAT con e.firma requiere aprobación humana (REQ-BO-006) > una obligación que NO requiere e.firma se presenta sin necesidad de aprobación
+ ❯ tests/adversarial/housekeeping-mantenimiento-mensajeria.spec.ts (11 tests | 11 skipped) 2627ms
+   ↓ adversarial: housekeeping/mantenimiento/mensajeria > housekeeping de OTRO hotel (B) no ve ni puede iniciar la tarea del hotel A: 403/404 en la API, 0 filas por RLS
+   ↓ adversarial: housekeeping/mantenimiento/mensajeria > el tablero de housekeeping de la camarista del hotel B nunca incluye la habitación del hotel A
+   ↓ adversarial: housekeeping/mantenimiento/mensajeria > housekeeping NO puede crear tickets de mantenimiento con costo (rol excluido de MANAGE_ROOM_STATUS... y de crear) pero SI reportar sin cambiar costo ajeno
+   ↓ adversarial: housekeeping/mantenimiento/mensajeria > housekeeping NUNCA puede cerrar-con-costo un ticket de mantenimiento (403 en la API)
+   ↓ adversarial: housekeeping/mantenimiento/mensajeria > mantenimiento (tecnico) no puede asignar/cambiar estado de un ticket (solo ADMIN_ROLES): 403
+   ↓ adversarial: housekeeping/mantenimiento/mensajeria > RLS directa: un usuario de mantenimiento NO ve por SQL el ticket de otro tecnico (sin asignar a él) fuera de owner/gm/frontdesk
+   ↓ adversarial: housekeeping/mantenimiento/mensajeria > housekeeping NO puede decidir una aprobación (solo owner/gm): 403 en la API
+   ↓ adversarial: housekeeping/mantenimiento/mensajeria > frontdesk tampoco puede decidir una aprobación de dinero (solo owner/gm)
+   ↓ adversarial: housekeeping/mantenimiento/mensajeria > webhook de WhatsApp: firma inválida y replay > firma con secreto INCORRECTO es rechazada (401), ningún mensaje se inserta
+   ↓ adversarial: housekeeping/mantenimiento/mensajeria > webhook de WhatsApp: firma inválida y replay > sin header de firma es rechazado (401)
+   ↓ adversarial: housekeeping/mantenimiento/mensajeria > webhook de WhatsApp: firma inválida y replay > un replay del mismo event_id tras uno legítimo no reprocesa ni duplica el mensaje
+ ❯ tests/adversarial/cancelacion-identidad.spec.ts (4 tests | 4 skipped) 1503ms
+   ↓ adversarial: cancelación pública exige código de reserva + apellido correctos (REQ-RES-005) > código correcto + apellido incorrecto → 0 cancelaciones ejecutadas (rechazada)
+   ↓ adversarial: cancelación pública exige código de reserva + apellido correctos (REQ-RES-005) > código incorrecto + apellido correcto → 0 cancelaciones ejecutadas (rechazada, no revela cuál dato falló)
+   ↓ adversarial: cancelación pública exige código de reserva + apellido correctos (REQ-RES-005) > código + apellido correctos (coincidencia parcial del apellido dentro del nombre completo) → cancelación procesada
+   ↓ adversarial: cancelación pública exige código de reserva + apellido correctos (REQ-RES-005) > un código de reserva inexistente nunca revela si el código o el apellido fue el problema
+ ❯ tests/adversarial/aislamiento-tenant-hotel.spec.ts (3 tests | 3 skipped) 3931ms
+   ↓ adversarial: aislamiento de tenant (org) y de hotel dentro del mismo tenant > staff de hotel A NO puede leer el resumen de hotel B (misma org, distinto hotel) — 403
+   ↓ adversarial: aislamiento de tenant (org) y de hotel dentro del mismo tenant > X-Hotel-Id que no coincide con el hotel de la ruta es rechazado (403), incluso si el usuario SÍ pertenece a ambos
+   ↓ adversarial: aislamiento de tenant (org) y de hotel dentro del mismo tenant > un usuario de una ORG completamente distinta (tenant real ajeno) no ve el hotel del tenant demo
+ ❯ tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts (4 tests | 4 skipped) 882ms
+   ↓ adversarial: tarifas restringidas por rol + aislamiento de reservas entre hoteles > frontdesk (recepción) NO puede modificar una tarifa (403), gm SÍ puede
+   ↓ adversarial: tarifas restringidas por rol + aislamiento de reservas entre hoteles > frontdesk NO puede cambiar impuestos (IVA/ISH) ni la política de cancelación del hotel (403)
+   ↓ adversarial: tarifas restringidas por rol + aislamiento de reservas entre hoteles > staff de hotel B NO puede leer las reservas de hotel A (403, ninguna fila expuesta)
+   ↓ adversarial: tarifas restringidas por rol + aislamiento de reservas entre hoteles > staff de hotel B tampoco puede leer una reserva puntual de hotel A por id (403)
+ ❯ tests/adversarial/checkin-chat-libre.spec.ts (3 tests | 3 skipped) 3007ms
+   ↓ adversarial: check-in por chat libre es rechazado y redirigido (REQ-RES-016) > un mensaje que parece traer datos de check-in dispara una redirección al flujo estructurado
+   ↓ adversarial: check-in por chat libre es rechazado y redirigido (REQ-RES-016) > un mensaje normal (sin datos sensibles) NO dispara ninguna redirección
+   ↓ adversarial: check-in por chat libre es rechazado y redirigido (REQ-RES-016) > estructural: NINGÚN mensaje de chat libre, sin importar su contenido, crea una fila en identity_vault
+ ❯ tests/adversarial/cargo-folio-verificacion.spec.ts (4 tests | 4 skipped) 887ms
+   ↓ adversarial: descuento sobre el umbral requiere autorización real verificada (REQ-REC-012 estilo) > (a) frontdesk sin autorización, descuento sobre el umbral: 0 descuentos aplicados
+   ↓ adversarial: descuento sobre el umbral requiere autorización real verificada (REQ-REC-012 estilo) > (b) traer el userId de HOUSEKEEPING como 'autorizadoPorUserId' NO cuenta como autorización (no es rol administrativo)
+   ↓ adversarial: descuento sobre el umbral requiere autorización real verificada (REQ-REC-012 estilo) > (c) un userId de gm REAL de este hotel sí autoriza el descuento
+   ↓ adversarial: descuento sobre el umbral requiere autorización real verificada (REQ-REC-012 estilo) > housekeeping no puede ni siquiera intentar aplicar un cargo/descuento (403 por rol, antes de llegar a la RLS)
+ ❯ tests/adversarial/boveda-identidad.spec.ts (8 tests | 8 skipped) 376ms
+   ↓ adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > MRZ válida: registra el documento, identity_ref expone SOLO campos mínimos
+   ↓ adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > la imagen enviada NUNCA se persiste: 0 filas en todo el esquema contienen el string enviado como imagen
+   ↓ adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > MRZ con dígito de control alterado es RECHAZADA: 0 filas creadas en la bóveda
+   ↓ adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > housekeeping NO puede leer identity_ref (403) -- solo owner/gm/frontdesk/reservations
+   ↓ adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > consulta DIRECTA a identity_vault desde una sesión de staff (incluso gm) es RECHAZADA -- solo vía las funciones SECURITY DEFINER
+   ↓ adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > cifrado en reposo: el ciphertext almacenado NUNCA contiene el número de documento en texto plano
+   ↓ adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > revelar el número completo: solo owner/gm, cada lectura queda auditada en audit_log
+   ↓ adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > retención ≤30 días post-checkout con purga automática (t=31 días → 0 filas restantes; t=10 días → conservada)
+ ✓ tests/adversarial/rpc-security-definer.spec.ts (5 tests) 5877ms
+ ✓ tests/adversarial/tarifas-roles.spec.ts (10 tests) 5756ms
+   ✓ adversarial: solo roles de inventario/gerencia pueden cambiar tarifas > rol accountant NO puede cambiar una tarifa (403, doble capa)  366ms
+ ✓ tests/adversarial/roles.spec.ts (20 tests) 6116ms
+ ✓ tests/adversarial/housekeeping-cfdi-night-audit.spec.ts (3 tests) 4733ms
+ ✓ tests/adversarial/reservas-aislamiento.spec.ts (4 tests) 3336ms
+ ✓ tests/adversarial/agentes-aislamiento.spec.ts (9 tests) 3629ms
+ ✓ tests/adversarial/idempotencia-concurrente.spec.ts (2 tests) 2000ms
+ ✓ tests/adversarial/benchmark-k-minimo.spec.ts (5 tests) 1ms
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 12 ⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/adversarial/aislamiento-tenant-hotel.spec.ts > adversarial: aislamiento de tenant (org) y de hotel dentro del mismo tenant
+Unknown Error: undefined
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/24]⎯
+
+ FAIL  tests/adversarial/aislamiento-tenant-hotel.spec.ts > adversarial: aislamiento de tenant (org) y de hotel dentro del mismo tenant
+TypeError: Cannot read properties of undefined (reading 'engine')
+ ❯ destroyApiFixture tests/support/api-fixture.ts:39:17
+     37| 
+     38| export async function destroyApiFixture(fixture: ApiFixture): Promise<…
+     39|   await fixture.engine.stop();
+       |                 ^
+     40| }
+     41| 
+ ❯ tests/adversarial/aislamiento-tenant-hotel.spec.ts:19:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/24]⎯
+
+ FAIL  tests/adversarial/auditoria-1-bd-criticos.spec.ts > auditoria-1/bd: hallazgos CRÍTICOS de seguridad.md y datos.md
+Unknown Error: undefined
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/24]⎯
+
+ FAIL  tests/adversarial/auditoria-1-bd-criticos.spec.ts > auditoria-1/bd: hallazgos CRÍTICOS de seguridad.md y datos.md
+TypeError: Cannot read properties of undefined (reading 'engine')
+ ❯ destroyApiFixture tests/support/api-fixture.ts:39:17
+     37| 
+     38| export async function destroyApiFixture(fixture: ApiFixture): Promise<…
+     39|   await fixture.engine.stop();
+       |                 ^
+     40| }
+     41| 
+ ❯ tests/adversarial/auditoria-1-bd-criticos.spec.ts:16:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/24]⎯
+
+ FAIL  tests/adversarial/boveda-identidad.spec.ts > adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004)
+Error: Postgres init script failed (code: 1, signal: null). ERROR OUTPUT: 2026-09-06 16:22:56.194 CST [97038] FATAL:  could not create shared memory segment: No space left on device
+2026-09-06 16:22:56.194 CST [97038] DETAIL:  Failed system call was shmget(key=23012796, size=56, 03600).
+2026-09-06 16:22:56.194 CST [97038] HINT:  This error does *not* mean that you have run out of disk space.  It occurs either if all available shared memory IDs have been taken, in which case you need to raise the SHMMNI parameter in your kernel, or because the system's overall limit for shared memory has been reached.
+	The PostgreSQL documentation contains more information about shared memory configuration.
+child process exited with exit code 1
+initdb: removing contents of data directory "/var/folders/7l/lhfhb62s0831p83p7d0v3s6h0000gn/T/atiende-hoteles-pg-ce8FTr"
+
+ ❯ ChildProcess.<anonymous> node_modules/embedded-postgres/dist/index.js:176:36
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/24]⎯
+
+ FAIL  tests/adversarial/boveda-identidad.spec.ts > adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004)
+TypeError: Cannot read properties of undefined (reading 'engine')
+ ❯ destroyApiFixture tests/support/api-fixture.ts:39:17
+     37| 
+     38| export async function destroyApiFixture(fixture: ApiFixture): Promise<…
+     39|   await fixture.engine.stop();
+       |                 ^
+     40| }
+     41| 
+ ❯ tests/adversarial/boveda-identidad.spec.ts:47:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/24]⎯
+
+ FAIL  tests/adversarial/cancelacion-identidad.spec.ts > adversarial: cancelación pública exige código de reserva + apellido correctos (REQ-RES-005)
+Error: Postgres init script failed (code: 1, signal: null). ERROR OUTPUT: 2026-09-06 16:22:45.316 CST [96573] FATAL:  could not create shared memory segment: No space left on device
+2026-09-06 16:22:45.316 CST [96573] DETAIL:  Failed system call was shmget(key=23006747, size=56, 03600).
+2026-09-06 16:22:45.316 CST [96573] HINT:  This error does *not* mean that you have run out of disk space.  It occurs either if all available shared memory IDs have been taken, in which case you need to raise the SHMMNI parameter in your kernel, or because the system's overall limit for shared memory has been reached.
+	The PostgreSQL documentation contains more information about shared memory configuration.
+child process exited with exit code 1
+initdb: removing contents of data directory "/var/folders/7l/lhfhb62s0831p83p7d0v3s6h0000gn/T/atiende-hoteles-pg-mNUW6V"
+
+ ❯ ChildProcess.<anonymous> node_modules/embedded-postgres/dist/index.js:176:36
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/24]⎯
+
+ FAIL  tests/adversarial/cancelacion-identidad.spec.ts > adversarial: cancelación pública exige código de reserva + apellido correctos (REQ-RES-005)
+TypeError: Cannot read properties of undefined (reading 'engine')
+ ❯ destroyApiFixture tests/support/api-fixture.ts:39:17
+     37| 
+     38| export async function destroyApiFixture(fixture: ApiFixture): Promise<…
+     39|   await fixture.engine.stop();
+       |                 ^
+     40| }
+     41| 
+ ❯ tests/adversarial/cancelacion-identidad.spec.ts:25:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/24]⎯
+
+ FAIL  tests/adversarial/cargo-folio-verificacion.spec.ts > adversarial: descuento sobre el umbral requiere autorización real verificada (REQ-REC-012 estilo)
+Error: Postgres init script failed (code: 1, signal: null). ERROR OUTPUT: 2026-09-06 16:22:55.721 CST [97018] FATAL:  could not create shared memory segment: No space left on device
+2026-09-06 16:22:55.721 CST [97018] DETAIL:  Failed system call was shmget(key=23012642, size=56, 03600).
+2026-09-06 16:22:55.721 CST [97018] HINT:  This error does *not* mean that you have run out of disk space.  It occurs either if all available shared memory IDs have been taken, in which case you need to raise the SHMMNI parameter in your kernel, or because the system's overall limit for shared memory has been reached.
+	The PostgreSQL documentation contains more information about shared memory configuration.
+child process exited with exit code 1
+initdb: removing contents of data directory "/var/folders/7l/lhfhb62s0831p83p7d0v3s6h0000gn/T/atiende-hoteles-pg-rrT8DA"
+
+ ❯ ChildProcess.<anonymous> node_modules/embedded-postgres/dist/index.js:176:36
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/24]⎯
+
+ FAIL  tests/adversarial/cargo-folio-verificacion.spec.ts > adversarial: descuento sobre el umbral requiere autorización real verificada (REQ-REC-012 estilo)
+TypeError: Cannot read properties of undefined (reading 'engine')
+ ❯ destroyApiFixture tests/support/api-fixture.ts:39:17
+     37| 
+     38| export async function destroyApiFixture(fixture: ApiFixture): Promise<…
+     39|   await fixture.engine.stop();
+       |                 ^
+     40| }
+     41| 
+ ❯ tests/adversarial/cargo-folio-verificacion.spec.ts:32:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/24]⎯
+
+ FAIL  tests/adversarial/checkin-chat-libre.spec.ts > adversarial: check-in por chat libre es rechazado y redirigido (REQ-RES-016)
+Unknown Error: undefined
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/24]⎯
+
+ FAIL  tests/adversarial/checkin-chat-libre.spec.ts > adversarial: check-in por chat libre es rechazado y redirigido (REQ-RES-016)
+TypeError: Cannot read properties of undefined (reading 'engine')
+ ❯ destroyApiFixture tests/support/api-fixture.ts:39:17
+     37| 
+     38| export async function destroyApiFixture(fixture: ApiFixture): Promise<…
+     39|   await fixture.engine.stop();
+       |                 ^
+     40| }
+     41| 
+ ❯ tests/adversarial/checkin-chat-libre.spec.ts:27:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/24]⎯
+
+ FAIL  tests/adversarial/housekeeping-mantenimiento-mensajeria.spec.ts > adversarial: housekeeping/mantenimiento/mensajeria
+Unknown Error: undefined
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/24]⎯
+
+ FAIL  tests/adversarial/housekeeping-mantenimiento-mensajeria.spec.ts > adversarial: housekeeping/mantenimiento/mensajeria
+TypeError: Cannot read properties of undefined (reading 'engine')
+ ❯ destroyApiFixture tests/support/api-fixture.ts:39:17
+     37| 
+     38| export async function destroyApiFixture(fixture: ApiFixture): Promise<…
+     39|   await fixture.engine.stop();
+       |                 ^
+     40| }
+     41| 
+ ❯ tests/adversarial/housekeeping-mantenimiento-mensajeria.spec.ts:72:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/24]⎯
+
+ FAIL  tests/adversarial/presentacion-sat-aprobacion.spec.ts > adversarial: presentación SAT con e.firma requiere aprobación humana (REQ-BO-006)
+Error: Postgres init script failed (code: 1, signal: null). ERROR OUTPUT: 2026-09-06 16:22:39.772 CST [96352] FATAL:  could not create shared memory segment: No space left on device
+2026-09-06 16:22:39.772 CST [96352] DETAIL:  Failed system call was shmget(key=23004622, size=56, 03600).
+2026-09-06 16:22:39.772 CST [96352] HINT:  This error does *not* mean that you have run out of disk space.  It occurs either if all available shared memory IDs have been taken, in which case you need to raise the SHMMNI parameter in your kernel, or because the system's overall limit for shared memory has been reached.
+	The PostgreSQL documentation contains more information about shared memory configuration.
+child process exited with exit code 1
+initdb: removing contents of data directory "/var/folders/7l/lhfhb62s0831p83p7d0v3s6h0000gn/T/atiende-hoteles-pg-BFbCbP"
+
+ ❯ ChildProcess.<anonymous> node_modules/embedded-postgres/dist/index.js:176:36
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/24]⎯
+
+ FAIL  tests/adversarial/presentacion-sat-aprobacion.spec.ts > adversarial: presentación SAT con e.firma requiere aprobación humana (REQ-BO-006)
+TypeError: Cannot read properties of undefined (reading 'engine')
+ ❯ destroyPgFixture tests/support/pg-fixture.ts:21:17
+     19| 
+     20| export async function destroyPgFixture(fixture: PgFixture): Promise<vo…
+     21|   await fixture.engine.stop();
+       |                 ^
+     22| }
+     23| 
+ ❯ tests/adversarial/presentacion-sat-aprobacion.spec.ts:18:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/24]⎯
+
+ FAIL  tests/adversarial/reserva-concurrencia-y-limites.spec.ts > adversarial: concurrencia real de reservas (última habitación) vía HTTP
+Error: Postgres init script failed (code: 1, signal: null). ERROR OUTPUT: 2026-09-06 16:22:35.446 CST [96113] FATAL:  could not create shared memory segment: No space left on device
+2026-09-06 16:22:35.446 CST [96113] DETAIL:  Failed system call was shmget(key=23001819, size=56, 03600).
+2026-09-06 16:22:35.446 CST [96113] HINT:  This error does *not* mean that you have run out of disk space.  It occurs either if all available shared memory IDs have been taken, in which case you need to raise the SHMMNI parameter in your kernel, or because the system's overall limit for shared memory has been reached.
+	The PostgreSQL documentation contains more information about shared memory configuration.
+child process exited with exit code 1
+initdb: removing contents of data directory "/var/folders/7l/lhfhb62s0831p83p7d0v3s6h0000gn/T/atiende-hoteles-pg-JsFi56"
+
+ ❯ ChildProcess.<anonymous> node_modules/embedded-postgres/dist/index.js:176:36
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/24]⎯
+
+ FAIL  tests/adversarial/reserva-concurrencia-y-limites.spec.ts > adversarial: concurrencia real de reservas (última habitación) vía HTTP
+TypeError: Cannot read properties of undefined (reading 'engine')
+ ❯ destroyApiFixture tests/support/api-fixture.ts:39:17
+     37| 
+     38| export async function destroyApiFixture(fixture: ApiFixture): Promise<…
+     39|   await fixture.engine.stop();
+       |                 ^
+     40| }
+     41| 
+ ❯ tests/adversarial/reserva-concurrencia-y-limites.spec.ts:37:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/24]⎯
+
+ FAIL  tests/adversarial/reserva-concurrencia-y-limites.spec.ts > adversarial: inyección en campos de texto
+Error: Postgres init script failed (code: 1, signal: null). ERROR OUTPUT: 2026-09-06 16:22:36.240 CST [96163] FATAL:  could not create shared memory segment: No space left on device
+2026-09-06 16:22:36.240 CST [96163] DETAIL:  Failed system call was shmget(key=23001956, size=56, 03600).
+2026-09-06 16:22:36.240 CST [96163] HINT:  This error does *not* mean that you have run out of disk space.  It occurs either if all available shared memory IDs have been taken, in which case you need to raise the SHMMNI parameter in your kernel, or because the system's overall limit for shared memory has been reached.
+	The PostgreSQL documentation contains more information about shared memory configuration.
+child process exited with exit code 1
+initdb: removing contents of data directory "/var/folders/7l/lhfhb62s0831p83p7d0v3s6h0000gn/T/atiende-hoteles-pg-TRtRak"
+
+ ❯ ChildProcess.<anonymous> node_modules/embedded-postgres/dist/index.js:176:36
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/24]⎯
+
+ FAIL  tests/adversarial/reserva-concurrencia-y-limites.spec.ts > adversarial: inyección en campos de texto
+TypeError: Cannot read properties of undefined (reading 'engine')
+ ❯ destroyApiFixture tests/support/api-fixture.ts:39:17
+     37| 
+     38| export async function destroyApiFixture(fixture: ApiFixture): Promise<…
+     39|   await fixture.engine.stop();
+       |                 ^
+     40| }
+     41| 
+ ❯ tests/adversarial/reserva-concurrencia-y-limites.spec.ts:81:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/24]⎯
+
+ FAIL  tests/adversarial/reserva-concurrencia-y-limites.spec.ts > adversarial: límite de tasa por IP y por usuario
+Error: Postgres init script failed (code: 1, signal: null). ERROR OUTPUT: 2026-09-06 16:22:37.105 CST [96229] FATAL:  could not create shared memory segment: No space left on device
+2026-09-06 16:22:37.105 CST [96229] DETAIL:  Failed system call was shmget(key=23002246, size=56, 03600).
+2026-09-06 16:22:37.105 CST [96229] HINT:  This error does *not* mean that you have run out of disk space.  It occurs either if all available shared memory IDs have been taken, in which case you need to raise the SHMMNI parameter in your kernel, or because the system's overall limit for shared memory has been reached.
+	The PostgreSQL documentation contains more information about shared memory configuration.
+child process exited with exit code 1
+initdb: removing contents of data directory "/var/folders/7l/lhfhb62s0831p83p7d0v3s6h0000gn/T/atiende-hoteles-pg-6Vlsx8"
+
+ ❯ ChildProcess.<anonymous> node_modules/embedded-postgres/dist/index.js:176:36
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/24]⎯
+
+ FAIL  tests/adversarial/reserva-concurrencia-y-limites.spec.ts > adversarial: límite de tasa por IP y por usuario
+TypeError: Cannot read properties of undefined (reading 'engine')
+ ❯ destroyApiFixture tests/support/api-fixture.ts:39:17
+     37| 
+     38| export async function destroyApiFixture(fixture: ApiFixture): Promise<…
+     39|   await fixture.engine.stop();
+       |                 ^
+     40| }
+     41| 
+ ❯ tests/adversarial/reserva-concurrencia-y-limites.spec.ts:144:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/24]⎯
+
+ FAIL  tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts > adversarial: tarifas restringidas por rol + aislamiento de reservas entre hoteles
+Error: Postgres init script failed (code: 1, signal: null). ERROR OUTPUT: 2026-09-06 16:22:51.407 CST [96833] FATAL:  could not create shared memory segment: No space left on device
+2026-09-06 16:22:51.407 CST [96833] DETAIL:  Failed system call was shmget(key=23009453, size=56, 03600).
+2026-09-06 16:22:51.407 CST [96833] HINT:  This error does *not* mean that you have run out of disk space.  It occurs either if all available shared memory IDs have been taken, in which case you need to raise the SHMMNI parameter in your kernel, or because the system's overall limit for shared memory has been reached.
+	The PostgreSQL documentation contains more information about shared memory configuration.
+child process exited with exit code 1
+initdb: removing contents of data directory "/var/folders/7l/lhfhb62s0831p83p7d0v3s6h0000gn/T/atiende-hoteles-pg-8OVfsi"
+
+ ❯ ChildProcess.<anonymous> node_modules/embedded-postgres/dist/index.js:176:36
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/24]⎯
+
+ FAIL  tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts > adversarial: tarifas restringidas por rol + aislamiento de reservas entre hoteles
+TypeError: Cannot read properties of undefined (reading 'engine')
+ ❯ destroyApiFixture tests/support/api-fixture.ts:39:17
+     37| 
+     38| export async function destroyApiFixture(fixture: ApiFixture): Promise<…
+     39|   await fixture.engine.stop();
+       |                 ^
+     40| }
+     41| 
+ ❯ tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts:21:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/24]⎯
+
+
+ Test Files  10 failed | 8 passed (18)
+      Tests  58 passed | 55 skipped (113)
+   Start at  16:22:32
+   Duration  58.00s (transform 1.61s, setup 0ms, collect 7.09s, tests 48.96s, environment 0ms, prepare 102ms)
+
+ADV_EXIT=1

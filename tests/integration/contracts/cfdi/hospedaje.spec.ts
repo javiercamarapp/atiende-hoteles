@@ -130,7 +130,7 @@ describe("REQ-BO-001 · contrato de CFDI de hospedaje (7 casos)", () => {
     expect(Number(rows[0]!.subtotal)).toBe(1000); // los 200 de propina no aparecen
   });
 
-  it("5) no-show: la penalización se postea como concepto 'hospedaje' y ENTRA al CFDI", async () => {
+  it("5) no-show: la penalización se postea como concepto 'hospedaje', lleva IVA pero NO ISH, y el CFDI declara EXACTAMENTE lo que el folio le cobró al huésped (F3)", async () => {
     const { reservationId, folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
       checkInDate: "2026-09-09",
@@ -147,18 +147,33 @@ describe("REQ-BO-001 · contrato de CFDI de hospedaje (7 casos)", () => {
     );
     expect(reservationRows[0]!.status).toBe("no_show");
 
+    // El folio ya le cobró al huésped monto+impuesto del cargo de penalidad -- el
+    // saldo del folio es la ÚNICA fuente de verdad de cuánto se le cobró de verdad.
+    const folioAntes = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}`, { headers: auth() });
+    const folioBody = (await folioAntes.json()) as { cargos: Array<{ monto: number; impuesto: number; descripcion: string }> };
+    const cargoPenalidad = folioBody.cargos.find((c) => c.descripcion === "Penalización por no-show")!;
+    expect(cargoPenalidad).toBeDefined();
+    // H16 p.14: IVA sí (pena convencional gravada), ISH no (no hubo hospedaje real).
+    expect(cargoPenalidad.impuesto).toBe(Math.round(cargoPenalidad.monto * 0.16 * 100) / 100);
+    const folioTotalCobrado = cargoPenalidad.monto + cargoPenalidad.impuesto;
+
     const res = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cfdi`, {
       method: "POST",
       headers: { ...auth(), "idempotency-key": randomUUID() },
       body: JSON.stringify({ esGlobal: true, esNoShow: true, metodoPago: "PUE" }),
     });
     expect(res.status).toBe(201);
-    const body = (await res.json()) as { id: string };
-    const { rows } = await fixture.engine.admin.query<{ subtotal: string }>(
-      "select subtotal::text as subtotal from public.cfdi_emision where id = $1;",
+    const body = (await res.json()) as { id: string; total: number };
+    const { rows } = await fixture.engine.admin.query<{ subtotal: string; iva: string; impuestos_locales: { ishMonto: number }; total: string }>(
+      "select subtotal::text as subtotal, iva::text as iva, impuestos_locales, total::text as total from public.cfdi_emision where id = $1;",
       [body.id],
     );
     expect(Number(rows[0]!.subtotal)).toBeGreaterThan(0);
+    expect(rows[0]!.impuestos_locales.ishMonto).toBe(0); // sin ISH en la penalidad
+    // El total del CFDI coincide EXACTO con lo que el folio le cobró al huésped --
+    // ninguna segunda fuente de cálculo que pueda divergir (F3).
+    expect(Number(rows[0]!.total)).toBe(folioTotalCobrado);
+    expect(body.total).toBe(folioTotalCobrado);
   });
 
   it("6) anticipo: un CFDI puede relacionarse con uno previo (tipo de relación 07, registrado en related_cfdi_id)", async () => {

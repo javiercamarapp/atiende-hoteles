@@ -91,6 +91,47 @@ describe("job de no-show idempotente (REQ-RES-008)", () => {
     expect(availRows[0]!.booked_rooms).toBe(0); // nunca negativo, nunca vuelve a bajar
   });
 
+  it("B1/CRÍTICO: dos disparos CONCURRENTES del mismo no-show (doble clic/reintento) postean UN SOLO cargo de penalización", async () => {
+    const checkInB = isoDate(-4);
+    const checkOutB = isoDate(-3);
+    await fixture.engine.admin.query(
+      `insert into public.availability (tenant_id, hotel_id, room_type_id, date, total_rooms, booked_rooms)
+       values ($1, $2, $3, $4, 5, 1)
+       on conflict (hotel_id, room_type_id, date) do update set booked_rooms = 1;`,
+      [fixture.seed.orgId, hotelId, roomTypeId, checkInB],
+    );
+    const { rows } = await fixture.engine.admin.query<{ id: string }>(
+      `insert into public.reservation (tenant_id, hotel_id, room_type_id, check_in_date, check_out_date, total_amount, status)
+       values ($1, $2, $3, $4, $5, 1500, 'confirmada')
+       returning id;`,
+      [fixture.seed.orgId, hotelId, roomTypeId, checkInB, checkOutB],
+    );
+    const reservationBId = rows[0]!.id;
+    const { rows: folioRows } = await fixture.engine.admin.query<{ id: string }>(
+      "insert into public.folio (tenant_id, hotel_id, reservation_id) values ($1, $2, $3) returning id;",
+      [fixture.seed.orgId, hotelId, reservationBId],
+    );
+    const folioId = folioRows[0]!.id;
+
+    // Dos peticiones HTTP concurrentes contra el MISMO endpoint operativo -- dos
+    // transacciones de Postgres independientes, cada una viendo `status='confirmada'`
+    // si no hay lock (el escenario reproducido por la auditoría-2).
+    const [resA, resB] = await Promise.all([dispararJob(), dispararJob()]);
+    expect([resA.status, resB.status]).toEqual([200, 200]);
+
+    const { rows: chargeRows } = await fixture.engine.admin.query<{ count: string }>(
+      "select count(*)::text as count from public.charge where folio_id = $1 and description = 'Penalización por no-show';",
+      [folioId],
+    );
+    expect(Number(chargeRows[0]!.count)).toBe(1);
+
+    const { rows: reservationRows } = await fixture.engine.admin.query<{ status: string }>(
+      "select status from public.reservation where id = $1;",
+      [reservationBId],
+    );
+    expect(reservationRows[0]!.status).toBe("no_show");
+  });
+
   it("frontdesk/reservations NO pueden disparar el job (solo owner/gm, ADMIN_ROLES)", async () => {
     const hotelA = fixture.seed.hotels[0]!;
     const frontdeskToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "frontdesk")!.email);

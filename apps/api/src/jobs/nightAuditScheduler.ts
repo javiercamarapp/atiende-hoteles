@@ -105,7 +105,34 @@ export class NightAuditScheduler {
       this.inFlight.add(hotel.id);
       const businessDate = businessDateToClose(now, hotel.timezone);
       try {
-        const summary = await runNightAudit(this.db, { tenantId: hotel.tenantId, hotelId: hotel.id, businessDate });
+        // B2/auditoria-2 backend CRÍTICO: `night_audit_claim()` toma un
+        // `pg_advisory_xact_lock` TRANSACCIONAL -- se libera al COMMIT/ROLLBACK de la
+        // transacción que lo pidió, no al terminar la sentencia SQL. El endpoint
+        // manual (`POST /night-audit`) es seguro porque `dbSession` ya envuelve TODO
+        // el request en una sola transacción de sesión. Este planificador, en cambio,
+        // corre sobre `this.db` (`engine.admin`, la conexión admin del proceso, SIN
+        // transacción propia) -- sin un BEGIN/COMMIT explícito aquí, cada
+        // `db.query()` de `runNightAudit` es su propia sentencia autocommiteada, así
+        // que `night_audit_claim()` libera el lock ANTES de que el resto del job
+        // (posteo de cargos/no-shows/cierre) siquiera empiece. Bajo varias réplicas
+        // de `apps/api` (cada una con su propia conexión admin al MISMO Postgres),
+        // dos réplicas cerrando el mismo hotel casi al mismo tiempo duplicarían el
+        // trabajo (verificado: la penalización de no-show se posteaba 2 veces).
+        //
+        // Envolver el job completo en una transacción EXPLÍCITA sobre esta misma
+        // conexión mantiene el lock tomado durante TODO el cierre -- una segunda
+        // réplica que intente el mismo (hotel_id, business_date) se queda esperando
+        // el lock hasta que esta transacción comitee, y entonces ve el día ya
+        // cerrado (`already_completed`) en vez de repetir el trabajo.
+        await this.db.exec("begin;");
+        let summary: NightAuditSummary;
+        try {
+          summary = await runNightAudit(this.db, { tenantId: hotel.tenantId, hotelId: hotel.id, businessDate });
+        } catch (err) {
+          await this.db.exec("rollback;");
+          throw err;
+        }
+        await this.db.exec("commit;");
         results.push({ hotelId: hotel.id, ran: true, businessDate, summary });
       } catch (err) {
         results.push({ hotelId: hotel.id, ran: false, businessDate, error: err instanceof Error ? err.message : String(err) });

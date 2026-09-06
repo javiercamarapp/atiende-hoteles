@@ -19,7 +19,13 @@
 // se declara `no_configurado` de forma honesta. El único camino que SÍ produce una
 // respuesta completa es `demo: true` en el cuerpo, que corre un guion determinista de
 // `FakeProvider` (recorrido de check-in con incidencia) y se etiqueta `simulado: true`
-// en la respuesta -- nunca se hace pasar una corrida simulada por una real.
+// en la respuesta -- nunca se hace pasar una corrida simulada por una real. Una demo
+// SIEMPRE corre en gate "shadow" (forzado, sin importar el gate real configurado para
+// el hotel/agente) y con un código de habitación SINTÉTICO ("DEMO-101", nunca una
+// habitación real del hotel) -- así ninguna tool write/external/money del guion de
+// demo ejecuta un efecto real (aud-2 agentico CRÍTICO: antes usaba el gate real y el
+// primer cuarto real del hotel, así que una demo en un hotel ya en "propone"/
+// "autopilot" podía marcar una habitación vendible real como fuera de servicio).
 import { Hono } from "hono";
 import { z } from "zod";
 import {
@@ -29,7 +35,7 @@ import {
   EnvProvider,
   FakeProvider,
   PostgresApprovalQueue,
-  ROLE_PARAMS,
+  roleParamsForChannel,
   ToolRegistry,
   buildToolContext,
   createHousekeepingTaskTool,
@@ -65,8 +71,9 @@ const ejecutarSchema = z
     mensaje: z.string().trim().min(1).max(2000),
     canal: z.enum(["voz", "texto"]).default("texto"),
     // Demo determinista con FakeProvider (sin red, sin LLM real) -- ver comentario de
-    // archivo. Nunca activa un comportamiento distinto de autorización/gate: SOLO
-    // cambia el proveedor de modelo usado para esta corrida.
+    // archivo. aud-2 agentico CRÍTICO: SÍ fuerza un gate distinto ("shadow", sin
+    // importar el gate real configurado) -- es la única garantía de que una demo
+    // nunca ejecuta un efecto real sobre datos operativos del hotel.
     demo: z.boolean().default(false),
   })
   .strict();
@@ -85,14 +92,14 @@ interface AgentConfigRow {
   alert_threshold_pct: string;
 }
 
-interface ResolvedAgentConfig {
+export interface ResolvedAgentConfig {
   gate: AgentGate;
   monthlyCeilingUsd: number;
   currency: string;
   alertThresholdPct: number;
 }
 
-async function resolveAgentConfig(db: DbClient, hotelId: string, def: AgentDefinition): Promise<ResolvedAgentConfig> {
+export async function resolveAgentConfig(db: DbClient, hotelId: string, def: AgentDefinition): Promise<ResolvedAgentConfig> {
   const { rows } = await db.query<AgentConfigRow>(
     "select gate, monthly_ceiling_usd, currency, alert_threshold_pct from public.agent_config where hotel_id = $1 and agent_name = $2;",
     [hotelId, def.name],
@@ -106,7 +113,7 @@ async function resolveAgentConfig(db: DbClient, hotelId: string, def: AgentDefin
   };
 }
 
-async function costoDelMes(db: DbClient, hotelId: string, agentName: string): Promise<number> {
+export async function costoDelMes(db: DbClient, hotelId: string, agentName: string): Promise<number> {
   const { rows } = await db.query<{ agent_cost_mes: string }>("select public.agent_cost_mes($1, $2) as agent_cost_mes;", [
     hotelId,
     agentName,
@@ -327,6 +334,25 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     assertRole(c, def.allowedStaffRoles as unknown as HotelRole[]);
 
     const body = parseBody(ejecutarSchema, await c.req.json().catch(() => ({})));
+
+    // A5 (auditoria-2 agentico ALTO, REQ-AGT-020): serializa esta corrida contra
+    // cualquier otra corrida CONCURRENTE del MISMO (hotel, agente) -- el advisory
+    // lock es transaccional (se libera al COMMIT de esta transacción por-request,
+    // que incluye tanto la corrida del agente como el INSERT de `agent_run` con el
+    // costo real), así que una segunda petición concurrente espera a que la primera
+    // termine y comitee su costo real antes de leer `costoDelMes()`. Sin esto, dos
+    // corridas casi simultáneas podían ambas leer "restante > 0" antes de que
+    // cualquiera registrara su gasto, y juntas rebasar el techo mensual configurado.
+    // A5 (auditoria-2 agentico ALTO, REQ-AGT-020): serializa esta corrida contra
+    // cualquier otra corrida CONCURRENTE del MISMO (hotel, agente) -- el advisory
+    // lock es transaccional (se libera al COMMIT de esta transacción por-request,
+    // que incluye tanto la corrida del agente como el INSERT de `agent_run` con el
+    // costo real), así que una segunda petición concurrente espera a que la primera
+    // termine y comitee su costo real antes de leer `costoDelMes()`. Sin esto, dos
+    // corridas casi simultáneas podían ambas leer "restante > 0" antes de que
+    // cualquiera registrara su gasto, y juntas rebasar el techo mensual configurado.
+    await db.query("select public.lock_agent_budget($1, $2);", [hotelId, def.name]);
+
     const config = await resolveAgentConfig(db, hotelId, def);
     const consumidoAntes = await costoDelMes(db, hotelId, def.name);
     const restante = config.monthlyCeilingUsd - consumidoAntes;
@@ -374,17 +400,28 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     const modelSlug = resolveModelForRole(def.role);
     let provider: LlmProvider;
     if (body.demo) {
-      const { rows: roomRows } = await db.query<{ code: string }>(
-        "select code from public.room where hotel_id = $1 order by code limit 1;",
-        [hotelId],
-      );
-      provider = new FakeProvider(buildDemoScript(def.name, roomRows[0]?.code ?? "101"), modelSlug);
+      // DEMO-101 es un código SINTÉTICO, no una habitación real del hotel (aud-2
+      // agentico CRÍTICO): antes se tomaba "el primer cuarto real por código
+      // alfabético" de `public.room`, así que el guion de demo (que crea un ticket de
+      // mantenimiento con severity:"alta") podía terminar marcando una habitación
+      // VENDIBLE real como fuera de servicio si el gate del hotel ya no era "shadow".
+      provider = new FakeProvider(buildDemoScript(def.name, "DEMO-101"), modelSlug);
     } else {
       // Sin credenciales reales en este entorno: se declara `no_configurado` de forma
       // honesta (ver agent-core provider.ts) -- nunca una respuesta simulada haciéndose
       // pasar por real.
       provider = new EnvProvider();
     }
+
+    // aud-2 agentico CRÍTICO: la demo SIEMPRE corre en gate "shadow", sin importar el
+    // gate real configurado para (hotel, agente) -- es la única garantía estructural
+    // de que "Demo (simulada)" nunca ejecuta un efecto real (marcar una habitación
+    // fuera de servicio, crear una tarea real, enviar un WhatsApp real, etc.) en un
+    // hotel/agente que ya salió de shadow hacia "propone"/"autopilot". El MISMO guion
+    // (buildDemoScript) sigue corriendo para cualquier agente -- lo que cambia es que
+    // AgentRunner.run() (runner.ts) nunca llega a invocar `tool.run()` para ninguna
+    // tool write/external/money mientras el gate efectivo sea "shadow".
+    const gateEfectivo: AgentGate = body.demo ? "shadow" : config.gate;
 
     const pricing = def.role === "batch_nocturno" ? DEFAULT_BATCH_PRICING : DEFAULT_PRICING;
     const events: AgentTraceEvent[] = [];
@@ -402,6 +439,14 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       createRunBudget({ maxUsd: restante, maxMs: 60_000, maxTokens: 200_000 }),
     );
 
+    // MEDIO (auditoria-2 agentico): REQ-AGT-005/REQ-AGT-016 (TTFT <600ms p50 en voz) --
+    // `roleParamsForChannel()` (agent-core roles.ts) ya calculaba el effort correcto
+    // por canal desde la ronda 1, pero ningún código de apps/api lo llamaba: el único
+    // punto real de construcción de AgentRunner seguía usando `ROLE_PARAMS[def.role]`
+    // a secas, ignorando `body.canal`. Ahora se resuelve aquí y se reenvía al
+    // proveedor (provider.ts `LlmCompleteParams.effort`, agregado en este mismo fix).
+    const roleParams = roleParamsForChannel(def.role, body.canal);
+
     const runner = new AgentRunner({
       agentName: def.name,
       provider,
@@ -409,11 +454,12 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       approvalQueue,
       systemPrompt: def.systemPrompt,
       modelSlug,
-      temperature: ROLE_PARAMS[def.role].temperature,
+      temperature: roleParams.temperature,
+      effort: roleParams.effort,
       maxSteps: def.maxSteps,
       maxOutputTokensPerCall: def.maxOutputTokensPerCall,
       pricing,
-      gate: config.gate,
+      gate: gateEfectivo,
       disclosureMessage: def.disclosureMessage,
       onTrace: (event) => {
         events.push(event);
@@ -468,7 +514,7 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         def.role,
         provider.id,
         modelSlug,
-        config.gate,
+        gateEfectivo,
         result.status,
         result.steps,
         tokensIn,
@@ -492,7 +538,7 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       tokensEntrada: tokensIn,
       tokensSalida: tokensOut,
       costoUsd: costUsd,
-      gate: config.gate,
+      gate: gateEfectivo,
       aprobacionesPendientes: result.pendingApprovalIds,
       simulado: provider.id === "fake",
       modelo: modelSlug,

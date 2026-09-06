@@ -1,8 +1,13 @@
 // H7 · Sección "Agentes" (ADR-006): gate (shadow/propone/autopilot) y techo mensual por
 // agente, costo del mes con barra de progreso (o "sin datos" honesto), y una demo
 // determinista con FakeProvider (recorrido de check-in con incidencia, etiquetada
-// "simulado") que muestra qué habría hecho el agente en el gate configurado. Owner/gm
-// pueden cambiar gate/techo; el resto del staff solo ve el tablero.
+// "simulado") que muestra qué HARÍA el agente -- aud-2 agentico CRÍTICO: la demo
+// SIEMPRE corre en gate "shadow" forzado en el servidor (nunca el gate real
+// configurado, sin importar en qué gate esté el agente), así que ningún efecto real se
+// ejecuta sobre datos operativos del hotel; el panel muestra el gate EFECTIVO que
+// devuelve la API, no el gate configurado, para no sugerir que la demo corrió con el
+// gate de producción. Owner/gm pueden cambiar gate/techo; el resto del staff solo ve
+// el tablero.
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, Play, ShieldAlert } from "lucide-react";
@@ -205,7 +210,12 @@ export function Agentes() {
                         <div className="mt-2 rounded-md border border-border bg-muted/50 p-2 text-xs space-y-1">
                           <p>
                             <span className="font-medium">Resultado:</span> {resultado.estado}{" "}
-                            {resultado.simulado && <Badge variant="secondary">simulado</Badge>}
+                            {resultado.simulado && <Badge variant="secondary">simulado</Badge>}{" "}
+                            {resultado.simulado && (
+                              <Badge variant="outline" title="Una demo siempre corre en gate 'shadow', sin ejecutar ningún efecto real, sin importar el gate configurado del agente.">
+                                gate real de la demo: {resultado.gate}
+                              </Badge>
+                            )}
                           </p>
                           <p className="text-muted-foreground">{resultado.mensaje}</p>
                           {resultado.costoUsd != null && (

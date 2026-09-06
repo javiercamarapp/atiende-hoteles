@@ -1,0 +1,11 @@
+
+> atiende-hoteles@0.0.0 lint
+> eslint .
+
+
+/Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/.claude/worktrees/agent-aaf2f0432a5117a2a/tests/e2e/paridad-restaurantes-login.spec.ts
+  62:89  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 1 problem (0 errors, 1 warning)
+
+LINT_EXIT=0

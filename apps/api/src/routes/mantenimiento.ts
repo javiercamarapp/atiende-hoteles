@@ -135,9 +135,15 @@ export function mantenimientoRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     assertRole(c, ADMIN_ROLES);
     const db = c.get("db");
     const body = parseBody(asignarSchema, await c.req.json().catch(() => ({})));
+    // Descubierto incidentalmente al probar A6 (delegado de aprobación, que asigna un
+    // técnico para que la RLS de maintenance_ticket lo deje cerrar el ticket): $1 usado
+    // SOLO dentro de `case when $1 is not null ...` (sin otra ocurrencia que le dé tipo
+    // por columna) hace que Postgres no pueda inferir su tipo bajo el protocolo
+    // extendido ("could not determine data type of parameter $1") -- este endpoint
+    // fallaba con 500 en TODA llamada, sin ningún test que lo hubiera ejercitado antes.
     const { rows } = await db.query<{ id: string }>(
       `update public.maintenance_ticket
-       set assigned_to = $1, status = case when $1 is not null and status = 'abierto' then 'asignado' else status end,
+       set assigned_to = $1::uuid, status = case when $1::uuid is not null and status = 'abierto' then 'asignado' else status end,
            updated_at = now()
        where id = $2 and hotel_id = $3
        returning id;`,

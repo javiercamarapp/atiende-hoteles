@@ -56,17 +56,6 @@ export function aprobacionesWhatsappRoutes(deps: AppDeps): Hono<HonoEnvBindings>
     const decision = match[1] === "aprobar" ? "aprobar" : "rechazar";
     const approvalId = match[2]!;
 
-    // Idempotencia PERSISTENTE por event_id -- mismo criterio que mensajeria.ts:
-    // sobrevive a un reintento real de Meta sin volver a ejecutar la decisión.
-    const claim = await deps.engine.admin.query<{ id: string }>(
-      `insert into public.idempotency_key (tenant_id, scope, key)
-       values ($1, 'whatsapp.aprobacion_webhook', $2)
-       on conflict (tenant_id, scope, key) do nothing
-       returning id;`,
-      [configRows[0].tenant_id, event.eventId],
-    );
-    if (claim.rows.length === 0) return c.json({ estado: "duplicado" }, 200);
-
     const { rows: staffRows } = await deps.engine.admin.query<{ id: string; role: HotelRole }>(
       `select su.id, hs.role
        from public.staff_user su
@@ -79,11 +68,33 @@ export function aprobacionesWhatsappRoutes(deps: AppDeps): Hono<HonoEnvBindings>
       throw Errors.forbidden("El número de WhatsApp remitente no corresponde a un owner/gm de este hotel.");
     }
 
-    // `withAppSession` fija auth.uid()=staff.id (ADR-004): la RLS real de
-    // agent_approval/hotel_staff evalúa exactamente la misma membresía que evaluaría
-    // si este mismo owner/gm hubiera llamado el endpoint autenticado del panel web.
-    const resultado = await deps.engine.withAppSession({ userId: staff.id }, (session) =>
-      decidirYEjecutarAprobacion({
+    // backend ALTO (auditoria-2): la reclamación de idempotencia (`insert into
+    // idempotency_key`) y el efecto real (decidir + ejecutar la tool aprobada) ahora
+    // viven en la MISMA transacción (`withAppSession`), no en dos escrituras
+    // separadas -- antes, la reclamación se comiteaba de inmediato sobre
+    // `engine.admin` (autocommiteada, fuera de cualquier transacción) y el efecto se
+    // ejecutaba DESPUÉS en una transacción nueva e independiente. Un crash del
+    // proceso entre ambas dejaba el evento "reclamado" (consumido) sin que la
+    // aprobación se hubiera decidido -- un reintento de Meta con el mismo `event_id`
+    // entraba directo a "duplicado" sin volver a intentar el efecto real, perdiendo
+    // el clic del owner en silencio. Con ambas escrituras en la misma transacción,
+    // si el proceso muere a medio camino, Postgres revierte TODO (incluida la
+    // reclamación) -- un reintento de Meta vuelve a encontrar el evento libre y sí
+    // reintenta el efecto real. `withAppSession` fija auth.uid()=staff.id (ADR-004):
+    // la RLS real de agent_approval/hotel_staff evalúa exactamente la misma
+    // membresía que evaluaría si este mismo owner/gm hubiera llamado el endpoint
+    // autenticado del panel web.
+    const resultado = await deps.engine.withAppSession({ userId: staff.id }, async (session) => {
+      const claim = await session.query<{ id: string }>(
+        `insert into public.idempotency_key (tenant_id, scope, key)
+         values ($1, 'whatsapp.aprobacion_webhook', $2)
+         on conflict (tenant_id, scope, key) do nothing
+         returning id;`,
+        [configRows[0]!.tenant_id, event.eventId],
+      );
+      if (claim.rows.length === 0) return { duplicado: true as const };
+
+      const decidido = await decidirYEjecutarAprobacion({
         db: session,
         hotelId,
         approvalId,
@@ -92,10 +103,12 @@ export function aprobacionesWhatsappRoutes(deps: AppDeps): Hono<HonoEnvBindings>
         decision,
         textoExacto: `Decidido por botón de WhatsApp (${event.from}).`,
         requestId: c.get("requestId"),
-      }),
-    );
+      });
+      return { duplicado: false as const, decidido };
+    });
 
-    return c.json(resultado, 200);
+    if (resultado.duplicado) return c.json({ estado: "duplicado" }, 200);
+    return c.json(resultado.decidido, 200);
   });
 
   return app;

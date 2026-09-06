@@ -1,6 +1,6 @@
 // REQ-AGT-006 / GOB-035: PII redactada antes de persistir cualquier traza.
 import { describe, expect, it } from "vitest";
-import { redact } from "@atiende-hoteles/agent-core";
+import { maskPhoneFieldsForApproval, maskPhoneKeepLast4, redact } from "@atiende-hoteles/agent-core";
 
 describe("redact", () => {
   it("redacta un email", () => {
@@ -84,5 +84,44 @@ describe("redact", () => {
 
   it("devuelve cadena vacia intacta", () => {
     expect(redact("")).toBe("");
+  });
+});
+
+describe("maskPhoneKeepLast4 (T1, auditoria-2 tool-calling CRÍTICO)", () => {
+  it("deja visibles solo los últimos 4 dígitos, enmascara el resto con •", () => {
+    expect(maskPhoneKeepLast4("+5215599998888")).toBe("+•••••••••8888");
+  });
+
+  it("preserva separadores no-dígito (no altera la forma del texto)", () => {
+    expect(maskPhoneKeepLast4("+52 155 9999 8888")).toBe("+•• ••• •••• 8888");
+  });
+
+  it("el resultado NUNCA vuelve a coincidir con CARD_RE/PHONE_MX_RE (los • rompen la corrida de dígitos)", () => {
+    const masked = maskPhoneKeepLast4("+5215599998888");
+    expect(redact(masked)).toBe(masked); // redact() no lo vuelve a tocar
+  });
+});
+
+describe("maskPhoneFieldsForApproval (T1)", () => {
+  it("enmascara guestPhone pero deja el resto de los campos intacto", () => {
+    const out = maskPhoneFieldsForApproval({
+      guestPhone: "+5215599998888",
+      templateName: "confirmacion_pago",
+      parameters: ["Maria Lopez", "$8,750.00 MXN pagado, folio F-900"],
+    }) as Record<string, unknown>;
+    expect(out.guestPhone).toBe("+•••••••••8888");
+    expect(out.templateName).toBe("confirmacion_pago");
+    expect(out.parameters).toEqual(["Maria Lopez", "$8,750.00 MXN pagado, folio F-900"]);
+  });
+
+  it("no toca campos que no parecen teléfono", () => {
+    const out = maskPhoneFieldsForApproval({ montoMxn: 100, folio: "F-1" }) as Record<string, unknown>;
+    expect(out).toEqual({ montoMxn: 100, folio: "F-1" });
+  });
+
+  it("input no-objeto (null, primitivo, arreglo) se devuelve tal cual", () => {
+    expect(maskPhoneFieldsForApproval(null)).toBeNull();
+    expect(maskPhoneFieldsForApproval("x")).toBe("x");
+    expect(maskPhoneFieldsForApproval([1, 2])).toEqual([1, 2]);
   });
 });

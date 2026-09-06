@@ -244,12 +244,17 @@ export function foliosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
       { tenantId: orgId, scope: "charge.create", key: idempotencyKey, body },
       async () => {
         const taxConfig = await loadHotelMoneyConfig(db, hotelId);
-        // `impuesto` explícito (compatibilidad con integraciones/tests que ya lo
-        // calcularon aguas arriba) SIEMPRE se recalcula contra el motor determinista
-        // salvo que el concepto sea intrínsecamente sin impuesto -- nunca se confía en
-        // un impuesto que venga del cliente sin verificar (REQ-BO-001).
+        // F1/REQ-BO-001: el impuesto SIEMPRE lo calcula el motor determinista desde
+        // `hotel_tax_config` -- un cliente (incluido un rol de dinero como frontdesk)
+        // JAMÁS puede fijarlo. Si igual lo manda (compatibilidad con integraciones que
+        // ya lo calcularon aguas arriba), se exige que coincida EXACTO (tolerancia de
+        // un centavo por redondeo) con lo calculado aquí; si no coincide, 422 -- nunca
+        // se usa en silencio el valor del cliente sobre el calculado.
         const calc = computeChargeAmounts({ concept: body.concepto, netAmount: body.monto, taxConfig });
-        const taxAmount = body.impuesto != null && body.concepto !== "propina" ? body.impuesto : calc.taxAmount;
+        if (body.impuesto != null && Math.abs(body.impuesto - calc.taxAmount) > 0.01) {
+          throw Errors.impuestoNoCoincide(calc.taxAmount, body.impuesto);
+        }
+        const taxAmount = calc.taxAmount;
 
         const { rows } = await db.query<{ id: string }>(
           `insert into public.charge (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept)

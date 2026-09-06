@@ -51,6 +51,13 @@ export interface LlmCompleteParams {
    * debe honrarlo. Ver tambien el guardarraiz de refuerzo en AgentRunner.run() (aud-1
    * agentico.md ALTO: "disable_parallel_tool_use no anclado en ningun tipo/chequeo"). */
   readonly disableParallelToolUse: boolean;
+  /** MEDIO (auditoria-2 agentico): REQ-AGT-005/REQ-AGT-016 exigen effort bajo en
+   * canales de voz/WhatsApp (TTFT <600ms p50) -- antes `roleParamsForChannel()`
+   * (roles.ts) calculaba este valor pero ningún código de `apps/api` lo llamaba NI
+   * este tipo tenía dónde recibirlo, así que la corrección de la ronda 1 quedó
+   * huérfana (cubierta solo por su propio test unitario). Opcional: un
+   * `LlmProvider` real que no distinga effort puede ignorarlo. */
+  readonly effort?: "low" | "medium" | "high";
 }
 
 export interface LlmProvider {

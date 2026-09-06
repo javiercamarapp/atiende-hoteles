@@ -41,6 +41,12 @@ export interface ApprovalRequest {
   readonly inputSummary: string;
   status: ApprovalStatus;
   confirmations: ApprovalConfirmation[];
+  /** A4 (auditoria-2): ISO de cuando `markExecuted()` consumió esta aprobación, o
+   * `undefined` si todavía no se ejecutó ninguna tool con ella. Una aprobación
+   * "aprobada" es reutilizable por `request()` (misma tool+input+hotel+requestedBy
+   * dentro del TTL) -- este campo es lo que impide que una SEGUNDA lectura de esa
+   * misma fila "aprobada" dispare una SEGUNDA ejecución de la tool. */
+  executedAt?: string;
 }
 
 export interface RequestApprovalParams {
@@ -76,6 +82,12 @@ export interface ApprovalQueue {
   get(id: string): Promise<ApprovalRequest | undefined>;
   /** Barre pendientes vencidas -> "expirada". Devuelve cuantas se expiraron. */
   expirePending(now?: Date): Promise<number>;
+  /** A4 (auditoria-2): reclama ATOMICAMENTE la ejecucion de una aprobacion "aprobada"
+   * -- devuelve `true` SOLO la primera vez que se llama para un `id` dado (la llamada
+   * que de verdad debe ejecutar la tool); `false` en cualquier llamada posterior
+   * (incluida una concurrente que pierde la carrera), para que el llamador la trate
+   * como ya ejecutada y NUNCA vuelva a correr la tool. No cambia `status`. */
+  markExecuted(id: string, now?: Date): Promise<boolean>;
 }
 
 function sortKeysDeep(value: unknown): unknown {
@@ -240,6 +252,13 @@ export class InMemoryApprovalQueue implements ApprovalQueue {
 
   async get(id: string): Promise<ApprovalRequest | undefined> {
     return this.byId.get(id);
+  }
+
+  async markExecuted(id: string, now: Date = this.now()): Promise<boolean> {
+    const request = this.byId.get(id);
+    if (!request || request.executedAt) return false;
+    request.executedAt = now.toISOString();
+    return true;
   }
 
   async expirePending(now: Date = this.now()): Promise<number> {

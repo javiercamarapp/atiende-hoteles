@@ -22,6 +22,13 @@ export type ChargeConcept = (typeof CHARGE_CONCEPTS)[number];
  *  contraprestación del hotel; REQ-BO-001 exige "propina excluida del CFDI"). */
 const UNTAXED_CONCEPTS: ReadonlySet<ChargeConcept> = new Set(["propina", "descuento", "reverso"]);
 
+/** H16-010: el ISH de Quintana Roo grava SOLO la contraprestación por hospedaje --
+ *  "excluye alimentos y otros servicios si se desglosan" (docs/referencia/03, PDF H16
+ *  p.16). A&B/extras/ajuste/otro sí llevan IVA (son contraprestación gravada), pero
+ *  NUNCA ISH -- un concepto fuera de este set usa una tasa de ISH efectiva de 0%,
+ *  sin importar lo que diga `taxConfig.ishRate` del hotel. */
+const ISH_APPLICABLE_CONCEPTS: ReadonlySet<ChargeConcept> = new Set(["hospedaje"]);
+
 export interface ChargeCalcInput {
   concept: ChargeConcept;
   /** Monto neto (antes de impuestos) del concepto. */
@@ -45,10 +52,32 @@ export function computeChargeAmounts(input: ChargeCalcInput): ChargeCalcResult {
     const net = roundCurrency(input.netAmount);
     return { netAmount: net, taxAmount: 0, totalAmount: net };
   }
-  const breakdown = applyTaxes(input.netAmount, input.taxConfig);
+  const effectiveTaxConfig = ISH_APPLICABLE_CONCEPTS.has(input.concept)
+    ? input.taxConfig
+    : { ivaRate: input.taxConfig.ivaRate, ishRate: 0 };
+  const breakdown = applyTaxes(input.netAmount, effectiveTaxConfig);
   return {
     netAmount: breakdown.netAmount,
     taxAmount: roundCurrency(breakdown.ivaAmount + breakdown.ishAmount),
+    totalAmount: breakdown.totalAmount,
+  };
+}
+
+/** F3/H16 p.14 ("No-show/cancelación con penalidad"): la penalización de no-show SÍ
+ *  lleva IVA (criterio SAT: las penas convencionales por servicios están gravadas)
+ *  pero NUNCA ISH ("no hubo hospedaje") -- distinto del cargo de hospedaje normal
+ *  (`computeChargeAmounts("hospedaje", ...)`), que sí lleva ISH cuando aplica. Único
+ *  punto de cálculo para este cargo: ni `noShow.ts` ni `cfdi.ts` deben recalcularlo
+ *  cada uno por su cuenta (esa duplicación fue la causa raíz del CRÍTICO original:
+ *  dos rutas de cálculo que nunca se validaban entre sí). */
+export function computeNoShowPenaltyAmounts(netAmount: number, taxConfig: TaxConfig): ChargeCalcResult {
+  if (netAmount < 0) {
+    throw new RangeError("netAmount de una penalización de no-show no puede ser negativo.");
+  }
+  const breakdown = applyTaxes(netAmount, { ivaRate: taxConfig.ivaRate, ishRate: 0 });
+  return {
+    netAmount: breakdown.netAmount,
+    taxAmount: roundCurrency(breakdown.ivaAmount),
     totalAmount: breakdown.totalAmount,
   };
 }

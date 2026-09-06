@@ -31,6 +31,18 @@ export const Errors = {
     new ApiError(422, "idempotency_key_conflict", message),
   idempotencyRequired: () =>
     new ApiError(400, "idempotency_key_required", "El header Idempotency-Key es obligatorio para esta operación."),
+  /** F1/REQ-BO-001: el impuesto de un cargo SIEMPRE lo calcula el motor determinista
+   *  (`computeChargeAmounts`) desde `hotel_tax_config` -- un cliente jamás puede
+   *  fijarlo. Si el cliente manda `impuesto` de todos modos (compatibilidad con
+   *  integraciones que ya lo calcularon aguas arriba), se exige que coincida EXACTO
+   *  (tolerancia de un centavo) con lo que el motor calculó; si no coincide, 422 --
+   *  nunca se usa en silencio el valor del cliente. */
+  impuestoNoCoincide: (esperado: number, recibido: number) =>
+    new ApiError(
+      422,
+      "impuesto_no_coincide",
+      `El impuesto enviado (${recibido}) no coincide con el calculado por el motor fiscal (${esperado}). El impuesto siempre lo calcula el sistema, nunca el cliente.`,
+    ),
   rateLimited: (retryAfterSeconds: number, message = "Límite de solicitudes excedido. Intenta de nuevo en unos segundos.") =>
     new ApiError(429, "rate_limited", message, { "Retry-After": String(Math.max(0, Math.ceil(retryAfterSeconds))) }),
   internal: (message = "Ocurrió un error interno.") => new ApiError(500, "internal_error", message),

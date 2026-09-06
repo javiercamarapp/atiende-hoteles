@@ -19,7 +19,7 @@ import { ProviderUnavailableError } from "./errors.ts";
 import type { AgentGate } from "./roles.ts";
 import type { AgentTraceEvent, CostLedger } from "./trace.ts";
 import { estimateCostUsd, type PricingTable } from "./pricing.ts";
-import { redact } from "./redact.ts";
+import { maskPhoneFieldsForApproval, redact } from "./redact.ts";
 
 export interface AgentRunnerOptions {
   readonly agentName: string;
@@ -30,6 +30,11 @@ export interface AgentRunnerOptions {
   readonly systemPrompt: string;
   readonly modelSlug: string;
   readonly temperature: number;
+  /** MEDIO (auditoria-2 agentico): REQ-AGT-005/REQ-AGT-016 -- effort del modelo para
+   * esta corrida, típicamente `roleParamsForChannel(role, canal).effort` (roles.ts)
+   * resuelto por el llamador (apps/api) desde el canal real de la conversación
+   * (voz/texto). Se reenvía tal cual a `LlmProvider.complete()` en cada llamada. */
+  readonly effort?: "low" | "medium" | "high";
   /** Techo duro de rondas (loop-guard). */
   readonly maxSteps: number;
   readonly maxOutputTokensPerCall?: number;
@@ -95,7 +100,14 @@ function sortKeysForDisplay(value: unknown): unknown {
 /** Resumen legible del input REAL validado por Zod que recibio la tool, para que el
  * aprobador humano (GOB-026) sepa exactamente que esta autorizando -- monto, folio,
  * cualquier dato de negocio que traiga `parsed.data` -- nunca solo el nombre de la tool.
- * Redactado (nunca PII cruda en lo que se persiste como `textoExacto`/`audit_log`). */
+ * Redactado (nunca PII cruda en lo que se persiste como `textoExacto`/`audit_log`) --
+ * EXCEPTO el telefono destinatario (T1, auditoria-2 tool-calling CRITICO): `redact()`
+ * a ciegas sobre el JSON completo convertia `guestPhone` en "[TARJETA]"/"[TEL]",
+ * dejando al aprobador SIN forma de detectar un destinatario equivocado -- el propio
+ * dato que este mecanismo existe para que el humano pueda verificar. Un campo cuyo
+ * NOMBRE indica que es un telefono destinatario (`guestPhone` y variantes,
+ * `maskPhoneFieldsForApproval`) se enmascara PARCIALMENTE (ultimos 4 digitos
+ * visibles) ANTES de la redaccion ciega, en vez de ocultarse por completo. */
 function describeApprovalInput(input: unknown): string {
   if (input === null || input === undefined) {
     return "(sin datos adicionales del modelo)";
@@ -105,7 +117,7 @@ function describeApprovalInput(input: unknown): string {
     // identificadores reales vienen del ToolContext de la conversacion en curso.
     return "(sin datos en el input; los identificadores vienen del contexto de la conversacion en curso)";
   }
-  return redact(JSON.stringify(sortKeysForDisplay(input)));
+  return redact(JSON.stringify(sortKeysForDisplay(maskPhoneFieldsForApproval(input))));
 }
 
 export class AgentRunner {
@@ -164,6 +176,7 @@ export class AgentRunner {
           messages,
           toolNames: opts.tools.list().map((tool) => tool.name),
           temperature: opts.temperature,
+          effort: opts.effort,
           maxOutputTokens: opts.maxOutputTokensPerCall ?? 1024,
           // REQ-AGT-004 / aud-1 agentico.md ALTO: nunca se le pide al proveedor que
           // decida en paralelo dos (o mas) tool calls en la misma respuesta.
@@ -380,7 +393,18 @@ export class AgentRunner {
             input: parsed.data,
             orgId: ctx.orgId,
             hotelId: ctx.hotelId,
-            requestedBy: `agent:${opts.agentName}:${ctx.actor.id}`,
+            // T2 (auditoria-2 tool-calling CRÍTICO): cuando la corrida tiene un
+            // huésped vinculado (`ctx.guestPhone`, resuelto por la capa de sesión
+            // desde la reserva/conversación real -- NUNCA del modelo), se codifica
+            // aquí para que `createTransactionalTemplateApprovalQueue`
+            // (messagingTools.ts) pueda verificar que, cuando la plantilla es
+            // "transaccional", el destinatario que el modelo puso en el input sea
+            // EXACTAMENTE ese huésped -- nunca uno que el modelo haya elegido por su
+            // cuenta. Sin huésped vinculado, se usa actor+tipo como antes (sin
+            // afectar la idempotencia por requestedBy, solo el prefijo cambia).
+            requestedBy: ctx.guestPhone
+              ? `agent:${opts.agentName}:guest:${ctx.guestPhone}`
+              : `agent:${opts.agentName}:${ctx.actor.type}:${ctx.actor.id}`,
             isMoney: tool.effect === "money",
             textoMostrado:
               `${opts.agentName} solicita ejecutar "${tool.name}" en hotel ${ctx.hotelId} ` +
@@ -420,6 +444,29 @@ export class AgentRunner {
               toolCallId: call.id,
               toolName: call.name,
               content: `pendiente de aprobacion humana: ${approval.id}`,
+            });
+            continue;
+          }
+          // A4 (auditoria-2): `request()` reusa CUALQUIER solicitud vigente por
+          // (hotel,tool,hash(input),requestedBy) sin importar su status -- si el
+          // modelo propone la MISMA tool+input dentro del TTL (reintento, otro turno
+          // de la conversacion), esta rama vuelve a ver `status==="aprobada"` sobre
+          // la MISMA fila. `markExecuted()` es la reclamacion atomica: solo la
+          // PRIMERA vez que se llama para esta aprobacion devuelve `true`; cualquier
+          // llamada posterior (aqui o desde `aprobacionEjecutor.ts` fuera de banda)
+          // ve `false` y NUNCA vuelve a ejecutar la tool sin una decision humana
+          // nueva.
+          const puedeEjecutar = await opts.approvalQueue.markExecuted(approval.id);
+          if (!puedeEjecutar) {
+            this.emit(ctx, runId, step, "loop_guard", {
+              toolName: tool.name,
+              message: `solicitud ${approval.id} ya se ejecuto antes; no se repite sin una nueva decision humana`,
+            });
+            toolResultMessages.push({
+              role: "tool",
+              toolCallId: call.id,
+              toolName: call.name,
+              content: `esta accion ya se ejecuto con la aprobacion ${approval.id}; no se repite`,
             });
             continue;
           }
