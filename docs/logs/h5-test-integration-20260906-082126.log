@@ -1,0 +1,38 @@
+
+> atiende-hoteles@0.0.0 test:integration
+> vitest run --config vitest.config.ts tests/integration --pool=forks --poolOptions.forks.singleFork
+
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/.claude/worktrees/agent-af56cffb3db9542b5
+
+ ✓ tests/integration/audit-log-concurrencia.spec.ts (4 tests) 4974ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > SIN el arreglo: dos record_audit_log() concurrentes del mismo tenant producen dos filas con prev_hash null (cadena bifurcada)  1387ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > CON el arreglo (packages/db/migrations/0015, audit_log_chain_head + SELECT FOR UPDATE): dos escrituras concurrentes SIEMPRE forman una cadena de un solo enlace  996ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > CON el arreglo, 20 escrituras concurrentes reales (sin ningún pg_sleep inyectado) nunca bifurcan la cadena, repetido 8 veces para descartar suerte de scheduling  1550ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > dos tenants distintos escribiendo concurrentemente no se bloquean entre sí (el lock de la cabeza de cadena es por tenant, no global)  1039ms
+ ✓ tests/integration/contracts/cfdi/hospedaje.spec.ts (7 tests) 2704ms
+   ✓ REQ-BO-001 · contrato de CFDI de hospedaje (7 casos) > 6) anticipo: un CFDI puede relacionarse con uno previo (tipo de relación 07, registrado en related_cfdi_id)  426ms
+ ✓ tests/integration/folio/cargos-descuentos-reverso.spec.ts (7 tests) 2049ms
+ ✓ tests/integration/folio/split-transferencia-cierre.spec.ts (5 tests) 1365ms
+ ✓ tests/integration/cfdi/idempotencia-timbrado.spec.ts (4 tests) 1273ms
+ ✓ tests/integration/revenue/night-audit.spec.ts (5 tests) 1189ms
+ ✓ tests/integration/api/reservas-y-folios.spec.ts (8 tests) 1111ms
+ ✓ tests/integration/reservas/cancelacion-libera-inventario.spec.ts (3 tests) 888ms
+ ✓ tests/integration/folio/event-sourcing.spec.ts (1 test) 833ms
+ ✓ tests/integration/reservas/monto-exacto-multi-noche.spec.ts (2 tests) 740ms
+ ✓ tests/integration/reservas/folio-al-confirmar.spec.ts (2 tests) 765ms
+ ✓ tests/integration/api/auth-y-resumen.spec.ts (8 tests) 802ms
+ ✓ tests/integration/folio/pago-concurrente.spec.ts (2 tests) 735ms
+ ✓ tests/integration/reservas/overbooking-controlado.spec.ts (2 tests) 730ms
+ ✓ tests/integration/reservas/no-show-idempotente.spec.ts (3 tests) 691ms
+ ✓ tests/integration/reservas/modificacion-concurrencia.spec.ts (1 test) 691ms
+ ✓ tests/integration/reservas/disponibilidad-grid.spec.ts (2 tests) 621ms
+ ✓ tests/integration/outbox-atomicity.spec.ts (2 tests) 598ms
+ ✓ tests/integration/availability-concurrency.spec.ts (1 test) 584ms
+ ✓ tests/integration/fiscal/calendario-fiscal.spec.ts (2 tests) 591ms
+
+ Test Files  20 passed (20)
+      Tests  71 passed (71)
+   Start at  08:22:07
+   Duration  25.11s (transform 336ms, setup 0ms, collect 903ms, tests 23.93s, environment 0ms, prepare 54ms)
+

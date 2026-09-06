@@ -5,6 +5,8 @@
 // `server.ts` para correr de verdad.
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
+import { FakeStripeAdapter } from "@atiende-hoteles/mcp-payments";
+import { DualPacCfdiPort, FakeFinkokAdapter, FakeSwSapienAdapter } from "@atiende-hoteles/mcp-cfdi";
 import { authRoutes } from "./routes/auth.ts";
 import { healthRoutes } from "./routes/health.ts";
 import { hotelesRoutes } from "./routes/hoteles.ts";
@@ -13,15 +15,28 @@ import { reservasRoutes } from "./routes/reservas.ts";
 import { disponibilidadRoutes } from "./routes/disponibilidad.ts";
 import { huespedesRoutes } from "./routes/huespedes.ts";
 import { foliosRoutes } from "./routes/folios.ts";
+import { nightAuditRoutes } from "./routes/night-audit.ts";
+import { cfdiRoutes } from "./routes/cfdi.ts";
 import { quotesRoutes } from "./routes/quotes.ts";
 import { tarifasRoutes } from "./routes/tarifas.ts";
 import { cancelacionPublicaRoutes } from "./routes/cancelacionPublica.ts";
 import { toErrorBody } from "./lib/errors.ts";
 import { ipRateLimit, requestId, userRateLimit } from "./middleware.ts";
-import type { AppDeps, HonoEnvBindings } from "./types.ts";
+import type { AppDeps, HonoEnvBindings, ResolvedAppDeps } from "./types.ts";
 
 export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   const app = new Hono<HonoEnvBindings>();
+
+  // H5 · REQ-INT-002/REQ-INT-005: sin credenciales reales del PSP/PAC, `createApp`
+  // instancia UN adaptador simulado compartido por proceso (su idempotencia interna
+  // vive en memoria -- crear uno nuevo por request rompería esa garantía) etiquetado
+  // `simulated: true` (ver `status()` de cada adaptador) -- nunca se fabrica un
+  // resultado "real" para aparentar que la integración está completa.
+  const resolvedDeps: ResolvedAppDeps = {
+    ...deps,
+    payments: deps.payments ?? new FakeStripeAdapter(),
+    cfdi: deps.cfdi ?? new DualPacCfdiPort(new FakeFinkokAdapter(), new FakeSwSapienAdapter()),
+  };
 
   app.use("*", cors());
   app.use("*", requestId());
@@ -62,7 +77,9 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", reservasRoutes(deps));
   app.route("/", disponibilidadRoutes(deps));
   app.route("/", huespedesRoutes(deps));
-  app.route("/", foliosRoutes(deps));
+  app.route("/", foliosRoutes(resolvedDeps));
+  app.route("/", nightAuditRoutes(deps));
+  app.route("/", cfdiRoutes(resolvedDeps));
   app.route("/", quotesRoutes(deps));
   app.route("/", tarifasRoutes(deps));
   app.route("/", cancelacionPublicaRoutes(deps));

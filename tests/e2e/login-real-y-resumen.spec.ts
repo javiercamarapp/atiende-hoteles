@@ -72,7 +72,7 @@ test("login real (credenciales de la seed) → Resumen con cifras reales calcula
   let webProc: ChildProcess | null = null;
 
   try {
-    apiProc = spawn("node", ["--experimental-strip-types", "src/server.ts"], {
+    apiProc = spawn("node", ["--experimental-transform-types", "src/server.ts"], {
       cwd: API_DIR,
       detached: true,
       stdio: "pipe",

@@ -81,7 +81,7 @@ test("crear una reserva real desde /reservas (seeds reales) y verla en la tabla 
   let webProc: ChildProcess | null = null;
 
   try {
-    apiProc = spawn("node", ["--experimental-strip-types", "src/server.ts"], {
+    apiProc = spawn("node", ["--experimental-transform-types", "src/server.ts"], {
       cwd: API_DIR,
       detached: true,
       stdio: "pipe",

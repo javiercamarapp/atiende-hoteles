@@ -1,0 +1,1 @@
+REQ-REC-004 OK: 0 DELETE/TRUNCATE contra charge, payment, audit_log, reservation_status_event en apps/api/src ni en migraciones.

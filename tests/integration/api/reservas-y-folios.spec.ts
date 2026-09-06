@@ -176,7 +176,10 @@ describe("apps/api: reservas + disponibilidad + folios (integración real)", () 
     const paymentRes = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/pagos`, {
       method: "POST",
       headers: { ...auth(), "content-type": "application/json", "idempotency-key": paymentKey },
-      body: JSON.stringify({ monto: 1392, metodo: "tarjeta" }),
+      // H5 · REQ-REC-008: un pago con tarjeta SIEMPRE viaja como token opaco (nunca un
+      // número de tarjeta) -- `tokenPago` simula el token que devolvería el
+      // link/widget de pago del PSP.
+      body: JSON.stringify({ monto: 1392, metodo: "tarjeta", tokenPago: "tok_test_visa_4242" }),
     });
     expect(paymentRes.status).toBe(201);
 

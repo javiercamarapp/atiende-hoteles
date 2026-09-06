@@ -51,8 +51,8 @@ export async function seedDev(db: DbClient): Promise<SeedResult> {
   const orgId = orgRes.rows[0]!.id;
 
   const hotelDefs = [
-    { name: "Hotel Demo Centro" },
-    { name: "Hotel Demo Playa" },
+    { name: "Hotel Demo Centro", rfcEmisor: "HDC010101AB1" },
+    { name: "Hotel Demo Playa", rfcEmisor: "HDP020202CD2" },
   ];
 
   const roomTypeDefs = [
@@ -136,8 +136,9 @@ export async function seedDev(db: DbClient): Promise<SeedResult> {
     // para que el panel de configuración tenga algo real que listar/editar desde el
     // primer arranque, nunca un "sin dato" fabricado.
     await db.query(
-      "insert into public.hotel_tax_config (hotel_id, tenant_id, iva_rate, ish_rate) values ($1, $2, 0.16, 0.03);",
-      [hotelId, orgId],
+      `insert into public.hotel_tax_config (hotel_id, tenant_id, iva_rate, ish_rate, rfc_emisor)
+       values ($1, $2, 0.16, 0.03, $3);`,
+      [hotelId, orgId, hotelDef.rfcEmisor],
     );
     await db.query(
       `insert into public.hotel_cancellation_policy

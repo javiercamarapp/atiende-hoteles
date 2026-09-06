@@ -86,6 +86,25 @@ export async function runNoShowJob(
       [chargeAmount, reservation.id],
     );
 
+    // H5 · REQ-BO-001: la penalización de no-show se postea al folio como concepto
+    // 'hospedaje' (el CFDI de hospedaje la incluye igual que una noche real, "concepto
+    // de hospedaje con penalidad en no-show") -- SIN `stay_date` (no se ocupó ninguna
+    // noche), así que no choca con el índice de idempotencia del night audit.
+    if (chargeAmount > 0) {
+      const { rows: folioRows } = await db.query<{ id: string }>(
+        "select id from public.folio where reservation_id = $1 and is_primary;",
+        [reservation.id],
+      );
+      const folioId = folioRows[0]?.id;
+      if (folioId) {
+        await db.query(
+          `insert into public.charge (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept)
+           values ($1, $2, $3, 'Penalización por no-show', $4, 0, 'hospedaje');`,
+          [params.tenantId, params.hotelId, folioId, chargeAmount],
+        );
+      }
+    }
+
     await db.query(
       "select public.record_audit_log($1, $2, 'reservation.no_show', 'reservation', $3, $4);",
       [params.tenantId, params.hotelId, reservation.id, JSON.stringify({ chargeAmount })],

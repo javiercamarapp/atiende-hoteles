@@ -425,3 +425,201 @@ export async function obtenerPoliticaCancelacion(hotelId: string): Promise<Polit
 export async function actualizarPoliticaCancelacion(hotelId: string, input: PoliticaCancelacion): Promise<PoliticaCancelacion> {
   return request<PoliticaCancelacion>(`/hoteles/${hotelId}/politica-cancelacion`, { method: "PUT", body: JSON.stringify(input) });
 }
+
+// ---- Folio: cargos/pagos/descuentos/reverso/transferencia/split/cierre (H5) ----
+
+export type ConceptoCargo = "hospedaje" | "ab" | "extras" | "ajuste" | "propina" | "otro";
+
+export interface CargoFolio {
+  id: string;
+  concepto: string;
+  descripcion: string;
+  monto: number;
+  impuesto: number;
+  revertidoPor: string | null;
+  reversaDe: string | null;
+  transferidoDe: string | null;
+  creadoEn: string;
+}
+
+export interface PagoFolio {
+  id: string;
+  monto: number;
+  metodo: string;
+  estado: string;
+  referenciaExterna: string | null;
+  creadoEn: string;
+}
+
+export interface Folio {
+  id: string;
+  estado: "abierto" | "cerrado";
+  reservationId: string;
+  etiqueta: string;
+  esPrincipal: boolean;
+  cerradoEn: string | null;
+  motivoCierre: string | null;
+  cargos: CargoFolio[];
+  pagos: PagoFolio[];
+  saldo: number;
+}
+
+function claveIdempotenciaFolio(): string {
+  return crypto.randomUUID();
+}
+
+export async function obtenerFolio(hotelId: string, folioId: string): Promise<Folio> {
+  return request<Folio>(`/hoteles/${hotelId}/folios/${folioId}`);
+}
+
+export async function listarFoliosDeReserva(hotelId: string, reservationId: string): Promise<Folio[]> {
+  return request<Folio[]>(`/hoteles/${hotelId}/reservas/${reservationId}/folios`);
+}
+
+export async function crearCargo(
+  hotelId: string,
+  folioId: string,
+  input: { descripcion: string; monto: number; concepto: ConceptoCargo },
+): Promise<{ id: string }> {
+  return request(`/hoteles/${hotelId}/folios/${folioId}/cargos`, {
+    method: "POST",
+    headers: { "idempotency-key": claveIdempotenciaFolio() },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function crearDescuento(
+  hotelId: string,
+  folioId: string,
+  input: { descripcion: string; monto: number; autorizadoPorUserId?: string | null },
+): Promise<{ id: string }> {
+  return request(`/hoteles/${hotelId}/folios/${folioId}/descuentos`, {
+    method: "POST",
+    headers: { "idempotency-key": claveIdempotenciaFolio() },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function reversarCargo(hotelId: string, folioId: string, chargeId: string, motivo: string): Promise<{ id: string }> {
+  return request(`/hoteles/${hotelId}/folios/${folioId}/cargos/${chargeId}/reverso`, {
+    method: "POST",
+    headers: { "idempotency-key": claveIdempotenciaFolio() },
+    body: JSON.stringify({ motivo }),
+  });
+}
+
+export async function transferirCargo(
+  hotelId: string,
+  folioId: string,
+  chargeId: string,
+  folioDestinoId: string,
+): Promise<{ id: string }> {
+  return request(`/hoteles/${hotelId}/folios/${folioId}/cargos/${chargeId}/transferir`, {
+    method: "POST",
+    headers: { "idempotency-key": claveIdempotenciaFolio() },
+    body: JSON.stringify({ folioDestinoId }),
+  });
+}
+
+export async function splitFolio(hotelId: string, folioId: string, etiqueta: string, chargeIds: string[]): Promise<{ id: string }> {
+  return request(`/hoteles/${hotelId}/folios/${folioId}/split`, {
+    method: "POST",
+    headers: { "idempotency-key": claveIdempotenciaFolio() },
+    body: JSON.stringify({ etiqueta, chargeIds }),
+  });
+}
+
+export async function crearPago(
+  hotelId: string,
+  folioId: string,
+  input: { monto: number; metodo: "efectivo" | "transferencia" | "tarjeta"; tokenPago?: string },
+): Promise<{ id: string; estado: string }> {
+  return request(`/hoteles/${hotelId}/folios/${folioId}/pagos`, {
+    method: "POST",
+    headers: { "idempotency-key": claveIdempotenciaFolio() },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function cerrarFolio(
+  hotelId: string,
+  folioId: string,
+  input: { motivo: "saldo_cero" | "cuenta_por_cobrar"; autorizadoPorUserId?: string | null },
+): Promise<{ id: string; estado: string; saldo: number }> {
+  return request(`/hoteles/${hotelId}/folios/${folioId}/cerrar`, { method: "POST", body: JSON.stringify(input) });
+}
+
+// ---- Night audit (H5) ----
+
+export interface NightAuditSummary {
+  businessDate: string;
+  postedCharges: { reservationId: string; folioId: string; amount: number; taxAmount: number }[];
+  noShows: { reservationId: string; chargeAmount: number }[];
+  cargosPorConcepto: Record<string, number>;
+  pagosPorMetodo: Record<string, number>;
+  ocupacion: { enCasa: number };
+  conciliacionAB: { estado: string };
+  yaCompletado: boolean;
+}
+
+export interface NightAuditHistorialFila {
+  fecha: string;
+  estado: string;
+  completadoEn: string | null;
+}
+
+export async function ejecutarNightAudit(hotelId: string, businessDate?: string): Promise<NightAuditSummary> {
+  return request(`/hoteles/${hotelId}/night-audit`, { method: "POST", body: JSON.stringify({ businessDate }) });
+}
+
+export async function listarNightAuditHistorial(hotelId: string): Promise<NightAuditHistorialFila[]> {
+  return request(`/hoteles/${hotelId}/night-audit`);
+}
+
+// ---- CFDI de hospedaje (H5, pendiente de PAC real) ----
+
+export interface CfdiEmitido {
+  id: string;
+  folioId: string;
+  tipo: "hospedaje" | "pago";
+  uuidFiscal: string | null;
+  estado: string;
+  pac: string | null;
+  subtotal: number;
+  iva: number;
+  total: number;
+  rfcReceptor: string;
+  esExtranjero: boolean;
+  esGlobal: boolean;
+  esNoShow: boolean;
+  creadoEn: string;
+  canceladoEn: string | null;
+}
+
+export async function listarCfdiDelHotel(hotelId: string): Promise<CfdiEmitido[]> {
+  return request(`/hoteles/${hotelId}/cfdi`);
+}
+
+export async function listarCfdiDeFolio(hotelId: string, folioId: string): Promise<CfdiEmitido[]> {
+  return request(`/hoteles/${hotelId}/folios/${folioId}/cfdi`);
+}
+
+export async function emitirCfdiHospedaje(
+  hotelId: string,
+  folioId: string,
+  input: { rfcReceptor?: string; usoCfdi?: string; metodoPago: "PUE" | "PPD"; esExtranjero?: boolean; esGlobal?: boolean },
+): Promise<{ id: string; uuidFiscal: string; estado: string }> {
+  return request(`/hoteles/${hotelId}/folios/${folioId}/cfdi`, {
+    method: "POST",
+    headers: { "idempotency-key": claveIdempotenciaFolio() },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function cancelarCfdi(hotelId: string, cfdiId: string, motivo: "01" | "02" | "03" | "04"): Promise<{ id: string; estado: string }> {
+  return request(`/hoteles/${hotelId}/cfdi/${cfdiId}/cancelar`, {
+    method: "POST",
+    headers: { "idempotency-key": claveIdempotenciaFolio() },
+    body: JSON.stringify({ motivo }),
+  });
+}
