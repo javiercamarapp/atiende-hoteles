@@ -75,3 +75,4 @@
 2026-09-06 11:29:00 ciclo=34 evento=USUARIO_amplía_alcance→H12 despacho=H12a(#53),H12b(#54)
 2026-09-06 11:30:40 ciclo=34 evento=despacho inventario(#55) H12a(#53) verificados sonnet
 2026-09-06 11:31:47 ciclo=35 evento=loteA_completo esperando=B,C,inventario,H12a
+2026-09-06 11:40:46 ciclo=36 evento=inventario_completo LAUNCH=29 despacho=H12b(#56),H12c(#57)
