@@ -1,0 +1,17 @@
+
+> atiende-hoteles@0.0.0 test:adversarial
+> vitest run --config vitest.config.ts tests/adversarial --pool=forks --poolOptions.forks.singleFork
+
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging
+
+ ✓ tests/adversarial/reserva-concurrencia-y-limites.spec.ts (5 tests) 1861ms
+ ✓ tests/adversarial/roles.spec.ts (20 tests) 1324ms
+ ✓ tests/adversarial/aislamiento-tenant-hotel.spec.ts (3 tests) 687ms
+
+ Test Files  3 passed (3)
+      Tests  28 passed (28)
+   Start at  05:40:13
+   Duration  4.21s (transform 79ms, setup 0ms, collect 187ms, tests 3.87s, environment 0ms, prepare 32ms)
+
+test:adversarial exit: 0

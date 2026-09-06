@@ -1,0 +1,42 @@
+[WebServer] (node:42505) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] 5:40:27 AM [vite] warning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-swc" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] You or a plugin you are using have set `optimizeDeps.esbuildOptions` but this option is now deprecated. Vite now uses Rolldown to optimize the dependencies. Please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] `esbuild` option is set to false, but `oxc` option was not set to false. `esbuild: false` does not have effect any more. If you want to disable the default transformation, which is now handled by Oxc, please set `oxc: false` instead.
+
+Running 16 tests using 5 workers
+
+(node:42510) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:42506) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:42508) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:42507) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:42509) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:16:3 › Paridad visual — capturas hoteles › login (983ms)
+  ✓   6 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:23:3 › Paridad visual — capturas hoteles › resumen (542ms)
+  ✓   4 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: login sin violaciones serias/críticas (1.8s)
+  ✓   5 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: login sin violaciones serias/críticas (1.9s)
+  ✓   7 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:31:3 › Paridad visual — capturas hoteles › reservas (902ms)
+(node:42763) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   8 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: resumen sin violaciones serias/críticas (1.8s)
+  -  10 [mobile] › ../../tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API
+  ✓   9 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: resumen sin violaciones serias/críticas (1.9s)
+  ✓   3 [desktop] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura) (4.0s)
+  -  12 [mobile] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura)
+(node:42789) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 [desktop] › ../../tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API (4.6s)
+  ✓  11 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: reservas sin violaciones serias/críticas (1.6s)
+  ✓  13 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: reservas sin violaciones serias/críticas (1.6s)
+  ✓  14 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:16:3 › Paridad visual — capturas hoteles › login (649ms)
+  ✓  15 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:23:3 › Paridad visual — capturas hoteles › resumen (421ms)
+  ✓  16 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:31:3 › Paridad visual — capturas hoteles › reservas (436ms)
+
+  2 skipped
+  14 passed (7.7s)
+e2e exit: 0
