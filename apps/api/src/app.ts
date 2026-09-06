@@ -109,9 +109,13 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
     await next();
     const durationMs = Date.now() - start;
     const route = c.req.routePath || c.req.path;
-    deps.metrics.recordRequest(route, c.req.method, c.res.status, durationMs);
+    // auditoria-2/operabilidad [MEDIO]: etiqueta `hotel` en las métricas HTTP -- antes
+    // no existía ninguna forma de desglosar tráfico/errores/reservas por hotel desde
+    // `/metrics` sin cruzar contra los logs estructurados.
+    const hotelIdParaMetricas = c.get("hotelIds")?.[0];
+    deps.metrics.recordRequest(route, c.req.method, c.res.status, durationMs, hotelIdParaMetricas);
     if (c.req.method === "POST" && route === "/hoteles/:hotelId/reservas" && c.res.status === 201) {
-      deps.metrics.incrementReservationsCreated();
+      deps.metrics.incrementReservationsCreated(hotelIdParaMetricas);
     }
     deps.logger.info(
       {

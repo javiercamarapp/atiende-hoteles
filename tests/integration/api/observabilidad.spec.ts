@@ -163,7 +163,33 @@ describe("H8: observabilidad + seguridad de transporte (integración real)", () 
         headers: { authorization: `Bearer ${gmToken}` },
       });
       const body = await (await localApp.request("/metrics")).text();
-      expect(body).toMatch(/http_errors_total\{method="GET",route="\/hoteles\/:hotelId\/folios\/:folioId"\} [1-9]\d*/);
+      // auditoria-2/operabilidad [MEDIO]: ahora lleva etiqueta `hotel` (orden
+      // alfabético de labelKey: hotel,method,route) -- antes de este fix no existía
+      // ninguna forma de desglosar el error 5xx por hotel desde /metrics.
+      expect(body).toMatch(
+        new RegExp(`http_errors_total\\{hotel="${hotelId}",method="GET",route="/hoteles/:hotelId/folios/:folioId"\\} [1-9]\\d*`),
+      );
+    });
+
+    it("los contadores de reservas creadas y de requests HTTP llevan etiqueta hotel (auditoria-2/operabilidad MEDIO)", async () => {
+      const metrics = new MetricsRegistry();
+      const localDeps: AppDeps = { ...deps, metrics, logger: capturingLogger().logger };
+      const localApp = createApp(localDeps);
+      await localApp.request(`/hoteles/${hotelId}/disponibilidad`, { headers: { authorization: `Bearer ${gmToken}` } });
+
+      const roomTypeId = seed.hotels[0]!.roomTypes[0]!.id;
+      const creada = await localApp.request(`/hoteles/${hotelId}/reservas`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${gmToken}`, "content-type": "application/json", "idempotency-key": randomUUID() },
+        body: JSON.stringify({ roomTypeId, checkInDate: "2026-10-01", checkOutDate: "2026-10-02" }),
+      });
+      expect(creada.status).toBe(201);
+
+      const body = await (await localApp.request("/metrics")).text();
+      expect(body).toMatch(
+        new RegExp(`http_requests_total\\{hotel="${hotelId}",method="GET",route="/hoteles/:hotelId/disponibilidad",status="200"\\} 1`),
+      );
+      expect(body).toMatch(new RegExp(`reservations_created_total\\{hotel="${hotelId}"\\} 1`));
     });
   });
 
