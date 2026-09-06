@@ -6,9 +6,25 @@ Node ≥22 (probado con Node 25.6.1), JWT propio (`jose`, HS256), RLS real de
 reintentos y rate limiting.
 
 No hay paso de *build*/*bundle*: el servidor corre el TypeScript fuente directamente
-con el *type stripping* nativo de Node (`node --experimental-strip-types`), igual que
-`packages/db/src/cli.ts`. `npm run build` (raíz o en este paquete) solo tipa-chequea —
-no genera `dist/`.
+con el *type stripping* nativo de Node, con el flag `--experimental-transform-types`
+(ver `dev`/`start` en `package.json` — NO `--experimental-strip-types`, que solo borra
+sintaxis de tipos sin transformarla; `--experimental-transform-types` sí transforma
+azúcar como *parameter properties*, que agent-core/mcp-servers usan). `npm run build`
+(raíz o en este paquete) solo tipa-chequea — no genera `dist/`.
+
+**auditoria-2/arquitectura [ALTO], corregido**: este README (y 8+ archivos más)
+afirmaban `--experimental-strip-types` como "el runtime real de apps/api" cuando el
+flag real ya era `--experimental-transform-types` desde H5 (ver
+`docs/PROGRESO.md`, entradas H5/H6b) — quien leyera la afirmación vieja y "corrigiera"
+`apps/api/package.json` de vuelta a `--experimental-strip-types` para que coincidiera
+con la documentación habría tumbado el arranque completo del backend (`app.ts` importa
+`@atiende-hoteles/mcp-payments`/`mcp-cfdi`, que dependen de módulos con *parameter
+properties*). `scripts/check-runtime-flags.ts` (`npm run check:runtime-flags`) falla en
+CI si el flag de `apps/api/package.json` y el que documentan estos archivos vuelven a
+divergir, para que este mismo defecto no pueda repetirse una cuarta vez sin que algo lo
+note antes de fusionar a `main` (`packages/db/src/cli.ts` NO necesita este flag: no
+importa ningún módulo con *parameter properties*, así que el *type stripping* por
+defecto de Node ≥23.6 le basta sin ninguna bandera explícita).
 
 ## Cómo correr
 

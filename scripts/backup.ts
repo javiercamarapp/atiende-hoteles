@@ -20,6 +20,16 @@
 // Uso:
 //   node --experimental-strip-types scripts/backup.ts [--out-dir <dir>]
 //   PG_DUMP_BIN=/ruta/a/pg_dump node --experimental-strip-types scripts/backup.ts
+//
+// auditoria-2/arquitectura [ALTO]: `--experimental-strip-types` (que SOLO borra
+// sintaxis de tipos, sin transformarla) es correcto AQUÍ y verificado empíricamente
+// (este script solo importa `@atiende-hoteles/db` + `./lib/pgClientBin.ts`, ninguno
+// usa "parameter properties" de TypeScript) -- a diferencia de `apps/api`
+// ("dev"/"start" en apps/api/package.json), que SÍ necesita
+// `--experimental-transform-types` desde H5 porque importa `@atiende-hoteles/mcp-payments`/
+// `mcp-cfdi` (que sí usan ese azúcar). No copies este flag a un script nuevo sin
+// verificar primero qué importa: `scripts/check-runtime-flags.ts` vigila la
+// documentación de `apps/api`, no la de este archivo.
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, statSync } from "node:fs";
 import { join } from "node:path";

@@ -9,11 +9,23 @@
  *
  * H6b: todos los constructores usan campos explícitos, NUNCA el azúcar de TypeScript
  * "parameter properties" (`constructor(readonly x: T)`) -- ese azúcar no está soportado
- * por el modo "strip types" de Node (`node --experimental-strip-types`, el runtime real
- * de apps/api, ver apps/api/package.json "dev"/"start"): con el azúcar, cargar este
- * módulo en tiempo de ejecución tumbaba el proceso completo con
+ * por el modo de solo "strip types" de Node (`node --experimental-strip-types`, que
+ * BORRA la sintaxis de tipos sin transformarla): con el azúcar, cargar este módulo en
+ * tiempo de ejecución tumbaba el proceso completo con
  * `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` en cuanto apps/api empezó a depender de un
  * adaptador de packages/mcp-servers (H6b conecta WhatsApp por primera vez a runtime).
+ *
+ * auditoria-2/arquitectura [ALTO], corregido: este comentario decía que el runtime real
+ * de apps/api ERA `--experimental-strip-types` -- desde H5, `apps/api/package.json`
+ * ("dev"/"start") usa `--experimental-transform-types` (SÍ transforma *parameter
+ * properties*, no solo las borra). La regla de "campos explícitos, nunca *parameter
+ * properties*" sigue siendo la disciplina correcta para ESTE paquete (mantiene el
+ * código válido bajo el modo más estricto, `--experimental-strip-types`, que sigue
+ * siendo el usado por `packages/db/src/cli.ts`/scripts que no dependen de este
+ * paquete) -- pero ya no es lo único que evita el crash: `scripts/check-runtime-flags.ts`
+ * (`npm run check:runtime-flags`) falla en CI si `apps/api/package.json` alguna vez
+ * vuelve a `--experimental-strip-types` sin que este paquete (y `whatsapp`) también se
+ * hayan limpiado de *parameter properties* primero.
  */
 
 /** Clase base de todos los errores de un puerto de integración. */

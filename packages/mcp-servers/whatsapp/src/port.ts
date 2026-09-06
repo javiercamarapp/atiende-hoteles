@@ -123,9 +123,14 @@ export type WhatsappWebhookEvent = z.infer<typeof WhatsappWebhookEvent>;
 /** Se lanza cuando el hotel ya agotó su cupo de conversaciones iniciadas por negocio en la ventana de 24h. */
 export class MessagingTierLimitError extends Error {
   readonly code = "messaging_tier_limit_exceeded";
-  // H6b: campos explicitos, no "parameter properties" (incompatibles con
-  // `node --experimental-strip-types`, el runtime real de apps/api -- ver el mismo
-  // comentario en packages/mcp-servers/shared/src/errors.ts).
+  // H6b: campos explicitos, no "parameter properties" (incompatibles con el modo de
+  // solo "strip types" de Node, `node --experimental-strip-types` -- ver el mismo
+  // comentario en packages/mcp-servers/shared/src/errors.ts). auditoria-2/arquitectura
+  // [ALTO], corregido: apps/api YA NO usa ese flag desde H5 (usa
+  // --experimental-transform-types, que si transforma parameter properties) -- este
+  // archivo sigue evitando el azucar para seguir siendo valido bajo el modo mas
+  // estricto (scripts/check-runtime-flags.ts vigila que package.json y la
+  // documentacion no diverjan de nuevo).
   readonly tier: MessagingTier;
   readonly limit: number;
 

@@ -74,8 +74,18 @@ un *scheduler* de proceso separado corriendo `drainOutboxOnce` en bucle (ver
 cron/`setInterval` en el propio proceso de `apps/api` vs. un worker aparte); mientras
 tanto, se puede drenar a mano:
 
+auditoria-2/arquitectura [ALTO], corregido: este comando usaba
+`--experimental-strip-types`, documentado en 9+ archivos como "el runtime real de
+apps/api" cuando el flag real es `--experimental-transform-types` desde H5 (ver
+`apps/api/package.json` "dev"/"start"). `import { drainOutboxOnce } from
+"@atiende-hoteles/api"` evalúa el índice completo del paquete (`src/index.ts` reexporta
+`createApp` de `app.ts`, que importa `@atiende-hoteles/mcp-payments`/`mcp-cfdi` — dos de
+los paquetes con *parameter properties*, ver `scripts/check-runtime-flags.ts`) — con
+`--experimental-strip-types` este comando literalmente falla con
+`ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX`, reproducible tal cual en esta máquina.
+
 ```bash
-node --experimental-strip-types -e '
+node --experimental-transform-types -e '
 import { openEmbeddedPostgres, applyMigrations } from "@atiende-hoteles/db";
 import { drainOutboxOnce } from "@atiende-hoteles/api";
 const engine = await openEmbeddedPostgres({ databaseDir: "packages/db/.pgdata", port: 54329, persistent: true });

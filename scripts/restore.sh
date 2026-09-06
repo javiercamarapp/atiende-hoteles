@@ -20,4 +20,8 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 
+# auditoria-2/arquitectura [ALTO]: --experimental-strip-types es correcto aquí --
+# scripts/restore.ts no importa nada con "parameter properties" de TypeScript, a
+# diferencia de apps/api (que sí necesita --experimental-transform-types desde H5).
+# Ver el comentario completo en scripts/backup.ts.
 exec node --experimental-strip-types scripts/restore.ts "$@"

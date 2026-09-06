@@ -17,6 +17,7 @@
     "db:migrate": "node packages/db/src/cli.ts migrate",
     "db:reset": "node packages/db/src/cli.ts reset",
     "check:migraciones": "node --experimental-strip-types scripts/check-migraciones.ts",
+    "check:runtime-flags": "node --experimental-strip-types scripts/check-runtime-flags.ts",
     "audit:deps": "npm audit --audit-level=high"
   },
   "devDependencies": {
