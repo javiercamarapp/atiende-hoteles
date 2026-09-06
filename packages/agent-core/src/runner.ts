@@ -1,0 +1,332 @@
+// AgentRunner: bucle de tool-calling con loop-guard, presupuesto, fallback de proveedor
+// y salida siempre cerrada hacia el humano (ADR-006, patron Likida `generateWithTools`
+// en docs/referencia/06-backoffice-agentes-likida.md §2.6). Ninguna rama de este bucle
+// termina en silencio: toda salida es un AgentRunResult con `status` y `message`
+// explicitos.
+
+import { randomUUID } from "node:crypto";
+import type { ToolContext } from "./context.ts";
+import { type ToolRegistry } from "./tool.ts";
+import type { ApprovalQueue } from "./approval.ts";
+import { hashApprovalInput } from "./approval.ts";
+import {
+  ProviderTransientError,
+  type LlmCompletion,
+  type LlmMessage,
+  type LlmProvider,
+} from "./provider.ts";
+import { ProviderUnavailableError, ProviderNotImplementedError } from "./errors.ts";
+import type { AgentGate } from "./roles.ts";
+import type { AgentTraceEvent, CostLedger } from "./trace.ts";
+import { estimateCostUsd, type PricingTable } from "./pricing.ts";
+import { redact } from "./redact.ts";
+
+export interface AgentRunnerOptions {
+  readonly agentName: string;
+  readonly provider: LlmProvider;
+  readonly fallbackProvider?: LlmProvider;
+  readonly tools: ToolRegistry;
+  readonly approvalQueue: ApprovalQueue;
+  readonly systemPrompt: string;
+  readonly modelSlug: string;
+  readonly temperature: number;
+  /** Techo duro de rondas (loop-guard). */
+  readonly maxSteps: number;
+  readonly maxOutputTokensPerCall?: number;
+  readonly pricing: PricingTable;
+  readonly gate: AgentGate;
+  /** Tools cuyo resultado no vuelve al modelo (Likida §2.6 `terminalTools`): son las
+   * unicas que se permiten ejecutar en la ultima ronda del loop-guard. */
+  readonly terminalToolNames?: readonly string[];
+  readonly costLedger?: CostLedger;
+  readonly onTrace?: (event: AgentTraceEvent) => void;
+}
+
+export type AgentRunStatus =
+  | "completado"
+  | "esperando_aprobacion"
+  | "agotado_pasos"
+  | "presupuesto_agotado"
+  | "no_configurado"
+  | "error_proveedor"
+  | "truncado";
+
+export interface AgentRunResult {
+  readonly status: AgentRunStatus;
+  readonly runId: string;
+  readonly finalText: string | null;
+  readonly steps: number;
+  readonly pendingApprovalIds: string[];
+  /** Mensaje SIEMPRE cerrado hacia el humano: nunca "se trabo" en silencio. */
+  readonly message: string;
+}
+
+export class AgentRunner {
+  constructor(private readonly options: AgentRunnerOptions) {}
+
+  async run(ctx: ToolContext, userMessage: string): Promise<AgentRunResult> {
+    const opts = this.options;
+    const runId = randomUUID();
+    const messages: LlmMessage[] = [{ role: "user", content: userMessage }];
+    const pendingApprovalIds: string[] = [];
+    const terminal = new Set(opts.terminalToolNames ?? []);
+
+    let activeProvider = opts.provider;
+    let usedFallback = false;
+    let lastToolSignature: string | undefined;
+    let step = 0;
+
+    this.emit(ctx, runId, 0, "run_started", {});
+
+    while (step < opts.maxSteps) {
+      if (ctx.budget.agotado()) {
+        this.emit(ctx, runId, step, "budget_exceeded", {});
+        return this.close(
+          runId,
+          step,
+          "presupuesto_agotado",
+          null,
+          pendingApprovalIds,
+          "El presupuesto (tokens/tiempo/costo) de esta corrida se agoto antes de terminar; " +
+            "se detiene para que un humano revise, no se sigue en silencio.",
+        );
+      }
+
+      const isLastRound = step === opts.maxSteps - 1;
+
+      let completion: LlmCompletion;
+      try {
+        completion = await activeProvider.complete({
+          modelSlug: opts.modelSlug,
+          system: opts.systemPrompt,
+          messages,
+          toolNames: opts.tools.list().map((tool) => tool.name),
+          temperature: opts.temperature,
+          maxOutputTokens: opts.maxOutputTokensPerCall ?? 1024,
+        });
+      } catch (err) {
+        if (err instanceof ProviderTransientError && !usedFallback && opts.fallbackProvider) {
+          usedFallback = true;
+          activeProvider = opts.fallbackProvider;
+          this.emit(ctx, runId, step, "provider_fallback", { message: redact(err.message) });
+          continue; // reintenta la MISMA ronda con el fallback; ninguna tool ya ejecutada se repite
+        }
+        if (err instanceof ProviderUnavailableError) {
+          this.emit(ctx, runId, step, "error", { message: redact(err.message) });
+          return this.close(runId, step, "no_configurado", null, pendingApprovalIds, err.message);
+        }
+        const message =
+          err instanceof ProviderNotImplementedError
+            ? err.message
+            : "El proveedor de modelo fallo y no hay fallback disponible (o ya se uso); " +
+              "la corrida se cierra explicitamente, no se cuelga.";
+        this.emit(ctx, runId, step, "error", { message: redact((err as Error).message) });
+        return this.close(runId, step, "error_proveedor", null, pendingApprovalIds, message);
+      }
+
+      const costUsd = estimateCostUsd(
+        opts.pricing,
+        completion.modelSlug,
+        completion.usage.inputTokens,
+        completion.usage.outputTokens,
+      );
+      ctx.budget.registrarTokens(completion.usage.inputTokens, completion.usage.outputTokens);
+      ctx.budget.registrarCostoUsd(costUsd);
+      opts.costLedger?.registrar(ctx.hotelId, completion.modelSlug, costUsd);
+      this.emit(ctx, runId, step, "llm_call", {
+        modelSlug: completion.modelSlug,
+        tokensIn: completion.usage.inputTokens,
+        tokensOut: completion.usage.outputTokens,
+        costUsd,
+      });
+
+      if (completion.truncated) {
+        this.emit(ctx, runId, step, "error", { message: "respuesta truncada por limite de tokens" });
+        return this.close(
+          runId,
+          step,
+          "truncado",
+          completion.text,
+          pendingApprovalIds,
+          "La respuesta del modelo se trunco antes de terminar; se trata como error " +
+            "explicito, nunca se usa una respuesta parcial como si fuera completa.",
+        );
+      }
+
+      if (completion.toolCalls.length === 0) {
+        return this.close(runId, step + 1, "completado", completion.text, pendingApprovalIds, completion.text ?? "");
+      }
+
+      const hayTerminalDisponible = completion.toolCalls.some((call) => terminal.has(call.name));
+      if (isLastRound && !hayTerminalDisponible) {
+        // Loop-guard (Likida §2.6): corta ANTES de ejecutar el Promise.all de tool
+        // calls -- no se paga una mutacion mas por un resultado que nadie va a leer.
+        this.emit(ctx, runId, step, "loop_guard", { message: "ultima ronda sin tools terminales disponibles" });
+        return this.close(
+          runId,
+          step + 1,
+          "agotado_pasos",
+          null,
+          pendingApprovalIds,
+          "Se alcanzo el maximo de pasos sin una tool terminal disponible; se detiene " +
+            "antes de ejecutar una mutacion mas, no se sigue intentando en silencio.",
+        );
+      }
+
+      const toolResultMessages: LlmMessage[] = [];
+      for (const call of completion.toolCalls) {
+        if (isLastRound && !terminal.has(call.name)) {
+          toolResultMessages.push({
+            role: "tool",
+            toolCallId: call.id,
+            toolName: call.name,
+            content: "ultima ronda: tool no terminal omitida por loop-guard",
+          });
+          continue;
+        }
+
+        const tool = opts.tools.get(call.name);
+        if (!tool) {
+          toolResultMessages.push({ role: "tool", toolCallId: call.id, toolName: call.name, content: "tool desconocida" });
+          continue;
+        }
+
+        const signature = `${call.name}::${hashApprovalInput(call.input)}`;
+        if (signature === lastToolSignature) {
+          this.emit(ctx, runId, step, "loop_guard", {
+            toolName: call.name,
+            message: "repeticion inmediata de la misma tool+input",
+          });
+          return this.close(
+            runId,
+            step + 1,
+            "agotado_pasos",
+            null,
+            pendingApprovalIds,
+            "El agente repitio la misma herramienta con el mismo argumento sin avanzar; " +
+              "se detiene (loop-guard) en vez de seguir gastando presupuesto.",
+          );
+        }
+        lastToolSignature = signature;
+
+        const parsed = tool.inputSchema.safeParse(call.input);
+        if (!parsed.success) {
+          toolResultMessages.push({
+            role: "tool",
+            toolCallId: call.id,
+            toolName: call.name,
+            content: "entrada invalida para la tool",
+          });
+          continue;
+        }
+
+        if (tool.effect !== "read" && opts.gate === "shadow") {
+          this.emit(ctx, runId, step, "tool_skipped_shadow", {
+            toolName: call.name,
+            effect: tool.effect,
+            gate: opts.gate,
+          });
+          toolResultMessages.push({
+            role: "tool",
+            toolCallId: call.id,
+            toolName: call.name,
+            content: "modo shadow: accion registrada pero NO ejecutada",
+          });
+          continue;
+        }
+
+        if (tool.needsApproval) {
+          const approval = await opts.approvalQueue.request({
+            toolName: tool.name,
+            input: parsed.data,
+            orgId: ctx.orgId,
+            hotelId: ctx.hotelId,
+            requestedBy: `agent:${opts.agentName}:${ctx.actor.id}`,
+            isMoney: tool.effect === "money",
+            textoMostrado: `${opts.agentName} solicita ejecutar "${tool.name}" en hotel ${ctx.hotelId}`,
+          });
+          this.emit(ctx, runId, step, "approval_requested", {
+            toolName: tool.name,
+            effect: tool.effect,
+            message: approval.id,
+          });
+          if (approval.status !== "aprobada") {
+            pendingApprovalIds.push(approval.id);
+            toolResultMessages.push({
+              role: "tool",
+              toolCallId: call.id,
+              toolName: call.name,
+              content: `pendiente de aprobacion humana: ${approval.id}`,
+            });
+            continue;
+          }
+        }
+
+        const result = await tool.run(ctx, parsed.data);
+        this.emit(ctx, runId, step, "tool_call", {
+          toolName: tool.name,
+          effect: tool.effect,
+          gate: opts.gate,
+          message: redact(result.summary),
+        });
+        toolResultMessages.push({ role: "tool", toolCallId: call.id, toolName: call.name, content: result.summary });
+      }
+
+      if (pendingApprovalIds.length > 0) {
+        return this.close(
+          runId,
+          step + 1,
+          "esperando_aprobacion",
+          null,
+          pendingApprovalIds,
+          `Esperando aprobacion humana para ${pendingApprovalIds.length} accion(es) antes de continuar.`,
+        );
+      }
+
+      messages.push({ role: "assistant", content: completion.text ?? "" });
+      messages.push(...toolResultMessages);
+      step += 1;
+    }
+
+    this.emit(ctx, runId, step, "loop_guard", { message: "maximo de pasos alcanzado" });
+    return this.close(
+      runId,
+      step,
+      "agotado_pasos",
+      null,
+      pendingApprovalIds,
+      "Se alcanzo el maximo de pasos configurado sin que el agente terminara; se cierra " +
+        "explicitamente para que un humano revise la conversacion.",
+    );
+  }
+
+  private close(
+    runId: string,
+    steps: number,
+    status: AgentRunStatus,
+    finalText: string | null,
+    pendingApprovalIds: string[],
+    message: string,
+  ): AgentRunResult {
+    return { status, runId, finalText, steps, pendingApprovalIds: [...pendingApprovalIds], message };
+  }
+
+  private emit(
+    ctx: ToolContext,
+    runId: string,
+    step: number,
+    kind: AgentTraceEvent["kind"],
+    extra: Partial<AgentTraceEvent>,
+  ): void {
+    this.options.onTrace?.({
+      runId,
+      orgId: ctx.orgId,
+      hotelId: ctx.hotelId,
+      requestId: ctx.requestId,
+      step,
+      kind,
+      at: new Date().toISOString(),
+      ...extra,
+    });
+  }
+}
