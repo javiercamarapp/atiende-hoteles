@@ -1,0 +1,20 @@
+{
+  "name": "@atiende-hoteles/email",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "email:preview": "node --experimental-strip-types scripts/preview.ts"
+  },
+  "dependencies": {
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.49.0"
+  }
+}

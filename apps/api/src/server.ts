@@ -14,6 +14,7 @@ import type { AppDeps } from "./types.ts";
 import { startNightAuditScheduler } from "./jobs/nightAuditScheduler.ts";
 import { startIdentityVaultPurgeScheduler } from "./jobs/purgeIdentityVaultScheduler.ts";
 import { startConversationPurgeScheduler } from "./jobs/purgeConversationsScheduler.ts";
+import { startEmailOutboxScheduler, resolveEmailPort } from "./emailOutbox/runEmailOutboxWorker.ts";
 
 async function main() {
   const env = loadEnv();
@@ -38,6 +39,13 @@ async function main() {
   }
   const engine = productionDbConfig ? bootstrapProductionEngine(productionDbConfig) : await bootstrapDevEngine(env);
 
+  // H12a/H12b pendiente-coordinación cerrada por el integrador: `EmailPort` real
+  // (Resend > SMTP > `FakeEmailAdapter` sobre `email_outbox`, ver
+  // emailOutbox/runEmailOutboxWorker.ts) para que `routes/registro.ts`/`routes/correo.ts`
+  // envíen correos de verdad en cuanto existan credenciales, en vez de depender siempre
+  // del default de `createApp()` (que nunca ve las variables de entorno del proceso).
+  const emailPort = resolveEmailPort(engine.admin);
+
   const deps: AppDeps = {
     engine,
     env,
@@ -45,6 +53,7 @@ async function main() {
     ipLimiter: new RateLimiter({ limit: env.rateLimitPerIpPerMinute, windowMs: 60_000 }),
     userLimiter: new RateLimiter({ limit: env.rateLimitPerUserPerMinute, windowMs: 60_000 }),
     metrics: new MetricsRegistry(),
+    emailPort,
   };
 
   const app = createApp(deps);
@@ -79,11 +88,23 @@ async function main() {
     onError: (err) => logger.error({ err }, "purga de conversaciones: error en tick"),
   });
 
+  // H12a · REQ-LAUNCH-013: drena `public.outbox` hacia correos reales (recibo de pago,
+  // confirmación de reserva, aviso de CFDI, invitación de staff...) -- mismo `EmailPort`
+  // que `deps.emailPort` de arriba (Resend/SMTP/Fake), así que un pago/reserva/CFDI real
+  // procesado por esta misma API dispara el correo correspondiente sin depender de un
+  // proceso separado (aunque `runEmailOutboxWorker.ts` también puede correr solo, ej.
+  // como cron adicional de recuperación).
+  const emailOutboxScheduler = startEmailOutboxScheduler(engine.admin, {
+    onTick: (result) => logger.info({ result }, "worker de correo por outbox: tick"),
+    onError: (err) => logger.error({ err }, "worker de correo por outbox: error en tick"),
+  });
+
   const shutdown = async () => {
     logger.info("apagando apps/api");
     nightAuditScheduler.stop();
     identityVaultPurgeScheduler.stop();
     conversationPurgeScheduler.stop();
+    emailOutboxScheduler.stop();
     await engine.stop();
     process.exit(0);
   };

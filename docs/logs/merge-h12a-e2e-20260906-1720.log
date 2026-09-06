@@ -1,0 +1,96 @@
+
+> atiende-hoteles@0.0.0 test:e2e
+> npm run e2e --workspace=apps/web
+
+
+> @atiende/web@0.0.0 e2e
+> playwright test -c playwright.config.ts
+
+[WebServer] (node:46458) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] 5:22:40 PM [vite] warning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-swc" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] You or a plugin you are using have set `optimizeDeps.esbuildOptions` but this option is now deprecated. Vite now uses Rolldown to optimize the dependencies. Please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] `esbuild` option is set to false, but `oxc` option was not set to false. `esbuild: false` does not have effect any more. If you want to disable the default transformation, which is now handled by Oxc, please set `oxc: false` instead.
+
+Running 56 tests using 5 workers
+
+(node:46471) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:46469) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:46473) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:46470) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:46472) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: login sin violaciones serias/críticas (1.9s)
+  ✓   6 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: resumen sin violaciones serias/críticas (1.7s)
+  ✓   7 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: reservas sin violaciones serias/críticas (1.8s)
+  ✓   8 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: recepcion sin violaciones serias/críticas (2.1s)
+  ✓   5 [desktop] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:152:3 › H12a · registro → verificación → onboarding → Google › 1. registro: formulario → revisa tu correo (5.0s)
+  ✓   9 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: disponibilidad sin violaciones serias/críticas (2.8s)
+  ✓  10 [desktop] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:171:3 › H12a · registro → verificación → onboarding → Google › 2. verificación de correo (token leído de la base, simulando el correo capturado por el proveedor fake) (2.1s)
+  ✓   3 [desktop] › ../../tests/e2e/h5-cargo-y-pago-desde-ui.spec.ts:70:1 › cargar un cargo y un pago sobre el folio de una reserva desde /recepcion (UI real) (12.3s)
+  ✓  11 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: configuracion sin violaciones serias/críticas (2.5s)
+  ✓   4 [desktop] › ../../tests/e2e/h4-reserva-real-desde-ui.spec.ts:72:1 › crear una reserva real desde /reservas (seeds reales) y verla en la tabla y en la grid de /disponibilidad (13.4s)
+  ✓   1 [desktop] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) (13.8s)
+  ✓  14 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: housekeeping sin violaciones serias/críticas (2.1s)
+  ✓  12 [desktop] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:184:3 › H12a · registro → verificación → onboarding → Google › 3. onboarding: login → tipo de habitación → zona horaria → invitar equipo (4.1s)
+  ✓  17 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: mantenimiento sin violaciones serias/críticas (1.6s)
+  ✓  18 [desktop] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:213:3 › H12a · registro → verificación → onboarding → Google › 4. login con Google (servidor falso): recorre TODA la cadena de redirecciones hasta /resumen (1.4s)
+  ✓  19 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: mensajeria sin violaciones serias/críticas (2.3s)
+  ✓  20 [desktop] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:222:3 › H12a · registro → verificación → onboarding → Google › 5. login con Google, correo no verificado: termina en /login con el error humano (1.7s)
+  ✓  22 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:144:3 › Paridad visual — capturas hoteles › login (857ms)
+  ✓  16 [desktop] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura) (6.8s)
+  ✓  21 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: aprobaciones sin violaciones serias/críticas (2.1s)
+  ✓  23 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:151:3 › Paridad visual — capturas hoteles › resumen (742ms)
+(node:47494) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  25 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:159:3 › Paridad visual — capturas hoteles › reservas (796ms)
+  ✓  26 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:173:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › login de Atiende Hoteles: tokens/tipografía/logo/botón == fixture de Restaurantes (722ms)
+  ✓  28 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:180:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › resumen de Atiende Hoteles: la tipografía base (--font-body) sigue siendo Inter (552ms)
+  ✓  15 [desktop] › ../../tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API (10.1s)
+  ✓  13 [desktop] › ../../tests/e2e/h7-agentes.spec.ts:64:1 › agentes: gate/techo, demo determinista (FakeProvider) y tarjeta de ROI en Resumen -- recorrido real desde la UI (seeds reales) (11.2s)
+  ✓  27 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: login sin violaciones serias/críticas (1.6s)
+  ✓  24 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: agentes sin violaciones serias/críticas (3.1s)
+(node:47614) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:47613) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  30 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: resumen sin violaciones serias/críticas (1.4s)
+(node:47701) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  29 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:243:1 › paridad viva: el render real de atiende-restaurantes coincide con el fixture usado arriba (2.9s)
+  ✓  33 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: reservas sin violaciones serias/críticas (1.3s)
+(node:47733) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  35 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: recepcion sin violaciones serias/críticas (1.5s)
+  ✓  37 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: disponibilidad sin violaciones serias/críticas (1.4s)
+  ✓  32 [mobile] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:152:3 › H12a · registro → verificación → onboarding → Google › 1. registro: formulario → revisa tu correo (2.4s)
+  ✓  31 [mobile] › ../../tests/e2e/h4-reserva-real-desde-ui.spec.ts:72:1 › crear una reserva real desde /reservas (seeds reales) y verla en la tabla y en la grid de /disponibilidad (5.9s)
+  ✓  38 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: configuracion sin violaciones serias/críticas (1.5s)
+  ✓  39 [mobile] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:171:3 › H12a · registro → verificación → onboarding → Google › 2. verificación de correo (token leído de la base, simulando el correo capturado por el proveedor fake) (957ms)
+  ✓  41 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: housekeeping sin violaciones serias/críticas (1.5s)
+  ✓  34 [mobile] › ../../tests/e2e/h5-cargo-y-pago-desde-ui.spec.ts:70:1 › cargar un cargo y un pago sobre el folio de una reserva desde /recepcion (UI real) (7.2s)
+  -  44 [mobile] › ../../tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API
+  -  45 [mobile] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura)
+  ✓  43 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: mantenimiento sin violaciones serias/críticas (1.6s)
+  ✓  46 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:144:3 › Paridad visual — capturas hoteles › login (697ms)
+  ✓  42 [mobile] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:184:3 › H12a · registro → verificación → onboarding → Google › 3. onboarding: login → tipo de habitación → zona horaria → invitar equipo (3.3s)
+  ✓  36 [mobile] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) (8.3s)
+  ✓  48 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:151:3 › Paridad visual — capturas hoteles › resumen (719ms)
+  ✓  47 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: mensajeria sin violaciones serias/críticas (1.5s)
+  ✓  49 [mobile] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:213:3 › H12a · registro → verificación → onboarding → Google › 4. login con Google (servidor falso): recorre TODA la cadena de redirecciones hasta /resumen (1.0s)
+  ✓  50 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:159:3 › Paridad visual — capturas hoteles › reservas (646ms)
+  ✓  53 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:173:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › login de Atiende Hoteles: tokens/tipografía/logo/botón == fixture de Restaurantes (491ms)
+  ✓  52 [mobile] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:222:3 › H12a · registro → verificación → onboarding → Google › 5. login con Google, correo no verificado: termina en /login con el error humano (1.0s)
+  ✓  54 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:180:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › resumen de Atiende Hoteles: la tipografía base (--font-body) sigue siendo Inter (485ms)
+  -  55 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:243:1 › paridad viva: el render real de atiende-restaurantes coincide con el fixture usado arriba
+  ✓  51 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: aprobaciones sin violaciones serias/críticas (1.4s)
+  ✓  56 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:34:3 › axe: agentes sin violaciones serias/críticas (1.3s)
+  ✓  40 [mobile] › ../../tests/e2e/h7-agentes.spec.ts:64:1 › agentes: gate/techo, demo determinista (FakeProvider) y tarjeta de ROI en Resumen -- recorrido real desde la UI (seeds reales) (7.7s)
+
+  3 skipped
+  53 passed (40.7s)
+E2E_EXIT=0

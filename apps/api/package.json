@@ -18,6 +18,7 @@
     "@atiende-hoteles/agent-core": "*",
     "@atiende-hoteles/db": "*",
     "@atiende-hoteles/domain-hotel": "*",
+    "@atiende-hoteles/email": "*",
     "@atiende-hoteles/mcp-cfdi": "*",
     "@atiende-hoteles/mcp-payments": "*",
     "@atiende-hoteles/mcp-shared": "*",

@@ -35,6 +35,12 @@ interface StaffRow {
   email: string;
   full_name: string;
   password_hash: string | null;
+  // H12a · REQ-LAUNCH: solo las cuentas de alta autoservicio (`registro_autoservicio`,
+  // ver routes/registro.ts) exigen correo verificado ANTES de poder iniciar sesión --
+  // las sembradas (`seed`) e invitadas/por Google (que ya llegan con
+  // `email_verified_at` fijado) nunca se ven afectadas por este chequeo.
+  created_via: string;
+  email_verified_at: string | null;
 }
 
 interface MembershipRow {
@@ -81,7 +87,7 @@ export function authRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     const body = parseBody(loginSchema, await c.req.json().catch(() => ({})));
 
     const { rows } = await deps.engine.admin.query<StaffRow>(
-      "select id, email, full_name, password_hash from public.staff_user where email = $1;",
+      "select id, email, full_name, password_hash, created_via, email_verified_at from public.staff_user where email = $1;",
       [body.email],
     );
     const staff = rows[0];
@@ -92,6 +98,11 @@ export function authRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     if (!staff) throw invalidCredentials();
     const valid = await verifyPassword(body.password, staff.password_hash);
     if (!valid) throw invalidCredentials();
+
+    // H12a · REQ-LAUNCH: alta autoservicio exige correo verificado antes de operar.
+    if (staff.created_via === "registro_autoservicio" && !staff.email_verified_at) {
+      throw Errors.forbidden("Todavía no confirmas tu correo. Revisa tu bandeja o pide que te reenvíen el enlace de verificación.");
+    }
 
     const session = await issueSession(deps, staff);
     return c.json(session, 200);

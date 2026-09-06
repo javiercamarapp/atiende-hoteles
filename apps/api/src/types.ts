@@ -1,6 +1,7 @@
 import type { DbClient, EmbeddedPostgresEngine } from "@atiende-hoteles/db";
 import type { PaymentProviderPort } from "@atiende-hoteles/mcp-payments";
 import type { CfdiPort } from "@atiende-hoteles/mcp-cfdi";
+import type { EmailPort } from "@atiende-hoteles/email";
 import type { AppEnv } from "./env.ts";
 import type { Logger } from "./logger.ts";
 import type { MetricsRegistry } from "./metrics.ts";
@@ -23,14 +24,21 @@ export interface AppDeps {
    *  hotel) -- si se omite, `createApp` instancia dos PAC simulados detrás de
    *  `DualPacCfdiPort` (mismo mecanismo de conmutación que un PAC real tendría). */
   cfdi?: CfdiPort;
+  /** H12a · `EmailPort` real (pendiente de credenciales de Resend/SMTP, ver
+   *  packages/email/README.md) -- si se omite, `createApp` instancia un
+   *  `FakeEmailAdapter` (respaldado por la tabla `email_outbox`, migración 0094) --
+   *  mismo mecanismo de conmutación honesta que `payments`/`cfdi` arriba. */
+  emailPort?: EmailPort;
 }
 
-/** Vista de `AppDeps` con `payments`/`cfdi` ya resueltos -- lo que reciben los route
- *  factories que los usan (folios/night-audit/cfdi), para no repetir el `??` de
- *  default en cada uno. `createApp` (app.ts) es el único lugar que construye esto. */
+/** Vista de `AppDeps` con `payments`/`cfdi`/`emailPort` ya resueltos -- lo que reciben
+ *  los route factories que los usan (folios/night-audit/cfdi/registro/correo/
+ *  auth-google), para no repetir el `??` de default en cada uno. `createApp` (app.ts)
+ *  es el único lugar que construye esto. */
 export interface ResolvedAppDeps extends AppDeps {
   payments: PaymentProviderPort;
   cfdi: CfdiPort;
+  emailPort: EmailPort;
 }
 
 export type Variables = {

@@ -6,6 +6,11 @@ import { HotelProvider } from "./hooks/useHotel";
 import { RutaProtegida } from "./hooks/useAuth";
 import { AppShell } from "./layouts/AppShell";
 import { Login } from "./pages/Login";
+import { Registro } from "./pages/Registro";
+import { VerificarCorreo } from "./pages/VerificarCorreo";
+import { AceptarInvitacion } from "./pages/AceptarInvitacion";
+import { GoogleCallback } from "./pages/GoogleCallback";
+import { Onboarding } from "./pages/Onboarding";
 import { NotFound } from "./pages/NotFound";
 import { Privacidad } from "./pages/Privacidad";
 import { CheckinPublico } from "./pages/CheckinPublico";
@@ -49,9 +54,22 @@ export function App() {
               <Routes>
                 <Route path="/" element={<Navigate to="/resumen" replace />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/registro" element={<Registro />} />
+                <Route path="/registro/verificar" element={<VerificarCorreo />} />
+                <Route path="/registro/invitacion" element={<AceptarInvitacion />} />
+                <Route path="/auth/google/callback" element={<GoogleCallback />} />
                 <Route path="/terminos" element={<Terminos />} />
                 <Route path="/privacidad" element={<Privacidad />} />
                 <Route path="/checkin-publico/:token" element={<CheckinPublico />} />
+
+                <Route
+                  path="/onboarding"
+                  element={
+                    <RutaProtegida>
+                      <Onboarding />
+                    </RutaProtegida>
+                  }
+                />
 
                 <Route
                   element={
