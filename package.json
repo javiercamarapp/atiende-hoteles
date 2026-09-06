@@ -7,7 +7,7 @@
   "engines": { "node": ">=22" },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json",
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "vitest run --config vitest.config.ts tests/unit",
     "test:integration": "vitest run --config vitest.config.ts tests/integration --pool=forks --poolOptions.forks.singleFork",

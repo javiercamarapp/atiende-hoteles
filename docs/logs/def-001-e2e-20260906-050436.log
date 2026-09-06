@@ -1,0 +1,36 @@
+[WebServer] (node:20368) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] 5:04:38 AM [vite] warning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-swc" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] You or a plugin you are using have set `optimizeDeps.esbuildOptions` but this option is now deprecated. Vite now uses Rolldown to optimize the dependencies. Please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] `esbuild` option is set to false, but `oxc` option was not set to false. `esbuild: false` does not have effect any more. If you want to disable the default transformation, which is now handled by Oxc, please set `oxc: false` instead.
+
+Running 14 tests using 5 workers
+
+(node:20375) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20373) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20374) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20372) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20376) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  -   2 [mobile] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura)
+  ✓   3 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:16:3 › Paridad visual — capturas hoteles › login (1.1s)
+  ✓   6 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:16:3 › Paridad visual — capturas hoteles › login (776ms)
+  ✓   7 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:23:3 › Paridad visual — capturas hoteles › resumen (630ms)
+  ✓   8 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:23:3 › Paridad visual — capturas hoteles › resumen (625ms)
+  ✓   4 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: login sin violaciones serias/críticas (1.9s)
+  ✓   5 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: login sin violaciones serias/críticas (2.1s)
+  ✓   9 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:31:3 › Paridad visual — capturas hoteles › reservas (646ms)
+  ✓  10 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:31:3 › Paridad visual — capturas hoteles › reservas (666ms)
+  ✓  11 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: resumen sin violaciones serias/críticas (1.4s)
+  ✓  12 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: resumen sin violaciones serias/críticas (1.4s)
+  ✓   1 [desktop] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura) (3.8s)
+  ✓  13 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: reservas sin violaciones serias/críticas (1.2s)
+  ✓  14 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: reservas sin violaciones serias/críticas (1.2s)
+
+  1 skipped
+  13 passed (6.0s)
+e2e exit: 0

@@ -4,5 +4,6 @@
     "types": ["node"],
     "baseUrl": "."
   },
-  "include": ["packages/db/src/**/*.ts", "tests/**/*.ts"]
+  "include": ["packages/db/src/**/*.ts", "tests/**/*.ts"],
+  "exclude": ["tests/e2e/**"]
 }
