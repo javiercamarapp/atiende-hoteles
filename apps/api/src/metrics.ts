@@ -157,12 +157,27 @@ export class MetricsRegistry {
   /** Combina las métricas en memoria (latencia/errores/reservas) con los gauges que
    *  requieren una consulta en vivo a la BD (outbox pendiente/dead-letter, aprobaciones
    *  pendientes). Nunca lanza: si una consulta falla, reporta el gauge como
-   *  indisponible en un comentario en vez de tumbar todo `/metrics`. */
-  async render(admin: DbClient): Promise<string> {
+   *  indisponible en un comentario en vez de tumbar todo `/metrics`.
+   *
+   *  auditoria-2/operabilidad [ALTO]: `dbPoolErrorCount` (de
+   *  `EmbeddedPostgresEngine.getPoolErrorCount()`, packages/db) expone cuántos eventos
+   *  `pool.on("error")` ha visto el proceso -- antes esos eventos se descartaban sin
+   *  dejar NINGÚN rastro observable; ahora también quedan en `/metrics` como gauge,
+   *  además de la línea de log estructurada que emite `packages/db` en el momento. */
+  async render(admin: DbClient, dbPoolErrorCount?: number): Promise<string> {
     const parts: string[] = [this.renderHistograms(), this.renderCounters(), this.renderAgentCost()];
 
     parts.push(await this.renderOutboxGauges(admin));
     parts.push(await this.renderApprovalsGauge(admin));
+    if (dbPoolErrorCount != null) {
+      parts.push(
+        [
+          "# HELP db_pool_errors_total Eventos pool.on(\"error\") del pool de Postgres desde que el proceso arrancó.",
+          "# TYPE db_pool_errors_total counter",
+          `db_pool_errors_total ${dbPoolErrorCount}`,
+        ].join("\n"),
+      );
+    }
 
     return parts.filter(Boolean).join("\n");
   }

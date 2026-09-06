@@ -122,6 +122,11 @@ export interface EmbeddedPostgresEngine {
     fn: (session: DbClient) => Promise<T>,
   ): Promise<T>;
   connectionInfo: { host: string; port: number; database: string };
+  /** auditoria-2/operabilidad [ALTO]: total de eventos `pool.on("error")` observados
+   *  desde que se abrió el motor -- expuesto para que `apps/api/src/routes/metrics.ts`
+   *  pueda publicarlo como gauge de Prometheus (`db_pool_errors_total`) sin que
+   *  `packages/db` dependa de un cliente de métricas concreto. */
+  getPoolErrorCount(): number;
   stop(): Promise<void>;
 }
 
@@ -149,6 +154,19 @@ export interface OpenEmbeddedPostgresOptions {
    *  consulta que se cuelga del lado del servidor falla explícito en vez de bloquear
    *  la conexión (y el slot del pool) indefinidamente. Default 30000. */
   statementTimeoutMs?: number;
+  /** auditoria-2/operabilidad [ALTO]: callback opcional invocado en cada
+   *  `pool.on("error")` (ej. el servidor cerró una conexión ociosa del lado suyo --
+   *  reinicio de Postgres, corte de red, `statement_timeout`/pooler de Supabase
+   *  reciclando conexiones). Antes de este fix el handler estaba vacío -- "no pasó
+   *  nada" y "el pool llevaba 20 minutos perdiendo conexiones ociosas" eran
+   *  indistinguibles desde los logs. `packages/db` no depende de `pino`/ningún cliente
+   *  de logging concreto (mantiene el paquete agnóstico de motor de logging, igual que
+   *  ya es agnóstico de motor de BD para `apps/api`) -- quien abre el motor real
+   *  (`apps/api/src/db.ts`) inyecta aquí su logger real. SIEMPRE, con o sin callback,
+   *  el evento también se cuenta (`getPoolErrorCount()`) y se imprime como una línea
+   *  JSON estructurada a stderr -- para que un `npm run dev` sin este callback cableado
+   *  todavía deje rastro, nunca silencio total. */
+  onPoolError?: (err: unknown) => void;
 }
 
 export async function openEmbeddedPostgres(
@@ -216,16 +234,34 @@ export async function openEmbeddedPostgres(
     connectionTimeoutMillis: options.connectionTimeoutMs ?? 5000,
     statement_timeout: options.statementTimeoutMs ?? 30_000,
   });
-  // Un error en una conexion ociosa del pool (ej. el servidor la cerro) no debe tumbar
-  // el proceso -- node-pg lo emite como evento si nadie lo escucha.
-  pool.on("error", () => {
-    /* silenciado: la siguiente `pool.connect()` simplemente abre una conexion nueva */
+  // auditoria-2/operabilidad [ALTO]: un error en una conexion ociosa del pool (ej. el
+  // servidor la cerro) no debe tumbar el proceso -- node-pg lo emite como evento si
+  // nadie lo escucha, y la version anterior de este handler no hacia NADA mas que eso
+  // (correcto no relanzar, pero se fue mas lejos de lo necesario: tampoco se logueaba).
+  // Ahora siempre se cuenta y se imprime una linea JSON estructurada a stderr -- y si el
+  // llamador inyecto `onPoolError`, tambien se le notifica (asi `apps/api/src/db.ts`
+  // puede usar el logger/metricas reales del proceso sin que `packages/db` dependa de
+  // ellos). La siguiente `pool.connect()` simplemente abre una conexion nueva.
+  let poolErrorCount = 0;
+  pool.on("error", (err) => {
+    poolErrorCount += 1;
+    console.error(
+      JSON.stringify({
+        level: "error",
+        event: "db_pool_error",
+        message: err instanceof Error ? err.message : String(err),
+        pool_error_count: poolErrorCount,
+        timestamp: new Date().toISOString(),
+      }),
+    );
+    options.onPoolError?.(err);
   });
 
   return {
     kind: "pg",
     admin,
     connectionInfo,
+    getPoolErrorCount: () => poolErrorCount,
     async withAppSession(claims, fn) {
       const client = await pool.connect();
       try {
