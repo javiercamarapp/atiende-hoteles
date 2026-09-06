@@ -109,7 +109,18 @@ function describeApprovalInput(input: unknown): string {
 }
 
 export class AgentRunner {
-  constructor(private readonly options: AgentRunnerOptions) {}
+  // H6b: campo explicito en vez del azucar de "parameter property" (`constructor(private
+  // readonly options: ...)`) -- ese azucar NO esta soportado por el modo "strip types" de
+  // Node (`node --experimental-strip-types`, el runtime real de apps/api,
+  // ver apps/api/package.json "dev"/"start"): con el azucar, CUALQUIER import de
+  // `@atiende-hoteles/agent-core` en tiempo de ejecucion (incluso de una sola tool)
+  // tumbaba el proceso completo con `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` al cargar este
+  // modulo. Mismo comportamiento, sintaxis compatible.
+  private readonly options: AgentRunnerOptions;
+
+  constructor(options: AgentRunnerOptions) {
+    this.options = options;
+  }
 
   async run(ctx: ToolContext, userMessage: string): Promise<AgentRunResult> {
     const opts = this.options;

@@ -623,3 +623,145 @@ export async function cancelarCfdi(hotelId: string, cfdiId: string, motivo: "01"
     body: JSON.stringify({ motivo }),
   });
 }
+
+// ---- H6b: housekeeping / mantenimiento / aprobaciones / mensajería ----
+
+export interface TareaHousekeeping {
+  id: string;
+  estado: string;
+  prioridad: string;
+  asignadoA: string | null;
+  asignadoEmail: string | null;
+  slaVence: string | null;
+}
+
+export interface HabitacionTablero {
+  roomId: string;
+  roomCode: string;
+  housekeepingStatus: "sucia" | "limpia" | "inspeccionada" | "fuera_de_servicio";
+  tarea: TareaHousekeeping | null;
+}
+
+export async function obtenerTableroHousekeeping(hotelId: string): Promise<HabitacionTablero[]> {
+  return request<HabitacionTablero[]>(`/hoteles/${hotelId}/housekeeping/tablero`);
+}
+
+export async function crearTareaHousekeeping(
+  hotelId: string,
+  input: { roomCode: string; priority: "alta" | "media" | "baja"; checklist?: string[]; notes?: string },
+): Promise<{ taskId: string }> {
+  return request(`/hoteles/${hotelId}/housekeeping/tareas`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function iniciarTareaHousekeeping(hotelId: string, taskId: string): Promise<{ estado: string }> {
+  return request(`/hoteles/${hotelId}/housekeeping/tareas/${taskId}/iniciar`, { method: "POST" });
+}
+
+export async function terminarTareaHousekeeping(hotelId: string, taskId: string): Promise<{ estado: string }> {
+  return request(`/hoteles/${hotelId}/housekeeping/tareas/${taskId}/terminar`, { method: "POST" });
+}
+
+export async function inspeccionarTareaHousekeeping(
+  hotelId: string,
+  taskId: string,
+  input: { resultado: "aprobada" | "rechazada"; nota?: string },
+): Promise<{ housekeepingStatus: string }> {
+  return request(`/hoteles/${hotelId}/housekeeping/tareas/${taskId}/inspeccionar`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function marcarFueraDeServicio(hotelId: string, roomId: string, fueraDeServicio: boolean): Promise<{ housekeepingStatus: string }> {
+  return request(`/hoteles/${hotelId}/housekeeping/habitaciones/${roomId}/fuera-de-servicio`, {
+    method: "POST",
+    body: JSON.stringify({ fueraDeServicio }),
+  });
+}
+
+export interface TicketMantenimiento {
+  id: string;
+  roomCode: string | null;
+  titulo: string;
+  descripcion: string;
+  origen: string;
+  severidad: "alta" | "media" | "baja";
+  estado: string;
+  asignadoA: string | null;
+  costoEstimado: number;
+  costoReal: number | null;
+  aprobacionId: string | null;
+  creadoEn: string;
+}
+
+export async function listarTicketsMantenimiento(hotelId: string): Promise<TicketMantenimiento[]> {
+  return request<TicketMantenimiento[]>(`/hoteles/${hotelId}/mantenimiento`);
+}
+
+export async function crearTicketMantenimiento(
+  hotelId: string,
+  input: { roomCode?: string; title: string; description: string; severity: "alta" | "media" | "baja"; estimatedCost?: number },
+): Promise<{ ticketId: string; duplicate?: boolean }> {
+  return request(`/hoteles/${hotelId}/mantenimiento`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function cerrarTicketConCosto(
+  hotelId: string,
+  ticketId: string,
+  input: { actualCost: number; partUsed?: string; resolutionNote?: string },
+): Promise<{ estado: string; aprobacionId: string }> {
+  return request(`/hoteles/${hotelId}/mantenimiento/${ticketId}/cerrar-con-costo`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export interface SolicitudAprobacion {
+  id: string;
+  tool: string;
+  textoMostrado: string;
+  resumenInput: string;
+  solicitadoPor: string;
+  esDinero: boolean;
+  confirmacionesRequeridas: number;
+  estado: "pendiente" | "aprobada" | "rechazada" | "expirada";
+  solicitadoEn: string;
+  expiraEn: string;
+}
+
+export async function listarAprobaciones(hotelId: string, estado?: string): Promise<SolicitudAprobacion[]> {
+  const qs = estado ? `?estado=${estado}` : "";
+  return request<SolicitudAprobacion[]>(`/hoteles/${hotelId}/aprobaciones${qs}`);
+}
+
+export async function decidirAprobacion(
+  hotelId: string,
+  aprobacionId: string,
+  input: { decision: "aprobar" | "rechazar"; textoExacto: string },
+): Promise<{ estado: string; ejecutado?: boolean }> {
+  return request(`/hoteles/${hotelId}/aprobaciones/${aprobacionId}/decidir`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export interface HiloMensaje {
+  id: string;
+  direccion: "entrante" | "saliente";
+  canal: string;
+  plantilla: string | null;
+  texto: string;
+  estadoEntrega: string | null;
+  simulado: boolean;
+  creadoEn: string;
+}
+
+export async function listarMensajesConversacion(hotelId: string, conversationId: string): Promise<HiloMensaje[]> {
+  return request<HiloMensaje[]>(`/hoteles/${hotelId}/mensajeria/${conversationId}/mensajes`);
+}
+
+export async function enviarMensajeWhatsapp(
+  hotelId: string,
+  input: { guestPhone: string; templateName: string; languageCode?: string; parameters?: string[] },
+): Promise<{ estado: string; aprobacionId?: string }> {
+  return request(`/hoteles/${hotelId}/mensajeria/mensajes`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function obtenerConfigMensajeria(hotelId: string): Promise<{ plantillasTransaccionales: string[] }> {
+  return request(`/hoteles/${hotelId}/mensajeria/config`);
+}
+
+export async function actualizarConfigMensajeria(hotelId: string, plantillasTransaccionales: string[]): Promise<{ plantillasTransaccionales: string[] }> {
+  return request(`/hoteles/${hotelId}/mensajeria/config`, { method: "PATCH", body: JSON.stringify({ plantillasTransaccionales }) });
+}

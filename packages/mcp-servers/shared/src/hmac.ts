@@ -47,8 +47,16 @@ export function verifyHmacSignature(
  */
 export class InMemoryReplayGuard {
   private readonly seen = new Map<string, number>();
+  // H6b: campo explicito, no "parameter property" -- ese azucar de TypeScript no esta
+  // soportado por el modo "strip types" de Node (`node --experimental-strip-types`, el
+  // runtime real de apps/api): cargar este modulo en ejecucion tumbaba el proceso con
+  // `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` en cuanto apps/api empezo a depender de un
+  // adaptador de packages/mcp-servers (H6b conecta WhatsApp por primera vez).
+  private readonly ttlMs: number;
 
-  constructor(private readonly ttlMs: number = 24 * 60 * 60 * 1000) {}
+  constructor(ttlMs: number = 24 * 60 * 60 * 1000) {
+    this.ttlMs = ttlMs;
+  }
 
   /** `true` si el evento YA fue visto (es un replay); si no, lo marca como visto. */
   seenBefore(eventId: string, now: number = Date.now()): boolean {

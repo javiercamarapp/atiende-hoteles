@@ -134,3 +134,29 @@ grants mínimos otorgados solo al rol `authenticated` (ver `migrations/0010_gran
   (REQ-TEN-004): es una pieza de la capa HTTP (H2, Hono), no del esquema en sí.
 - `housekeeping_task` / `maintenance_ticket`: quedan para H6 (no forman parte del listado
   explícito de tablas de H1).
+
+## Cambios de H6b (migraciones 0040-0045, expand-only sobre H1-H4)
+
+- `room.housekeeping_status` (enum `sucia|limpia|inspeccionada|fuera_de_servicio`) +
+  `room_housekeeping_status_event` (historial append-only, trigger `SECURITY DEFINER`,
+  mismo patrón que `reservation_status_event`) — **distinto** de `room.status` (H1,
+  disponibilidad/venta): una habitación puede estar "disponible" para reservar y "sucia"
+  para housekeeping a la vez.
+- `housekeeping_task`: RLS — housekeeping solo ve/opera SUS tareas asignadas
+  (`assigned_to = auth.uid()`); owner/gm/frontdesk ven/administran todas del hotel.
+- `agent_approval` / `agent_approval_confirmation`: respaldo persistente de
+  `ApprovalQueue` (`@atiende-hoteles/agent-core`, ver su README §H6b) — decidir
+  (`UPDATE`) reservado a owner/gm. `0045` agrega `input_json` (el input real ya validado
+  que recibió la tool, para que `apps/api` pueda ejecutarla tras completarse la doble
+  confirmación fuera de una corrida de agente).
+- `maintenance_ticket`: origen huésped/staff/agente/sensor, `approval_id` enlaza con
+  `agent_approval` cuando el cierre exige autorización de gasto. RLS: housekeeping puede
+  REPORTAR (insert) pero solo ve/edita sus PROPIOS reportes (`created_by = auth.uid()`,
+  necesario ademas para que `INSERT ... RETURNING` no choque con la política de SELECT,
+  ver comentario en `0043_maintenance_ticket.sql`); nunca ve/cambia el costo de tickets
+  ajenos.
+- `hotel_messaging_config` / `conversation` / `message`: bandeja de WhatsApp por huésped
+  sobre `packages/mcp-servers/whatsapp` (siempre `FakeWhatsappAdapter` en este hito,
+  `message.simulated=true`); `transactional_templates` decide qué plantillas se
+  auto-aprueban sin espera humana. Índices únicos por hotel para idempotencia de envío
+  (`client_message_id`) y de webhook (`external_message_id`).

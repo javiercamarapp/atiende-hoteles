@@ -1,0 +1,76 @@
+
+> atiende-hoteles@0.0.0 db:reset
+> node packages/db/src/cli.ts reset
+
+[embedded-postgres] The files belonging to this database system will be owned by user "javiercamaraportepetit".
+This user must also own the server process.
+
+
+[embedded-postgres] The database cluster will be initialized with this locale configuration:
+  locale provider:   libc
+  LC_COLLATE:  C.UTF-8
+  LC_CTYPE:    C.UTF-8
+  LC_MESSAGES: en_US.UTF-8
+  LC_MONETARY: C.UTF-8
+  LC_NUMERIC:  C.UTF-8
+  LC_TIME:     C.UTF-8
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are enabled.
+
+creating directory /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/packages/db/.pgdata ... ok
+creating subdirectories ... 
+[embedded-postgres] ok
+
+[embedded-postgres] selecting dynamic shared memory implementation ... 
+[embedded-postgres] posix
+selecting default "max_connections" ... 
+[embedded-postgres] 100
+selecting default "shared_buffers" ... 
+[embedded-postgres] 128MB
+selecting default time zone ... 
+[embedded-postgres] America/Merida
+creating configuration files ... 
+[embedded-postgres] ok
+running bootstrap script ... 
+[embedded-postgres] ok
+
+[embedded-postgres] performing post-bootstrap initialization ... 
+[embedded-postgres] ok
+syncing data to disk ... 
+[embedded-postgres] ok
+
+Success. You can now start the database server using:
+
+    '/Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/node_modules/@embedded-postgres/darwin-arm64/native/bin/pg_ctl' -D /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/packages/db/.pgdata -l logfile start
+
+[embedded-postgres] 
+
+[embedded-postgres] 2026-09-06 08:57:40.668 CST [81867] LOG:  starting PostgreSQL 18.4 on x86_64-apple-darwin24.6.0, compiled by Apple clang version 17.0.0 (clang-1700.6.3.2), 64-bit
+
+[embedded-postgres] 2026-09-06 08:57:40.669 CST [81867] LOG:  listening on IPv6 address "::1", port 54329
+
+[embedded-postgres] 2026-09-06 08:57:40.669 CST [81867] LOG:  listening on IPv4 address "127.0.0.1", port 54329
+
+[embedded-postgres] 2026-09-06 08:57:40.670 CST [81867] LOG:  listening on Unix socket "/tmp/.s.PGSQL.54329"
+
+[embedded-postgres] 2026-09-06 08:57:40.671 CST [81873] LOG:  database system was shut down at 2026-09-06 08:57:40 CST
+
+[embedded-postgres] 2026-09-06 08:57:40.672 CST [81867] LOG:  database system is ready to accept connections
+
+Esquema reiniciado. Migraciones aplicadas: 33
+[embedded-postgres] 2026-09-06 08:57:40.770 CST [81867] LOG:  received fast shutdown request
+
+[embedded-postgres] 2026-09-06 08:57:40.770 CST [81867] LOG:  aborting any active transactions
+
+[embedded-postgres] 2026-09-06 08:57:40.771 CST [81867] LOG:  background worker "logical replication launcher" (PID 81876) exited with exit code 1
+
+[embedded-postgres] 2026-09-06 08:57:40.771 CST [81871] LOG:  shutting down
+
+[embedded-postgres] 2026-09-06 08:57:40.771 CST [81871] LOG:  checkpoint starting: shutdown immediate
+
+[embedded-postgres] 2026-09-06 08:57:40.777 CST [81871] LOG:  checkpoint complete: wrote 316 buffers (1.9%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.004 s, total=0.007 s; sync files=298, longest=0.001 s, average=0.001 s; distance=2790 kB, estimate=2790 kB; lsn=0/1A409F8, redo lsn=0/1A409F8
+
+[embedded-postgres] 2026-09-06 08:57:40.779 CST [81867] LOG:  database system is shut down
+

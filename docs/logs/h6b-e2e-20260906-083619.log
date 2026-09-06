@@ -1,0 +1,38 @@
+[WebServer] (node:72803) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] 8:41:01 AM [vite] warning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-swc" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] You or a plugin you are using have set `optimizeDeps.esbuildOptions` but this option is now deprecated. Vite now uses Rolldown to optimize the dependencies. Please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] `esbuild` option is set to false, but `oxc` option was not set to false. `esbuild: false` does not have effect any more. If you want to disable the default transformation, which is now handled by Oxc, please set `oxc: false` instead.
+
+Running 20 tests using 4 workers
+
+(node:72804) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:72806) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:72805) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:72807) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   3 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: login sin violaciones serias/críticas (1.6s)
+  ✓   4 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: login sin violaciones serias/críticas (1.6s)
+  ✓   5 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: resumen sin violaciones serias/críticas (1.4s)
+  ✓   6 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: resumen sin violaciones serias/críticas (1.5s)
+  ✓   7 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: reservas sin violaciones serias/críticas (1.5s)
+  ✓   8 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: reservas sin violaciones serias/críticas (1.6s)
+  ✓   2 [mobile] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) (4.8s)
+  ✓   1 [desktop] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) (5.0s)
+  ✓   9 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: disponibilidad sin violaciones serias/críticas (1.4s)
+  ✓  10 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: disponibilidad sin violaciones serias/críticas (1.4s)
+  ✓  11 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: configuracion sin violaciones serias/críticas (1.2s)
+  ✓  12 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: configuracion sin violaciones serias/críticas (1.3s)
+  ✓  13 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: housekeeping sin violaciones serias/críticas (1.2s)
+  ✓  14 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: housekeeping sin violaciones serias/críticas (1.3s)
+  ✓  15 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: mantenimiento sin violaciones serias/críticas (1.2s)
+  ✓  16 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: mantenimiento sin violaciones serias/críticas (1.2s)
+  ✓  17 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: mensajeria sin violaciones serias/críticas (1.2s)
+  ✓  18 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: mensajeria sin violaciones serias/críticas (1.3s)
+  ✓  19 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: aprobaciones sin violaciones serias/críticas (1.3s)
+  ✓  20 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:26:3 › axe: aprobaciones sin violaciones serias/críticas (1.2s)
+
+  20 passed (13.5s)

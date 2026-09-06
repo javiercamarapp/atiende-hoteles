@@ -98,12 +98,17 @@ export type WhatsappWebhookEvent = z.infer<typeof WhatsappWebhookEvent>;
 /** Se lanza cuando el hotel ya agotó su cupo de conversaciones iniciadas por negocio en la ventana de 24h. */
 export class MessagingTierLimitError extends Error {
   readonly code = "messaging_tier_limit_exceeded";
-  constructor(
-    readonly tier: MessagingTier,
-    readonly limit: number,
-  ) {
+  // H6b: campos explicitos, no "parameter properties" (incompatibles con
+  // `node --experimental-strip-types`, el runtime real de apps/api -- ver el mismo
+  // comentario en packages/mcp-servers/shared/src/errors.ts).
+  readonly tier: MessagingTier;
+  readonly limit: number;
+
+  constructor(tier: MessagingTier, limit: number) {
     super(`límite del tier de mensajería '${tier}' (${limit}) excedido en la ventana de 24h`);
     this.name = "MessagingTierLimitError";
+    this.tier = tier;
+    this.limit = limit;
   }
 }
 

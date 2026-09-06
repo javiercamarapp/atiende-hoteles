@@ -20,6 +20,7 @@ import { AlimentosBebidas } from "./pages/AlimentosBebidas";
 import { Mensajeria } from "./pages/Mensajeria";
 import { Reputacion } from "./pages/Reputacion";
 import { BackOffice } from "./pages/BackOffice";
+import { Aprobaciones } from "./pages/Aprobaciones";
 import { Configuracion } from "./pages/Configuracion";
 
 const queryClient = new QueryClient({
@@ -62,6 +63,7 @@ export function App() {
                   <Route path="/mensajeria" element={<Mensajeria />} />
                   <Route path="/reputacion" element={<Reputacion />} />
                   <Route path="/back-office" element={<BackOffice />} />
+                  <Route path="/aprobaciones" element={<Aprobaciones />} />
                   <Route path="/configuracion" element={<Configuracion />} />
                 </Route>
 
