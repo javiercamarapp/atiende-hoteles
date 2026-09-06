@@ -4,7 +4,7 @@ Regla: Fable (claude-fable-5-1) solo orquesta. Todo despacho usa `Agent(model="s
 
 | # | Fecha/hora | Nombre/tarea | Modelo solicitado | Modelo efectivo (evidencia) | Resultado |
 |---|---|---|---|---|---|
-| 1 | 2026-09-05 18:17 | ref-01 blueprint+DECISIONLLMHOTELES → docs/referencia/01 | sonnet | claude-sonnet-5 (grep "model" transcript: 15/15, 0 fable) | en curso |
+| 1 | 2026-09-05 18:17 | ref-01 blueprint+DECISIONLLMHOTELES → docs/referencia/01 | sonnet | claude-sonnet-5 (grep "model" transcript: 15/15, 0 fable) | COMPLETADO: 173 BP + 31 LLM (204), 101 págs leídas completas |
 | 2 | 2026-09-05 18:17 | ref-02 investigación H01–H11 → docs/referencia/02 | sonnet | claude-sonnet-5 (15/15) | en curso |
 | 3 | 2026-09-05 18:17 | ref-03 investigación H12–H21 → docs/referencia/03 | sonnet | claude-sonnet-5 (20/20) | en curso |
 | 4 | 2026-09-05 18:17 | ref-04 gobierno y protocolo → docs/referencia/04 | sonnet | claude-sonnet-5 (26/26) | COMPLETADO: 59 GOB, 8 docs, 24 págs |
