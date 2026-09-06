@@ -152,14 +152,31 @@ export class PostgresApprovalQueue implements ApprovalQueue {
 
   async decide(params: DecideApprovalParams): Promise<ApprovalRequest> {
     const now = params.now ?? this.now();
-    const row = await this.fetchRowOrThrow(params.approvalId);
+    // A3/T3/backend ALTO (auditoria-2): `SELECT ... FOR UPDATE` serializa la
+    // transicion de ESTA fila -- dos `decide()` concurrentes sobre la MISMA
+    // aprobacion (doble clic, dos canales distintos, dos aprobadores casi
+    // simultaneos) ya no pueden ambos leer `status='pendiente'`/las mismas
+    // confirmaciones antes de que cualquiera escriba: la segunda transaccion se
+    // BLOQUEA en este SELECT hasta que la primera comitea (o revierte), y entonces
+    // relee el estado YA actualizado por la primera. Antes, `fetchRowOrThrow` +
+    // `loadConfirmations` eran lecturas simples sin bloqueo (a diferencia de
+    // `request()`, que si toma `lock_agent_approval_key`), asi que dos decisiones
+    // podian ambas alcanzar el umbral de confirmaciones y ambas disparar la
+    // ejecucion de la tool. Esto solo sirve si el `db` recibido esta dentro de una
+    // transaccion real (dbSession/withAppSession por-request, ADR-004) -- documentado
+    // igual que la advertencia de `request()` arriba.
+    const row = await this.fetchRowOrThrow(params.approvalId, { forUpdate: true });
 
     let status = row.status;
     if (status === "pendiente" && this.isExpired(row, now)) {
       status = "expirada";
-      await this.db.query("update public.agent_approval set status = 'expirada', updated_at = now() where id = $1;", [
-        row.id,
-      ]);
+      // Estado terminal unico: `WHERE status = 'pendiente'` es la ultima linea de
+      // defensa (ademas del lock de fila) para que ninguna transicion se aplique dos
+      // veces sobre una fila que ya salio de 'pendiente'.
+      await this.db.query(
+        "update public.agent_approval set status = 'expirada', updated_at = now() where id = $1 and status = 'pendiente';",
+        [row.id],
+      );
     }
     if (status !== "pendiente") {
       throw new ApprovalError(
@@ -170,9 +187,10 @@ export class PostgresApprovalQueue implements ApprovalQueue {
     const confirmations = await this.loadConfirmations(row.id);
 
     if (params.decision === "rechazar") {
-      await this.db.query("update public.agent_approval set status = 'rechazada', updated_at = now() where id = $1;", [
-        row.id,
-      ]);
+      await this.db.query(
+        "update public.agent_approval set status = 'rechazada', updated_at = now() where id = $1 and status = 'pendiente';",
+        [row.id],
+      );
       await this.insertConfirmation(row.id, params, now);
       return this.hydrate(await this.fetchRowOrThrow(row.id));
     }
@@ -199,9 +217,10 @@ export class PostgresApprovalQueue implements ApprovalQueue {
     await this.insertConfirmation(row.id, params, now);
     const aprobaciones = confirmations.filter((c) => c.decision === "aprobar").length + 1;
     if (aprobaciones >= row.required_confirmations) {
-      await this.db.query("update public.agent_approval set status = 'aprobada', updated_at = now() where id = $1;", [
-        row.id,
-      ]);
+      await this.db.query(
+        "update public.agent_approval set status = 'aprobada', updated_at = now() where id = $1 and status = 'pendiente';",
+        [row.id],
+      );
     }
     return this.hydrate(await this.fetchRowOrThrow(row.id));
   }
@@ -227,8 +246,11 @@ export class PostgresApprovalQueue implements ApprovalQueue {
     return new Date(row.expires_at).getTime() <= now.getTime();
   }
 
-  private async fetchRowOrThrow(id: string): Promise<ApprovalRow> {
-    const { rows } = await this.db.query<ApprovalRow>("select * from public.agent_approval where id = $1;", [id]);
+  private async fetchRowOrThrow(id: string, options: { forUpdate?: boolean } = {}): Promise<ApprovalRow> {
+    const sql = options.forUpdate
+      ? "select * from public.agent_approval where id = $1 for update;"
+      : "select * from public.agent_approval where id = $1;";
+    const { rows } = await this.db.query<ApprovalRow>(sql, [id]);
     if (!rows[0]) {
       throw new ApprovalError(`solicitud de aprobacion inexistente: ${id}`);
     }
