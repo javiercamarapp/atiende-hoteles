@@ -26,17 +26,31 @@ const listQuerySchema = z.object({
   hasta: dateSchema.optional(),
 });
 
+// `date` es un atajo para una sola noche (equivalente a `desde === hasta === date`);
+// `desde`/`hasta` cubren un rango ("temporada") en una sola llamada. Exactamente una de
+// las dos formas debe venir en el body.
 const upsertRateSchema = z
   .object({
     roomTypeId: z.string().uuid(),
-    desde: dateSchema,
-    hasta: dateSchema,
+    date: dateSchema.optional(),
+    desde: dateSchema.optional(),
+    hasta: dateSchema.optional(),
     price: z.number().nonnegative(),
     minStay: z.number().int().positive().default(1),
     closedToArrival: z.boolean().default(false),
     closedToDeparture: z.boolean().default(false),
   })
-  .refine((v) => v.hasta >= v.desde, { message: "hasta debe ser igual o posterior a desde", path: ["hasta"] });
+  .transform((v) => ({
+    ...v,
+    desde: v.desde ?? v.date ?? v.hasta,
+    hasta: v.hasta ?? v.date ?? v.desde,
+  }))
+  .refine((v) => v.desde !== undefined && v.hasta !== undefined, {
+    message: "envía 'date' (una sola noche) o 'desde'/'hasta' (rango)",
+    path: ["date"],
+  })
+  .refine((v) => v.hasta! >= v.desde!, { message: "hasta debe ser igual o posterior a desde", path: ["hasta"] })
+  .transform((v) => ({ ...v, desde: v.desde as string, hasta: v.hasta as string }));
 
 const taxConfigSchema = z.object({
   ivaRate: z.number().min(0).max(1),

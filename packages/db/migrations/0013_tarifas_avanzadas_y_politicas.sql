@@ -19,6 +19,31 @@ alter table public.room_type add column max_overbook_rooms integer not null defa
 alter table public.room_type add column overbooking_occupancy_threshold_pct numeric(5, 2) not null default 95
   check (overbooking_occupancy_threshold_pct between 0 and 100);
 
+-- El CHECK original de 0004 (`booked_rooms <= total_rooms`, sin nombre explícito,
+-- Postgres lo bautizó "availability_check") bloquearía CUALQUIER sobreventa sin
+-- importar lo que `book_availability()` decida más abajo -- un CHECK de tabla no puede
+-- referenciar `room_type.max_overbook_rooms` (otra tabla), así que no se puede
+-- "arreglar" con otro CHECK: se elimina y la invariante ("nunca vender más que
+-- total_rooms + sobreventa vigente") queda exclusivamente a cargo de
+-- `book_availability()`/`release_availability()` como ÚNICA vía de escritura
+-- sancionada (ya documentado así desde 0004). Localizado dinámicamente por su
+-- definición (no por nombre) para no depender de que Postgres siga generando el mismo
+-- nombre automático en otra versión/motor.
+do $$
+declare
+  con record;
+begin
+  for con in
+    select conname
+    from pg_constraint
+    where conrelid = 'public.availability'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) = 'CHECK ((booked_rooms <= total_rooms))'
+  loop
+    execute format('alter table public.availability drop constraint %I', con.conname);
+  end loop;
+end $$;
+
 -- Impuestos por hotel (REQ-REV-001): IVA/ISH son PARÁMETROS configurables por hotel,
 -- nunca una verdad fiscal fija en código. El motor de cotización los lee de aquí; el
 -- LLM jamás calcula ni fija esta cifra por ninguna ruta de código.
