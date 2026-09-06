@@ -673,7 +673,8 @@ export interface TicketMantenimiento {
   severidad: "alta" | "media" | "baja";
   estado: string;
   asignadoA: string | null;
-  costoEstimado: number;
+  /** null = nadie estimó un costo todavía (nunca se muestra como $0.00, REQ-UX-002). */
+  costoEstimado: number | null;
   costoReal: number | null;
   aprobacionId: string | null;
   creadoEn: string;

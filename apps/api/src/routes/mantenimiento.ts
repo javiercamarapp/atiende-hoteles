@@ -14,6 +14,7 @@ import {
   createMaintenanceTicketTool,
   createRunBudget,
   type AuthorizeMaintenanceExpenseInput,
+  type CreateMaintenanceTicketInput,
 } from "@atiende-hoteles/agent-core";
 import { buildToolExecutors } from "../lib/agentTools.ts";
 import { sharedWhatsappAdapter } from "../lib/messaging.ts";
@@ -23,13 +24,17 @@ import { assertRole, authMiddleware, dbSession, requireHotelMembership } from ".
 import { ADMIN_ROLES, MANAGE_ROOM_STATUS_ROLES } from "../domain/roles.ts";
 import type { AppDeps, HonoEnvBindings } from "../types.ts";
 
+// auditoria-2/frontend [ALTO]: `estimatedCost` YA NO tiene `.default(0)` -- el
+// formulario de "Reportar" no pedía ningún costo, así que todo ticket quedaba en $0.00
+// (se veía como una medición real, no como "nadie lo estimó"). Sin valor, se persiste
+// `null` ("sin estimar") en vez de inventar un cero -- ver migración 0080.
 const crearTicketSchema = z.object({
   roomCode: z.string().trim().min(1).max(20).optional(),
   title: z.string().trim().min(1).max(150),
   description: z.string().trim().min(1).max(1000),
   origin: z.enum(["huesped", "staff", "agente", "sensor"]).default("staff"),
   severity: z.enum(["alta", "media", "baja"]).default("media"),
-  estimatedCost: z.number().nonnegative().max(1_000_000).default(0),
+  estimatedCost: z.number().nonnegative().max(1_000_000).optional(),
 });
 
 const asignarSchema = z.object({ assignedTo: z.string().uuid().nullable() });
@@ -49,7 +54,7 @@ interface TicketRow {
   severity: string;
   status: string;
   assigned_to: string | null;
-  estimated_cost: string;
+  estimated_cost: string | null;
   actual_cost: string | null;
   approval_id: string | null;
   created_at: string;
@@ -88,7 +93,7 @@ export function mantenimientoRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         severidad: t.severity,
         estado: t.status,
         asignadoA: t.assigned_to,
-        costoEstimado: Number(t.estimated_cost),
+        costoEstimado: t.estimated_cost != null ? Number(t.estimated_cost) : null,
         costoReal: t.actual_cost != null ? Number(t.actual_cost) : null,
         aprobacionId: t.approval_id,
         creadoEn: t.created_at,
@@ -112,7 +117,15 @@ export function mantenimientoRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     );
 
     const tool = createMaintenanceTicketTool({ db });
-    const result = await tool.run(ctx, body);
+    // auditoria-2/frontend [ALTO]: `CreateMaintenanceTicketInput.estimatedCost`
+    // (packages/agent-core, fuera de este lote) sigue tipado `number` no-nulo con
+    // `.default(0)` en su propio esquema Zod -- pero esa tool nunca re-valida `input`
+    // en tiempo de ejecución (`defineTool()` solo copia el spec, ver tool.ts), así que
+    // pasar `null` explícito aquí SÍ persiste "sin estimar" de verdad (migración 0080
+    // volvió la columna nullable). El cast documenta la brecha de tipos hasta que
+    // agent-core actualice su propio esquema a `.optional()`/nullable.
+    const toolInput = { ...body, estimatedCost: body.estimatedCost ?? null } as unknown as CreateMaintenanceTicketInput;
+    const result = await tool.run(ctx, toolInput);
     if (!result.ok) throw Errors.validation(result.summary);
 
     return c.json({ summary: result.summary, ...(result.data as object) }, 201);
