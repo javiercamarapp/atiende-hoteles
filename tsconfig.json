@@ -1,0 +1,8 @@
+{
+  "extends": "./packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "baseUrl": "."
+  },
+  "include": ["packages/db/src/**/*.ts", "tests/**/*.ts"]
+}

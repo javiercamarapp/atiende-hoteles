@@ -1,0 +1,11 @@
+{
+  "name": "@atiende-hoteles/config",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./eslint": "./eslint.config.js"
+  },
+  "files": ["tsconfig.base.json", "eslint.config.js"]
+}

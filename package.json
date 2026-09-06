@@ -5,5 +5,23 @@
   "type": "module",
   "workspaces": ["apps/*", "packages/*", "packages/mcp-servers/*"],
   "engines": { "node": ">=22" },
-  "scripts": {}
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "vitest run --config vitest.config.ts tests/unit",
+    "test:integration": "vitest run --config vitest.config.ts tests/integration --pool=forks --poolOptions.forks.singleFork",
+    "db:migrate": "node packages/db/src/cli.ts migrate",
+    "db:reset": "node packages/db/src/cli.ts reset"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.5",
+    "eslint": "^9.36.0",
+    "turbo": "^2.10.12",
+    "typescript": "5.9.3",
+    "typescript-eslint": "^8.46.2",
+    "vitest": "^3.2.4"
+  }
 }

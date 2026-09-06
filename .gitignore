@@ -10,4 +10,6 @@ coverage/
 !.env.example
 .DS_Store
 .lab/
+packages/db/.pgdata/
 tests/**/screenshots/*.tmp.png
+*.tsbuildinfo
