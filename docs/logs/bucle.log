@@ -77,3 +77,5 @@
 2026-09-06 11:31:47 ciclo=35 evento=loteA_completo esperando=B,C,inventario,H12a
 2026-09-06 11:40:46 ciclo=36 evento=inventario_completo LAUNCH=29 despacho=H12b(#56),H12c(#57)
 2026-09-06 11:42:03 ciclo=36 evento=modelos_verificados H12b,H12c; en curso: loteB, loteC, H12a, H12b, H12c
+2026-09-06 12:13:16 ciclo=37 evento=latido_dinamico en_curso=B,C,H12a,H12b,H12c
+2026-09-06 12:32:51 ciclo=38 evento=RATE_LIMIT_429 masivo: cortó B,C,H12a,H12b,H12c; usuario 'continua'; reanudando los 5 desde transcript
