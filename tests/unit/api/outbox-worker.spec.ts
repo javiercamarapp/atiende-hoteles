@@ -131,6 +131,81 @@ describe("drainOutboxOnce: reintentos y dead-letter", () => {
     expect(again.retried).toEqual([]);
   });
 
+  it("auditoria-1/backend [ALTO]: la causa real del error queda persistida en outbox.last_error, no descartada por un catch{} mudo", async () => {
+    const id = await insertOutboxEvent("payment.recorded");
+
+    await drainOutboxOnce(fixture.engine.admin, {
+      handlers: {
+        "payment.recorded": async () => {
+          throw new Error("conector CFDI respondió 500: payload inesperado");
+        },
+      },
+      maxAttempts: 5,
+    });
+
+    const { rows } = await fixture.engine.admin.query<{ last_error: string | null }>(
+      "select last_error from public.outbox where id = $1;",
+      [id],
+    );
+    expect(rows[0]!.last_error).toMatch(/conector CFDI respondió 500/);
+  });
+
+  it("auditoria-1/backend [ALTO]: el dead-letter final también conserva la causa real del último intento", async () => {
+    const id = await insertOutboxEvent("reservation.created");
+    await fixture.engine.admin.query(
+      "update public.outbox set attempts = 2, available_at = now() where id = $1;",
+      [id],
+    );
+
+    await drainOutboxOnce(fixture.engine.admin, {
+      handlers: {
+        "reservation.created": async () => {
+          throw new Error("PMS inalcanzable: ECONNREFUSED");
+        },
+      },
+      maxAttempts: 3,
+    });
+
+    const { rows } = await fixture.engine.admin.query<{ status: string; last_error: string | null }>(
+      "select status, last_error from public.outbox where id = $1;",
+      [id],
+    );
+    expect(rows[0]!.status).toBe("fallido");
+    expect(rows[0]!.last_error).toMatch(/PMS inalcanzable/);
+  });
+
+  it("auditoria-1/backend [ALTO]: un handler colgado (nunca resuelve) se trata como fallo por timeout sin bloquear el resto del batch", async () => {
+    const idColgado = await insertOutboxEvent("payment.recorded");
+    const idNormal = await insertOutboxEvent("reservation.created");
+
+    let handlerNormalLlamado = false;
+    const inicio = Date.now();
+    const result = await drainOutboxOnce(fixture.engine.admin, {
+      handlers: {
+        "payment.recorded": () => new Promise(() => {}), // nunca resuelve ni rechaza
+        "reservation.created": async () => {
+          handlerNormalLlamado = true;
+        },
+      },
+      handlerTimeoutMs: 50,
+      maxAttempts: 5,
+    });
+    const duracionMs = Date.now() - inicio;
+
+    // El batch completo terminó rápido (no esperó indefinidamente al handler colgado)
+    // y SÍ llegó a procesar el segundo evento del mismo batch.
+    expect(duracionMs).toBeLessThan(2000);
+    expect(handlerNormalLlamado).toBe(true);
+    expect(result.delivered).toEqual([idNormal]);
+    expect(result.retried).toEqual([idColgado]);
+
+    const { rows } = await fixture.engine.admin.query<{ last_error: string | null }>(
+      "select last_error from public.outbox where id = $1;",
+      [idColgado],
+    );
+    expect(rows[0]!.last_error).toMatch(/handler_timeout/);
+  });
+
   it("un event_type sin handler registrado se trata como fallo (nunca se marca 'enviado' silenciosamente)", async () => {
     const id = await insertOutboxEvent("evento.sin.manejador");
 
