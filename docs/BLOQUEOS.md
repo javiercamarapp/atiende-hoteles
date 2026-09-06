@@ -12,6 +12,7 @@
 - **Qué necesita el usuario responder:** ruta exacta de la carpeta (o autorizar una candidata).
 - **Intento 2 (2026-09-05, Sonnet #11):** grep en wiki 'mi memoria claude', wiki-sync-inbox, memoria de Claude, ~/.codex ~/.grok ~/.gemini ~/.antigravity ~/.openclaw, ~/.zsh_history, y listados de Desktop/GitHub, INTENTO DE STARTUPS, Escritorio/Documentos Mac mini y Google Drive 'Mi unidad' → **ninguna mención**. Detalle: docs/evidencia-B-001-busqueda-ampliada.md.
 - **Intentos:** 2 sin progreso. Búsqueda local agotada; solo el usuario puede resolverlo.
+- **Estado 2026-09-05 (cierre de sesión de bucle):** trabajo independiente (requisitos, aceptación, arquitectura, protocolo de auditoría, auditoría-0) COMPLETADO; el bucle se detuvo conforme al encargo. Para continuar hace falta la ruta destino (o autorización explícita para construir el código en el repo provisional).
 
 ## B-002 — Toolchain local sin Docker/Supabase CLI/Postgres (ABIERTO, con trabajo independiente)
 - `docker`, `supabase`, `deno`, `psql`, `pg_ctl` no están instalados. Restaurantes depende de Supabase+Deno.
