@@ -278,6 +278,69 @@ describe("AgentRunner", () => {
     expect(runSpy).toHaveBeenCalledTimes(1);
   });
 
+  it("loop-guard: detecta una repeticion NO inmediata (con otra tool intercalada) dentro " +
+    "de la ventana de N pasos (aud-1 tool-calling.md ALTO #2)", async () => {
+    const runSpy = vi.fn(() => ({ ok: true, summary: "ticket creado" }));
+    const tools = new ToolRegistry();
+    tools.register(
+      defineTool({
+        name: "crear_ticket_housekeeping",
+        description: "crea un ticket de housekeeping",
+        inputSchema: z.object({ habitacion: z.string(), detalle: z.string() }),
+        effect: "write",
+        needsApproval: false,
+        run: runSpy,
+      }),
+    );
+    tools.register(
+      defineTool({
+        name: "consultar_estado_habitacion",
+        description: "consulta el estado de una habitacion",
+        inputSchema: z.object({}),
+        effect: "read",
+        needsApproval: false,
+        run: () => ({ ok: true, summary: "ocupada" }),
+      }),
+    );
+    const input = { habitacion: "204", detalle: "toalla sucia" };
+    const provider = new FakeProvider([
+      { kind: "tool_calls", calls: [{ name: "crear_ticket_housekeeping", input }] },
+      { kind: "tool_calls", calls: [{ name: "consultar_estado_habitacion", input: {} }] },
+      { kind: "tool_calls", calls: [{ name: "crear_ticket_housekeeping", input }] },
+    ]);
+    const runner = new AgentRunner(baseOptions({ provider, tools, maxSteps: 10 }));
+    const result = await runner.run(ctxFor(), "hay una toalla sucia en 204");
+    expect(result.status).toBe("agotado_pasos");
+    // Solo UN ticket, nunca dos duplicados por el mismo motivo.
+    expect(runSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("loop-guard: la firma de repeticion usa el input ya coercionado por Zod (tipos " +
+    "normalizados), no el input crudo del modelo (aud-1 agentico.md ALTO #4)", async () => {
+    const runSpy = vi.fn(() => ({ ok: true, summary: "ticket creado" }));
+    const tools = new ToolRegistry();
+    tools.register(
+      defineTool({
+        name: "crear_ticket_housekeeping",
+        description: "crea un ticket de housekeeping",
+        inputSchema: z.object({ habitacion: z.coerce.number() }),
+        effect: "write",
+        needsApproval: false,
+        run: runSpy,
+      }),
+    );
+    const provider = new FakeProvider([
+      { kind: "tool_calls", calls: [{ name: "crear_ticket_housekeeping", input: { habitacion: 204 } }] },
+      { kind: "tool_calls", calls: [{ name: "crear_ticket_housekeeping", input: { habitacion: "204" } }] },
+    ]);
+    const runner = new AgentRunner(baseOptions({ provider, tools, maxSteps: 10 }));
+    const result = await runner.run(ctxFor(), "toalla sucia en 204 otra vez");
+    expect(result.status).toBe("agotado_pasos");
+    // {habitacion: 204} y {habitacion: "204"} coercionan al MISMO valor: es la misma
+    // llamada, no dos llamadas distintas.
+    expect(runSpy).toHaveBeenCalledTimes(1);
+  });
+
   it("loop-guard: en la ultima ronda sin tool terminal disponible, corta sin ejecutar ninguna mutacion", async () => {
     const runSpy = vi.fn(() => ({ ok: true, summary: "hecho" }));
     const tools = new ToolRegistry();

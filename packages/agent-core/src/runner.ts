@@ -38,6 +38,10 @@ export interface AgentRunnerOptions {
   /** Tools cuyo resultado no vuelve al modelo (Likida §2.6 `terminalTools`): son las
    * unicas que se permiten ejecutar en la ultima ronda del loop-guard. */
   readonly terminalToolNames?: readonly string[];
+  /** Ventana de llamadas (tool+input) recientes que el loop-guard recuerda para detectar
+   * una repeticion NO inmediata (con otra tool intercalada) -- default 5 (aud-1
+   * tool-calling.md ALTO #2: antes solo se comparaba contra la ULTIMA llamada). */
+  readonly loopGuardWindow?: number;
   readonly costLedger?: CostLedger;
   readonly onTrace?: (event: AgentTraceEvent) => void;
 }
@@ -109,7 +113,10 @@ export class AgentRunner {
 
     let activeProvider = opts.provider;
     let usedFallback = false;
-    let lastToolSignature: string | undefined;
+    // aud-1 tool-calling.md ALTO #2: ventana de las ultimas N firmas tool+input (no solo
+    // la ULTIMA) para detectar una repeticion no inmediata (con otra tool intercalada).
+    const recentToolSignatures: string[] = [];
+    const loopGuardWindow = Math.max(1, opts.loopGuardWindow ?? 5);
     let step = 0;
 
     this.emit(ctx, runId, 0, "run_started", {});
@@ -227,11 +234,27 @@ export class AgentRunner {
           continue;
         }
 
-        const signature = `${call.name}::${hashApprovalInput(call.input)}`;
-        if (signature === lastToolSignature) {
+        // aud-1 agentico.md ALTO #4: la firma del loop-guard se calcula sobre el input YA
+        // VALIDADO/COERCIONADO por Zod (`parsed.data`), no sobre `call.input` crudo del
+        // modelo -- `{habitacion: 204}` y `{habitacion: "204"}` deben producir la MISMA
+        // firma cuando el schema los coerciona al mismo valor (tipos normalizados);
+        // `hashApprovalInput` ya ordena claves de forma canonica.
+        const parsed = tool.inputSchema.safeParse(call.input);
+        if (!parsed.success) {
+          toolResultMessages.push({
+            role: "tool",
+            toolCallId: call.id,
+            toolName: call.name,
+            content: "entrada invalida para la tool",
+          });
+          continue;
+        }
+
+        const signature = `${call.name}::${hashApprovalInput(parsed.data)}`;
+        if (recentToolSignatures.includes(signature)) {
           this.emit(ctx, runId, step, "loop_guard", {
             toolName: call.name,
-            message: "repeticion inmediata de la misma tool+input",
+            message: `repeticion de la misma tool+input dentro de la ventana de ${loopGuardWindow} llamadas`,
           });
           return this.close(
             runId,
@@ -243,17 +266,9 @@ export class AgentRunner {
               "se detiene (loop-guard) en vez de seguir gastando presupuesto.",
           );
         }
-        lastToolSignature = signature;
-
-        const parsed = tool.inputSchema.safeParse(call.input);
-        if (!parsed.success) {
-          toolResultMessages.push({
-            role: "tool",
-            toolCallId: call.id,
-            toolName: call.name,
-            content: "entrada invalida para la tool",
-          });
-          continue;
+        recentToolSignatures.push(signature);
+        if (recentToolSignatures.length > loopGuardWindow) {
+          recentToolSignatures.shift();
         }
 
         if (tool.effect !== "read" && opts.gate === "shadow") {
