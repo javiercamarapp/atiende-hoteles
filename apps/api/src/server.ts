@@ -10,6 +10,7 @@ import { rootLogger } from "./logger.ts";
 import { RateLimiter } from "./lib/rateLimit.ts";
 import { MetricsRegistry } from "./metrics.ts";
 import type { AppDeps } from "./types.ts";
+import { startNightAuditScheduler } from "./jobs/nightAuditScheduler.ts";
 
 async function main() {
   const env = loadEnv();
@@ -34,8 +35,18 @@ async function main() {
     logger.info({ port: info.port }, "apps/api escuchando");
   });
 
+  // REQ-REV-013 · planificador en proceso del night audit (lock por hotel +
+  // idempotencia real vía night_audit_claim, ver jobs/nightAuditScheduler.ts) --
+  // también ejecutable de forma independiente vía
+  // `node scripts/run-night-audit-scheduler.ts` (cron del sistema operativo).
+  const nightAuditScheduler = startNightAuditScheduler(engine.admin, {
+    onTick: (results) => logger.info({ results }, "night audit scheduler: tick"),
+    onError: (err) => logger.error({ err }, "night audit scheduler: error en tick"),
+  });
+
   const shutdown = async () => {
     logger.info("apagando apps/api");
+    nightAuditScheduler.stop();
     await engine.stop();
     process.exit(0);
   };
