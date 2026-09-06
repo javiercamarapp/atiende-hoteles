@@ -37,25 +37,111 @@ export interface ToolDefinitionSpec<TInput> {
 
 export type ToolDefinition<TInput = unknown> = ToolDefinitionSpec<TInput>;
 
-const FORBIDDEN_FIELD_PATTERN =
-  /(org.?id|hotel.?id|tenant.?id|guest.?id|actor.?id|staff.?id|property.?id)/i;
+// aud-1 tool-calling.md ALTO #1: lista CONFIGURABLE de sinonimos prohibidos -- un futuro
+// `packages/domain-hotel` puede registrar sinonimos adicionales propios del dominio con
+// `registerForbiddenIdentifierPattern()` sin tener que editar este archivo. `location`
+// se agrega aqui porque, segun `packages/db/migrations/0002_org_location_hotel.sql` y
+// `packages/db/README.md`, `location` es el nombre real de la entidad que representa un
+// hotel (`location.kind='hotel'`) -- un identificador de hotel por otro nombre.
+export const DEFAULT_FORBIDDEN_FIELD_PATTERNS: readonly RegExp[] = [
+  /org.?id/i,
+  /hotel.?id/i,
+  /tenant.?id/i,
+  /guest.?id/i,
+  /actor.?id/i,
+  /staff.?id/i,
+  /property.?id/i,
+  /location.?id/i,
+];
 
-function assertNoIdentifierFields(schema: ZodTypeAny, toolName: string): void {
-  if (!(schema instanceof z.ZodObject)) {
-    // Solo validamos la forma cuando es un objeto; otros tipos (z.void(), etc.) se
-    // aceptan tal cual.
+const forbiddenFieldPatterns: RegExp[] = [...DEFAULT_FORBIDDEN_FIELD_PATTERNS];
+
+/** Registra un sinonimo adicional de identificador prohibido (p.ej. desde
+ * packages/domain-hotel cuando aparezca un nombre de campo propio del dominio que
+ * tambien identifique tenant/hotel/actor). Afecta a TODAS las tools definidas despues
+ * de la llamada, en cualquier paquete que comparta este modulo. */
+export function registerForbiddenIdentifierPattern(pattern: RegExp): void {
+  forbiddenFieldPatterns.push(pattern);
+}
+
+function isForbiddenFieldName(key: string): boolean {
+  return forbiddenFieldPatterns.some((pattern) => pattern.test(key));
+}
+
+/** Desenvuelve wrappers que no cambian la forma verificable (optional/nullable/default)
+ * para llegar al tipo real declarado. */
+function unwrapSchema(schema: ZodTypeAny): ZodTypeAny {
+  let current: ZodTypeAny = schema;
+  while (current instanceof z.ZodOptional || current instanceof z.ZodNullable || current instanceof z.ZodDefault) {
+    current = (current._def as unknown as { innerType: ZodTypeAny }).innerType;
+  }
+  return current;
+}
+
+/**
+ * Recorre el ESQUEMA COMPLETO (no solo el primer nivel) de una tool buscando
+ * identificadores de tenant/hotel/actor: objetos anidados, arreglos de objetos,
+ * uniones. Rechaza de forma estructural cualquier esquema cuyas claves no se puedan
+ * enumerar y verificar por completo -- `.passthrough()`/`.catchall()` (deja pasar
+ * cualquier campo no declarado, incluido un identificador), `z.record(...)` (claves
+ * arbitrarias) y `z.any()`/`z.unknown()` (cualquier valor, incluido un objeto con un
+ * identificador adentro) -- en vez de aceptarlos por no ser un `ZodObject` de primer
+ * nivel (aud-1 tool-calling.md ALTO #1).
+ */
+function assertNoIdentifierFields(schema: ZodTypeAny, toolName: string, path = ""): void {
+  const label = path || "(raiz)";
+  const unwrapped = unwrapSchema(schema);
+
+  if (unwrapped instanceof z.ZodAny || unwrapped instanceof z.ZodUnknown) {
+    throw new ToolDefinitionError(
+      `la tool "${toolName}" usa z.any()/z.unknown() en "${label}": ese campo podria traer ` +
+        `un identificador de tenant/hotel/actor sin que nada lo detecte (ADR-006)`,
+    );
+  }
+
+  if (unwrapped instanceof z.ZodRecord) {
+    throw new ToolDefinitionError(
+      `la tool "${toolName}" usa z.record(...) en "${label}": las claves arbitrarias no se ` +
+        `pueden verificar contra identificadores prohibidos (ADR-006)`,
+    );
+  }
+
+  if (unwrapped instanceof z.ZodArray) {
+    assertNoIdentifierFields((unwrapped._def as unknown as { element: ZodTypeAny }).element, toolName, `${label}[]`);
     return;
   }
-  const shape = schema.shape as Record<string, unknown>;
-  for (const key of Object.keys(shape)) {
-    if (FORBIDDEN_FIELD_PATTERN.test(key)) {
+
+  if (unwrapped instanceof z.ZodUnion) {
+    for (const option of (unwrapped._def as unknown as { options: readonly ZodTypeAny[] }).options) {
+      assertNoIdentifierFields(option, toolName, label);
+    }
+    return;
+  }
+
+  if (unwrapped instanceof z.ZodObject) {
+    const def = unwrapped._def as { catchall?: ZodTypeAny };
+    if (def.catchall && !(def.catchall instanceof z.ZodNever)) {
       throw new ToolDefinitionError(
-        `la tool "${toolName}" declara el campo "${key}" en su esquema de entrada: los ` +
-          `identificadores de tenant/hotel/actor nunca deben venir del modelo (ADR-006, ` +
-          `patron Likida "properties: {}")`,
+        `la tool "${toolName}" declara un esquema .passthrough()/.catchall() en "${label}": ` +
+          `permite colar cualquier campo no declarado (incluido un identificador de tenant/hotel/actor) ` +
+          `sin que el esquema lo verifique (ADR-006)`,
       );
     }
+    const shape = unwrapped.shape as Record<string, ZodTypeAny>;
+    for (const key of Object.keys(shape)) {
+      if (isForbiddenFieldName(key)) {
+        throw new ToolDefinitionError(
+          `la tool "${toolName}" declara el campo "${path ? `${path}.${key}` : key}" en su esquema de ` +
+            `entrada: los identificadores de tenant/hotel/actor nunca deben venir del modelo (ADR-006, ` +
+            `patron Likida "properties: {}")`,
+        );
+      }
+      assertNoIdentifierFields(shape[key]!, toolName, path ? `${path}.${key}` : key);
+    }
+    return;
   }
+
+  // Tipos primitivos (string, number, boolean, enum, etc.): nada mas que verificar.
 }
 
 const NAME_PATTERN = /^[a-z][a-z0-9_]*$/;

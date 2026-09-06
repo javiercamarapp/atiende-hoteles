@@ -104,6 +104,109 @@ describe("defineTool", () => {
     ).toThrow(/nunca deben venir del modelo/);
   });
 
+  // aud-1 tool-calling.md ALTO #1: assertNoIdentifierFields solo miraba el primer nivel
+  // de un ZodObject -- 5 formas de bypass verificadas contra el codigo real, ninguna
+  // lanzaba ToolDefinitionError.
+  it("rechaza un identificador prohibido ANIDADO dentro de otro objeto", () => {
+    expect(() =>
+      defineTool({
+        name: "buscar_reservas",
+        description: "busca reservas con un filtro",
+        inputSchema: z.object({ filtro: z.object({ hotel_id: z.string() }) }),
+        effect: "read",
+        needsApproval: false,
+        run: () => ({ ok: true, summary: "ok" }),
+      }),
+    ).toThrow(ToolDefinitionError);
+  });
+
+  it("rechaza un identificador prohibido dentro de un ARREGLO de objetos", () => {
+    expect(() =>
+      defineTool({
+        name: "actualizar_lote",
+        description: "actualiza varios items",
+        inputSchema: z.object({ items: z.array(z.object({ hotel_id: z.string() })) }),
+        effect: "write",
+        needsApproval: true,
+        run: () => ({ ok: true, summary: "ok" }),
+      }),
+    ).toThrow(ToolDefinitionError);
+  });
+
+  it("rechaza un esquema .passthrough() (permite colar cualquier campo no declarado)", () => {
+    expect(() =>
+      defineTool({
+        name: "abrir_ticket",
+        description: "abre un ticket",
+        inputSchema: z.object({ ticketId: z.string() }).passthrough(),
+        effect: "write",
+        needsApproval: true,
+        run: () => ({ ok: true, summary: "ok" }),
+      }),
+    ).toThrow(ToolDefinitionError);
+  });
+
+  it("rechaza z.record(...) (claves arbitrarias, no verificables)", () => {
+    expect(() =>
+      defineTool({
+        name: "actualizar_metadatos",
+        description: "actualiza metadatos libres",
+        inputSchema: z.record(z.string(), z.unknown()),
+        effect: "write",
+        needsApproval: true,
+        run: () => ({ ok: true, summary: "ok" }),
+      }),
+    ).toThrow(ToolDefinitionError);
+  });
+
+  it("rechaza z.any()/z.unknown() en cualquier parte del esquema", () => {
+    expect(() =>
+      defineTool({
+        name: "ejecutar_generico",
+        description: "ejecuta algo generico",
+        inputSchema: z.object({ payload: z.any() }),
+        effect: "write",
+        needsApproval: true,
+        run: () => ({ ok: true, summary: "ok" }),
+      }),
+    ).toThrow(ToolDefinitionError);
+    expect(() =>
+      defineTool({
+        name: "ejecutar_generico_2",
+        description: "ejecuta algo generico",
+        inputSchema: z.object({ payload: z.unknown() }),
+        effect: "write",
+        needsApproval: true,
+        run: () => ({ ok: true, summary: "ok" }),
+      }),
+    ).toThrow(ToolDefinitionError);
+  });
+
+  it("rechaza el sinonimo real del dominio location_id (hotel por otro nombre)", () => {
+    expect(() =>
+      defineTool({
+        name: "consultar_ubicacion",
+        description: "consulta datos de una ubicacion",
+        inputSchema: z.object({ location_id: z.string() }),
+        effect: "read",
+        needsApproval: false,
+        run: () => ({ ok: true, summary: "ok" }),
+      }),
+    ).toThrow(ToolDefinitionError);
+  });
+
+  it("sigue aceptando un esquema anidado SIN identificadores prohibidos", () => {
+    const tool = defineTool({
+      name: "buscar_habitaciones",
+      description: "busca habitaciones por filtro",
+      inputSchema: z.object({ filtro: z.object({ tipo: z.string(), precioMax: z.number().optional() }) }),
+      effect: "read",
+      needsApproval: false,
+      run: () => ({ ok: true, summary: "ok" }),
+    });
+    expect(tool.name).toBe("buscar_habitaciones");
+  });
+
   it("rechaza un nombre de tool invalido", () => {
     expect(() =>
       defineTool({
