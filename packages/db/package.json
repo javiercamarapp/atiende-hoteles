@@ -1,0 +1,24 @@
+{
+  "name": "@atiende-hoteles/db",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "migrate": "node src/cli.ts migrate",
+    "reset": "node src/cli.ts reset",
+    "seed": "node src/cli.ts seed"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "embedded-postgres": "18.4.0-beta.17",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.5"
+  }
+}
