@@ -60,3 +60,4 @@
 2026-09-06 10:40:05 ciclo=30 evento=aud-2 frontend=6/10(0C/2A) faltan=11
 2026-09-06 10:40:52 ciclo=30 evento=aud-2 legal=3/10(3C/4A) faltan=10
 2026-09-06 10:41:39 ciclo=30 evento=aud-2 fiscal=2/10(3C/3A) faltan=9
+2026-09-06 10:42:23 ciclo=30 evento=aud-2 tool-calling=3/10(2C/1A) faltan=8
