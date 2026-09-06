@@ -138,6 +138,16 @@ Buscar en logs: `nivel = "alerta"` y `tipo = "error_camino_dinero"`
 (`apps/api/src/lib/moneyAlert.ts`). Cada línea trae `route`, `status`, `org_id`,
 `hotel_id`, `user_id`, `request_id`, `error`.
 
+**auditoria-2/operabilidad [ALTO], corregido**: si el proceso tiene
+`MONEY_ALERT_WEBHOOK_URL` (webhook genérico: Slack/PagerDuty/endpoint propio/relevo a
+correo) y/o el par `MONEY_ALERT_EMAIL_TO`+`MONEY_ALERT_EMAIL_WEBHOOK_URL` configurados
+(ver `apps/api/README.md` "Observabilidad"), la misma alerta también se entrega ahí por
+HTTP POST — no depende únicamente de que alguien esté mirando/filtrando los logs
+activamente. **Si ninguno está configurado**, el arranque del proceso ya lo declara con
+otra línea `nivel: "alerta"` (`tipo: "alerta_camino_dinero_sin_destinatario"`) y
+`GET /ready` lo refleja en `moneyAlertsConfigured: false` — confirmar ese campo antes
+de asumir que "alguien ya se habría enterado" de una alerta anterior.
+
 ### 3.2 Diagnóstico
 1. Con el `request_id` de la alerta, buscar la línea `request` correspondiente (mismo
    `request_id`) para ver el `path`/`method`/`duration_ms` completos.

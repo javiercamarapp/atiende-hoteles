@@ -44,6 +44,8 @@ al arrancar `npm run dev`/`vite dev` de `apps/web` (o en un `.env.local` de esa 
 | `RATE_LIMIT_PER_USER_PER_MINUTE` | `600` | No | Límite de solicitudes por usuario autenticado y por minuto. |
 | `LOG_LEVEL` | `info` | No | Nivel de `pino`. |
 | `LOG_PRETTY` | (sin definir) | No | `1` para formato legible en desarrollo (`pino-pretty`); en producción siempre JSON. |
+| `MONEY_ALERT_WEBHOOK_URL` | (sin definir) | No | Webhook genérico que recibe cada alerta del camino del dinero por HTTP POST. Sin definir (ni el par de abajo), la alerta queda solo como log. |
+| `MONEY_ALERT_EMAIL_TO` / `MONEY_ALERT_EMAIL_WEBHOOK_URL` | (sin definir) | No | Ambas juntas: envía `{to, subject, alert}` al webhook de correo configurado. |
 
 ## Credenciales de desarrollo (seed)
 
@@ -149,9 +151,23 @@ adaptador de Redis después, sin tocar el middleware), un límite por IP
   cada línea de request (`src/app.ts`), PII (`password`, `authorization`, `token`)
   redactada.
 - `GET /health` (proceso vivo) y `GET /ready` (Postgres responde + al menos una
-  migración aplicada, 503 si no).
+  migración aplicada, 503 si no; incluye `moneyAlertsConfigured`, ver abajo).
 - `audit_log` (append-only, hash encadenado, `packages/db`) se escribe en toda mutación
   de negocio vía `record_audit_log()` dentro de la misma transacción.
+- **Alerta del camino del dinero** (`nivel: "alerta"`, ADR-008, `src/lib/moneyAlert.ts`):
+  cualquier 5xx en una ruta de cargos/pagos/CFDI/folios/reservas emite un log
+  estructurado. auditoria-2/operabilidad [ALTO]: hasta este fix esa línea de log era
+  **el mecanismo completo** -- nadie recibía una notificación activa, la detección
+  dependía de que alguien estuviera mirando los logs. Ahora, si defines
+  `MONEY_ALERT_WEBHOOK_URL` (webhook genérico: Slack, PagerDuty, un endpoint propio, o
+  un relevo webhook→correo) y/o el par `MONEY_ALERT_EMAIL_TO` +
+  `MONEY_ALERT_EMAIL_WEBHOOK_URL`, cada alerta se entrega ahí por HTTP POST además de
+  quedar en el log. **Si no defines ninguno, sigue siendo solo una línea de log** -- el
+  proceso lo declara explícitamente al arrancar (log de arranque `nivel: "alerta"`,
+  `tipo: "alerta_camino_dinero_sin_destinatario"`) y `GET /ready` lo refleja en
+  `moneyAlertsConfigured: false`, para que la brecha sea visible sin leer el código.
+  REQ-BO-034 (umbral+destinatario configurable) sigue `pendiente` en
+  `docs/REQUISITOS.md` -- esto cubre "destinatario", no un umbral configurable por tipo.
 
 ## Auditoría-1: hallazgos cerrados en H4
 

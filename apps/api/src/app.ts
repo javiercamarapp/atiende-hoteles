@@ -36,12 +36,30 @@ import { mensajeriaRoutes } from "./routes/mensajeria.ts";
 import { agentesRoutes } from "./routes/agentes.ts";
 import { roiRoutes } from "./routes/roi.ts";
 import { toErrorBody } from "./lib/errors.ts";
-import { buildMoneyAlertLog, isMoneyPath } from "./lib/moneyAlert.ts";
+import {
+  buildMoneyAlertLog,
+  buildNoDestinationStartupLog,
+  dispatchMoneyAlert,
+  hasMoneyAlertDestination,
+  isMoneyPath,
+  resolveMoneyAlertDestination,
+} from "./lib/moneyAlert.ts";
 import { ipRateLimit, requestId, userRateLimit } from "./middleware.ts";
 import type { AppDeps, HonoEnvBindings, ResolvedAppDeps } from "./types.ts";
 
 export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   const app = new Hono<HonoEnvBindings>();
+
+  // auditoria-2/operabilidad [ALTO]: la alerta del camino del dinero (`nivel: "alerta"`
+  // más abajo) no tenía NINGÚN destinatario -- solo una línea de log a stdout, sin
+  // webhook/correo configurable (REQ-BO-034, todavía `pendiente` en
+  // docs/REQUISITOS.md). `createApp()` corre una única vez al arrancar el proceso real
+  // (server.ts) -- si ningún destino está configurado, se declara explícitamente aquí
+  // en vez de quedar como una brecha silenciosa que solo se nota leyendo el código.
+  const moneyAlertDestination = resolveMoneyAlertDestination();
+  if (!hasMoneyAlertDestination(moneyAlertDestination)) {
+    deps.logger.error(buildNoDestinationStartupLog(), "alerta_camino_dinero_sin_destinatario");
+  }
 
   // H5 · REQ-INT-002/REQ-INT-005: sin credenciales reales del PSP/PAC, `createApp`
   // instancia UN adaptador simulado compartido por proceso (su idempotencia interna
@@ -114,19 +132,26 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
     // `nivel: "alerta"` -- cubre también las respuestas 500 devueltas directamente por
     // un handler (sin pasar por `app.onError`, ver más abajo).
     if (c.res.status >= 500 && isMoneyPath(route)) {
-      deps.logger.error(
-        buildMoneyAlertLog({
-          requestId: c.get("requestId") ?? "sin-id",
-          route,
-          method: c.req.method,
-          status: c.res.status,
-          orgId: c.get("orgId"),
-          hotelId: c.get("hotelIds")?.[0],
-          userId: c.get("userId"),
-          errorMessage: c.error?.message,
-        }),
-        "alerta_camino_dinero",
-      );
+      const alerta = buildMoneyAlertLog({
+        requestId: c.get("requestId") ?? "sin-id",
+        route,
+        method: c.req.method,
+        status: c.res.status,
+        orgId: c.get("orgId"),
+        hotelId: c.get("hotelIds")?.[0],
+        userId: c.get("userId"),
+        errorMessage: c.error?.message,
+      });
+      deps.logger.error(alerta, "alerta_camino_dinero");
+      // auditoria-2/operabilidad [ALTO]: entrega real al destino configurado (si hay
+      // uno, ver `hasMoneyAlertDestination` arriba) -- SIN `await` dentro del ciclo de
+      // respuesta: un webhook lento/caído nunca debe añadir latencia (ni un segundo
+      // fallo) al request que ya falló. `dispatchMoneyAlert` nunca lanza (atrapa sus
+      // propios errores de red y los loguea), así que este `.catch` es solo una red de
+      // seguridad adicional por si un caso no contemplado se escapa.
+      void dispatchMoneyAlert(alerta, moneyAlertDestination, { logger: deps.logger }).catch((err) => {
+        deps.logger.error({ err: err instanceof Error ? err.message : String(err) }, "fallo inesperado entregando alerta_camino_dinero");
+      });
     }
   });
 
