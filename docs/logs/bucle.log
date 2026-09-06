@@ -35,3 +35,5 @@
 2026-09-06 06:04:33 ciclo=13 evento=auditoria-1 pruebas=5/10(1C/2A) crítico_de_monto→H4
 2026-09-06 06:06:02 ciclo=13 evento=auditoria-1 datos=3/10(2C/1A) falta=agentico
 2026-09-06 06:06:41 ciclo=14 evento=auditoria-1_completa 6/6 media=3.8 crit=10 despacho=fix_agent-core(#29)
+2026-09-06 06:07:08 ciclo=14 evento=fix_agent-core despachado modelo_verificado
+2026-09-06 06:15:40 ciclo=15 evento=H9+H11_completado worktree merge=pendiente_H4
