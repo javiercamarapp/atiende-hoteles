@@ -257,7 +257,7 @@ describe("A5 (auditoria-2 agentico ALTO): el techo mensual por (hotel, agente) e
       });
 
     const [resA, resB] = await Promise.all([dispararDemo(), dispararDemo()]);
-    const [bodyA, bodyB] = (await Promise.all([resA.json(), resB.json()])) as Array<{ estado: string }>;
+    const [bodyA, bodyB] = (await Promise.all([resA.json(), resB.json()])) as [{ estado: string }, { estado: string }];
     const bloqueadas = [bodyA, bodyB].filter((b) => b.estado === "presupuesto_agotado");
     const completadas = [bodyA, bodyB].filter((b) => b.estado !== "presupuesto_agotado");
 
