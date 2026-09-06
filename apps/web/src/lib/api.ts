@@ -114,6 +114,99 @@ export interface Reserva {
   canal: string;
   estado: string;
   total: number;
+  codigoConfirmacion?: string;
+  folioId?: string | null;
+}
+
+export type EstadoReserva =
+  | "cotizada"
+  | "confirmada"
+  | "check_in"
+  | "en_estancia"
+  | "check_out"
+  | "cerrada"
+  | "cancelada"
+  | "no_show";
+
+export interface Cotizacion {
+  nights: number;
+  currency: string;
+  netAmount: number;
+  ivaAmount: number;
+  ishAmount: number;
+  totalAmount: number;
+  nightlyBreakdown: { date: string; price: number }[];
+}
+
+export interface CrearReservaInput {
+  roomTypeId: string;
+  guestId?: string | null;
+  checkInDate: string;
+  checkOutDate: string;
+}
+
+export interface ModificarReservaInput {
+  roomTypeId?: string;
+  checkInDate: string;
+  checkOutDate: string;
+}
+
+export interface CancelacionResultado {
+  id: string;
+  estado: string;
+  codigoConfirmacion: string;
+  montoPenalizacion: number;
+  montoReembolso: number;
+}
+
+export interface TarifaFila {
+  id: string;
+  roomTypeId: string;
+  fecha: string;
+  precio: number;
+  moneda: string;
+  estadiaMinima: number;
+  cerradoLlegada: boolean;
+  cerradoSalida: boolean;
+}
+
+export interface ActualizarTarifaInput {
+  roomTypeId: string;
+  date?: string;
+  desde?: string;
+  hasta?: string;
+  price: number;
+  minStay?: number;
+  closedToArrival?: boolean;
+  closedToDeparture?: boolean;
+}
+
+export interface ConfigImpuestos {
+  ivaRate: number;
+  ishRate: number;
+}
+
+export interface PoliticaCancelacion {
+  freeUntilHours: number;
+  penaltyPct: number;
+  noShowPct: number;
+  depositPct: number;
+}
+
+export interface DisponibilidadGridDia {
+  fecha: string;
+  disponibles: number | null;
+  total: number | null;
+  tarifa: number | null;
+  cerradoLlegada: boolean;
+  cerradoSalida: boolean;
+  estadiaMinima: number;
+}
+
+export interface DisponibilidadGridFila {
+  tipoHabitacionId: string;
+  tipoHabitacion: string;
+  dias: DisponibilidadGridDia[];
 }
 
 export interface Huesped {
@@ -132,6 +225,7 @@ export interface TicketOperativo {
 }
 
 export interface DisponibilidadFila {
+  tipoHabitacionId: string;
   tipoHabitacion: string;
   disponibles: number;
   total: number;
@@ -245,4 +339,89 @@ export async function listarCobrosVariables(hotelId: string): Promise<LineaCobro
 
 export async function listarStaff(hotelId: string): Promise<StaffCuenta[]> {
   return obtenerModulo<StaffCuenta[]>(hotelId, "configuracion/staff");
+}
+
+// ---- Reservas: cotizar, crear, modificar, cancelar (H4) ----
+
+function claveIdempotencia(): string {
+  return crypto.randomUUID();
+}
+
+export async function cotizarReserva(
+  hotelId: string,
+  input: { roomTypeId: string; checkInDate: string; checkOutDate: string },
+): Promise<Cotizacion> {
+  return request<Cotizacion>(`/hoteles/${hotelId}/quotes`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function obtenerReserva(hotelId: string, reservationId: string): Promise<Reserva> {
+  return request<Reserva>(`/hoteles/${hotelId}/reservas/${reservationId}`);
+}
+
+export async function crearReserva(hotelId: string, input: CrearReservaInput): Promise<Reserva> {
+  return request<Reserva>(`/hoteles/${hotelId}/reservas`, {
+    method: "POST",
+    headers: { "idempotency-key": claveIdempotencia() },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function modificarReserva(
+  hotelId: string,
+  reservationId: string,
+  input: ModificarReservaInput,
+): Promise<Reserva> {
+  return request<Reserva>(`/hoteles/${hotelId}/reservas/${reservationId}/fechas`, {
+    method: "PATCH",
+    headers: { "idempotency-key": claveIdempotencia() },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function cancelarReserva(hotelId: string, reservationId: string): Promise<CancelacionResultado> {
+  return request<CancelacionResultado>(`/hoteles/${hotelId}/reservas/${reservationId}/cancelar`, { method: "POST" });
+}
+
+export async function transicionarReserva(hotelId: string, reservationId: string, toStatus: string): Promise<Reserva> {
+  return request<Reserva>(`/hoteles/${hotelId}/reservas/${reservationId}/transicion`, {
+    method: "PATCH",
+    body: JSON.stringify({ toStatus }),
+  });
+}
+
+// ---- Disponibilidad por rango (grilla) ----
+
+export async function listarDisponibilidadGrid(hotelId: string, desde: string, hasta: string): Promise<DisponibilidadGridFila[]> {
+  return request<DisponibilidadGridFila[]>(`/hoteles/${hotelId}/disponibilidad/grid?desde=${desde}&hasta=${hasta}`);
+}
+
+// ---- Tarifas / impuestos / política de cancelación (H4) ----
+
+export async function listarTarifas(
+  hotelId: string,
+  params: { desde: string; hasta: string; roomTypeId?: string },
+): Promise<TarifaFila[]> {
+  const qs = new URLSearchParams({ desde: params.desde, hasta: params.hasta });
+  if (params.roomTypeId) qs.set("roomTypeId", params.roomTypeId);
+  return request<TarifaFila[]>(`/hoteles/${hotelId}/tarifas?${qs.toString()}`);
+}
+
+export async function actualizarTarifa(hotelId: string, input: ActualizarTarifaInput): Promise<unknown> {
+  return request(`/hoteles/${hotelId}/tarifas`, { method: "PUT", body: JSON.stringify(input) });
+}
+
+export async function obtenerImpuestos(hotelId: string): Promise<ConfigImpuestos> {
+  return request<ConfigImpuestos>(`/hoteles/${hotelId}/impuestos`);
+}
+
+export async function actualizarImpuestos(hotelId: string, input: ConfigImpuestos): Promise<ConfigImpuestos> {
+  return request<ConfigImpuestos>(`/hoteles/${hotelId}/impuestos`, { method: "PUT", body: JSON.stringify(input) });
+}
+
+export async function obtenerPoliticaCancelacion(hotelId: string): Promise<PoliticaCancelacion> {
+  return request<PoliticaCancelacion>(`/hoteles/${hotelId}/politica-cancelacion`);
+}
+
+export async function actualizarPoliticaCancelacion(hotelId: string, input: PoliticaCancelacion): Promise<PoliticaCancelacion> {
+  return request<PoliticaCancelacion>(`/hoteles/${hotelId}/politica-cancelacion`, { method: "PUT", body: JSON.stringify(input) });
 }

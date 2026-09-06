@@ -5,7 +5,7 @@
 // extra (ej. `llmSuggestedPrice`) se DESCARTA por zod antes de llegar al cálculo (ver
 // `parseQuoteInput` y tests/unit/domain-hotel/pricing-source.spec.ts).
 import { z } from "zod";
-import { applyTaxes, assertValidTaxConfig, type TaxBreakdown, type TaxConfig } from "./taxes.ts";
+import { applyTaxes, assertValidTaxConfig, type TaxBreakdown } from "./taxes.ts";
 import { roundCurrency } from "./money.ts";
 
 export class QuoteError extends Error {
