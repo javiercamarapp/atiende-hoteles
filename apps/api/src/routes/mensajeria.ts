@@ -28,7 +28,7 @@ import {
 } from "@atiende-hoteles/agent-core";
 import { FakeWhatsappAdapter } from "@atiende-hoteles/mcp-whatsapp";
 import { WebhookReplayError, WebhookSignatureError } from "@atiende-hoteles/mcp-shared";
-import { looksLikeCheckinDataInFreeText } from "@atiende-hoteles/domain-hotel";
+import { detectAndRedactPaymentData, looksLikeCheckinDataInFreeText } from "@atiende-hoteles/domain-hotel";
 import { sharedWhatsappAdapter } from "../lib/messaging.ts";
 import type { DbClient } from "@atiende-hoteles/db";
 import { Errors } from "../lib/errors.ts";
@@ -62,6 +62,7 @@ interface MessageRow {
   delivery_status: string | null;
   simulated: boolean;
   created_at: string;
+  contiene_dato_sensible: boolean;
 }
 
 /** Config de mensajería del hotel (secreto de webhook simulado + plantillas
@@ -143,11 +144,37 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
          returning id;`,
         [configRows[0].tenant_id, hotelId, event.from],
       );
+      // L-tarjeta (auditoria-2 legal CRÍTICO, REQ-HUE-010/H09-027): un huésped
+      // confundido puede escribir su número de tarjeta por WhatsApp -- se detecta
+      // (Luhn real) y se guarda SIEMPRE la versión redactada, nunca el dato crudo, sin
+      // importar qué rol lea después este mensaje (`GET .../mensajes` no filtra por
+      // rol, ver hallazgo original). `contiene_dato_sensible` deja la señal explícita
+      // para el panel/reportes de cumplimiento sin tener que re-detectar sobre texto
+      // ya redactado.
+      const pago = detectAndRedactPaymentData(event.textBody);
+      const bodyParaGuardar = event.textBody ? pago.redactedText : "(mensaje sin texto)";
       await deps.engine.admin.query(
-        `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, body, external_message_id, delivery_status, simulated)
-         values ($1, $2, $3, 'entrante', 'whatsapp', $4, $5, 'entregado', true);`,
-        [configRows[0].tenant_id, hotelId, convRows[0]!.id, event.textBody ?? "(mensaje sin texto)", event.externalMessageId ?? null],
+        `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, body, external_message_id, delivery_status, simulated, contiene_dato_sensible)
+         values ($1, $2, $3, 'entrante', 'whatsapp', $4, $5, 'entregado', true, $6);`,
+        [configRows[0].tenant_id, hotelId, convRows[0]!.id, bodyParaGuardar, event.externalMessageId ?? null, pago.containsSensitiveData],
       );
+
+      if (pago.containsCardNumber) {
+        const aviso = await sharedWhatsappAdapter.sendTemplateMessage({
+          to: event.from,
+          templateName: "pago_seguro_enlace",
+          languageCode: "es_MX",
+          parameters: [],
+          clientMessageId: `pago-seguro-${event.eventId}`,
+        });
+        await deps.engine.admin.query(
+          `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, template_name, body, external_message_id, delivery_status, simulated)
+           values ($1, $2, $3, 'saliente', 'whatsapp', 'pago_seguro_enlace',
+                   'Por tu seguridad, nunca compartas tu tarjeta por chat: te compartimos un enlace de pago seguro.',
+                   $4, $5, true);`,
+          [configRows[0].tenant_id, hotelId, convRows[0]!.id, aviso.externalMessageId, aviso.status],
+        );
+      }
 
       // REQ-RES-016: "un intento de completar el check-in por chat libre es rechazado
       // y redirigido al flujo estructurado." Ningún código de este repo EXTRAE
@@ -229,7 +256,8 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     const db = c.get("db");
     const { rows } = await db.query<MessageRow>(
       `select id, direction::text as direction, channel::text as channel, template_name, body,
-              delivery_status::text as delivery_status, simulated, created_at::text as created_at
+              delivery_status::text as delivery_status, simulated, created_at::text as created_at,
+              contiene_dato_sensible
        from public.message
        where conversation_id = $1 and hotel_id = $2
        order by created_at asc;`,
@@ -245,6 +273,7 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         estadoEntrega: m.delivery_status,
         simulado: m.simulated,
         creadoEn: m.created_at,
+        contieneDatoSensible: m.contiene_dato_sensible,
       })),
     );
   });
