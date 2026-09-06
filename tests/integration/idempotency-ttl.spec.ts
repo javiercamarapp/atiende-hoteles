@@ -94,13 +94,23 @@ describe("idempotency_key: ventana de expiración (auditoria-1/datos MEDIO)", ()
     expect(segundo.status).toBe(201);
     const segundoCargo = (await segundo.json()) as { id: string; concepto: string };
     expect(segundoCargo.id).not.toBe(primerCargo.id);
-    expect(segundoCargo.concepto).toBe("Room service");
 
-    const { rows } = await fixture.engine.admin.query<{ count: string }>(
+    // H5 (folio reescrito, migración 0030) separó `concepto` (categoría fija:
+    // hospedaje/ab/extras/ajuste/propina/otro) de `descripcion` (texto libre) -- la
+    // respuesta de POST .../cargos ya no expone `descripcion`, así que el texto libre
+    // se verifica contra la fila persistida (`charge.description`) en vez del cuerpo
+    // de la respuesta.
+    const { rows } = await fixture.engine.admin.query<{ description: string }>(
+      "select description from public.charge where id = $1;",
+      [segundoCargo.id],
+    );
+    expect(rows[0]!.description).toBe("Room service");
+
+    const { rows: countRows } = await fixture.engine.admin.query<{ count: string }>(
       "select count(*)::text as count from public.charge where id in ($1, $2);",
       [primerCargo.id, segundoCargo.id],
     );
-    expect(rows[0]!.count).toBe("2");
+    expect(countRows[0]!.count).toBe("2");
   });
 
   it("una llave VIGENTE (no expirada) sigue rechazando cuerpo distinto con 422, como antes", async () => {

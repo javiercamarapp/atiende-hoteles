@@ -54,3 +54,33 @@ export async function loginAs(app: Hono<HonoEnvBindings>, email: string, passwor
   const body = (await res.json()) as { token: string };
   return body.token;
 }
+
+/** H5 · crea una reserva y la confirma (lo que crea su folio principal, ver
+ *  routes/reservas.ts) EXCLUSIVAMENTE por la API real -- devuelve `folioId`, nunca
+ *  usa el cliente admin para insertar el folio (mismo principio que
+ *  tests/integration/reservas/folio-al-confirmar.spec.ts). */
+export async function crearFolioConfirmado(
+  app: Hono<HonoEnvBindings>,
+  token: string,
+  hotelId: string,
+  params: { roomTypeId: string; checkInDate: string; checkOutDate: string },
+): Promise<{ reservationId: string; folioId: string }> {
+  const auth = { authorization: `Bearer ${token}`, "content-type": "application/json" };
+  const created = await app.request(`/hoteles/${hotelId}/reservas`, {
+    method: "POST",
+    headers: { ...auth, "idempotency-key": crypto.randomUUID() },
+    body: JSON.stringify(params),
+  });
+  if (created.status !== 201) throw new Error(`no se pudo crear la reserva: ${created.status} ${await created.text()}`);
+  const { id: reservationId } = (await created.json()) as { id: string };
+
+  const confirmed = await app.request(`/hoteles/${hotelId}/reservas/${reservationId}/transicion`, {
+    method: "PATCH",
+    headers: auth,
+    body: JSON.stringify({ toStatus: "confirmada" }),
+  });
+  if (confirmed.status !== 200) throw new Error(`no se pudo confirmar la reserva: ${confirmed.status} ${await confirmed.text()}`);
+  const { folioId } = (await confirmed.json()) as { folioId: string };
+
+  return { reservationId, folioId };
+}

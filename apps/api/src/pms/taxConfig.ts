@@ -20,6 +20,46 @@ export async function loadTaxConfig(db: DbClient, hotelId: string): Promise<TaxC
   return { ivaRate: Number(row.iva_rate), ishRate: Number(row.ish_rate) };
 }
 
+// H5 · REQ-BO-007/REQ-REC-012 estilo: umbral de descuento y DSA por cuarto-noche son
+// PARÁMETROS por hotel (migrations/0030_folio_engine.sql), nunca un valor fijo en
+// código -- mismo principio que `loadTaxConfig` de arriba.
+export interface HotelMoneyConfig {
+  ivaRate: number;
+  ishRate: number;
+  discountThreshold: number;
+  dsaPerNight: number;
+  stateCode: string;
+  rfcEmisor: string | null;
+}
+
+export async function loadHotelMoneyConfig(db: DbClient, hotelId: string): Promise<HotelMoneyConfig> {
+  const { rows } = await db.query<{
+    iva_rate: string;
+    ish_rate: string;
+    discount_threshold: string;
+    dsa_per_night: string;
+    state_code: string;
+    rfc_emisor: string | null;
+  }>(
+    "select iva_rate, ish_rate, discount_threshold, dsa_per_night, state_code, rfc_emisor from public.hotel_tax_config where hotel_id = $1;",
+    [hotelId],
+  );
+  const row = rows[0];
+  if (!row) {
+    throw Errors.validation(
+      "Este hotel no tiene impuestos (IVA/ISH) configurados todavía: no se puede operar el folio sin esa configuración explícita.",
+    );
+  }
+  return {
+    ivaRate: Number(row.iva_rate),
+    ishRate: Number(row.ish_rate),
+    discountThreshold: Number(row.discount_threshold),
+    dsaPerNight: Number(row.dsa_per_night),
+    stateCode: row.state_code,
+    rfcEmisor: row.rfc_emisor,
+  };
+}
+
 export interface CancellationPolicyRow {
   freeUntilHours: number;
   penaltyPct: number;

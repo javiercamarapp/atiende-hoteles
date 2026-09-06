@@ -211,6 +211,83 @@ stack trace. Ver `src/lib/errors.ts` (`ApiError` + mapeo de errores de dominio d
 | GET, PUT | `/hoteles/:hotelId/impuestos` | H4: IVA/ISH por hotel, roles `owner`/`gm`. |
 | GET, PUT | `/hoteles/:hotelId/politica-cancelacion` | H4: política en 4 puntos (free_until/penalty/no_show/deposit). |
 | GET | `/hoteles/:hotelId/disponibilidad/grid?desde&hasta` | H4: desglose POR DÍA (a diferencia de `/disponibilidad`, que agrega el rango) para la grilla del frontend. |
+| GET | `/hoteles/:hotelId/reservas/:id/folios` | H5: TODOS los folios de una reserva (principal + splits). |
+| POST | `/hoteles/:hotelId/folios/:id/descuentos` | H5: descuento; sobre `hotel_tax_config.discount_threshold` exige rol owner/gm o `autorizadoPorUserId` verificado. |
+| POST | `/hoteles/:hotelId/folios/:id/cargos/:chargeId/reverso` | H5: reverso (REQ-REC-004) — NUNCA borra, inserta cargo negativo + `mark_charge_reversed()`. |
+| POST | `/hoteles/:hotelId/folios/:id/cargos/:chargeId/transferir` | H5: mueve un cargo a otro folio del MISMO hotel. |
+| POST | `/hoteles/:hotelId/folios/:id/split` | H5: crea un folio secundario de la misma reserva y le transfiere los cargos indicados. |
+| POST | `/hoteles/:hotelId/folios/:id/cerrar` | H5: cierre — `saldo_cero` o `cuenta_por_cobrar` (requiere rol administrativo). |
+| POST | `/hoteles/:hotelId/night-audit` | H5: night audit idempotente por `business_date` (REQ-REV-013) — postea hospedaje, marca no-shows, resumen de caja. |
+| GET | `/hoteles/:hotelId/night-audit`, `/night-audit/:businessDate` | H5: historial/detalle de corridas. |
+| POST | `/hoteles/:hotelId/folios/:id/cfdi` | H5: timbra CFDI de hospedaje (REQ-BO-001/002), idempotente por folio. |
+| POST | `/hoteles/:hotelId/folios/:id/cfdi/pago` | H5: complemento de pago (tipo 'pago'), referencia un CFDI de hospedaje. |
+| POST | `/hoteles/:hotelId/cfdi/:id/cancelar` | H5: cancelación de CFDI vía `CfdiPort`. |
+| GET | `/hoteles/:hotelId/cfdi`, `/folios/:id/cfdi` | H5: listado con estado real (timbrado/cancelado/rechazado). |
+
+## H5 — Folio/cargos/pagos + night audit + CFDI de hospedaje (PENDIENTE DE CREDENCIALES lo marcado)
+
+- **Motor de folio determinista** (`packages/domain-hotel/src/folioEngine.ts`,
+  `fiscalHospedaje.ts`): cálculo de cargos por concepto (hospedaje/A&B/extras/ajuste/
+  propina/otro), IVA+ISH aplicados solo a conceptos taxables (propina/descuento/reverso
+  nunca), redondeo centralizado, autorización de descuentos por umbral/rol
+  (`evaluateDiscountAuthorization`), cierre de folio (`evaluateFolioClose`: saldo cero
+  o cuenta por cobrar autorizada). 7 funciones fiscales puras (ISH/DSA/ISN/IVA/ISR
+  provisional/DIOT/retención de plataformas digitales, REQ-BO-007) parametrizadas —
+  ninguna tasa/umbral vive fija en código.
+- **Reverso/transferencia/split nunca borran una fila** (REQ-REC-004): el reverso
+  inserta un cargo de signo contrario y usa `mark_charge_reversed()` (SECURITY
+  DEFINER) para marcar el original; transferir/split combinan un reverso en origen +
+  un cargo nuevo en destino. Verificado en `tests/integration/folio/event-sourcing.spec.ts`
+  y por revisión estática (`scripts/checks/no-delete-events.ts`).
+- **Pagos vía `PaymentProviderPort`** (`@atiende-hoteles/mcp-payments`, ya construido
+  en H9/H11 — este módulo lo consume, no lo reimplementa): efectivo/transferencia se
+  registran directo; tarjeta SIEMPRE exige `tokenPago` opaco (nunca número de
+  tarjeta — `payment_token_ref_not_pan` en BD es la última línea de defensa, ver
+  `scripts/checks/no-pan-storage.ts`). **[PENDIENTE DE CREDENCIALES]** el adaptador
+  real (Stripe MX/Conekta) — por defecto `createApp` instancia `FakeStripeAdapter`
+  (simulado, único por proceso para que su idempotencia interna funcione). El
+  "link de pago tokenizado" hoy se modela como: el PSP real emitiría el link/checkout
+  hospedado y devolvería el token; este backend nunca ve ni acepta el número de
+  tarjeta. Falta construir el endpoint que GENERA ese link (requiere el producto de
+  Payment Links del PSP real).
+- **Night audit propio** (REQ-REV-013/H16-003, `src/jobs/nightAudit.ts` +
+  `src/routes/night-audit.ts`): idempotente por `(hotel_id, business_date)` vía
+  `night_audit_claim`/`night_audit_finish` (advisory lock + tabla, SECURITY DEFINER);
+  postea hospedaje a folios en casa (dedupe real por índice único parcial
+  `charge_folio_stay_date_hospedaje_idx`), marca no-shows (reutiliza
+  `jobs/noShow.ts`, que ahora también postea la penalización al folio como concepto
+  `hospedaje`), genera resumen de caja. La conciliación A&B/spa contra POS se declara
+  explícitamente `sin_pos_configurado` — no hay integración POS real en esta fase.
+  **No corre por cron todavía** — se dispara vía `POST /hoteles/:hotelId/night-audit`
+  (rol owner/gm/accountant) o llamando `runNightAudit()` desde un job externo futuro.
+- **CFDI de hospedaje vía `CfdiPort`** (`@atiende-hoteles/mcp-cfdi`, H9/H11 — usado, no
+  reimplementado): `src/routes/cfdi.ts` aplica las reglas de REQ-BO-001 (extranjero →
+  RFC XEXX010101000/uso S01; global → XAXX010101000; ISH/DSA en `impuestosLocales`
+  fuera de la base de IVA; propina excluida del subtotal; no-show como concepto
+  `hospedaje`). Idempotente por folio (un solo CFDI de tipo 'hospedaje' por folio,
+  índice único parcial + verificación previa). **[PENDIENTE DE CREDENCIALES]** el PAC
+  real (Finkok/SW Sapien u otro) y el CSD/e.firma del hotel — por defecto `createApp`
+  usa `DualPacCfdiPort` sobre dos adaptadores simulados. El nodo `CfdiRelacionados`
+  tipo 07 (anticipos) se registra en `cfdi_emision.related_cfdi_id` porque el
+  `TimbrarInput` del puerto actual no expone ese campo — pendiente de que el puerto lo
+  incorpore para viajar realmente al PAC.
+- **Calendario fiscal + aprobación SAT** (REQ-BO-008/REQ-BO-006, migraciones
+  `0033_calendario_fiscal.sql`): tablas `fiscal_obligation`/`sat_filing_approval` con
+  RLS y un trigger que BLOQUEA marcar una obligación con `requiere_efirma` como
+  `presentada` sin una fila de aprobación de owner/gm ya registrada. **Sin ruta de API
+  CRUD todavía** — verificado directamente contra la base bajo RLS
+  (`tests/integration/fiscal/calendario-fiscal.spec.ts`,
+  `tests/adversarial/presentacion-sat-aprobacion.spec.ts`); construir el endpoint es
+  trabajo natural de un hito de back-office posterior.
+- **Fuera de alcance de H5, declarado explícitamente**: REQ-REC-011 (bóveda de
+  identidad: OCR, cifrado en reposo, purga a 30 días) no se construye aquí — es una
+  funcionalidad de captura de identidad en check-in, no de folio/cargos/pagos; el
+  esquema actual (`guest.identity_ref`, H1) sigue siendo solo un placeholder. Un
+  segundo factor de verificación de identidad del HUÉSPED (no del staff) antes de un
+  cargo (REQ-REC-012 en su lectura literal de "check-in por voz/kiosko") tampoco se
+  construye — este módulo cubre la autorización POR ROL/UMBRAL dentro del panel de
+  staff autenticado (ver `evaluateDiscountAuthorization` arriba), que es lo que
+  `tests/adversarial/cargo-folio-verificacion.spec.ts` verifica.
 
 ## Qué falta (declarado explícitamente, no simulado)
 

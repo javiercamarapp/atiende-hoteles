@@ -35,3 +35,30 @@ export {
 } from "./cancellationPolicy.ts";
 export { effectiveCapacity, occupancyPct, canBook, type OverbookingConfig } from "./overbooking.ts";
 export { assertBenchmarkQueryAllowed, BenchmarkGuardError, type BenchmarkQueryRequest } from "./compsetGuard.ts";
+export {
+  CHARGE_CONCEPTS,
+  computeChargeAmounts,
+  evaluateDiscountAuthorization,
+  evaluateFolioClose,
+  type ChargeConcept,
+  type ChargeCalcInput,
+  type ChargeCalcResult,
+  type DiscountAuthorizationInput,
+  type DiscountAuthorizationResult,
+  type FolioCloseReason,
+  type FolioCloseInput,
+  type FolioCloseResult,
+} from "./folioEngine.ts";
+export {
+  computeIva,
+  computeIsh,
+  computeDsa,
+  computeIsn,
+  computeIsrProvisional,
+  computeDiotTotal,
+  computeRetencionPlataformasDigitales,
+  type DiotOperation,
+  type PlatformFilerType,
+  type RetencionPlataformasDigitalesRates,
+  type RetencionPlataformasDigitales,
+} from "./fiscalHospedaje.ts";

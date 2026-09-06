@@ -333,10 +333,15 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     // una re-confirmación o una transición posterior que vuelva a pasar por aquí.
     let folioId: string | null = null;
     if (body.toStatus === "confirmada") {
+      // H5 · el índice único ahora es parcial (`folio_reservation_primary_idx ...
+      // where is_primary`, ver migrations/0030_folio_engine.sql) para permitir folios
+      // secundarios de un split (REQ-BO/H5) -- el destino de ON CONFLICT debe repetir
+      // exactamente ese predicado para que Postgres lo reconozca como constraint de
+      // inferencia.
       const { rows: folioRows } = await db.query<{ id: string }>(
-        `insert into public.folio (tenant_id, hotel_id, reservation_id)
-         values ($1, $2, $3)
-         on conflict (reservation_id) do nothing
+        `insert into public.folio (tenant_id, hotel_id, reservation_id, is_primary)
+         values ($1, $2, $3, true)
+         on conflict (reservation_id) where is_primary do nothing
          returning id;`,
         [orgId, hotelId, reservationId],
       );
@@ -350,7 +355,7 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     }
     if (folioId == null) {
       const { rows: existing } = await db.query<{ id: string }>(
-        "select id from public.folio where reservation_id = $1;",
+        "select id from public.folio where reservation_id = $1 and is_primary;",
         [reservationId],
       );
       folioId = existing[0]?.id ?? null;

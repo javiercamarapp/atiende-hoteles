@@ -46,3 +46,5 @@
 2026-09-06 07:55:06 ciclo=19 evento=H8 despachado modelo_verificado
 2026-09-06 08:26:18 ciclo=20 evento=latido_dinamico en_curso=H5,H6b,H8
 2026-09-06 08:29:41 ciclo=21 evento=H5_completado worktree merge=pendiente_H8
+2026-09-06 08:43:29 ciclo=22 evento=H8_completado merge_H5=CONFLICTOS(app.ts,types.ts,ACEPTACION,PROGRESO) despacho=resolver(#34)
+2026-09-06 08:46:28 ciclo=23 evento=H6b_completado worktree merge=tras_resolver_H5

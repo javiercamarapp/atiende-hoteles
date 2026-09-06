@@ -8,14 +8,18 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "dev": "node --experimental-strip-types src/server.ts",
-    "start": "node --experimental-strip-types src/server.ts",
+    "dev": "node --experimental-transform-types src/server.ts",
+    "start": "node --experimental-transform-types src/server.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@atiende-hoteles/db": "*",
+    "@atiende-hoteles/domain-hotel": "*",
+    "@atiende-hoteles/mcp-cfdi": "*",
+    "@atiende-hoteles/mcp-payments": "*",
+    "@atiende-hoteles/mcp-shared": "*",
     "@hono/node-server": "2.1.1",
     "hono": "4.13.7",
     "jose": "6.2.12",

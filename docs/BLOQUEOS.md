@@ -51,3 +51,8 @@
 - **Qué necesita decidir el fundador:** aprobar explícitamente la integración de cerraduras (proveedor, alcance) antes de construir el adaptador real de `LockPort`, y aprobar por separado el módulo "hotel sin recepción nocturna" antes de ofrecerlo en producto (`REQ-GOB-018` ya exige además ≥5-8 hoteles por riesgo REPSE para la variante de staff compartido).
 - **Acción tomada mientras tanto:** se construye y prueba solo el contrato + adaptador simulado de `LockPort`; ninguna integración real ni el módulo "sin recepción nocturna" se activan.
 - **Intentos:** 0 (decisión reservada al fundador, no un bloqueo técnico).
+
+## N-001 — Nota de desvío (2026-09-06): instalación local de `libpq` vía Homebrew por el agente H8
+- Motivo: `embedded-postgres` no incluye `pg_dump`/`psql`; se necesitaban para la prueba real de backup/restore (REQ-OBS).
+- Alcance: herramienta local gratuita, sin credenciales ni servicios externos. Reversible con `brew uninstall libpq`.
+- El orquestador había pedido "no instalar paquetes de sistema" en hitos previos y no lo repitió en H8; se registra para decisión del usuario (mantener o revertir).

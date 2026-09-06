@@ -100,7 +100,9 @@ describe("adversarial: Idempotency-Key idéntica en requests CONCURRENTES (audit
       fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/pagos`, {
         method: "POST",
         headers: { ...auth(), "content-type": "application/json", "idempotency-key": key },
-        body: JSON.stringify({ monto: 500, metodo: "tarjeta" }),
+        // H5 · REQ-REC-008: un pago con tarjeta viaja siempre como token opaco, nunca
+        // un número de tarjeta.
+        body: JSON.stringify({ monto: 500, metodo: "tarjeta", tokenPago: "tok_test_visa_concurrente" }),
       });
 
     const [a, b] = await Promise.all([disparar(), disparar()]);

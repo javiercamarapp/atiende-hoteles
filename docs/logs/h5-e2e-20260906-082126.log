@@ -1,0 +1,55 @@
+[WebServer] (node:60774) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] 8:23:12 AM [vite] warning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-swc" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] You or a plugin you are using have set `optimizeDeps.esbuildOptions` but this option is now deprecated. Vite now uses Rolldown to optimize the dependencies. Please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] `esbuild` option is set to false, but `oxc` option was not set to false. `esbuild: false` does not have effect any more. If you want to disable the default transformation, which is now handled by Oxc, please set `oxc: false` instead.
+
+Running 24 tests using 5 workers
+
+(node:60779) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:60780) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:60778) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:60781) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:60777) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   5 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:20:3 › axe: login sin violaciones serias/críticas (2.4s)
+  ✓   6 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:20:3 › axe: resumen sin violaciones serias/críticas (2.1s)
+  ✓   3 [desktop] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura) (6.6s)
+  ✓   7 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:20:3 › axe: reservas sin violaciones serias/críticas (2.6s)
+  ✓   8 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:16:3 › Paridad visual — capturas hoteles › login (1.5s)
+  ✓  10 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:23:3 › Paridad visual — capturas hoteles › resumen (1.9s)
+  ✓   9 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:20:3 › axe: disponibilidad sin violaciones serias/críticas (3.0s)
+  ✓   4 [desktop] › ../../tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API (10.7s)
+  ✓  11 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:31:3 › Paridad visual — capturas hoteles › reservas (1.4s)
+  ✓  12 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:20:3 › axe: configuracion sin violaciones serias/críticas (2.2s)
+(node:61286) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 [desktop] › ../../tests/e2e/h4-reserva-real-desde-ui.spec.ts:72:1 › crear una reserva real desde /reservas (seeds reales) y verla en la tabla y en la grid de /disponibilidad (12.9s)
+  ✓   1 [desktop] › ../../tests/e2e/h5-cargo-y-pago-desde-ui.spec.ts:70:1 › cargar un cargo y un pago sobre el folio de una reserva desde /recepcion (UI real) (13.1s)
+(node:61301) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61311) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  13 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:20:3 › axe: login sin violaciones serias/críticas (1.8s)
+(node:61369) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61368) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  -  17 [mobile] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura)
+  -  18 [mobile] › ../../tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API
+  ✓  16 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:20:3 › axe: resumen sin violaciones serias/críticas (1.7s)
+  ✓  19 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:16:3 › Paridad visual — capturas hoteles › login (812ms)
+  ✓  21 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:23:3 › Paridad visual — capturas hoteles › resumen (698ms)
+  ✓  20 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:20:3 › axe: reservas sin violaciones serias/críticas (1.6s)
+  ✓  22 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:31:3 › Paridad visual — capturas hoteles › reservas (760ms)
+  ✓  23 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:20:3 › axe: disponibilidad sin violaciones serias/críticas (1.7s)
+  ✓  24 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:20:3 › axe: configuracion sin violaciones serias/críticas (2.0s)
+  ✓  14 [mobile] › ../../tests/e2e/h4-reserva-real-desde-ui.spec.ts:72:1 › crear una reserva real desde /reservas (seeds reales) y verla en la tabla y en la grid de /disponibilidad (8.8s)
+  ✓  15 [mobile] › ../../tests/e2e/h5-cargo-y-pago-desde-ui.spec.ts:70:1 › cargar un cargo y un pago sobre el folio de una reserva desde /recepcion (UI real) (9.7s)
+
+  2 skipped
+  22 passed (27.0s)
