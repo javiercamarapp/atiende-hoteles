@@ -5,7 +5,7 @@ Regla: Fable (claude-fable-5-1) solo orquesta. Todo despacho usa `Agent(model="s
 | # | Fecha/hora | Nombre/tarea | Modelo solicitado | Modelo efectivo (evidencia) | Resultado |
 |---|---|---|---|---|---|
 | 1 | 2026-09-05 18:17 | ref-01 blueprint+DECISIONLLMHOTELES → docs/referencia/01 | sonnet | claude-sonnet-5 (grep "model" transcript: 15/15, 0 fable) | COMPLETADO: 173 BP + 31 LLM (204), 101 págs leídas completas |
-| 2 | 2026-09-05 18:17 | ref-02 investigación H01–H11 → docs/referencia/02 | sonnet | claude-sonnet-5 (15/15) | en curso |
+| 2 | 2026-09-05 18:17 | ref-02 investigación H01–H11 → docs/referencia/02 | sonnet | claude-sonnet-5 (15/15) | COMPLETADO: 288 requisitos, 263 págs (11 PDF completos); usó 4 sub-agentes, todos claude-sonnet-5 verificados |
 | 3 | 2026-09-05 18:17 | ref-03 investigación H12–H21 → docs/referencia/03 | sonnet | claude-sonnet-5 (20/20) | en curso |
 | 4 | 2026-09-05 18:17 | ref-04 gobierno y protocolo → docs/referencia/04 | sonnet | claude-sonnet-5 (26/26) | COMPLETADO: 59 GOB, 8 docs, 24 págs |
 | 5 | 2026-09-05 18:17 | ref-05 inventario frontend Restaurantes → docs/referencia/05 | sonnet | claude-sonnet-5 (21/21) | COMPLETADO: 43 primitivos, 8 secciones admin, tokens light/dark, sin mobile real en AdminDashboard |
@@ -13,3 +13,5 @@ Regla: Fable (claude-fable-5-1) solo orquesta. Todo despacho usa `Agent(model="s
 | 7 | 2026-09-05 18:17 | ref-07 viabilidad stack sin Docker → docs/referencia/07 | sonnet | claude-sonnet-5 (6/6) | COMPLETADO: PGlite 5/5 tests RLS (serializa); embedded-postgres 18.4 real con concurrencia; supabase CLI exige Docker para diff/gen/start; Playwright+Chrome sistema OK |
 
 Orquestador de esta sesión: claude-fable-5-1 (verificado por el entorno). Ningún subagente Fable creado.
+
+**Verificación de herencia (2026-09-05):** grep del campo `model` en los 12 transcripts de agentes de la sesión (7 principales + sub-agentes anidados que lanzó el #2 y el #3): todos `claude-sonnet-5`; `grep -l claude-fable` → ninguno.
