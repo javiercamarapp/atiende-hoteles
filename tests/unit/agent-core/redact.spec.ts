@@ -31,6 +31,42 @@ describe("redact", () => {
     expect(redact("pasaporte G12345678 escaneado")).toBe("pasaporte [PASAPORTE] escaneado");
   });
 
+  // aud-1 agentico.md CRITICO: CURP y RFC son los dos identificadores de huesped mas
+  // comunes en el dominio hotelero mexicano (check-in y CFDI) y no calzan con ningun
+  // patron existente (INE exige 6 letras iniciales, CURP tiene 4; RFC no es puro digito
+  // como CARD_RE ni 1-letra+8-digitos como PASSPORT_RE).
+  it("redacta un CURP (18 caracteres: 4 letras+6 digitos+sexo+2 letras+3 consonantes+homoclave+digito)", () => {
+    expect(redact("CURP: PEGJ800101HDFRRN09 en el folio")).toBe("CURP: [CURP] en el folio");
+  });
+
+  it("redacta un RFC de persona fisica (4 letras+6 digitos+3 alfanumericos, 13 caracteres)", () => {
+    expect(redact("RFC del huesped para CFDI: PEGJ800101AB1")).toBe(
+      "RFC del huesped para CFDI: [RFC]",
+    );
+  });
+
+  it("redacta un RFC de persona moral (3 letras+6 digitos+3 alfanumericos, 12 caracteres)", () => {
+    expect(redact("RFC de la empresa: ABC800101XY9")).toBe("RFC de la empresa: [RFC]");
+  });
+
+  it("redacta un CURP escrito con guiones entre grupos", () => {
+    expect(redact("curp con guiones: PEGJ-800101-HDFRRN-09 anotado")).toBe(
+      "curp con guiones: [CURP] anotado",
+    );
+  });
+
+  it("redacta un RFC escrito con espacios entre grupos", () => {
+    expect(redact("rfc con espacios: PEGJ 800101 AB1 anotado")).toBe(
+      "rfc con espacios: [RFC] anotado",
+    );
+  });
+
+  it("no confunde un CURP con un RFC (el CURP se redacta completo, no en dos pedazos)", () => {
+    const out = redact("PEGJ800101HDFRRN09");
+    expect(out).toBe("[CURP]");
+    expect(out).not.toContain("RFC");
+  });
+
   it("no modifica texto sin PII", () => {
     expect(redact("la habitacion 301 esta lista para check-in")).toBe(
       "la habitacion 301 esta lista para check-in",
