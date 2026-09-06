@@ -62,3 +62,4 @@
 2026-09-06 10:41:39 ciclo=30 evento=aud-2 fiscal=2/10(3C/3A) faltan=9
 2026-09-06 10:42:23 ciclo=30 evento=aud-2 tool-calling=3/10(2C/1A) faltan=8
 2026-09-06 10:45:29 ciclo=30 evento=aud-2 arquitectura=6/10(0C/1A) faltan=7
+2026-09-06 10:45:40 ciclo=30 evento=aud-2 operabilidad=5/10(0C/4A) faltan=6
