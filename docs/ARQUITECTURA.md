@@ -19,6 +19,8 @@ Convención de estado por ADR: **[DECIDIDO]** aplica ya en el código; **[PENDIE
 
 **Evidencia.** `docs/referencia/03-investigacion-H12-H21.md` §3.1 (puntos 1 y 9); `docs/referencia/07-stack-viabilidad.md` "Hechos de entorno verificados" (`which docker supabase deno bun pnpm psql pg_ctl` → todos ausentes); `docs/BLOQUEOS.md` B-002.
 
+**Requisitos que cubre.** No cierra un REQ-P0 funcional directo (es la base estructural del monorepo); habilita el objetivo de reutilización de código de REQ-GOB-015 (≥60% con la línea Restaurantes).
+
 **Consecuencias.** Se puede migrar a pnpm con `pnpm import` (lee `package-lock.json`) sin reescribir `turbo.json` ni la topología de paquetes. La fusión real con `atiende-restaurantes` (mismo Supabase, mismo `agent-runtime`) queda como trabajo posterior, documentado como desvío en la tabla final, no como incumplimiento.
 
 **Prueba que lo verifica.** `npm install` resuelve el árbol de workspaces sin error; `npx turbo run build --dry` lista las tareas de todos los paquetes declarados; CI (ADR-009) ejecuta `turbo run lint typecheck test` en un solo comando sobre todo el monorepo.
@@ -49,6 +51,8 @@ Convención de estado por ADR: **[DECIDIDO]** aplica ya en el código; **[PENDIE
 **Accesibilidad.** Se conservan los patrones positivos ya presentes (`role="status"`/`aria-busy`, `role="alert"`, `role="radiogroup"`/`aria-checked` en `ThemeSelector`, `prefers-reduced-motion` en toda animación) y se corrige el hallazgo propio del repo de referencia: se añade `aria-live="polite"` explícito en el contenedor de toasts (ausente en Restaurantes, 05 §2.8) y se incluye una suite de accesibilidad automatizada (axe vía Playwright, ver ADR-009) que Restaurantes reconoce no tener.
 
 **Evidencia.** `docs/referencia/05-frontend-restaurantes.md` completo (§1-6, citas de línea/archivo).
+
+**Requisitos que cubre.** REQ-UX-001 (paridad visual con Restaurantes), REQ-UX-002 (estados vacíos/error honestos), REQ-UX-003 (accesibilidad básica y experiencia móvil de `hotel-staff-pwa`).
 
 **Consecuencias.** El costo de construir mobile real para housekeeping se paga una vez, en Fase H3, en vez de heredarse como deuda de Restaurantes.
 
@@ -120,6 +124,8 @@ Convención de estado por ADR: **[DECIDIDO]** aplica ya en el código; **[PENDIE
 
 **Evidencia.** `docs/referencia/07-stack-viabilidad.md` Experimentos 1, 2 y 4; `docs/referencia/03-investigacion-H12-H21.md` H15-007/008/016/019/020, §3.3; `docs/referencia/04-gobierno-y-protocolo.md` GOB-010, GOB-013, GOB-038, GOB-042, GOB-043; `docs/referencia/06-backoffice-agentes-likida.md` §2.2-2.3, §3.3.
 
+**Requisitos que cubre.** REQ-TEN-001, REQ-TEN-002, REQ-TEN-003 (P0), REQ-TEN-004, REQ-REC-003, REQ-REC-004, REQ-INT-012, REQ-INT-014, REQ-GOB-007, REQ-GOB-009, REQ-GOB-010.
+
 **Consecuencias.** GoTrue/PostgREST (Auth y API HTTP reales de Supabase) no se reproducen; el JWT propio reproduce el *modelo de permisos*, no el contrato HTTP exacto de Supabase — declarado como brecha en ADR-003.
 
 **Prueba que lo verifica.** Prueba adversarial de tenant (RLS): usuario de la `org A` con JWT válido intenta leer/escribir una reserva de un hotel bajo la `org B` → rechazado por RLS (403/0 filas); prueba adversarial de hotel (scope secundario dentro del mismo `org`): usuario con rol solo en `hotel A` (misma `org` que `hotel B`) intenta leer/escribir una reserva de `hotel B` → rechazado por el scope `hotel_id`, aunque el `org_id` coincida; prueba de concurrencia con `embedded-postgres`: dos requests simultáneos reservando la última habitación disponible → exactamente una tiene éxito, la otra recibe "sin disponibilidad", sin overbooking; prueba de idempotencia: mismo `idempotency_key` enviado dos veces → una sola reserva creada; prueba de outbox: conector simulado que falla dos veces y responde al tercer intento → evento se marca entregado una sola vez.
@@ -145,6 +151,8 @@ Convención de estado por ADR: **[DECIDIDO]** aplica ya en el código; **[PENDIE
 - `roi_event` — `monto_verificado`, `monto_estimado`, `metodo_contrafactual`, `confianza` (H17-001, GOB-037).
 
 **Evidencia.** `docs/referencia/03-investigacion-H12-H21.md` BP-011, H15-016, H15-020, H16-003/007, H17-001; `docs/referencia/04-gobierno-y-protocolo.md` GOB-013, GOB-026, GOB-037, GOB-038, GOB-044; `docs/referencia/01-blueprint-y-decision-llm.md` BP-020, BP-026, BP-077.
+
+**Requisitos que cubre.** REQ-TEN-001, REQ-REC-004, REQ-REC-009, REQ-SEG-014, REQ-GOB-011 (P0, `numeric(12,2)`), REQ-GOB-013, REQ-AGT-003 (ROIEvent).
 
 **Consecuencias.** El modelo se diseña para que `pms_mirror` (cuando exista un conector PMS real) sea estrictamente de solo lectura desde la lógica de negocio (BP-011, GOB-016) — ninguna tabla de negocio escribe ahí.
 
@@ -197,6 +205,8 @@ Convención de estado por ADR: **[DECIDIDO]** aplica ya en el código; **[PENDIE
 
 **Evidencia.** `docs/referencia/03-investigacion-H12-H21.md` §5 (tabla maestra de integraciones), H15-016, H15-017 (contratos versionados, feature flags por propiedad); `docs/referencia/04-gobierno-y-protocolo.md` GOB-027, GOB-059.
 
+**Requisitos que cubre.** REQ-INT-001 (PMS, P0), REQ-INT-002 (pagos, P0), REQ-INT-003 (WhatsApp, P0), REQ-INT-005 (CFDI, P0), REQ-INT-006 (voz/PBX), REQ-INT-009 (contabilidad), REQ-INT-012, REQ-INT-013. REQ-INT-007 (energía/IoT, P0) y REQ-INT-008 (cerraduras) no están cubiertos por esta tabla — ver hallazgo de auditoría-0 "Energía/IoT/HVAC/cerraduras sin ADR" y su corrección.
+
 **Consecuencias.** El código de cada puerto y su adaptador se construye completo (incluyendo manejo de `Retry-After`, HMAC de webhooks — GOB-042 — y rate limiting) aunque no pueda ejecutarse contra el proveedor real sin credenciales; el criterio "10 de 10" del encargo se satisface para estos módulos con evidencia de la prueba de contrato contra fixture, no con una ejecución real, y así se declara.
 
 **Prueba que lo verifica.** Prueba de contrato por integración: dado un fixture HAR/JSON grabado (o construido a partir de la documentación pública del proveedor, señalado como tal), el adaptador produce el `RawEvent`/comando esperado validado contra el esquema Zod; prueba de idempotencia de webhook (HMAC inválido rechazado, `source.event_id` deduplicado, GOB-042); ningún test de este grupo se reporta como "integración completa" en `docs/PROGRESO.md`.
@@ -217,6 +227,8 @@ Convención de estado por ADR: **[DECIDIDO]** aplica ya en el código; **[PENDIE
 
 **Evidencia.** `docs/referencia/04-gobierno-y-protocolo.md` GOB-011, GOB-035; `docs/referencia/03-investigacion-H12-H21.md` H16-021, H19-010.
 
+**Requisitos que cubre.** REQ-OBS-001 a REQ-OBS-010 (P0 en su mayoría), REQ-BO-034 (alertas por umbral/destinatario), REQ-GOB-011 (migraciones expand-only), REQ-AGT-006 (PII redactada en trazas).
+
 **Prueba que lo verifica.** Test que rechaza un `ALTER`/edición de una migración ya presente en el historial; test de `/health` en verde con Postgres caído devolviendo 503, no 200; prueba de que ninguna traza persistida contiene PII sin redactar (dataset de prueba con datos sintéticos).
 
 ---
@@ -235,6 +247,8 @@ Convención de estado por ADR: **[DECIDIDO]** aplica ya en el código; **[PENDIE
 - **CI**: GitHub Actions (repo ya tiene `gh` autenticado), orden de puertas que falla rápido: `npm ci` → `npm audit` → `typecheck`+`lint` → tests offline → `test:coverage` → `build` → smoke Playwright contra el build real, mismo orden que `docs/referencia/06-backoffice-agentes-likida.md` §5.1 documenta como probado en producción.
 
 **Evidencia.** `docs/referencia/07-stack-viabilidad.md` Experimento 4 y 5; `docs/referencia/06-backoffice-agentes-likida.md` §5.1-5.3.
+
+**Requisitos que cubre.** REQ-QA-001 a REQ-QA-010 (P0 en su mayoría), REQ-UX-001 (capturas comparativas vs. Restaurantes), REQ-TEN-001/REQ-TEN-003 (pruebas adversariales de aislamiento/roles).
 
 **Prueba que lo verifica.** El propio pipeline de CI en verde es la prueba; adicionalmente, cada prueba adversarial documenta su intento roto/no-roto (nunca se descarta un ataque que sí rompe algo).
 
@@ -262,6 +276,8 @@ Convención de estado por ADR: **[DECIDIDO]** aplica ya en el código; **[PENDIE
 Cada ronda produce `docs/auditoria-N/` (un archivo por rubro + `00-SINTESIS.md` + tablero HTML capturado con Chrome headless), con las tres razones válidas para mover una nota (se atacó y subió / deuda que cobró factura / mirada más profunda) y el criterio retener/revertir de Likida (§4.4: una prueba que pasa con y sin el arreglo no probó nada).
 
 **Evidencia.** `docs/referencia/06-backoffice-agentes-likida.md` §4 completo; `docs/referencia/04-gobierno-y-protocolo.md` GOB-009; `docs/operacion-bucle.md`.
+
+**Requisitos que cubre.** REQ-OBS-003 (P0, auditoría periódica cada N tareas), REQ-OBS-004 (checklist de verificación), REQ-OBS-009 (compactación de contexto), REQ-OBS-010 (evidencia obligatoria), REQ-GOB-015 (reutilización de código ≥60%).
 
 **Consecuencias.** Lo que Likida resuelve con `launchd` (disparo sin sesión activa) no se replica en esta fase — el bucle depende de que la sesión de Claude Code (o su `CronCreate`/`ScheduleWakeup`) esté viva, tal como ya está documentado y aceptado en `docs/operacion-bucle.md`.
 
@@ -305,16 +321,16 @@ atiende-hoteles-staging/
 
 | Hito | Contenido | Requisitos P0/gobierno cubiertos |
 |---|---|---|
-| **H1** | Scaffold monorepo (ADR-001) + esquema core (`hotel/room_type/room/rate/availability/reservation/guest`) + RLS + migraciones versionadas + suite PGlite/`embedded-postgres` | GOB-010, GOB-038, H15-016 (fundamento del pipeline), BP-011 (frontera de escritura) |
-| **H2** | Backend Hono + JWT propio + matriz de roles + `set_config` de claims + idempotencia + advisory locks + outbox | GOB-013, GOB-042, H15-007, H15-020, H14-... (no aplica) |
-| **H3** | Frontend: identidad portada, sidebar hotelero, mobile real (bottom-nav), estados vacío/carga/error, accesibilidad (axe) | Hallazgos 05 §2.5/§2.8 cerrados; criterios de experiencia móvil/accesibilidad del encargo |
-| **H4** | Módulo de reservas/disponibilidad (calendario, tipos de habitación, tarifas, transiciones de estado) + pruebas de concurrencia real | H14-... no aplica; H15-001 (adaptador PMS en modo puerto), disponibilidad P0, BP-002/044 |
-| **H5** | Folio/cargos/pagos + contrato CFDI hospedaje (pendiente credenciales) + night audit propio | H16-003, H16-007 (contrato), BP-008/009/072 |
-| **H6** | Housekeeping/mantenimiento + contrato WhatsApp (pendiente credenciales) + `agent-core` con `needs_approval` | BP-005/006/073-078, H15-012 (contrato), GOB-026 |
-| **H7** | Runtime de agentes por rol (Sonnet/Haiku/Opus vía env) + `audit_log` encadenado + `roi_event` | GOB-014, GOB-025, GOB-032, GOB-036, GOB-037, H17-001 — REQ-AGT-003, REQ-AGT-004, REQ-AGT-006, REQ-AGT-022, REQ-REV-018 |
-| **H8** | Observabilidad (logs/métricas/health/runbooks/backups) + CI GitHub Actions + `npm audit` + Playwright E2E + adversariales | ADR-008/009 completos; GOB-011 |
-| **H9** | Adaptadores reales de integración (PMS/WhatsApp/pagos/CFDI/voz) en cuanto existan credenciales — hasta entonces solo contrato+fixture | H15 catálogo completo (§5), marcado **[PENDIENTE DE CREDENCIALES]** |
-| **H10** | Bucle de auditoría hotelero (12 rubros, `docs/auditoria-N/`) cada 8 tareas cerradas | GOB-009, ADR-010 |
+| **H1** | Scaffold monorepo (ADR-001) + esquema core (`hotel/room_type/room/rate/availability/reservation/guest`) + RLS + migraciones versionadas + suite PGlite/`embedded-postgres` | GOB-010, GOB-038, H15-016 (fundamento del pipeline), BP-011 (frontera de escritura) — **REQ-TEN-001, REQ-TEN-002, REQ-TEN-004, REQ-GOB-010, REQ-GOB-011, REQ-GOB-013** |
+| **H2** | Backend Hono + JWT propio + matriz de roles + `set_config` de claims + idempotencia + advisory locks + outbox | GOB-013, GOB-042, H15-007, H15-020, H14-... (no aplica) — **REQ-TEN-003, REQ-REC-003, REQ-REC-004, REQ-INT-012, REQ-INT-014, REQ-GOB-007, REQ-GOB-009** |
+| **H3** | Frontend: identidad portada, sidebar hotelero, mobile real (bottom-nav), estados vacío/carga/error, accesibilidad (axe) | Hallazgos 05 §2.5/§2.8 cerrados; criterios de experiencia móvil/accesibilidad del encargo — **REQ-UX-001, REQ-UX-002, REQ-UX-003** |
+| **H4** | Módulo de reservas/disponibilidad (calendario, tipos de habitación, tarifas, transiciones de estado) + pruebas de concurrencia real | H14-... no aplica; H15-001 (adaptador PMS en modo puerto), disponibilidad P0, BP-002/044 — **REQ-RES-002, REQ-RES-004, REQ-RES-005, REQ-RES-007, REQ-RES-016, REQ-RES-022, REQ-REV-001, REQ-REV-004, REQ-REV-008** |
+| **H5** | Folio/cargos/pagos + contrato CFDI hospedaje (pendiente credenciales) + night audit propio | H16-003, H16-007 (contrato), BP-008/009/072 — **REQ-REC-004, REQ-REC-008, REQ-REC-011, REQ-REC-012, REQ-BO-001, REQ-BO-002, REQ-BO-006, REQ-BO-007, REQ-BO-008, REQ-REV-013** |
+| **H6** | Housekeeping/mantenimiento + contrato WhatsApp (pendiente credenciales) + `agent-core` con `needs_approval` | BP-005/006/073-078, H15-012 (contrato), GOB-026 — **REQ-HK-001, REQ-HK-011, REQ-HK-013, REQ-HK-014, REQ-HK-020, REQ-AGT-001, REQ-AGT-002** |
+| **H7** | Runtime de agentes por rol (Sonnet/Haiku/Opus vía env) + `audit_log` encadenado + `roi_event` | GOB-014, GOB-025, GOB-032, GOB-036, GOB-037, H17-001 — **REQ-BO-006, REQ-AGT-003, REQ-AGT-004, REQ-AGT-006, REQ-AGT-009, REQ-AGT-022, REQ-REV-018** |
+| **H8** | Observabilidad (logs/métricas/health/runbooks/backups) + CI GitHub Actions + `npm audit` + Playwright E2E + adversariales | ADR-008/009 completos; GOB-011 — **REQ-OBS-001, REQ-OBS-002, REQ-OBS-003, REQ-OBS-004, REQ-OBS-005, REQ-QA-007, REQ-QA-008, REQ-QA-009** |
+| **H9** | Adaptadores reales de integración (PMS/WhatsApp/pagos/CFDI/voz) en cuanto existan credenciales — hasta entonces solo contrato+fixture | H15 catálogo completo (§5), marcado **[PENDIENTE DE CREDENCIALES]** — **REQ-INT-001..REQ-INT-015** (todas pendientes de credenciales salvo REQ-INT-012..015, verificables offline) |
+| **H10** | Bucle de auditoría hotelero (12 rubros, `docs/auditoria-N/`) cada 8 tareas cerradas | GOB-009, ADR-010 — **REQ-OBS-003, REQ-OBS-004, REQ-OBS-009, REQ-OBS-010, REQ-GOB-015** |
 
 ## Tabla de desvíos respecto a H20, con justificación
 
