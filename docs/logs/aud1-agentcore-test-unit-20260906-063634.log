@@ -1,0 +1,19 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging
+
+ ✓ tests/unit/agent-core/pricing.spec.ts (4 tests) 1ms
+ ✓ tests/unit/agent-core/provider.spec.ts (8 tests) 2ms
+ ✓ tests/unit/agent-core/trace.spec.ts (3 tests) 3ms
+ ✓ tests/unit/agent-core/roles.spec.ts (13 tests) 4ms
+ ✓ tests/unit/agent-core/approval.spec.ts (15 tests) 5ms
+ ✓ tests/unit/agent-core/redact.spec.ts (16 tests) 4ms
+ ✓ tests/unit/agent-core/context.spec.ts (7 tests) 4ms
+ ✓ tests/unit/agent-core/tool.spec.ts (17 tests) 6ms
+ ✓ tests/unit/agent-core/runner.spec.ts (30 tests) 13ms
+
+ Test Files  9 passed (9)
+      Tests  113 passed (113)
+   Start at  06:37:14
+   Duration  395ms (transform 166ms, setup 0ms, collect 867ms, tests 42ms, environment 1ms, prepare 479ms)
+
+EXIT: 0

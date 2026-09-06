@@ -1,0 +1,15 @@
+=== npm run lint (raiz) Sun Sep  6 06:36:34 CST 2026 ===
+
+> atiende-hoteles@0.0.0 lint
+> eslint .
+
+
+/Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/packages/domain-hotel/src/quote.ts
+  8:68  warning  'TaxConfig' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/paridad-restaurantes-login.spec.ts
+  62:89  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+
+EXIT: 0
