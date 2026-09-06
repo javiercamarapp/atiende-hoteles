@@ -189,8 +189,9 @@ test("cargar un cargo y un pago sobre el folio de una reserva desde /recepcion (
     await page.getByRole("button", { name: "Registrar pago" }).click();
     await expect(page.getByRole("heading", { name: "Registrar pago" })).toBeVisible();
     // El cargo de $250 va con concepto "extras" (default del formulario), que lleva
-    // IVA 16% + ISH 3% = 19% -- 250 * 1.19 = 297.50, no 250 ni un redondeo arbitrario.
-    await page.getByLabel("Monto").fill("297.50");
+    // SOLO IVA 16% (H16-010: el ISH grava exclusivamente hospedaje) -- 250 * 1.16 =
+    // 290, no 250 ni un redondeo arbitrario.
+    await page.getByLabel("Monto").fill("290");
     await page.getByRole("button", { name: "Confirmar pago" }).click();
     await expect(page.getByRole("heading", { name: "Registrar pago" })).toHaveCount(0, { timeout: 15_000 });
     await expect(page.getByText("Saldo: $0.00")).toBeVisible({ timeout: 15_000 });

@@ -6,7 +6,6 @@
 // `input.folio`).
 import { Hono } from "hono";
 import { z } from "zod";
-import { applyTaxes } from "@atiende-hoteles/domain-hotel";
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
@@ -49,8 +48,8 @@ const cancelarSchema = z.object({
 });
 
 interface ChargeSumRow {
-  concept: string;
   total_amount: string;
+  tax_total: string;
   hospedaje_count: string;
 }
 
@@ -207,22 +206,37 @@ export function cfdiRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
           usoCfdi = body.usoCfdi;
         }
 
+        // F2/F3 · REQ-BO-001: una sola fuente de verdad para el total del CFDI -- el
+        // impuesto ya se calculó y se guardó por cargo en el momento en que se posteó
+        // (computeChargeAmounts/computeNoShowPenaltyAmounts, ambos ya excluyen ISH de
+        // A&B/extras/no-show), así que el CFDI SUMA lo ya cobrado (`tax_amount`) en vez
+        // de recalcular un impuesto nuevo desde cero sobre el subtotal agregado -- eso
+        // es justo lo que producía un total de CFDI distinto al que el folio le cobró
+        // al huésped (ISH indebido sobre A&B y sobre la penalidad de no-show). El
+        // desglose IVA/ISH que exige el nodo fiscal del comprobante se deriva de la
+        // MISMA suma ya cobrada: el IVA es 16% del subtotal completo (aplica a TODO lo
+        // gravado, incluida la penalidad de no-show y A&B/extras) y el ISH es lo que
+        // sobra de `tax_total` una vez restado ese IVA -- por construcción, solo queda
+        // ISH ahí cuando de verdad hubo un cargo de hospedaje real con ISH incluido.
         const { rows: sumRows } = await db.query<ChargeSumRow>(
-          `select 'total' as concept,
-                  coalesce(sum(amount), 0)::text as total_amount,
+          `select coalesce(sum(amount), 0)::text as total_amount,
+                  coalesce(sum(tax_amount), 0)::text as tax_total,
                   coalesce(sum(case when concept = 'hospedaje' and stay_date is not null and reversed_by is null then 1 else 0 end), 0)::text as hospedaje_count
            from public.charge
            where folio_id = $1 and concept <> 'propina';`,
           [folioId],
         );
         const subtotalBase = Number(sumRows[0]?.total_amount ?? 0);
+        const taxTotal = Number(sumRows[0]?.tax_total ?? 0);
         const hospedajeNights = Number(sumRows[0]?.hospedaje_count ?? 0);
 
         if (subtotalBase <= 0) {
           throw Errors.conflict("El folio no tiene cargos facturables (fuera de propina) para timbrar un CFDI.");
         }
 
-        const breakdown = applyTaxes(subtotalBase, { ivaRate: moneyConfig.ivaRate, ishRate: moneyConfig.ishRate });
+        const ivaAmount = Math.round(subtotalBase * moneyConfig.ivaRate * 100) / 100;
+        const ishAmount = Math.max(0, Math.round((taxTotal - ivaAmount) * 100) / 100);
+        const breakdown = { netAmount: subtotalBase, ivaAmount, ishAmount, totalAmount: subtotalBase + taxTotal };
         const dsaMonto = Math.round(hospedajeNights * moneyConfig.dsaPerNight * 100) / 100;
         const total = Math.round((breakdown.totalAmount + dsaMonto) * 100) / 100;
 

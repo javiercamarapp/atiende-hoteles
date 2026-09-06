@@ -55,7 +55,7 @@ describe("folio: split, transferencia entre folios, cierre (H5)", () => {
     const original = folios.find((f) => f.id === folioId)!;
     const nuevo = folios.find((f) => f.id === newFolioId)!;
     expect(original.saldo).toBe(0); // el cargo se fue
-    expect(nuevo.saldo).toBe(357);
+    expect(nuevo.saldo).toBe(348); // 300 + 16% IVA (sin ISH, H16-010: "extras" no lleva ISH)
     expect(nuevo.esPrincipal).toBe(false);
   });
 
@@ -80,7 +80,7 @@ describe("folio: split, transferencia entre folios, cierre (H5)", () => {
     const origenGet = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioOrigen}`, { headers: auth() });
     const destinoGet = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioDestino}`, { headers: auth() });
     expect(((await origenGet.json()) as { saldo: number }).saldo).toBe(0);
-    expect(((await destinoGet.json()) as { saldo: number }).saldo).toBe(476);
+    expect(((await destinoGet.json()) as { saldo: number }).saldo).toBe(464); // 400 + 16% IVA (sin ISH)
   });
 
   it("no se puede transferir un cargo a un folio de OTRO hotel", async () => {

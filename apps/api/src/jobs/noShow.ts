@@ -5,7 +5,8 @@
 // construcción: el filtro `status = 'confirmada'` excluye automáticamente cualquier
 // reserva ya procesada en una corrida anterior, sin necesitar una columna de marca aparte.
 import type { DbClient } from "@atiende-hoteles/db";
-import { evaluateNoShow, nightsBetween, type CancellationPolicyConfig } from "@atiende-hoteles/domain-hotel";
+import { computeNoShowPenaltyAmounts, evaluateNoShow, nightsBetween, type CancellationPolicyConfig } from "@atiende-hoteles/domain-hotel";
+import { loadTaxConfig } from "../pms/taxConfig.ts";
 
 export interface NoShowResult {
   reservationId: string;
@@ -86,10 +87,16 @@ export async function runNoShowJob(
       [chargeAmount, reservation.id],
     );
 
-    // H5 · REQ-BO-001: la penalización de no-show se postea al folio como concepto
+    // H5/F3 · REQ-BO-001: la penalización de no-show se postea al folio como concepto
     // 'hospedaje' (el CFDI de hospedaje la incluye igual que una noche real, "concepto
     // de hospedaje con penalidad en no-show") -- SIN `stay_date` (no se ocupó ninguna
     // noche), así que no choca con el índice de idempotencia del night audit.
+    //
+    // El impuesto de la penalidad SIEMPRE se calcula aquí, en el ÚNICO punto donde se
+    // postea el cargo (`computeNoShowPenaltyAmounts`, único punto de cálculo -- ni
+    // `cfdi.ts` recalcula esto por su cuenta), para que el folio le cobre al huésped
+    // exactamente lo mismo que declarará el CFDI: IVA sí (H16 p.14, penas
+    // convencionales gravadas), ISH no (no hubo hospedaje real).
     if (chargeAmount > 0) {
       const { rows: folioRows } = await db.query<{ id: string }>(
         "select id from public.folio where reservation_id = $1 and is_primary;",
@@ -97,10 +104,12 @@ export async function runNoShowJob(
       );
       const folioId = folioRows[0]?.id;
       if (folioId) {
+        const taxConfig = await loadTaxConfig(db, params.hotelId);
+        const penalty = computeNoShowPenaltyAmounts(chargeAmount, taxConfig);
         await db.query(
           `insert into public.charge (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept)
-           values ($1, $2, $3, 'Penalización por no-show', $4, 0, 'hospedaje');`,
-          [params.tenantId, params.hotelId, folioId, chargeAmount],
+           values ($1, $2, $3, 'Penalización por no-show', $4, $5, 'hospedaje');`,
+          [params.tenantId, params.hotelId, folioId, penalty.netAmount, penalty.taxAmount],
         );
       }
     }

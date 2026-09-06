@@ -63,6 +63,25 @@ export function computeChargeAmounts(input: ChargeCalcInput): ChargeCalcResult {
   };
 }
 
+/** F3/H16 p.14 ("No-show/cancelación con penalidad"): la penalización de no-show SÍ
+ *  lleva IVA (criterio SAT: las penas convencionales por servicios están gravadas)
+ *  pero NUNCA ISH ("no hubo hospedaje") -- distinto del cargo de hospedaje normal
+ *  (`computeChargeAmounts("hospedaje", ...)`), que sí lleva ISH cuando aplica. Único
+ *  punto de cálculo para este cargo: ni `noShow.ts` ni `cfdi.ts` deben recalcularlo
+ *  cada uno por su cuenta (esa duplicación fue la causa raíz del CRÍTICO original:
+ *  dos rutas de cálculo que nunca se validaban entre sí). */
+export function computeNoShowPenaltyAmounts(netAmount: number, taxConfig: TaxConfig): ChargeCalcResult {
+  if (netAmount < 0) {
+    throw new RangeError("netAmount de una penalización de no-show no puede ser negativo.");
+  }
+  const breakdown = applyTaxes(netAmount, { ivaRate: taxConfig.ivaRate, ishRate: 0 });
+  return {
+    netAmount: breakdown.netAmount,
+    taxAmount: roundCurrency(breakdown.ivaAmount),
+    totalAmount: breakdown.totalAmount,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Descuentos: requieren autorización de un rol administrativo cuando superan el
 // umbral configurado por hotel (`hotel_tax_config.discount_threshold`) -- nunca un

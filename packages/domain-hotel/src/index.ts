@@ -38,6 +38,7 @@ export { assertBenchmarkQueryAllowed, BenchmarkGuardError, type BenchmarkQueryRe
 export {
   CHARGE_CONCEPTS,
   computeChargeAmounts,
+  computeNoShowPenaltyAmounts,
   evaluateDiscountAuthorization,
   evaluateFolioClose,
   type ChargeConcept,
