@@ -1,0 +1,24 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/.claude/worktrees/agent-aa19a62c27e45193e
+
+ ✓ tests/integration/api/housekeeping-mantenimiento.spec.ts (7 tests) 967ms
+ ✓ tests/integration/api/observabilidad.spec.ts (19 tests) 821ms
+ ✓ tests/integration/api/recepcion.spec.ts (3 tests) 799ms
+ ✓ tests/integration/api/tarifas-impuestos.spec.ts (2 tests) 731ms
+stderr | tests/integration/pool-error-logging.spec.ts > pool.on("error") deja rastro (auditoria-2/operabilidad ALTO) > una conexión ociosa del pool terminada del lado del servidor: se cuenta y se notifica, no desaparece en silencio
+{"level":"error","event":"db_pool_error","message":"terminating connection due to administrator command","pool_error_count":1,"timestamp":"2026-09-06T22:34:48.663Z"}
+
+ ✓ tests/integration/pool-error-logging.spec.ts (1 test) 661ms
+   ✓ pool.on("error") deja rastro (auditoria-2/operabilidad ALTO) > una conexión ociosa del pool terminada del lado del servidor: se cuenta y se notifica, no desaparece en silencio  661ms
+ ✓ tests/unit/check-migraciones.spec.ts (13 tests) 4ms
+ ✓ tests/unit/ui/format-money.spec.ts (5 tests) 5ms
+ ✓ tests/unit/api/money-alert-ids.spec.ts (7 tests) 0ms
+ ✓ tests/unit/check-runtime-flags.spec.ts (7 tests) 14ms
+ ✓ tests/unit/api/money-alert-destination.spec.ts (11 tests) 1ms
+ ✓ tests/unit/restore-verify.spec.ts (5 tests) 2ms
+
+ Test Files  11 passed (11)
+      Tests  80 passed (80)
+   Start at  16:34:44
+   Duration  4.82s (transform 263ms, setup 0ms, collect 626ms, tests 4.01s, environment 0ms, prepare 33ms)
+
