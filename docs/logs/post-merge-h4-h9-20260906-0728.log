@@ -1,0 +1,13 @@
+# compuertas post-merge H4+H9+H11 Sun Sep  6 07:28:30 CST 2026
+      Tests  303 passed | 1 skipped (304)
+   Start at  07:28:31
+   Duration  15.84s (transform 1.09s, setup 0ms, collect 5.68s, tests 118.08s, environment 25ms, prepare 3.21s)
+
+      Tests  38 passed (38)
+   Start at  07:28:47
+   Duration  13.14s (transform 137ms, setup 0ms, collect 353ms, tests 12.62s, environment 0ms, prepare 27ms)
+
+      Tests  57 passed (57)
+   Start at  07:29:01
+   Duration  9.14s (transform 106ms, setup 0ms, collect 284ms, tests 8.68s, environment 0ms, prepare 28ms)
+
