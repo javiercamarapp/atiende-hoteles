@@ -6,7 +6,7 @@ Regla: Fable (claude-fable-5-1) solo orquesta. Todo despacho usa `Agent(model="s
 |---|---|---|---|---|---|
 | 1 | 2026-09-05 18:17 | ref-01 blueprint+DECISIONLLMHOTELES → docs/referencia/01 | sonnet | claude-sonnet-5 (grep "model" transcript: 15/15, 0 fable) | COMPLETADO: 173 BP + 31 LLM (204), 101 págs leídas completas |
 | 2 | 2026-09-05 18:17 | ref-02 investigación H01–H11 → docs/referencia/02 | sonnet | claude-sonnet-5 (15/15) | COMPLETADO: 288 requisitos, 263 págs (11 PDF completos); usó 4 sub-agentes, todos claude-sonnet-5 verificados |
-| 3 | 2026-09-05 18:17 | ref-03 investigación H12–H21 → docs/referencia/03 | sonnet | claude-sonnet-5 (20/20) | en curso |
+| 3 | 2026-09-05 18:17 | ref-03 investigación H12–H21 → docs/referencia/03 | sonnet | claude-sonnet-5 (20/20) | COMPLETADO: 262 págs + JSON ROI; ~90 req + catálogo 25 integraciones; H20 fija stack (Supabase RLS org→location, Sonnet/Haiku/Opus, LiveKit, WhatsApp Cloud, MCP, Inngest, Langfuse, PowerSync, pnpm+Turbo, edge por hotel) |
 | 4 | 2026-09-05 18:17 | ref-04 gobierno y protocolo → docs/referencia/04 | sonnet | claude-sonnet-5 (26/26) | COMPLETADO: 59 GOB, 8 docs, 24 págs |
 | 5 | 2026-09-05 18:17 | ref-05 inventario frontend Restaurantes → docs/referencia/05 | sonnet | claude-sonnet-5 (21/21) | COMPLETADO: 43 primitivos, 8 secciones admin, tokens light/dark, sin mobile real en AdminDashboard |
 | 6 | 2026-09-05 18:17 | ref-06 back office/agentes/bucle Likida → docs/referencia/06 | sonnet | claude-sonnet-5 (7/7) | COMPLETADO: copia 3f98a96 (24-ago) confirmada más reciente; 5 patrones a portar; bucle launchd+claude -p documentado |
