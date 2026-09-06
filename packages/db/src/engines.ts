@@ -7,7 +7,7 @@
 // las pruebas se escriban de forma agnostica al motor.
 
 import { createServer } from "node:net";
-import { mkdtemp, rm } from "node:fs/promises";
+import { access, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
@@ -120,16 +120,30 @@ export interface EmbeddedPostgresEngine {
   stop(): Promise<void>;
 }
 
-export async function openEmbeddedPostgres(): Promise<EmbeddedPostgresEngine> {
-  const port = await getFreePort();
-  const databaseDir = await mkdtemp(join(tmpdir(), "atiende-hoteles-pg-"));
+export interface OpenEmbeddedPostgresOptions {
+  /** Directorio de datos. Por defecto un directorio temporal efímero (pruebas). Pasar
+   *  uno persistente (ej. `packages/db/.pgdata`) para un servidor de desarrollo real
+   *  (ver `apps/api/src/db.ts`). */
+  databaseDir?: string;
+  /** Puerto TCP local. Por defecto uno libre elegido dinámicamente. */
+  port?: number;
+  /** `false` (default) borra el data dir al primer `initialise()`; `true` lo conserva
+   *  entre reinicios (servidor de desarrollo). No aplica si el directorio ya existe. */
+  persistent?: boolean;
+}
+
+export async function openEmbeddedPostgres(
+  options: OpenEmbeddedPostgresOptions = {},
+): Promise<EmbeddedPostgresEngine> {
+  const port = options.port ?? (await getFreePort());
+  const databaseDir = options.databaseDir ?? (await mkdtemp(join(tmpdir(), "atiende-hoteles-pg-")));
 
   const pgServer = new EmbeddedPostgres({
     databaseDir,
     port,
     user: "postgres",
     password: "postgres_dev_only_local",
-    persistent: false,
+    persistent: options.persistent ?? false,
     onLog: () => {
       /* silenciado: el runner/CLI decide que loguear */
     },
@@ -138,7 +152,15 @@ export async function openEmbeddedPostgres(): Promise<EmbeddedPostgresEngine> {
     },
   });
 
-  await pgServer.initialise();
+  // `initialise()` corre `initdb`, que falla si el data dir ya existe y tiene contenido
+  // (caso del servidor de desarrollo persistente reiniciado, ver marcador PG_VERSION
+  // estandar de Postgres) -- se omite solo en ese caso.
+  const alreadyInitialised = await access(join(databaseDir, "PG_VERSION"))
+    .then(() => true)
+    .catch(() => false);
+  if (!alreadyInitialised) {
+    await pgServer.initialise();
+  }
   await pgServer.start();
 
   const adminClient = pgServer.getPgClient();
@@ -180,7 +202,11 @@ export async function openEmbeddedPostgres(): Promise<EmbeddedPostgresEngine> {
     async stop() {
       await adminClient.end();
       await pgServer.stop();
-      await rm(databaseDir, { recursive: true, force: true }).catch(() => undefined);
+      // Un data dir persistente (servidor de desarrollo, `apps/api/src/db.ts`) se
+      // conserva entre reinicios; solo se borra el efímero de pruebas (default).
+      if (!options.persistent) {
+        await rm(databaseDir, { recursive: true, force: true }).catch(() => undefined);
+      }
     },
   };
 }

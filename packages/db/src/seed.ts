@@ -4,6 +4,7 @@
 // inmediato las pruebas de aislamiento/roles de tests/unit y tests/integration.
 
 import type { DbClient } from "./types.ts";
+import { hashPassword } from "./password.ts";
 
 export interface SeedHotel {
   id: string;
@@ -36,6 +37,10 @@ function isoDate(daysFromNow: number): string {
 const AVAILABILITY_HORIZON_DAYS = 30;
 const ROOMS_PER_TYPE = 5;
 
+/** Contraseña de desarrollo para TODOS los usuarios sembrados (H2/ADR-004). Documentada
+ *  también en apps/api/README.md — nunca se usa fuera de PGlite/embedded-postgres. */
+export const DEV_SEED_PASSWORD = "atiende-dev-2026";
+
 /** Inserta los datos de desarrollo. Debe correr con un cliente admin (superusuario del
  *  motor, ver engines.ts) para no depender de RLS/roles durante el seed. */
 export async function seedDev(db: DbClient): Promise<SeedResult> {
@@ -55,12 +60,22 @@ export async function seedDev(db: DbClient): Promise<SeedResult> {
     { name: "Suite", maxOccupancy: 4, price: 2500 },
   ];
 
+  // Los 8 roles exactos de REQ-TEN-003/ADR-004, uno por hotel, para poder ejercitar la
+  // matriz completa de permisos en tests/adversarial (H2) ademas de las pruebas de RLS
+  // de H1 que ya usaban solo gm/housekeeping (siguen encontrando esos dos roles aqui).
   const staffDefs: { role: string; label: string }[] = [
+    { role: "owner", label: "Propietario" },
     { role: "gm", label: "Gerencia" },
+    { role: "frontdesk", label: "Recepción" },
+    { role: "reservations", label: "Reservaciones" },
     { role: "housekeeping", label: "Camarista" },
+    { role: "maintenance", label: "Mantenimiento" },
+    { role: "fnb", label: "Alimentos y Bebidas" },
+    { role: "accountant", label: "Contabilidad" },
   ];
 
   const hotels: SeedHotel[] = [];
+  const devPasswordHash = await hashPassword(DEV_SEED_PASSWORD);
 
   for (const hotelDef of hotelDefs) {
     const locationRes = await db.query<{ id: string }>(
@@ -105,8 +120,8 @@ export async function seedDev(db: DbClient): Promise<SeedResult> {
     for (const s of staffDefs) {
       const email = `${s.role}@${hotelSlug}.demo`;
       const userRes = await db.query<{ id: string }>(
-        "insert into public.staff_user (email, full_name) values ($1, $2) returning id;",
-        [email, `${s.label} — ${hotelDef.name}`],
+        "insert into public.staff_user (email, full_name, password_hash) values ($1, $2, $3) returning id;",
+        [email, `${s.label} — ${hotelDef.name}`, devPasswordHash],
       );
       const userId = userRes.rows[0]!.id;
       await db.query(

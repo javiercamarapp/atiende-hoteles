@@ -17,7 +17,7 @@ futuro, contra un proyecto Supabase real (mismo patrón de claims: `auth.uid()`,
 
 ```
 packages/db/
-├── migrations/           # 0001_....sql .. 0010_....sql, expand-only (REQ-GOB-010)
+├── migrations/           # 0001_....sql .. 0012_....sql, expand-only (REQ-GOB-010)
 ├── src/
 │   ├── types.ts          # contrato DbClient compartido por ambos motores
 │   ├── engines.ts        # openPglite() / openEmbeddedPostgres()
@@ -102,6 +102,27 @@ RLS habilitada en todas las tablas de tenant, con `REVOKE ALL FROM PUBLIC` expl�
 grants mínimos otorgados solo al rol `authenticated` (ver `migrations/0010_grants_and_lockdown.sql`).
 `housekeeping`/`maintenance` quedan explícitamente sin acceso a `folio`/`charge`/`payment`
 (`can_access_money()`).
+
+## Cambios de H2 (`apps/api`, expand-only sobre H1)
+
+- `migrations/0011_staff_auth_and_idempotency_hash.sql`: agrega `staff_user.password_hash`
+  (login por email/contraseña, ver `src/password.ts` — `scrypt`, no `argon2id`, para no
+  sumar una dependencia nativa) con GRANT por columnas explícito (ningún compañero de
+  hotel puede leer el hash de otro vía RLS); agrega `idempotency_key.request_hash` +
+  `GRANT UPDATE`/policy de UPDATE (patrón de reclamo-antes-de-mutar de
+  `apps/api/src/lib/idempotency.ts`).
+- `migrations/0012_audit_log_sequence.sql`: agrega `audit_log.seq` (identity monótona)
+  para desempatar la fila "anterior" del hash encadenado sin depender de `id` (UUID
+  aleatorio) cuando dos inserciones del mismo tenant comparten `created_at` — corrige un
+  flake real detectado en `tests/unit/audit-log.spec.ts` (bug pre-existente de H1, no
+  cambia la fórmula del hash en sí, solo cómo se localiza la fila previa).
+- `DEV_SEED_PASSWORD` (export de `src/seed.ts`): contraseña de desarrollo compartida por
+  todos los usuarios sembrados (`atiende-dev-2026`), documentada en `apps/api/README.md`.
+  `seedDev()` ahora crea los 8 roles de `REQ-TEN-003` por hotel (antes solo `gm`/
+  `housekeeping`) para poder probar la matriz de roles completa en H2.
+- `openEmbeddedPostgres()` acepta `{databaseDir, port, persistent}` opcionales (antes
+  siempre efímero/aleatorio) para que `apps/api/src/db.ts` pueda levantar un servidor de
+  desarrollo persistente reutilizando exactamente el mismo motor que las pruebas.
 
 ## Qué falta (fuera de alcance de H1, declarado explícitamente)
 

@@ -14,4 +14,5 @@ export {
   type MigrationFile,
   type MigrationResult,
 } from "./runner.ts";
-export { seedDev, type SeedResult } from "./seed.ts";
+export { seedDev, DEV_SEED_PASSWORD, type SeedResult } from "./seed.ts";
+export { hashPassword, verifyPassword } from "./password.ts";
