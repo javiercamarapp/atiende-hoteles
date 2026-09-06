@@ -60,6 +60,28 @@ describe("buildToolContext", () => {
     expect(ctx.budget).toBe(budget);
   });
 
+  it("isFirstTurn de la sesion se copia al ToolContext, false por defecto (aud-1 " +
+    "agentico.md ALTO: base para el disclosure de IA REQ-HUE-006/GOB-034)", () => {
+    const budget = createRunBudget({});
+    const sinDeclarar = buildToolContext(
+      { orgId: "org-1", hotelId: "hotel-1", actor: { type: "guest", id: "g-1" }, requestId: "req-1" },
+      budget,
+    );
+    expect(sinDeclarar.isFirstTurn).toBe(false);
+
+    const primerTurno = buildToolContext(
+      {
+        orgId: "org-1",
+        hotelId: "hotel-1",
+        actor: { type: "guest", id: "g-1" },
+        requestId: "req-2",
+        isFirstTurn: true,
+      },
+      budget,
+    );
+    expect(primerTurno.isFirstTurn).toBe(true);
+  });
+
   it("rechaza una ServerSession incompleta (sin hotelId)", () => {
     const budget = createRunBudget({});
     expect(() =>

@@ -42,6 +42,13 @@ export interface AgentRunnerOptions {
    * una repeticion NO inmediata (con otra tool intercalada) -- default 5 (aud-1
    * tool-calling.md ALTO #2: antes solo se comparaba contra la ULTIMA llamada). */
   readonly loopGuardWindow?: number;
+  /** REQ-HUE-006/GOB-034: texto de disclosure ("soy un asistente de IA...") que se
+   * antepone al mensaje de cierre cuando `ctx.isFirstTurn` es true -- el humano/huesped
+   * debe saber, desde el primer turno, que quien responde es un agente de IA. Mecanismo
+   * minimo dentro de agent-core (aud-1 agentico.md ALTO); la deteccion de "es el primer
+   * turno de ESTA conversacion" vive fuera de este paquete (session/API), que resuelve
+   * `ServerSession.isFirstTurn`. */
+  readonly disclosureMessage?: string;
   readonly costLedger?: CostLedger;
   readonly onTrace?: (event: AgentTraceEvent) => void;
 }
@@ -456,13 +463,28 @@ export class AgentRunner {
     pendingApprovalIds: string[],
     message: string,
   ): AgentRunResult {
+    // aud-1 agentico.md ALTO: REQ-HUE-006/GOB-034 exige que el humano/huesped sepa, desde
+    // el PRIMER turno de la conversacion, que quien responde es un agente de IA. Se
+    // antepone aqui, en el UNICO punto de salida de run(), para que se aplique sin
+    // importar como termine la corrida (completado, esperando_aprobacion, error...).
+    const closingMessage =
+      ctx.isFirstTurn && this.options.disclosureMessage
+        ? `${this.options.disclosureMessage} ${message}`.trim()
+        : message;
     // aud-1 agentico.md ALTO: `run_finished` estaba DECLARADO en AgentTraceKind pero
     // jamas se emitia -- si el proceso muere justo despues de que run() retorna (antes
     // de que el llamador, fuera de este paquete, persista el AgentRunResult), no quedaba
     // ningun rastro en `onTrace` de como termino la corrida. Se emite aqui, en el UNICO
     // punto de salida de run(), para las 8 ramas de cierre sin excepcion.
-    this.emit(ctx, runId, steps, "run_finished", { message: redact(message) });
-    return { status, runId, finalText, steps, pendingApprovalIds: [...pendingApprovalIds], message };
+    this.emit(ctx, runId, steps, "run_finished", { message: redact(closingMessage) });
+    return {
+      status,
+      runId,
+      finalText,
+      steps,
+      pendingApprovalIds: [...pendingApprovalIds],
+      message: closingMessage,
+    };
   }
 
   private emit(

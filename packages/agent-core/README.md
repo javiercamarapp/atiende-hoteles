@@ -164,9 +164,24 @@ omision (BP-016/BP-053).
 ### 7. Trazabilidad (`src/trace.ts`)
 
 Cada paso del `AgentRunner` emite un `AgentTraceEvent` (sin PII: el campo `message`
-siempre pasa por `redact()` antes de emitirse) listo para insertarse en `audit_log`.
+siempre pasa por `redact()` antes de emitirse) listo para insertarse en `audit_log`,
+incluido `run_finished` al final de CUALQUIER salida de `run()` (completado, rechazado,
+error, presupuesto agotado...) -- el desenlace de la corrida queda anclado en el mismo
+canal de auditoria que el resto de los pasos (aud-1 agentico.md ALTO).
 `InMemoryCostLedger` acumula el costo USD por `(hotelId, modelSlug)` -- contador de
 costo por hotel, REQ-AGT-020.
+
+### 8. Disclosure de IA (REQ-HUE-006/GOB-034)
+
+Mecanismo minimo dentro de agent-core: `ServerSession.isFirstTurn` (resuelto por la
+capa de sesion externa, que es quien sabe si ya existia una conversacion previa) se
+copia a `ToolContext.isFirstTurn`; si `AgentRunnerOptions.disclosureMessage` esta
+configurado y `ctx.isFirstTurn` es `true`, `AgentRunner.run()` antepone ese texto al
+`message` de cierre -- en CUALQUIER desenlace de la corrida, no solo "completado". El
+resto del disclosure engine completo (deteccion de conversacion nueva por canal,
+copy legal final aprobado, respuesta fija a "¿eres humano?") vive fuera de este
+paquete (session/API) y queda **pendiente** -- ver
+`docs/auditoria-1/correccion-agent-core.md`.
 
 ## Limites explicitos de este hito (H6a)
 

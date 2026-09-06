@@ -36,6 +36,11 @@ export interface ServerSession {
   readonly hotelId: string;
   readonly actor: AgentActor;
   readonly requestId: string;
+  /** true si este es el PRIMER turno de la conversacion (la capa de sesion, fuera de
+   * este paquete, es quien sabe si ya existia una conversacion previa). Base para el
+   * disclosure de IA obligatorio (REQ-HUE-006/GOB-034, ver AgentRunnerOptions.disclosureMessage
+   * en runner.ts) -- default `false` si se omite. */
+  readonly isFirstTurn?: boolean;
 }
 
 /**
@@ -49,6 +54,8 @@ export interface ToolContext {
   readonly actor: AgentActor;
   readonly requestId: string;
   readonly budget: RunBudget;
+  /** Ver `ServerSession.isFirstTurn`. Siempre `false` si la sesion no lo declaro. */
+  readonly isFirstTurn: boolean;
 }
 
 export function buildToolContext(session: ServerSession, budget: RunBudget): ToolContext {
@@ -63,6 +70,7 @@ export function buildToolContext(session: ServerSession, budget: RunBudget): Too
     actor: session.actor,
     requestId: session.requestId,
     budget,
+    isFirstTurn: session.isFirstTurn ?? false,
   };
 }
 

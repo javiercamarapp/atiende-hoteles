@@ -24,6 +24,13 @@ function ctxFor(hotelId = "hotel-1"): ToolContext {
   );
 }
 
+function firstTurnCtxFor(hotelId = "hotel-1"): ToolContext {
+  return buildToolContext(
+    { orgId: "org-1", hotelId, actor: { type: "guest", id: "guest-1" }, requestId: "req-1", isFirstTurn: true },
+    createRunBudget({}),
+  );
+}
+
 function baseOptions(overrides: Partial<AgentRunnerOptions>): AgentRunnerOptions {
   return {
     agentName: "recepcionista",
@@ -561,6 +568,49 @@ describe("AgentRunner", () => {
     const result = await runner.run(ctxFor(), "hola");
     expect(result.status).toBe("no_configurado");
     expect(result.message).toMatch(/no configurado/);
+  });
+
+  describe("disclosure de IA (aud-1 agentico.md ALTO: REQ-HUE-006/GOB-034 -- el primer " +
+    "turno de una conversacion debe revelar que quien responde es un agente de IA)", () => {
+    const disclosureMessage = "Soy un asistente de inteligencia artificial de este hotel.";
+
+    it("antepone el disclosure al mensaje de cierre cuando isFirstTurn=true", async () => {
+      const runner = new AgentRunner(baseOptions({ disclosureMessage }));
+      const result = await runner.run(firstTurnCtxFor(), "hola");
+      expect(result.status).toBe("completado");
+      expect(result.message.startsWith(disclosureMessage)).toBe(true);
+    });
+
+    it("NO antepone nada cuando isFirstTurn=false (turno de seguimiento)", async () => {
+      const runner = new AgentRunner(baseOptions({ disclosureMessage }));
+      const result = await runner.run(ctxFor(), "hola");
+      expect(result.message).not.toContain(disclosureMessage);
+    });
+
+    it("se aplica sin importar como termine la corrida (p.ej. 'esperando_aprobacion')", async () => {
+      const tools = new ToolRegistry();
+      tools.register(
+        defineTool({
+          name: "cerrar_folio",
+          description: "cierra el folio",
+          inputSchema: z.object({}),
+          effect: "money",
+          needsApproval: true,
+          run: () => ({ ok: true, summary: "cerrado" }),
+        }),
+      );
+      const provider = new FakeProvider([{ kind: "tool_calls", calls: [{ name: "cerrar_folio", input: {} }] }]);
+      const runner = new AgentRunner(baseOptions({ provider, tools, disclosureMessage }));
+      const result = await runner.run(firstTurnCtxFor(), "cierra mi cuenta");
+      expect(result.status).toBe("esperando_aprobacion");
+      expect(result.message.startsWith(disclosureMessage)).toBe(true);
+    });
+
+    it("sin disclosureMessage configurado, el comportamiento no cambia (compatibilidad)", async () => {
+      const runner = new AgentRunner(baseOptions({}));
+      const result = await runner.run(firstTurnCtxFor(), "hola");
+      expect(result.message).toBe("listo");
+    });
   });
 
   describe("run_finished (aud-1 agentico.md ALTO: el desenlace de la corrida debe quedar " +
