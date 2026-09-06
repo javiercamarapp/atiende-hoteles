@@ -1,0 +1,15 @@
+-- auditoria-1/datos [MEDIO] "el worker de outbox no tiene un indice que sirva su propia
+-- consulta -- full scan garantizado a escala" (docs/auditoria-1/datos.md). El unico
+-- indice de `outbox` (0009) es `(tenant_id, status, available_at)`, con `tenant_id`
+-- como columna lider -- pero `drainOutboxOnce()` (apps/api/src/outbox/worker.ts) drena
+-- TODOS los tenants a la vez y consulta
+-- `where status = 'pendiente' and available_at <= now() order by created_at asc`, sin
+-- filtrar por `tenant_id`: ese indice es inutil para esa consulta (columna lider no
+-- aparece en el WHERE), verificado con EXPLAIN produciendo `Seq Scan on outbox`.
+--
+-- Arreglo: indice `(status, created_at)` -- `status` es el filtro de igualdad real del
+-- worker, y con `status` fijo el indice ya entrega las filas en el orden de
+-- `created_at` que pide el `ORDER BY`, evitando ademas un sort explicito. El filtro de
+-- `available_at <= now()` se evalua como recheck sobre las filas que el indice ya trajo
+-- en orden -- barato porque `available_at` es un timestamptz simple, no un JOIN.
+create index outbox_status_created_idx on public.outbox (status, created_at);

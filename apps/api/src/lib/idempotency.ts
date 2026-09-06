@@ -16,6 +16,13 @@ export interface IdempotentResult {
   body: unknown;
 }
 
+// auditoria-1/datos [MEDIO]: ventana de protección contra reintento de un
+// Idempotency-Key (migración 0022, `idempotency_key.expires_at`) — antes la fila
+// protegía la operación "para siempre", sin ninguna decisión documentada de cuánto
+// tiempo. 7 días cubre un reintento manual/de integración externa real sin ser
+// indefinido.
+const IDEMPOTENCY_KEY_TTL_DAYS = 7;
+
 function hashBody(body: unknown): string {
   return createHash("sha256").update(JSON.stringify(body ?? null)).digest("hex");
 }
@@ -35,12 +42,21 @@ export async function withIdempotency(
 ): Promise<IdempotentResult> {
   const requestHash = hashBody(params.body);
 
+  // auditoria-1/datos [MEDIO]: una llave ya EXPIRADA (`expires_at < now()`, 0022) se
+  // reclama de nuevo atómicamente vía `DO UPDATE ... WHERE expires_at < now()` -- si la
+  // fila existente sigue vigente, la condición del WHERE es falsa y esta sentencia se
+  // comporta exactamente como el `DO NOTHING` original (ninguna fila devuelta).
   const claim = await session.query<{ id: string }>(
-    `insert into public.idempotency_key (tenant_id, scope, key, request_hash)
-     values ($1, $2, $3, $4)
-     on conflict (tenant_id, scope, key) do nothing
+    `insert into public.idempotency_key (tenant_id, scope, key, request_hash, expires_at)
+     values ($1, $2, $3, $4, now() + ($5 || ' days')::interval)
+     on conflict (tenant_id, scope, key) do update
+       set request_hash = excluded.request_hash,
+           response = null,
+           created_at = now(),
+           expires_at = excluded.expires_at
+       where public.idempotency_key.expires_at < now()
      returning id;`,
-    [params.tenantId, params.scope, params.key, requestHash],
+    [params.tenantId, params.scope, params.key, requestHash, String(IDEMPOTENCY_KEY_TTL_DAYS)],
   );
 
   if (claim.rows.length === 0) {
