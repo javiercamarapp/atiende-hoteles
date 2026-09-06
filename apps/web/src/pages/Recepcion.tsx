@@ -111,7 +111,7 @@ function SeccionFolioHuesped({ hotelId }: { hotelId: string }) {
                 <Label htmlFor="folio-reserva-select">Reserva</Label>
                 <select
                   id="folio-reserva-select"
-                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm"
                   value={reservationId}
                   onChange={(e) => setReservationId(e.target.value)}
                 >

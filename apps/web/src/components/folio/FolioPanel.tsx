@@ -305,7 +305,7 @@ function AgregarCargoDialog({
             <Label htmlFor="cargo-concepto">Concepto</Label>
             <select
               id="cargo-concepto"
-              className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+              className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm"
               value={concepto}
               onChange={(e) => setConcepto(e.target.value as ConceptoCargo)}
             >
@@ -453,7 +453,7 @@ function AgregarPagoDialog({
             <Label htmlFor="pago-metodo">Método</Label>
             <select
               id="pago-metodo"
-              className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+              className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm"
               value={metodo}
               onChange={(e) => setMetodo(e.target.value as typeof metodo)}
             >
@@ -539,7 +539,7 @@ function CerrarFolioDialog({
         <Label htmlFor="cierre-motivo">Motivo de cierre</Label>
         <select
           id="cierre-motivo"
-          className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+          className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm"
           value={motivo}
           onChange={(e) => setMotivo(e.target.value as typeof motivo)}
           disabled={!esSaldoCero}
