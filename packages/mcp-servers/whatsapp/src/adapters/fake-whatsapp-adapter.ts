@@ -18,6 +18,7 @@ import {
   MessagingTierLimitError,
   type MessagingPort,
   type MessagingTier,
+  type SendInteractiveButtonsInput,
   type SendTemplateMessageInput,
   type SendTextMessageInput,
   type SentMessage,
@@ -100,6 +101,10 @@ export class FakeWhatsappAdapter implements MessagingPort {
     return this.record(input.clientMessageId, input.to);
   }
 
+  async sendInteractiveButtonsMessage(input: SendInteractiveButtonsInput): Promise<SentMessage> {
+    return this.record(input.clientMessageId, input.to);
+  }
+
   async verifyAndNormalizeWebhook(
     rawBody: string,
     signatureHeader: string | undefined,
@@ -114,6 +119,7 @@ export class FakeWhatsappAdapter implements MessagingPort {
       message_id?: string;
       status?: "sent" | "delivered" | "read" | "failed";
       text?: string;
+      button_id?: string;
       occurred_at: string;
     };
     if (this.replayGuard.seenBefore(payload.event_id)) {
@@ -132,6 +138,7 @@ export class FakeWhatsappAdapter implements MessagingPort {
       externalMessageId: payload.message_id,
       status: payload.status ? statusMap[payload.status] : undefined,
       textBody: payload.text,
+      buttonId: payload.button_id,
       occurredAt: payload.occurred_at,
       raw: payload,
     };

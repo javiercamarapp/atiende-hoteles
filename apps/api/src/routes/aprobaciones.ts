@@ -7,15 +7,8 @@
 // capa explícita, igual que el resto de la API.
 import { Hono } from "hono";
 import { z } from "zod";
-import {
-  ApprovalError,
-  PostgresApprovalQueue,
-  buildToolContext,
-  createRunBudget,
-} from "@atiende-hoteles/agent-core";
-import { buildToolExecutors } from "../lib/agentTools.ts";
-import { sharedWhatsappAdapter } from "../lib/messaging.ts";
-import { Errors, ApiError } from "../lib/errors.ts";
+import { decidirYEjecutarAprobacion } from "../lib/aprobacionEjecutor.ts";
+import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
 import { ADMIN_ROLES } from "../domain/roles.ts";
@@ -135,47 +128,21 @@ export function aprobacionesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     const approvalId = c.req.param("id");
     const body = parseBody(decidirSchema, await c.req.json().catch(() => ({})));
 
-    const approvalQueue = new PostgresApprovalQueue(db);
-    let decided;
-    try {
-      decided = await approvalQueue.decide({
-        approvalId,
-        actor: c.get("userId"),
-        role: body.role ?? c.get("hotelRole"),
-        decision: body.decision,
-        textoExacto: body.textoExacto,
-      });
-    } catch (err) {
-      if (err instanceof ApprovalError) throw new ApiError(409, "approval_invalid", err.message);
-      throw err;
-    }
-    if (decided.hotelId !== hotelId) throw Errors.notFound("Solicitud de aprobación no encontrada.");
+    // Misma lógica de negocio (decidir + ejecutar la tool si queda aprobada) que
+    // routes/aprobacionesWhatsapp.ts (REQ-UX-006, botón de WhatsApp) -- ver
+    // lib/aprobacionEjecutor.ts.
+    const resultado = await decidirYEjecutarAprobacion({
+      db,
+      hotelId,
+      approvalId,
+      actor: c.get("userId"),
+      role: body.role ?? c.get("hotelRole"),
+      decision: body.decision,
+      textoExacto: body.textoExacto,
+      requestId: c.get("requestId"),
+    });
 
-    if (decided.status !== "aprobada") {
-      return c.json({ id: decided.id, estado: decided.status, confirmaciones: decided.confirmations.length });
-    }
-
-    // Doble confirmacion completada (o aprobacion de 1 sola confirmacion, no-dinero):
-    // ejecuta la tool de dominio correspondiente AHORA, fuera de cualquier corrida de
-    // AgentRunner -- el input REAL ya validado se recupera de `input_json` (0045).
-    const storedInput = await approvalQueue.getStoredInput(decided.id);
-    const executors = buildToolExecutors({ db, messaging: sharedWhatsappAdapter, simulated: true });
-    const tool = executors[decided.toolName];
-    if (!tool) {
-      throw Errors.internal(`No hay ejecutor registrado para la tool "${decided.toolName}" (aprobación ${decided.id}).`);
-    }
-    const parsed = tool.inputSchema.safeParse(storedInput);
-    if (!parsed.success) {
-      throw Errors.internal(`El input almacenado para la aprobación ${decided.id} ya no es válido contra la tool.`);
-    }
-
-    const ctx = buildToolContext(
-      { orgId: decided.orgId, hotelId: decided.hotelId, actor: { type: "staff", id: c.get("userId") }, requestId: c.get("requestId") },
-      createRunBudget({}),
-    );
-    const result = await tool.run(ctx, parsed.data);
-
-    return c.json({ id: decided.id, estado: decided.status, ejecutado: true, summary: result.summary });
+    return c.json(resultado);
   });
 
   return app;

@@ -15,3 +15,4 @@ export * from "./provider.ts";
 export * from "./trace.ts";
 export * from "./runner.ts";
 export * from "./tools/index.ts";
+export * from "./backlog/backlogStateMachine.ts";

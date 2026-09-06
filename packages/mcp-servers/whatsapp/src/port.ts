@@ -70,6 +70,27 @@ export const SendTextMessageInput = z.object({
 });
 export type SendTextMessageInput = z.infer<typeof SendTextMessageInput>;
 
+// REQ-UX-006 (H09-026/BP-010): "las aprobaciones operativas del gerente deben poder
+// ejecutarse mediante botón directamente en el mensaje de WhatsApp, sin requerir
+// acceso al panel web." Un mensaje interactivo de "reply buttons" de WhatsApp Cloud
+// API admite hasta 3 botones -- suficiente para aprobar/rechazar (y, si aplica, un
+// tercero de "ver detalle").
+export const InteractiveButton = z.object({
+  /** Máximo 256 caracteres por especificación de Meta; el valor real que este sistema
+   *  usa (ver aprobacionesWhatsapp.ts) siempre es corto: `aprobar:<uuid>`/`rechazar:<uuid>`. */
+  id: z.string().min(1).max(256),
+  title: z.string().min(1).max(20),
+});
+export type InteractiveButton = z.infer<typeof InteractiveButton>;
+
+export const SendInteractiveButtonsInput = z.object({
+  to: z.string().min(8),
+  body: z.string().min(1).max(1024),
+  buttons: z.array(InteractiveButton).min(1).max(3),
+  clientMessageId: z.string().min(1),
+});
+export type SendInteractiveButtonsInput = z.infer<typeof SendInteractiveButtonsInput>;
+
 export const SentMessage = z.object({
   externalMessageId: z.string().min(1),
   to: z.string().min(8),
@@ -78,14 +99,18 @@ export const SentMessage = z.object({
 });
 export type SentMessage = z.infer<typeof SentMessage>;
 
-/** Evento normalizado de un webhook entrante (mensaje del huésped o actualización de estado). */
+/** Evento normalizado de un webhook entrante (mensaje del huésped, actualización de
+ *  estado, Flow completado, o clic en un botón interactivo -- REQ-UX-006). */
 export const WhatsappWebhookEvent = z.object({
   eventId: z.string().min(1),
-  type: z.enum(["message.received", "message.status_updated", "flow.completed"]),
+  type: z.enum(["message.received", "message.status_updated", "flow.completed", "interactive.button_clicked"]),
   from: z.string().optional(),
   externalMessageId: z.string().optional(),
   status: DomainMessageStatus.optional(),
   textBody: z.string().optional(),
+  /** Solo presente cuando `type === "interactive.button_clicked"`: el `id` del botón
+   *  presionado (ver `InteractiveButton.id` arriba). */
+  buttonId: z.string().optional(),
   occurredAt: z.string().datetime(),
   raw: z.record(z.string(), z.unknown()),
 });
@@ -120,6 +145,10 @@ export interface MessagingPort {
 
   /** Solo válido dentro de la ventana de 24h de conversación abierta por el huésped. */
   sendTextMessage(input: SendTextMessageInput): Promise<SentMessage>;
+
+  /** REQ-UX-006: mensaje con botones de respuesta rápida (hasta 3) -- usado para que
+   *  el gerente apruebe/rechace directamente desde WhatsApp, sin abrir el panel web. */
+  sendInteractiveButtonsMessage(input: SendInteractiveButtonsInput): Promise<SentMessage>;
 
   verifyAndNormalizeWebhook(
     rawBody: string,

@@ -24,6 +24,12 @@ const refreshSchema = z.object({
   refreshToken: z.string().min(1),
 });
 
+// REQ-UX-006: número de WhatsApp del propio staff, usado para resolver el actor de
+// una aprobación decidida por botón de WhatsApp (routes/aprobacionesWhatsapp.ts).
+const whatsappSchema = z.object({
+  whatsappPhone: z.string().trim().regex(/^\+[0-9]{8,15}$/, "formato E.164 esperado, p. ej. +5219981234567"),
+});
+
 interface StaffRow {
   id: string;
   email: string;
@@ -129,6 +135,28 @@ export function authRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       orgId: rows[0]?.org_id ?? null,
       hoteles: rows.map((m) => ({ id: m.hotel_id, nombre: m.hotel_name, rol: m.role })),
     });
+  });
+
+  // REQ-UX-006: autoservicio -- cada staff registra SU PROPIO número de WhatsApp
+  // (nunca el de otro: RLS + GRANT acotado a esta columna, migración 0053).
+  app.use("/auth/me/whatsapp", authMiddleware(deps.env), dbSession(deps.engine));
+  app.patch("/auth/me/whatsapp", async (c) => {
+    const db = c.get("db");
+    const body = parseBody(whatsappSchema, await c.req.json().catch(() => ({})));
+
+    try {
+      const { rows } = await db.query<{ id: string }>(
+        "update public.staff_user set whatsapp_phone = $1 where id = auth.uid() returning id;",
+        [body.whatsappPhone],
+      );
+      if (rows.length === 0) throw Errors.notFound("Cuenta de staff no encontrada.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (/unique/i.test(message)) throw Errors.conflict("Ese número de WhatsApp ya está registrado a otra cuenta.");
+      throw err;
+    }
+
+    return c.json({ whatsappPhone: body.whatsappPhone });
   });
 
   return app;

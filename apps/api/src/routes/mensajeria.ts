@@ -28,6 +28,7 @@ import {
 } from "@atiende-hoteles/agent-core";
 import { FakeWhatsappAdapter } from "@atiende-hoteles/mcp-whatsapp";
 import { WebhookReplayError, WebhookSignatureError } from "@atiende-hoteles/mcp-shared";
+import { looksLikeCheckinDataInFreeText } from "@atiende-hoteles/domain-hotel";
 import { sharedWhatsappAdapter } from "../lib/messaging.ts";
 import type { DbClient } from "@atiende-hoteles/db";
 import { Errors } from "../lib/errors.ts";
@@ -147,6 +148,29 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
          values ($1, $2, $3, 'entrante', 'whatsapp', $4, $5, 'entregado', true);`,
         [configRows[0].tenant_id, hotelId, convRows[0]!.id, event.textBody ?? "(mensaje sin texto)", event.externalMessageId ?? null],
       );
+
+      // REQ-RES-016: "un intento de completar el check-in por chat libre es rechazado
+      // y redirigido al flujo estructurado." Ningún código de este repo EXTRAE
+      // identidad de texto de chat (la única vía real es
+      // complete_checkin_public()/register_identity_document(), migraciones 0051/0054)
+      // -- esto es la capa de UX que avisa pronto, enviando el enlace estructurado en
+      // vez de dejar al huésped pensando que su mensaje sirvió para algo.
+      if (looksLikeCheckinDataInFreeText(event.textBody)) {
+        const redirect = await sharedWhatsappAdapter.sendTemplateMessage({
+          to: event.from,
+          templateName: "checkin_enlace_estructurado",
+          languageCode: "es_MX",
+          parameters: [],
+          clientMessageId: `checkin-redirect-${event.eventId}`,
+        });
+        await deps.engine.admin.query(
+          `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, template_name, body, external_message_id, delivery_status, simulated)
+           values ($1, $2, $3, 'saliente', 'whatsapp', 'checkin_enlace_estructurado',
+                   'Por seguridad, tu check-in no puede completarse por chat: te compartimos un enlace seguro de un solo uso.',
+                   $4, $5, true);`,
+          [configRows[0].tenant_id, hotelId, convRows[0]!.id, redirect.externalMessageId, redirect.status],
+        );
+      }
     } else if (event.type === "message.status_updated" && event.externalMessageId) {
       await deps.engine.admin.query(
         "update public.message set delivery_status = $1 where hotel_id = $2 and external_message_id = $3;",
