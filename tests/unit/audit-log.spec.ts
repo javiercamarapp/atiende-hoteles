@@ -66,8 +66,11 @@ describe("audit_log: append-only + cadena de hash", () => {
       );
     }
 
+    // Ordenado por `seq` (migrations/0012), no por `created_at`/`id`: dos inserciones
+    // rapidas pueden compartir `created_at` y `id` es un UUID aleatorio sin relacion con
+    // el orden real de insercion (motivo de la migracion 0012).
     const { rows } = await fixture.engine.admin.query<AuditRow>(
-      "select * from public.audit_log where tenant_id = $1 order by created_at asc, id asc;",
+      "select * from public.audit_log where tenant_id = $1 order by seq asc;",
       [orgId],
     );
 
