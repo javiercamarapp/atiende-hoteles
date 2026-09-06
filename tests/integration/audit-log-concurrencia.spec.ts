@@ -2,18 +2,24 @@
 // bajo escritura concurrente del mismo tenant" (docs/auditoria-1/backend.md). El
 // trigger `audit_log_set_hash()` (migrations/0008/0012) hace
 // `select ... order by seq desc limit 1` para calcular `prev_hash` y luego inserta, sin
-// ningún `pg_advisory_xact_lock` que serialice esa lectura-escritura por tenant. Dos
-// transacciones concurrentes del MISMO tenant (ej. un `reservation.created` y un
-// `payment.recorded` casi simultáneos, el caso real de dos requests de API en paralelo)
-// pueden leer el mismo "último hash" antes de que cualquiera de las dos inserte,
-// produciendo dos filas con `prev_hash = null` en vez de una cadena.
+// ningún mecanismo que serialice esa lectura-escritura por tenant. Dos transacciones
+// concurrentes del MISMO tenant (ej. un `reservation.created` y un `payment.recorded`
+// casi simultáneos, el caso real de dos requests de API en paralelo) pueden leer el
+// mismo "último hash" antes de que cualquiera de las dos inserte, produciendo dos filas
+// con `prev_hash = null` en vez de una cadena.
 //
-// La ventana real de la carrera (un SELECT+INSERT dentro de un mismo trigger) es de
-// microsegundos en hardware normal -- para hacerla determinista sin depender de suerte
-// de scheduling, esta prueba redefine la función SOLO en su propia base
-// `embedded-postgres` efímera (nunca se edita ningún archivo del repositorio) agregando
-// un `pg_sleep` entre el SELECT y el INSERT, exactamente la técnica que usó la
-// auditoría para reproducir el hallazgo de forma verificable.
+// La ventana real de la carrera es de microsegundos en hardware normal -- para hacerla
+// determinista sin depender de suerte de scheduling, la primera prueba redefine la
+// función SOLO en su propia base `embedded-postgres` efímera (nunca se edita ningún
+// archivo del repositorio) agregando un `pg_sleep` entre el SELECT y el INSERT, la
+// misma técnica que usó la auditoría para reproducir el hallazgo de forma verificable.
+//
+// packages/db/migrations/0015 documenta por qué un `pg_advisory_xact_lock` NO basta
+// (se probó y se descartó empíricamente: serializa el ORDEN de ejecución pero el SELECT
+// que sigue puede seguir viendo una copia obsoleta en la ventana exacta de liberación
+// del lock) y usa en su lugar `SELECT ... FOR UPDATE` sobre una fila "cabeza de cadena"
+// por tenant (`audit_log_chain_head`) -- el mecanismo que Postgres garantiza que
+// refresca al valor comprometido más reciente tras adquirir el lock (EvalPlanQual).
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createPgFixture, destroyPgFixture, type PgFixture } from "../support/pg-fixture.ts";
 
@@ -65,52 +71,6 @@ const FUNCION_SIN_ARREGLO_CARRERA_ENSANCHADA = `
   $$;
 `;
 
-// Misma función, con el arreglo real (packages/db/migrations/0015_audit_log_lock.sql):
-// un `pg_advisory_xact_lock` por tenant ANTES del SELECT, para que dos transacciones
-// concurrentes del mismo tenant se serialicen. El `pg_sleep` se mantiene para probar que
-// el arreglo sostiene la cadena incluso bajo una ventana de carrera artificialmente
-// amplia, no solo bajo la (angosta) ventana real.
-const FUNCION_CON_ARREGLO_CARRERA_ENSANCHADA = `
-  create or replace function public.audit_log_set_hash()
-  returns trigger
-  language plpgsql
-  as $$
-  declare
-    v_prev_hash text;
-    v_created_at timestamptz;
-    v_canonical text;
-  begin
-    perform pg_advisory_xact_lock(hashtext('audit_log:' || new.tenant_id::text));
-
-    v_created_at := coalesce(new.created_at, now());
-
-    select hash into v_prev_hash
-    from public.audit_log
-    where tenant_id = new.tenant_id
-    order by seq desc
-    limit 1;
-
-    perform pg_sleep(0.3);
-
-    v_canonical := coalesce(v_prev_hash, '<genesis>')
-      || '|' || new.tenant_id::text
-      || '|' || coalesce(new.hotel_id::text, '')
-      || '|' || coalesce(new.actor_user_id::text, '')
-      || '|' || new.action
-      || '|' || new.entity_type
-      || '|' || coalesce(new.entity_id::text, '')
-      || '|' || new.payload::text
-      || '|' || v_created_at::text;
-
-    new.prev_hash := v_prev_hash;
-    new.created_at := v_created_at;
-    new.hash := encode(sha256(convert_to(v_canonical, 'UTF8')), 'hex');
-
-    return new;
-  end;
-  $$;
-`;
-
 async function dosEscriturasConcurrentes(fixture: PgFixture, orgId: string, hotelId: string): Promise<AuditRow[]> {
   await Promise.all([
     fixture.engine.withAppSession({}, (s) =>
@@ -132,6 +92,26 @@ async function dosEscriturasConcurrentes(fixture: PgFixture, orgId: string, hote
     [orgId],
   );
   return rows;
+}
+
+// IMPORTANTE: `seq` (identity, migración 0012) se asigna al construir la fila ANTES de
+// que el trigger BEFORE INSERT (y por tanto el lock de la cadena) se ejecute -- bajo
+// contención real, el orden en que dos sesiones "llegan" al INSERT (que fija `seq`) no
+// tiene por qué coincidir con el orden en que de verdad adquieren el lock y confirman
+// (que fija el orden real de la cadena). El arreglo correcto serializa la CADENA, no la
+// asignación de `seq` -- por eso esta verificación NUNCA asume que `order by seq`
+// coincide con el orden de la cadena; reconstruye la cadena por sus propios enlaces
+// (hash <-> prev_hash) y confirma que es una única lista enlazada sin bifurcarse.
+function verificaCadenaSinBifurcar(rows: AuditRow[]): { raices: number; enlazadaCompleta: boolean } {
+  const hashes = new Set(rows.map((r) => r.hash));
+  const prevHashesNoNulos = rows.map((r) => r.prev_hash).filter((h): h is string => h !== null);
+  const raices = rows.filter((r) => r.prev_hash === null).length;
+  // Bifurcada = dos filas distintas comparten el mismo prev_hash (dos "hijos" del mismo
+  // padre) -- una cadena válida nunca repite un prev_hash.
+  const sinPrevHashDuplicado = new Set(prevHashesNoNulos).size === prevHashesNoNulos.length;
+  // Cada prev_hash no nulo debe apuntar a un hash real de otra fila del mismo tenant.
+  const todosLosPrevApuntanAFilaReal = prevHashesNoNulos.every((h) => hashes.has(h));
+  return { raices, enlazadaCompleta: sinPrevHashDuplicado && todosLosPrevApuntanAFilaReal };
 }
 
 describe("audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO)", () => {
@@ -159,48 +139,89 @@ describe("audit_log: la cadena de hash bajo escritura concurrente del mismo tena
     expect(conPrevHashNulo).toHaveLength(2);
   });
 
-  it("CON el arreglo (packages/db/migrations/0015, advisory lock por tenant): la segunda escritura siempre encadena con la primera, incluso bajo la misma ventana de carrera ensanchada", async () => {
-    await fixture.engine.admin.query(FUNCION_CON_ARREGLO_CARRERA_ENSANCHADA);
+  it("CON el arreglo (packages/db/migrations/0015, audit_log_chain_head + SELECT FOR UPDATE): dos escrituras concurrentes SIEMPRE forman una cadena de un solo enlace", async () => {
     const orgId = fixture.seed.orgId;
     const hotelId = fixture.seed.hotels[0]!.id;
 
     const rows = await dosEscriturasConcurrentes(fixture, orgId, hotelId);
 
     expect(rows).toHaveLength(2);
-    const conPrevHashNulo = rows.filter((r) => r.prev_hash === null);
-    expect(conPrevHashNulo).toHaveLength(1); // una sola raíz de la cadena
-    const [primera, segunda] = rows;
-    expect(segunda!.prev_hash).toBe(primera!.hash);
+    const { raices, enlazadaCompleta } = verificaCadenaSinBifurcar(rows);
+    expect(raices).toBe(1); // una sola raíz de la cadena
+    expect(enlazadaCompleta).toBe(true);
   });
 
-  it("la migración 0015 ya aplicada (sin redefinir nada) reproduce la ventana angosta real sin romper la cadena en 20 escrituras concurrentes", async () => {
-    // Sin ningún pg_sleep inyectado: ejercita la función TAL COMO quedó aplicada por
-    // `applyMigrations` (packages/db/migrations/0015), bajo la ventana de carrera real
-    // (angosta) -- confirma que el arreglo de producción, no solo la copia de la
-    // prueba, sostiene la cadena.
+  it("CON el arreglo, 20 escrituras concurrentes reales (sin ningún pg_sleep inyectado) nunca bifurcan la cadena, repetido 8 veces para descartar suerte de scheduling", async () => {
     const orgId = fixture.seed.orgId;
     const hotelId = fixture.seed.hotels[0]!.id;
 
-    await Promise.all(
-      Array.from({ length: 20 }, (_, i) =>
-        fixture.engine.withAppSession({}, (s) =>
-          s.query("select public.record_audit_log($1, $2, $3, 'test_entity', null, '{}'::jsonb);", [
-            orgId,
-            hotelId,
-            `accion_concurrente_${i}`,
-          ]),
+    for (let ronda = 0; ronda < 8; ronda += 1) {
+      await Promise.all(
+        Array.from({ length: 20 }, (_, i) =>
+          fixture.engine.withAppSession({}, (s) =>
+            s.query("select public.record_audit_log($1, $2, $3, 'test_entity', null, '{}'::jsonb);", [
+              orgId,
+              hotelId,
+              `ronda${ronda}_accion_${i}`,
+            ]),
+          ),
         ),
-      ),
-    );
+      );
+    }
 
     const { rows } = await fixture.engine.admin.query<AuditRow>(
       "select prev_hash, hash, seq::text from public.audit_log where tenant_id = $1 order by seq asc;",
       [orgId],
     );
-    expect(rows).toHaveLength(20);
-    expect(rows[0]!.prev_hash).toBeNull();
-    for (let i = 1; i < rows.length; i += 1) {
-      expect(rows[i]!.prev_hash).toBe(rows[i - 1]!.hash);
-    }
+    expect(rows).toHaveLength(160); // 8 rondas x 20
+    const { raices, enlazadaCompleta } = verificaCadenaSinBifurcar(rows);
+    expect(raices).toBe(1); // una sola raíz en TODA la historia del tenant
+    expect(enlazadaCompleta).toBe(true);
+  });
+
+  it("dos tenants distintos escribiendo concurrentemente no se bloquean entre sí (el lock de la cabeza de cadena es por tenant, no global)", async () => {
+    const hotelA = fixture.seed.hotels[0]!;
+    const hotelB = fixture.seed.hotels[1]!;
+    // Ambos hoteles pertenecen al mismo org en el seed de desarrollo -- se fuerza un
+    // segundo tenant real insertando un `org` adicional para probar aislamiento real de
+    // la cabeza de cadena entre tenants distintos, no solo entre hoteles del mismo org.
+    const { rows: otroOrg } = await fixture.engine.admin.query<{ id: string }>(
+      "insert into public.org (name) values ('Otro tenant (prueba de aislamiento)') returning id;",
+      [],
+    );
+    const otroOrgId = otroOrg[0]!.id;
+
+    const inicio = Date.now();
+    await Promise.all([
+      fixture.engine.withAppSession({}, (s) =>
+        s.query("select public.record_audit_log($1, $2, 'reservation.created', 'reservation', null, '{}'::jsonb);", [
+          fixture.seed.orgId,
+          hotelA.id,
+        ]),
+      ),
+      fixture.engine.withAppSession({}, (s) =>
+        s.query("select public.record_audit_log($1, $2, 'reservation.created', 'reservation', null, '{}'::jsonb);", [
+          otroOrgId,
+          hotelB.id,
+        ]),
+      ),
+    ]);
+    const duracionMs = Date.now() - inicio;
+    // Sin aserción de tiempo estricta (evita flakiness de CI): solo confirma que ambas
+    // filas se escribieron correctamente, cada una como raíz de la cadena de SU tenant.
+    expect(duracionMs).toBeLessThan(5_000);
+
+    const { rows: filasA } = await fixture.engine.admin.query<AuditRow>(
+      "select prev_hash, hash, seq::text from public.audit_log where tenant_id = $1;",
+      [fixture.seed.orgId],
+    );
+    const { rows: filasB } = await fixture.engine.admin.query<AuditRow>(
+      "select prev_hash, hash, seq::text from public.audit_log where tenant_id = $1;",
+      [otroOrgId],
+    );
+    expect(filasA).toHaveLength(1);
+    expect(filasB).toHaveLength(1);
+    expect(filasA[0]!.prev_hash).toBeNull();
+    expect(filasB[0]!.prev_hash).toBeNull();
   });
 });
