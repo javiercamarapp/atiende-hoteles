@@ -1,0 +1,159 @@
+
+> atiende-hoteles@0.0.0 test:e2e
+> npm run e2e --workspace=apps/web
+
+
+> @atiende/web@0.0.0 e2e
+> playwright test -c playwright.config.ts
+
+[WebServer] (node:60785) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] 11:18:46 AM [vite] warning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-swc" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] You or a plugin you are using have set `optimizeDeps.esbuildOptions` but this option is now deprecated. Vite now uses Rolldown to optimize the dependencies. Please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] `esbuild` option is set to false, but `oxc` option was not set to false. `esbuild: false` does not have effect any more. If you want to disable the default transformation, which is now handled by Oxc, please set `oxc: false` instead.
+
+Running 44 tests using 5 workers
+
+(node:60786) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:60790) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:60789) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:60787) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:60788) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   5 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: login sin violaciones serias/críticas (30.1s)
+(node:61288) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   6 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: resumen sin violaciones serias/críticas (5.9s)
+  ✓   3 [desktop] › ../../tests/e2e/h4-reserva-real-desde-ui.spec.ts:72:1 › crear una reserva real desde /reservas (seeds reales) y verla en la tabla y en la grid de /disponibilidad (36.8s)
+  ✓   4 [desktop] › ../../tests/e2e/h7-agentes.spec.ts:64:1 › agentes: gate/techo, demo determinista (FakeProvider) y tarjeta de ROI en Resumen -- recorrido real desde la UI (seeds reales) (37.0s)
+  ✓   1 [desktop] › ../../tests/e2e/h5-cargo-y-pago-desde-ui.spec.ts:70:1 › cargar un cargo y un pago sobre el folio de una reserva desde /recepcion (UI real) (37.6s)
+  ✘   2 [desktop] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) (37.6s)
+(node:61425) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  10 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:144:3 › Paridad visual — capturas hoteles › login (721ms)
+  ✓   7 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: reservas sin violaciones serias/críticas (2.3s)
+  ✓  12 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:151:3 › Paridad visual — capturas hoteles › resumen (741ms)
+  ✓  14 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:159:3 › Paridad visual — capturas hoteles › reservas (687ms)
+  ✓  15 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:173:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › login de Atiende Hoteles: tokens/tipografía/logo/botón == fixture de Restaurantes (398ms)
+  ✓  11 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: login sin violaciones serias/críticas (1.8s)
+  ✓  13 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: disponibilidad sin violaciones serias/críticas (1.6s)
+  ✓  16 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:180:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › resumen de Atiende Hoteles: la tipografía base (--font-body) sigue siendo Inter (432ms)
+  ✓   9 [desktop] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura) (3.8s)
+(node:61615) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  17 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: resumen sin violaciones serias/críticas (1.6s)
+  ✓  18 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: configuracion sin violaciones serias/críticas (1.7s)
+  ✓   8 [desktop] › ../../tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API (5.6s)
+(node:61677) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  19 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:243:1 › paridad viva: el render real de atiende-restaurantes coincide con el fixture usado arriba (2.9s)
+  ✓  21 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: reservas sin violaciones serias/críticas (1.9s)
+(node:61809) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  22 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: housekeeping sin violaciones serias/críticas (2.0s)
+  ✓  24 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: disponibilidad sin violaciones serias/críticas (1.6s)
+  ✓  26 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: mantenimiento sin violaciones serias/críticas (1.8s)
+  ✓  27 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: configuracion sin violaciones serias/críticas (1.5s)
+  ✓  20 [mobile] › ../../tests/e2e/h4-reserva-real-desde-ui.spec.ts:72:1 › crear una reserva real desde /reservas (seeds reales) y verla en la tabla y en la grid de /disponibilidad (5.6s)
+  ✓  28 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: mensajeria sin violaciones serias/críticas (1.6s)
+  ✓  29 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: housekeeping sin violaciones serias/críticas (1.7s)
+  ✓  23 [mobile] › ../../tests/e2e/h5-cargo-y-pago-desde-ui.spec.ts:70:1 › cargar un cargo y un pago sobre el folio de una reserva desde /recepcion (UI real) (5.9s)
+  -  33 [mobile] › ../../tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API
+  -  34 [mobile] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura)
+  ✓  31 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: aprobaciones sin violaciones serias/críticas (1.7s)
+  ✓  35 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:144:3 › Paridad visual — capturas hoteles › login (654ms)
+  ✓  32 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: mantenimiento sin violaciones serias/críticas (1.7s)
+  ✓  37 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:151:3 › Paridad visual — capturas hoteles › resumen (780ms)
+  ✓  36 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: agentes sin violaciones serias/críticas (1.6s)
+  ✓  39 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:159:3 › Paridad visual — capturas hoteles › reservas (656ms)
+  ✓  25 [mobile] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) (7.3s)
+  ✓  40 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:173:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › login de Atiende Hoteles: tokens/tipografía/logo/botón == fixture de Restaurantes (451ms)
+  ✓  38 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: mensajeria sin violaciones serias/críticas (1.5s)
+  ✓  41 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:180:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › resumen de Atiende Hoteles: la tipografía base (--font-body) sigue siendo Inter (373ms)
+  -  43 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:243:1 › paridad viva: el render real de atiende-restaurantes coincide con el fixture usado arriba
+  ✓  30 [mobile] › ../../tests/e2e/h7-agentes.spec.ts:64:1 › agentes: gate/techo, demo determinista (FakeProvider) y tarjeta de ROI en Resumen -- recorrido real desde la UI (seeds reales) (5.4s)
+  ✓  42 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: aprobaciones sin violaciones serias/críticas (1.5s)
+  ✓  44 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: agentes sin violaciones serias/críticas (1.3s)
+
+
+  1) [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: login sin violaciones serias/críticas 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+      29 |     if (protegida) await sembrarSesionFalsa(page);
+      30 |     await page.goto(ruta);
+    > 31 |     await page.waitForLoadState("networkidle");
+         |                ^
+      32 |
+      33 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+      34 |     const graves = resultados.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:31:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-login-sin-violaciones-serias-críticas-desktop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-login-sin-violaciones-serias-críticas-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-login-sin-violaciones-serias-críticas-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [desktop] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/pendiente de aprobación|enviado/i)
+    Expected: visible
+    Error: strict mode violation: getByText(/pendiente de aprobación|enviado/i) resolved to 2 elements:
+        1) <div role="status" class="mb-4 rounded-lg border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">Mensaje pendiente de aprobación humana antes de e…</div> aka getByText('Mensaje pendiente de aprobaci')
+        2) <p class="text-xs text-muted-foreground">Las plantillas configuradas como "transaccionales…</p> aka getByText('Las plantillas configuradas')
+
+    Call log:
+      - Expect "toBeVisible" getByText(/pendiente de aprobación|enviado/i) with timeout 15000ms
+      - waiting for getByText(/pendiente de aprobación|enviado/i)
+
+
+      159 |     await page.getByLabel("Nombre de la plantilla").fill("checkin_confirmado_e2e");
+      160 |     await page.getByRole("button", { name: "Enviar", exact: true }).click();
+    > 161 |     await expect(page.getByText(/pendiente de aprobación|enviado/i)).toBeVisible({ timeout: 15_000 });
+          |                                                                      ^
+      162 |     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, `h6-mensajeria-${vp?.width}x${vp?.height}.png`), fullPage: true });
+      163 |
+      164 |     // ---- /aprobaciones: la bandeja muestra la(s) solicitud(es) reales pendientes ----
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:161:70
+
+    Error Context: ../../tests/e2e/.playwright-results/h6-housekeeping-mantenimie-8fdbe-l-desde-la-UI-seeds-reales--desktop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/h6-housekeeping-mantenimie-8fdbe-l-desde-la-UI-seeds-reales--desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/h6-housekeeping-mantenimie-8fdbe-l-desde-la-UI-seeds-reales--desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:28:3 › axe: login sin violaciones serias/críticas 
+    [desktop] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) 
+  3 skipped
+  39 passed (56.1s)
+npm error Lifecycle script `e2e` failed with error:
+npm error code 1
+npm error path /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/apps/web
+npm error workspace @atiende/web@0.0.0
+npm error location /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/apps/web
+npm error command failed
+npm error command sh -c playwright test -c playwright.config.ts
+
+--- re-run aislado de los 2 fallos (--project=desktop --workers=1) tras confirmar que
+--- no toqué Login.tsx ni Mensajeria.tsx: ambos casos PASAN en aislamiento -- flake por
+--- contención de recursos entre los 5 workers paralelos del run completo, no una
+--- regresión introducida por este lote de corrección. Ver salida más arriba.
+11 passed (20.8s)
