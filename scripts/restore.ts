@@ -17,6 +17,54 @@ export interface RestoreVerifyResult {
   totalRowsRestaurado: number;
   porTabla: { tabla: string; origen: number; restaurado: number; coincide: boolean }[];
   ok: boolean;
+  /** auditoria-2/operabilidad [ALTO]: motivo explícito cuando `ok` es false, para que
+   *  "VERIFICACIÓN: DIVERGENCIA" nunca sea la única pista -- distingue "0 tablas en el
+   *  origen" (backup vacío por un data dir equivocado) de una divergencia real fila a
+   *  fila. `null` cuando `ok` es true. */
+  motivoFalla: string | null;
+}
+
+/**
+ * auditoria-2/operabilidad [ALTO]: lógica pura de decisión, separada de la I/O de red
+ * (extraída para poder probarla con `tests/unit/scripts/restore-verify.spec.ts` sin
+ * necesitar un `embedded-postgres`/`pg_dump` real). `porTabla.every(...)` sobre un
+ * arreglo VACÍO es `true` por vacuidad -- si el origen tiene 0 tablas (ej. el data dir
+ * de `embedded-postgres` resuelto contra un cwd equivocado, ver DEFAULT_DB_DATA_DIR en
+ * pgClientBin.ts, apuntó a un cluster nuevo/nunca inicializado con datos reales), la
+ * versión anterior de esta función declaraba "conteo igual" sobre una base vacía
+ * comparada contra otra base vacía. Un backup real de este proyecto SIEMPRE tiene
+ * `public.schema_migrations` con filas (las migraciones ya aplicadas) -- exigirlo
+ * explícitamente distingue "no hay nada que respaldar todavía" (nunca debería pasar en
+ * un entorno con `npm run dev` corrido al menos una vez) de "el backup está
+ * corrupto/vacío por error".
+ */
+export function evaluarVerificacion(
+  origenPorTabla: Map<string, number>,
+  restauradoPorTabla: Map<string, number>,
+): Pick<RestoreVerifyResult, "porTabla" | "totalRowsOrigen" | "totalRowsRestaurado" | "ok" | "motivoFalla"> {
+  const porTabla = [...origenPorTabla.entries()].map(([tabla, origen]) => {
+    const restaurado = restauradoPorTabla.get(tabla) ?? -1;
+    return { tabla, origen, restaurado, coincide: origen === restaurado };
+  });
+  const totalRowsOrigen = porTabla.reduce((a, t) => a + t.origen, 0);
+  const totalRowsRestaurado = porTabla.reduce((a, t) => a + Math.max(0, t.restaurado), 0);
+
+  const migracionesOrigen = origenPorTabla.get("schema_migrations") ?? 0;
+  let motivoFalla: string | null = null;
+  if (origenPorTabla.size === 0) {
+    motivoFalla =
+      "El origen no tiene NINGUNA tabla en public -- esto no es un backup válido, es un cluster vacío/nunca migrado (revisa qué data dir usó `embedded-postgres`, ver DEFAULT_DB_DATA_DIR).";
+  } else if (migracionesOrigen === 0) {
+    motivoFalla =
+      "public.schema_migrations no tiene filas en el origen -- el esquema nunca se migró en esta base; un backup real de este proyecto siempre tiene migraciones aplicadas.";
+  } else if (origenPorTabla.size !== restauradoPorTabla.size) {
+    motivoFalla = `El origen tiene ${origenPorTabla.size} tabla(s) y el restaurado ${restauradoPorTabla.size} -- número de tablas distinto.`;
+  } else if (!porTabla.every((t) => t.coincide)) {
+    motivoFalla = "Divergencia de conteo de filas en al menos una tabla (ver detalle arriba).";
+  }
+  const ok = motivoFalla === null;
+
+  return { porTabla, totalRowsOrigen, totalRowsRestaurado, ok, motivoFalla };
 }
 
 async function contarFilasPorTabla(client: pg.Client): Promise<Map<string, number>> {
@@ -71,15 +119,8 @@ export async function runRestoreAndVerify(dumpFile: string, newDbNameArg?: strin
       await restauradoClient.end();
     }
 
-    const porTabla = [...origenPorTabla.entries()].map(([tabla, origen]) => {
-      const restaurado = restauradoPorTabla.get(tabla) ?? -1;
-      return { tabla, origen, restaurado, coincide: origen === restaurado };
-    });
-    const totalRowsOrigen = porTabla.reduce((a, t) => a + t.origen, 0);
-    const totalRowsRestaurado = porTabla.reduce((a, t) => a + Math.max(0, t.restaurado), 0);
-    const ok = porTabla.every((t) => t.coincide) && origenPorTabla.size === restauradoPorTabla.size;
-
-    return { newDbName, totalRowsOrigen, totalRowsRestaurado, porTabla, ok };
+    const veredicto = evaluarVerificacion(origenPorTabla, restauradoPorTabla);
+    return { newDbName, ...veredicto };
   } finally {
     if (engine) await engine.stop();
   }
@@ -101,7 +142,11 @@ async function main() {
     console.log(`  ${t.coincide ? "OK  " : "DIFF"} ${t.tabla}: origen=${t.origen} restaurado=${t.restaurado}`);
   }
   console.log(`Total origen=${result.totalRowsOrigen} restaurado=${result.totalRowsRestaurado}`);
-  console.log(result.ok ? "VERIFICACIÓN: conteo igual en todas las tablas." : "VERIFICACIÓN: DIVERGENCIA -- revisar arriba.");
+  if (result.ok) {
+    console.log("VERIFICACIÓN: conteo igual en todas las tablas.");
+  } else {
+    console.log(`VERIFICACIÓN: FALLA -- ${result.motivoFalla}`);
+  }
   if (!result.ok) process.exitCode = 1;
 }
 
