@@ -35,3 +35,4 @@ Reanudar desde archivos: `docs/PROGRESO.md` (último paso), `docs/BLOQUEOS.md`, 
 - 2026-09-05 — `CronCreate` → `Scheduled recurring job f24bfd35 (Every 2 hours at :37). Session-only... Auto-expires after 7 days.`
 - 2026-09-05 — `CronList` → `f24bfd35 — Every 2 hours at :37 (recurring) [session-only]`.
 - Latidos y despertares: ver `docs/logs/bucle.log` (se anexa uno por ciclo).
+- 2026-09-05 19:07 — **Primera ejecución real del cron `f24bfd35`** (prompt de latido recibido en la sesión). El bucle dinámico estaba vivo y el agente Sonnet #8 en curso → solo se registró el latido, sin duplicar trabajo.
