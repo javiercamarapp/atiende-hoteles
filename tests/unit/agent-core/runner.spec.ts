@@ -466,6 +466,41 @@ describe("AgentRunner", () => {
     expect(completeSpy).toHaveBeenCalledWith(expect.objectContaining({ disableParallelToolUse: true }));
   });
 
+  it("el presupuesto se comprueba tambien DESPUES de contabilizar el costo real de la " +
+    "ronda, ANTES de ejecutar cualquier tool de esa misma ronda (aud-1 agentico.md " +
+    "MEDIO: antes solo se comprobaba al inicio de la ronda siguiente)", async () => {
+    const runSpy = vi.fn(() => ({ ok: true, summary: "actualizado" }));
+    const tools = new ToolRegistry();
+    tools.register(
+      defineTool({
+        name: "actualizar_estado_habitacion",
+        description: "actualiza el estado de una habitacion",
+        inputSchema: z.object({}),
+        effect: "write",
+        needsApproval: false,
+        run: runSpy,
+      }),
+    );
+    // Con DEFAULT_PRICING (claude-sonnet-5: $2/$10 por MTok), 1000+1000 tokens cuestan
+    // 0.012 USD reales -- muy por encima de este techo.
+    const ctx = buildToolContext(
+      { orgId: "org-1", hotelId: "hotel-1", actor: { type: "staff", id: "staff-1" }, requestId: "req-1" },
+      createRunBudget({ maxUsd: 0.0000001 }),
+    );
+    const provider = new FakeProvider([
+      {
+        kind: "tool_calls",
+        calls: [{ name: "actualizar_estado_habitacion", input: {} }],
+        usage: { inputTokens: 1000, outputTokens: 1000 },
+      },
+    ]);
+    const runner = new AgentRunner(baseOptions({ provider, tools }));
+    const result = await runner.run(ctx, "actualiza la 204");
+    expect(result.status).toBe("presupuesto_agotado");
+    // La mutacion de ESTA ronda (la que rebaso el techo) NUNCA debe correr "gratis".
+    expect(runSpy).not.toHaveBeenCalled();
+  });
+
   it("presupuesto agotado antes de la primera llamada cierra explicitamente sin llamar al proveedor", async () => {
     const completeSpy = vi.fn();
     const provider = { id: "fake", isAvailable: () => true, complete: completeSpy } as const;

@@ -218,6 +218,28 @@ export class AgentRunner {
         return this.close(ctx, runId, step + 1, "completado", completion.text, pendingApprovalIds, completion.text ?? "");
       }
 
+      // aud-1 agentico.md MEDIO: el presupuesto se comprobaba solo al TOPE del while (antes
+      // de la llamada al proveedor), nunca DESPUES de contabilizar el costo real de la
+      // respuesta que se acaba de recibir -- una ronda que rebasaba el techo todavia
+      // ejecutaba su(s) tool call(s) "gratis", y el cierre honesto ("presupuesto_agotado")
+      // solo llegaba en la ronda SIGUIENTE. Se comprueba de nuevo aqui, ANTES de ejecutar
+      // cualquier tool de esta ronda (de lectura o de escritura).
+      if (ctx.budget.agotado()) {
+        this.emit(ctx, runId, step, "budget_exceeded", {
+          message: "presupuesto agotado tras contabilizar el costo real de esta ronda",
+        });
+        return this.close(
+          ctx,
+          runId,
+          step + 1,
+          "presupuesto_agotado",
+          null,
+          pendingApprovalIds,
+          "El presupuesto se agoto justo despues de esta llamada; se detiene antes de " +
+            "ejecutar la(s) tool(s) que trajo, no se ejecuta ninguna mutacion de mas.",
+        );
+      }
+
       // aud-1 agentico.md ALTO: REQ-AGT-004 exige que el nucleo nunca deje que el modelo
       // decida en paralelo dos (o mas) acciones de dinero en una sola generacion. Se pide
       // `disableParallelToolUse: true` al proveedor arriba, pero eso depende de que el
