@@ -59,3 +59,4 @@
 2026-09-06 10:31:39 ciclo=29 evento=despacho auditoria-2 12 rubros + trazabilidad (13 sonnet)
 2026-09-06 10:40:05 ciclo=30 evento=aud-2 frontend=6/10(0C/2A) faltan=11
 2026-09-06 10:40:52 ciclo=30 evento=aud-2 legal=3/10(3C/4A) faltan=10
+2026-09-06 10:41:39 ciclo=30 evento=aud-2 fiscal=2/10(3C/3A) faltan=9
