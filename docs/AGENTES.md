@@ -31,8 +31,8 @@ Orquestador de esta sesión: claude-fable-5-1 (verificado por el entorno). Ning�
 | 21 | 2026-09-06 05:52 | H4: módulo reservas/disponibilidad/tarifas (dominio, API, web, concurrencia, E2E) — main | sonnet | ver grep | en curso |
 | 22 | 2026-09-06 05:52 | H9+H11: packages/mcp-servers puertos/adaptadores honestos/contratos (pms, whatsapp, payments, cfdi, energy, locks) — worktree | sonnet | ver grep | en curso |
 | 23 | 2026-09-06 05:52 | Auditoría-1 seguridad multi-tenant (snapshot 0c7589c) → docs/auditoria-1/seguridad.md | sonnet | ver grep → claude-sonnet-5 | COMPLETADO: nota 3/10; 2 CRÍT (audit_log falsificable cross-org vía SECURITY DEFINER; outbox/idempotency_key sin aislamiento por hotel) reproducidos en PGlite; 1 MED, 1 BAJO |
-| 24 | 2026-09-06 05:52 | Auditoría-1 backend y API → docs/auditoria-1/backend.md | sonnet | ver grep | en curso |
+| 24 | 2026-09-06 05:52 | Auditoría-1 backend y API → docs/auditoria-1/backend.md | sonnet | ver grep → claude-sonnet-5 | COMPLETADO: nota 5/10; 2 CRÍT (cancelar/no_show no libera inventario; noche sin tarifa cobra $0), 3 ALTOS (hash audit_log bifurcable concurrente; sin ruta para crear folio; worker outbox pierde causa), 1 MED, 2 BAJOS |
 | 25 | 2026-09-06 05:52 | Auditoría-1 modelo de datos → docs/auditoria-1/datos.md | sonnet | ver grep | en curso |
 | 26 | 2026-09-06 05:52 | Auditoría-1 sistema agéntico → docs/auditoria-1/agentico.md | sonnet | ver grep | en curso |
-| 27 | 2026-09-06 05:52 | Auditoría-1 tool calling → docs/auditoria-1/tool-calling.md | sonnet | ver grep | en curso |
+| 27 | 2026-09-06 05:52 | Auditoría-1 tool calling → docs/auditoria-1/tool-calling.md | sonnet | ver grep → claude-sonnet-5 | COMPLETADO: nota 3/10; 2 CRÍT (aprobación de dinero reutilizable entre folios por colisión de idempotencyKey; aprobador no ve monto/folio/huésped), 3 ALTOS, 2 MED |
 | 28 | 2026-09-06 05:52 | Auditoría-1 pruebas → docs/auditoria-1/pruebas.md | sonnet | ver grep | en curso |

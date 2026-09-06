@@ -30,3 +30,4 @@
 2026-09-06 05:50:00 ciclo=12 evento=H2_completado+merge_H6a compuertas=verdes(117u/19i/28a) snapshot_auditoria1=0c7589c
 2026-09-06 05:52:32 ciclo=12 evento=despacho H4(#21 main) H9+H11(#22 worktree) auditoria-1 6 rubros(#23-28) todos sonnet
 2026-09-06 06:03:28 ciclo=13 evento=auditoria-1 seguridad=3/10 crit=2 (reproducidos) fix=diferido_hasta_cierre_H4_para_evitar_colision_migraciones
+2026-09-06 06:03:47 ciclo=13 evento=auditoria-1 tool-calling=3/10(2C/3A) backend=5/10(2C/3A) → críticos de reservas enviados al agente H4 (dueño del código en curso)
