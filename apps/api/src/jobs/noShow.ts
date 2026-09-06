@@ -69,6 +69,28 @@ export async function runNoShowJob(
   const results: NoShowResult[] = [];
 
   for (const reservation of dueReservations) {
+    // B1/auditoria-2 backend CRÍTICO: `UPDATE ... WHERE status = 'confirmada' ...
+    // RETURNING id` es la reclamación ATÓMICA de esta reserva -- Postgres bloquea la
+    // fila durante el UPDATE, así que una segunda transacción concurrente sobre la
+    // MISMA reserva (doble clic, reintento de red, dos réplicas corriendo el job casi
+    // al mismo tiempo) espera a que la primera comitee y luego re-evalúa el
+    // predicado: como el status ya cambió a 'no_show', la segunda actualiza 0 filas y
+    // se salta TODO el resto (liberar disponibilidad otra vez, postear el cargo de
+    // nuevo, duplicar auditoría/outbox) -- por eso la reclamación va ANTES de liberar
+    // disponibilidad, no después. El índice único `charge_no_show_reservation_idx`
+    // (migración 0070) es la segunda línea de defensa si de todos modos se intentara
+    // insertar el cargo dos veces.
+    const { chargeAmount } = evaluateNoShow(policy, Number(reservation.total_amount));
+
+    const { rows: claimedRows } = await db.query<{ id: string }>(
+      `update public.reservation
+       set status = 'no_show', cancellation_penalty_amount = $1, updated_at = now()
+       where id = $2 and status = 'confirmada'
+       returning id;`,
+      [chargeAmount, reservation.id],
+    );
+    if (claimedRows.length === 0) continue;
+
     const nights = nightsBetween(reservation.check_in_date, reservation.check_out_date);
     for (const night of nights) {
       await db.query("select * from public.release_availability($1, $2, $3, 1);", [
@@ -78,19 +100,13 @@ export async function runNoShowJob(
       ]);
     }
 
-    const { chargeAmount } = evaluateNoShow(policy, Number(reservation.total_amount));
-
-    await db.query(
-      `update public.reservation
-       set status = 'no_show', cancellation_penalty_amount = $1, updated_at = now()
-       where id = $2;`,
-      [chargeAmount, reservation.id],
-    );
-
     // H5/F3 · REQ-BO-001: la penalización de no-show se postea al folio como concepto
     // 'hospedaje' (el CFDI de hospedaje la incluye igual que una noche real, "concepto
     // de hospedaje con penalidad en no-show") -- SIN `stay_date` (no se ocupó ninguna
     // noche), así que no choca con el índice de idempotencia del night audit.
+    // `no_show_reservation_id` + `on conflict do nothing` (0070): un cargo de
+    // penalización de no-show como máximo por reserva, sin importar cuántas veces se
+    // llegue a intentar el insert.
     //
     // El impuesto de la penalidad SIEMPRE se calcula aquí, en el ÚNICO punto donde se
     // postea el cargo (`computeNoShowPenaltyAmounts`, único punto de cálculo -- ni
@@ -107,9 +123,10 @@ export async function runNoShowJob(
         const taxConfig = await loadTaxConfig(db, params.hotelId);
         const penalty = computeNoShowPenaltyAmounts(chargeAmount, taxConfig);
         await db.query(
-          `insert into public.charge (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept)
-           values ($1, $2, $3, 'Penalización por no-show', $4, $5, 'hospedaje');`,
-          [params.tenantId, params.hotelId, folioId, penalty.netAmount, penalty.taxAmount],
+          `insert into public.charge (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, no_show_reservation_id)
+           values ($1, $2, $3, 'Penalización por no-show', $4, $5, 'hospedaje', $6)
+           on conflict (no_show_reservation_id) where no_show_reservation_id is not null do nothing;`,
+          [params.tenantId, params.hotelId, folioId, penalty.netAmount, penalty.taxAmount, reservation.id],
         );
       }
     }
