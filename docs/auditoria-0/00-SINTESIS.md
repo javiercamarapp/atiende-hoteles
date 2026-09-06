@@ -192,3 +192,102 @@ $ grep -c "^## ADR-" docs/ARQUITECTURA.md
 - **Discrepancia de conteo del encargo**: el encargo de esta ronda indicaba 20 hallazgos; el
   documento de auditoría real tiene 19 (2 CRÍTICO + 7 ALTO + 6 MEDIO + 4 BAJO, no 7 MEDIO). Se
   documenta aquí en vez de fabricar un vigésimo hallazgo para cuadrar la cifra.
+
+---
+
+## Ronda 2 de corrección (vuelta 2/3) — respuesta a `docs/auditoria-0/reauditoria.md`
+
+Agente de corrección (Sonnet), contexto fresco. Fuente única: `docs/auditoria-0/reauditoria.md`
+(reauditor Sonnet, contexto fresco). Ese documento **no se modificó**. Se corrigieron los 3
+hallazgos nuevos que el reauditor encontró (2 ALTO, 1 BAJO) y el hallazgo MEDIO #14 de la ronda 0,
+que en la ronda 1 había quedado deliberadamente sin cerrar por vivir en un archivo de "extractos de
+fuente" protegido — el orquestador autorizó explícitamente esta vuelta la corrección factual puntual
+de esa página.
+
+### Tabla de los 19 hallazgos originales + los 3 nuevos, estado final tras la vuelta 2
+
+| # | Sev. | Título | Estado final | Commit(s) |
+|---|---|---|---|---|
+| 1 | CRÍTICO | GOB-025 sin citar/excluir | arreglado (sin cambios en vuelta 2) | `67421a3` |
+| 2 | CRÍTICO | ADR-003 cambia proveedor de BD sin aprobación | arreglado (sin cambios en vuelta 2) | `8a45d7a` |
+| 3 | ALTO | Conteo cabecera GOB no cuadra | arreglado (sin cambios en vuelta 2) | `35b0cf5` |
+| 4 | ALTO | Tenencia contradictoria REQUISITOS/ARQUITECTURA | arreglado en ronda 1; el reauditor detectó que el mismo defecto de roles reaparecía en `ACEPTACION.md` (ver hallazgo nuevo #1) — cerrado de punta a punta en vuelta 2 | `42f21c1` (ronda 1) + `eb39620` (vuelta 2) |
+| 5 | ALTO | Ningún doc posterior a REQUISITOS.md cita REQ-* | arreglado (sin cambios en vuelta 2) | `cb4d2e6` (+ `a87b353`, `0fe1e7c`, `afae6fc`) |
+| 6 | ALTO | Matriz de roles ADR-004 ≠ REQ-TEN-003 | arreglado en ARQUITECTURA.md en ronda 1; el reauditor detectó la misma regresión en `ACEPTACION.md` (ver hallazgo nuevo #1) — cerrado de punta a punta en vuelta 2 | `afae6fc` (ronda 1) + `eb39620` (vuelta 2) |
+| 7 | ALTO | Dominio Energía/IoT/HVAC/cerraduras sin ADR/hito | arreglado en ARQUITECTURA.md/ACEPTACION.md en ronda 1; el reauditor detectó que `RUBROS.md` (documento hermano) seguía sin ningún gancho al dominio (ver hallazgo nuevo #2) — cerrado en vuelta 2 | `a87b353` (ronda 1) + `ba82077` (vuelta 2) |
+| 8 | ALTO | 10 contradicciones §4 no resueltas | arreglado (sin cambios en vuelta 2) | `0fe1e7c` |
+| 9 | ALTO | 88 IDs sin citar | arreglado (sin cambios en vuelta 2) | `67421a3` |
+| 10 | MEDIO | `hotel-staff-pwa` sin definir como PWA | arreglado (sin cambios en vuelta 2) | `bd59010` |
+| 11 | MEDIO | Catálogo GOB-012 omite ítems de su fuente | arreglado (sin cambios en vuelta 2) | `109aa4e` |
+| 12 | MEDIO | REQ-RES-001 cita fuente ajena | arreglado (sin cambios en vuelta 2) | `32b4fe8` |
+| 13 | MEDIO | REQ-RES-022 sin calificador temporal | arreglado (sin cambios en vuelta 2) | `26cafa6` |
+| 14 | MEDIO | Página H04-018 incorrecta (H04, p.14 → p.13) | **arreglado en vuelta 2** — corrección factual puntual autorizada explícitamente por el orquestador; el error vivía en `docs/referencia/02-investigacion-H01-H11.md:276` (no en `03-investigacion-H12-H21.md` como indicaba el encargo de esta vuelta — verificado por grep que el ID solo existe en `02-...md`); `REQUISITOS.md` no repite el número de página en sus citas a H04-018, no requirió cambio | `21b4aac` |
+| 15 | MEDIO | Prioridad UX-003 inconsistente | arreglado (sin cambios en vuelta 2) | `4e7cfb9` |
+| 16 | BAJO | REQ-HUE-001 funde dos SLA | arreglado (sin cambios en vuelta 2) | `699eb49` |
+| 17 | BAJO | REQ-HUE-007 cita evals pre-release | arreglado (sin cambios en vuelta 2) | `782c14f` |
+| 18 | BAJO | Celdas rotas tabla de hitos | arreglado (sin cambios en vuelta 2) | `17ed607` |
+| 19 | BAJO | `docs/audits/...` no existe en este repo | arreglado (sin cambios en vuelta 2) | `42af2a9` |
+| Nuevo 1 | ALTO | `ACEPTACION.md:27` exige 9 roles con `huesped` en `hotel_staff`, contradiciendo REQ-TEN-003/ADR-004 (8 roles) | **arreglado** — línea 27 y la prueba adversarial de escalada de rol (línea 407) alineadas al modelo de 8 roles; `superadmin`/`huesped` declarados explícitamente fuera del enum, igual que en ADR-004; verificado sin rastro del modelo de 9 roles (`grep -n "9 roles\|,huesped\`" docs/ACEPTACION.md` → sin salida) | `eb39620` |
+| Nuevo 2 | ALTO | `docs/auditoria/RUBROS.md` sin ningún gancho al dominio energía/IoT/HVAC/cerraduras de ADR-011/H11 | **arreglado** — añadidos "qué cuenta", "dónde" y REQ-* de ancla (`REQ-BO-027/028/029`, `REQ-INT-007/008`, `REQ-RES-017`, `REQ-REC-009`, `REQ-SEG-015`) en los 5 rubros pertinentes (2 Backend/API, 4 Tool calling, 5 Seguridad, 10 Operabilidad, 12 Modelo de datos); línea 5 actualizada a "ADR-001..011" | `ba82077` |
+| Nuevo 3 | BAJO | `docs/DECISIONS-HUMANAS.md` citado en REQUISITOS.md/BLOQUEOS.md como si fuera archivo local; no existe en este repo | **arreglado** — ambas citas aclaran ahora que es una referencia heredada a `DECISIONS-HUMANAS.pdf` (fuente externa, vía `docs/referencia/01-blueprint-y-decision-llm.md:370,396`) y apuntan a `docs/BLOQUEOS.md` D-002 como registro local equivalente; no se creó ningún archivo local ficticio (`ls docs/DECISIONS-HUMANAS.md` → no existe) | `871a973` |
+
+**Resumen vuelta 2:** 4 hallazgos atendidos (1 MEDIO pendiente de ronda 1 + 3 nuevos del reauditor:
+2 ALTO, 1 BAJO). Los 19 hallazgos originales quedan con estado final **arreglado** (18/19 ya lo
+estaban desde ronda 1 sin necesitar cambio; #14 se cerró en esta vuelta). Los 2 hallazgos "cerrados
+parcialmente" que el reauditor señaló (#4 y #6, regresión en `ACEPTACION.md`) quedan cerrados de
+punta a punta con el commit del hallazgo nuevo #1.
+
+### Notas por documento (del reauditor, ronda 2 — reemplazan la recalificación anterior)
+
+- **`docs/REQUISITOS.md` — 9/10.** *Se atacó y subió* (de 7 a 9 en la ronda 1). Los tres defectos que
+  bajaban la nota de 10 a 7 (conteo de cabecera GOB, 88 IDs sin ruta, GOB-025 específicamente) están
+  verificados cerrados con script propio del reauditor, no con el comando pegado por el corrector. No
+  sube a 10 porque solo se re-verificó una muestra (~15) de las 99 citas nuevas añadidas para rutear
+  los 87 IDs restantes, no las 99 una por una, y porque heredaba una cita con página incorrecta en su
+  fuente (H04-018) fuera de su control — corregida en esta vuelta 2 (`21b4aac`).
+- **`docs/ARQUITECTURA.md` — 9/10.** *Se atacó y subió* (de 6 a 9). Los cinco defectos de coherencia
+  que bajaban la nota (0 citas REQ-*, tenant=hotel, roles distintos a REQ-TEN-003, dominio energía sin
+  ADR, contradicciones §4 sin resolver) están cerrados con evidencia verificada línea por línea. No
+  sube a 10 por ser un documento de 71 KB con 11 ADR; no se releyó cada línea de ADR-005/008/009/010
+  contra su fuente en la ronda de reauditoría, solo las secciones tocadas por los 19 hallazgos.
+- **`docs/auditoria/RUBROS.md` — 7/10** (antes de esta vuelta 2). *Mirada más profunda reveló deuda
+  nueva*: ganó "Requisitos-ancla (REQ-*)" verificado como real en los 12 rubros, cerrando su parte del
+  hallazgo ALTO #7 compartido, pero el commit que creó ADR-011/H11 nunca volvió a tocar `RUBROS.md`
+  (cero menciones de energía/IoT/HVAC/cerraduras/ADR-011 en todo el archivo). Corregido en esta vuelta
+  2 (`ba82077`) — **pendiente que una ronda de reauditoría posterior verifique y recalifique** este
+  arreglo; esta síntesis no se autocalifica.
+- **`docs/auditoria/AUDITOR-PROMPT.md` — 8/10.** *Sin cambio neto.* Se corrigió `tenant=org` y se
+  añadió una cita a REQ-TEN-002 en la ronda 1, consistente con el resto. No se detectó ni un defecto
+  nuevo ni una mejora sustantiva adicional; el documento no reclama cobertura de rubros/dominios (eso
+  lo delega a RUBROS.md), así que el hueco de energía/IoT no le aplicaba igual que a RUBROS.md. Sin
+  cambios en esta vuelta 2.
+- **`docs/BLOQUEOS.md` — 8/10.** *Se atacó y subió* (de 6 a 8 en la ronda 1). Los dos defectos de
+  B-002 (cifra de vitest incorrecta, "decisión pendiente" cuando ya estaba tomada) están corregidos;
+  D-001..D-004 exponen con el mismo formato claro las cuatro decisiones reales reservadas al fundador
+  sin bloquear el ciclo local. No subía a 9-10 porque heredaba sin aclarar la cita a
+  `docs/DECISIONS-HUMANAS.md` como si fuera local — corregido en esta vuelta 2 (`871a973`).
+- **`docs/operacion-bucle.md` — 7/10.** *Sin cambio.* No fue objeto de ningún hallazgo de la ronda 0
+  ni de la reauditoría; ningún commit lo tocó en ninguna vuelta. Releído íntegro por el reauditor sin
+  encontrar afirmación nueva que contradiga el resto del corpus corregido ni mejora que justifique
+  subir la nota.
+
+### Verificación pegada (comandos + salida real)
+
+```
+$ grep -n "9 roles\|,huesped\`\|accountant,huesped" docs/ACEPTACION.md
+(sin salida)
+
+$ grep -c "energ\|IoT\|HVAC\|cerradura\|EnergyPort\|LockPort\|ADR-011" docs/auditoria/RUBROS.md
+6
+
+$ grep -rn "DECISIONS-HUMANAS.md" docs/REQUISITOS.md docs/BLOQUEOS.md
+docs/REQUISITOS.md:417:...decisión #7 del catálogo externo `DECISIONS-HUMANAS.pdf`...
+docs/BLOQUEOS.md:31:...decisión #7 del catálogo externo `DECISIONS-HUMANAS.pdf`...
+$ ls docs/DECISIONS-HUMANAS.md
+ls: docs/DECISIONS-HUMANAS.md: No such file or directory
+
+$ grep -n "H04-018" docs/referencia/02-investigacion-H01-H11.md
+276:| H04-018 | ... | H04, p.13 | ...
+```
+
+**Vuelta 2/3 cerrada; pendiente reauditoría de `RUBROS.md` tras el arreglo del hallazgo nuevo #2.**
