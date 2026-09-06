@@ -21,6 +21,7 @@ import {
 } from "@atiende-hoteles/mcp-shared";
 import type {
   MessagingPort,
+  SendInteractiveButtonsInput,
   SendTemplateMessageInput,
   SendTextMessageInput,
   SentMessage,
@@ -98,6 +99,12 @@ export class MetaWhatsappAdapter implements MessagingPort {
   }
 
   async sendTextMessage(input: SendTextMessageInput): Promise<SentMessage> {
+    this.assertAvailable();
+    void input;
+    throw new PortUnavailableError("meta-whatsapp", "sin credenciales verificadas en este entorno");
+  }
+
+  async sendInteractiveButtonsMessage(input: SendInteractiveButtonsInput): Promise<SentMessage> {
     this.assertAvailable();
     void input;
     throw new PortUnavailableError("meta-whatsapp", "sin credenciales verificadas en este entorno");
