@@ -15,7 +15,6 @@ import { huespedesRoutes } from "./routes/huespedes.ts";
 import { foliosRoutes } from "./routes/folios.ts";
 import { quotesRoutes } from "./routes/quotes.ts";
 import { tarifasRoutes } from "./routes/tarifas.ts";
-import { ocupacionRoutes } from "./routes/ocupacion.ts";
 import { cancelacionPublicaRoutes } from "./routes/cancelacionPublica.ts";
 import { toErrorBody } from "./lib/errors.ts";
 import { ipRateLimit, requestId, userRateLimit } from "./middleware.ts";
@@ -66,7 +65,6 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", foliosRoutes(deps));
   app.route("/", quotesRoutes(deps));
   app.route("/", tarifasRoutes(deps));
-  app.route("/", ocupacionRoutes(deps));
   app.route("/", cancelacionPublicaRoutes(deps));
 
   return app;
