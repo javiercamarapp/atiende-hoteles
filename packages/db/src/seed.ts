@@ -131,6 +131,21 @@ export async function seedDev(db: DbClient): Promise<SeedResult> {
       staff.push({ id: userId, email, role: s.role });
     }
 
+    // H4 · Impuestos y política de cancelación por hotel (REQ-REV-001/REQ-RES-004):
+    // se siembran explícitamente en vez de confiar solo en los DEFAULT de la columna
+    // para que el panel de configuración tenga algo real que listar/editar desde el
+    // primer arranque, nunca un "sin dato" fabricado.
+    await db.query(
+      "insert into public.hotel_tax_config (hotel_id, tenant_id, iva_rate, ish_rate) values ($1, $2, 0.16, 0.03);",
+      [hotelId, orgId],
+    );
+    await db.query(
+      `insert into public.hotel_cancellation_policy
+         (hotel_id, tenant_id, free_until_hours, penalty_pct, no_show_pct, deposit_pct)
+       values ($1, $2, 24, 50, 100, 20);`,
+      [hotelId, orgId],
+    );
+
     hotels.push({ id: hotelId, name: hotelDef.name, roomTypes, staff });
   }
 
