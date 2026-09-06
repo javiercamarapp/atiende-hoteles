@@ -82,3 +82,5 @@
 2026-09-06 12:42:38 ciclo=40 evento=servidor_disponible; usuario pide GitHub+Vercel+contribuciones; wip guardado en worktrees; identidad repo=Javier Camara <javiercamaraportepetit@gmail.com>
 2026-09-06 12:45:39 ciclo=40 evento=GITHUB_PUBLICADO repo=javiercamarapp/atiende-hoteles commits_main=188 autor=javiercamaraportepetit@gmail.com
 2026-09-06 12:59:57 cron=4fe17d3a evento=disparo_cron agentes=0 vivos (429 masivo) → reanudar los 5
+2026-09-06 13:25:52 ciclo=41 evento=latido_dinamico intento_vercel_preview
+2026-09-06 13:29:05 ciclo=41 evento=VERCEL_PREVIEW proyecto=atiende-hoteles-web cuenta=likidaai-8016 url=https://atiende-hoteles-kcn3d4frh-likida.vercel.app
