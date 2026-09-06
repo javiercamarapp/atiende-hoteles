@@ -38,6 +38,7 @@ interface ApprovalRow {
   status: ApprovalStatus;
   requested_at: string;
   expires_at: string;
+  ejecutada_en: string | null;
 }
 
 interface ConfirmationRow {
@@ -231,6 +232,18 @@ export class PostgresApprovalQueue implements ApprovalQueue {
     return this.hydrate(rows[0]);
   }
 
+  async markExecuted(id: string, now: Date = this.now()): Promise<boolean> {
+    // A4: reclamación atómica en BD -- `WHERE ejecutada_en IS NULL` hace que como
+    // máximo UNA llamada (de cualquier proceso/conexión) actualice la fila; cualquier
+    // llamada posterior para el mismo `id` (incluida una concurrente que pierde la
+    // carrera) ve 0 filas afectadas y debe tratar el efecto como YA ejecutado.
+    const { rows } = await this.db.query<{ id: string }>(
+      "update public.agent_approval set ejecutada_en = $2 where id = $1 and ejecutada_en is null returning id;",
+      [id, toIso(now)],
+    );
+    return rows.length > 0;
+  }
+
   async expirePending(now: Date = this.now()): Promise<number> {
     const { rows } = await this.db.query<{ id: string }>(
       `update public.agent_approval
@@ -299,6 +312,7 @@ export class PostgresApprovalQueue implements ApprovalQueue {
       inputSummary: row.input_summary,
       status: row.status,
       confirmations,
+      executedAt: row.ejecutada_en ? toIso(row.ejecutada_en) : undefined,
     };
   }
 }

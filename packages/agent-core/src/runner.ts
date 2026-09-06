@@ -423,6 +423,29 @@ export class AgentRunner {
             });
             continue;
           }
+          // A4 (auditoria-2): `request()` reusa CUALQUIER solicitud vigente por
+          // (hotel,tool,hash(input),requestedBy) sin importar su status -- si el
+          // modelo propone la MISMA tool+input dentro del TTL (reintento, otro turno
+          // de la conversacion), esta rama vuelve a ver `status==="aprobada"` sobre
+          // la MISMA fila. `markExecuted()` es la reclamacion atomica: solo la
+          // PRIMERA vez que se llama para esta aprobacion devuelve `true`; cualquier
+          // llamada posterior (aqui o desde `aprobacionEjecutor.ts` fuera de banda)
+          // ve `false` y NUNCA vuelve a ejecutar la tool sin una decision humana
+          // nueva.
+          const puedeEjecutar = await opts.approvalQueue.markExecuted(approval.id);
+          if (!puedeEjecutar) {
+            this.emit(ctx, runId, step, "loop_guard", {
+              toolName: tool.name,
+              message: `solicitud ${approval.id} ya se ejecuto antes; no se repite sin una nueva decision humana`,
+            });
+            toolResultMessages.push({
+              role: "tool",
+              toolCallId: call.id,
+              toolName: call.name,
+              content: `esta accion ya se ejecuto con la aprobacion ${approval.id}; no se repite`,
+            });
+            continue;
+          }
         }
 
         const result = await tool.run(ctx, parsed.data);

@@ -162,6 +162,7 @@ export function createTransactionalTemplateApprovalQueue(
     decide: (params) => inner.decide(params),
     get: (id) => inner.get(id),
     expirePending: (now) => inner.expirePending(now),
+    markExecuted: (id, now) => inner.markExecuted(id, now),
   };
 }
 

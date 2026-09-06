@@ -49,6 +49,15 @@ export async function decidirYEjecutarAprobacion(params: DecidirAprobacionParams
     return { id: decided.id, estado: decided.status, ejecutado: false };
   }
 
+  // A4 (auditoria-2): reclamación atómica -- si esta aprobación ya se ejecutó antes
+  // (por `AgentRunner` en una corrida en vivo, o por una llamada anterior/concurrente
+  // a este mismo ejecutor, p.ej. panel web y botón de WhatsApp casi simultáneos),
+  // `markExecuted()` devuelve `false` y NUNCA se vuelve a correr la tool.
+  const puedeEjecutar = await approvalQueue.markExecuted(decided.id);
+  if (!puedeEjecutar) {
+    return { id: decided.id, estado: decided.status, ejecutado: false };
+  }
+
   const storedInput = await approvalQueue.getStoredInput(decided.id);
   const executors = buildToolExecutors({ db: params.db, messaging: sharedWhatsappAdapter, simulated: true });
   const tool = executors[decided.toolName];

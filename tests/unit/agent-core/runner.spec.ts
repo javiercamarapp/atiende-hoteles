@@ -262,6 +262,54 @@ describe("AgentRunner", () => {
     expect(runSpy).toHaveBeenCalledTimes(1);
   });
 
+  it("A4 (auditoria-2): una aprobacion YA EJECUTADA no vuelve a correr la tool aunque el modelo la re-proponga dentro del TTL", async () => {
+    const runSpy = vi.fn(() => ({ ok: true, summary: "plantilla enviada" }));
+    const tools = new ToolRegistry();
+    tools.register(
+      defineTool({
+        name: "enviar_mensaje_whatsapp_plantilla",
+        description: "envia una plantilla al huesped",
+        inputSchema: z.object({}),
+        effect: "external",
+        needsApproval: true,
+        run: runSpy,
+      }),
+    );
+    const approvalQueue = new InMemoryApprovalQueue();
+    const pre = await approvalQueue.request({
+      toolName: "enviar_mensaje_whatsapp_plantilla",
+      input: {},
+      orgId: "org-1",
+      hotelId: "hotel-1",
+      requestedBy: "agent:recepcionista:staff-1",
+      isMoney: false,
+      textoMostrado: "enviar plantilla",
+    });
+    await approvalQueue.decide({
+      approvalId: pre.id,
+      actor: "gerente-1",
+      decision: "aprobar",
+      textoExacto: "enviar plantilla",
+    });
+    // Simula que la aprobación YA se ejecutó antes (p.ej. ya la corrió
+    // `decidirYEjecutarAprobacion` fuera de banda, o un turno anterior de esta misma
+    // conversación) -- `request()` de todos modos reusa esta MISMA fila "aprobada"
+    // (misma tool+input+hotel+ámbito dentro del TTL, comportamiento documentado e
+    // intencional para no duplicar la SOLICITUD humana).
+    await approvalQueue.markExecuted(pre.id);
+
+    const provider = new FakeProvider([
+      { kind: "tool_calls", calls: [{ name: "enviar_mensaje_whatsapp_plantilla", input: {} }] },
+      { kind: "final", text: "listo" },
+    ]);
+    const runner = new AgentRunner(baseOptions({ provider, tools, approvalQueue, gate: "propone" }));
+    const result = await runner.run(ctxFor(), "reenvía la confirmación");
+    expect(result.status).toBe("completado");
+    // El punto central del hallazgo: la tool NUNCA se re-ejecuta sin una decisión
+    // humana nueva, aunque el runner vea "aprobada" de nuevo.
+    expect(runSpy).not.toHaveBeenCalled();
+  });
+
   it("loop-guard: repetir la misma tool+input corta la corrida sin re-ejecutar", async () => {
     const runSpy = vi.fn(() => ({ ok: true, summary: "consultado" }));
     const tools = new ToolRegistry();
