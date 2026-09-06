@@ -40,6 +40,12 @@ export class MetricsRegistry {
   // `agent_run`/`agent_cost_mes()` (packages/db/migrations/0024), para que un panel de
   // Prometheus/Grafana externo pueda alertar sin tener que consultar la BD.
   private agentCostUsd = new Map<string, number>();
+  // auditoria-2/legal [CRITICO]: observabilidad real de que la purga de la bóveda de
+  // identidad y de conversaciones CORRE (no solo que la función existe) -- espejo en
+  // memoria de lo que jobs/purgeIdentityVaultScheduler.ts / purgeConversationsScheduler.ts
+  // ya escriben en audit_log, por hotel.
+  private identityVaultPurgedTotal = new Map<string, number>();
+  private conversationsPurgedTotal = new Map<string, number>();
 
   private getHistogram(key: string): HistogramState {
     let h = this.histograms.get(key);
@@ -90,11 +96,30 @@ export class MetricsRegistry {
     this.agentCostUsd.set(key, (this.agentCostUsd.get(key) ?? 0) + costUsd);
   }
 
+  /** auditoria-2/legal [CRITICO]: incrementa el contador de filas de `identity_vault`
+   *  purgadas por hotel -- llamado desde jobs/purgeIdentityVaultScheduler.ts en cada
+   *  tick que sí purgó algo (ver server.ts). */
+  incrementIdentityVaultPurged(hotelId: string, count: number): void {
+    if (count <= 0) return;
+    const key = labelKey({ hotel: hotelId });
+    this.identityVaultPurgedTotal.set(key, (this.identityVaultPurgedTotal.get(key) ?? 0) + count);
+  }
+
+  /** auditoria-2/legal [ALTO]: incrementa el contador de `conversation` purgadas por
+   *  hotel (retención configurable, jobs/purgeConversations.ts). */
+  incrementConversationsPurged(hotelId: string, count: number): void {
+    if (count <= 0) return;
+    const key = labelKey({ hotel: hotelId });
+    this.conversationsPurgedTotal.set(key, (this.conversationsPurgedTotal.get(key) ?? 0) + count);
+  }
+
   /** Solo para pruebas: limpia todo el estado acumulado. */
   reset(): void {
     this.histograms.clear();
     this.counters.clear();
     this.agentCostUsd.clear();
+    this.identityVaultPurgedTotal.clear();
+    this.conversationsPurgedTotal.clear();
   }
 
   private renderHistograms(): string {
@@ -158,8 +183,38 @@ export class MetricsRegistry {
    *  requieren una consulta en vivo a la BD (outbox pendiente/dead-letter, aprobaciones
    *  pendientes). Nunca lanza: si una consulta falla, reporta el gauge como
    *  indisponible en un comentario en vez de tumbar todo `/metrics`. */
+  private renderIdentityVaultPurge(): string {
+    if (this.identityVaultPurgedTotal.size === 0) return "";
+    const lines = [
+      "# HELP identity_vault_purged_total Filas de identity_vault purgadas por retención vencida, por hotel, desde que el proceso arrancó.",
+      "# TYPE identity_vault_purged_total counter",
+    ];
+    for (const [key, value] of this.identityVaultPurgedTotal) {
+      lines.push(`identity_vault_purged_total{${key}} ${value}`);
+    }
+    return lines.join("\n") + "\n";
+  }
+
+  private renderConversationsPurge(): string {
+    if (this.conversationsPurgedTotal.size === 0) return "";
+    const lines = [
+      "# HELP conversations_purged_total Conversaciones purgadas por retención vencida, por hotel, desde que el proceso arrancó.",
+      "# TYPE conversations_purged_total counter",
+    ];
+    for (const [key, value] of this.conversationsPurgedTotal) {
+      lines.push(`conversations_purged_total{${key}} ${value}`);
+    }
+    return lines.join("\n") + "\n";
+  }
+
   async render(admin: DbClient): Promise<string> {
-    const parts: string[] = [this.renderHistograms(), this.renderCounters(), this.renderAgentCost()];
+    const parts: string[] = [
+      this.renderHistograms(),
+      this.renderCounters(),
+      this.renderAgentCost(),
+      this.renderIdentityVaultPurge(),
+      this.renderConversationsPurge(),
+    ];
 
     parts.push(await this.renderOutboxGauges(admin));
     parts.push(await this.renderApprovalsGauge(admin));

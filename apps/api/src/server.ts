@@ -11,6 +11,8 @@ import { RateLimiter } from "./lib/rateLimit.ts";
 import { MetricsRegistry } from "./metrics.ts";
 import type { AppDeps } from "./types.ts";
 import { startNightAuditScheduler } from "./jobs/nightAuditScheduler.ts";
+import { startIdentityVaultPurgeScheduler } from "./jobs/purgeIdentityVaultScheduler.ts";
+import { startConversationPurgeScheduler } from "./jobs/purgeConversationsScheduler.ts";
 
 async function main() {
   const env = loadEnv();
@@ -44,9 +46,28 @@ async function main() {
     onError: (err) => logger.error({ err }, "night audit scheduler: error en tick"),
   });
 
+  // auditoria-2/legal [CRITICO] "la purga de la bóveda de identidad existe y está
+  // probada, pero no corre en ningún proceso real": mismo criterio que el night audit
+  // de arriba -- planificador en proceso, lock por hotel, log + métrica por corrida.
+  const identityVaultPurgeScheduler = startIdentityVaultPurgeScheduler(engine.admin, {
+    onHotelResult: (hotelId, result) => deps.metrics.incrementIdentityVaultPurged(hotelId, result.deletedTotal),
+    onTick: (results) => logger.info({ results }, "purga de bóveda de identidad: tick"),
+    onError: (err) => logger.error({ err }, "purga de bóveda de identidad: error en tick"),
+  });
+
+  // auditoria-2/legal [ALTO] "retención configurable por hotel para
+  // conversation/message con purga programada".
+  const conversationPurgeScheduler = startConversationPurgeScheduler(engine.admin, {
+    onHotelResult: (hotelId, result) => deps.metrics.incrementConversationsPurged(hotelId, result.deletedConversations),
+    onTick: (results) => logger.info({ results }, "purga de conversaciones: tick"),
+    onError: (err) => logger.error({ err }, "purga de conversaciones: error en tick"),
+  });
+
   const shutdown = async () => {
     logger.info("apagando apps/api");
     nightAuditScheduler.stop();
+    identityVaultPurgeScheduler.stop();
+    conversationPurgeScheduler.stop();
     await engine.stop();
     process.exit(0);
   };
