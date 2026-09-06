@@ -85,14 +85,14 @@ interface AgentConfigRow {
   alert_threshold_pct: string;
 }
 
-interface ResolvedAgentConfig {
+export interface ResolvedAgentConfig {
   gate: AgentGate;
   monthlyCeilingUsd: number;
   currency: string;
   alertThresholdPct: number;
 }
 
-async function resolveAgentConfig(db: DbClient, hotelId: string, def: AgentDefinition): Promise<ResolvedAgentConfig> {
+export async function resolveAgentConfig(db: DbClient, hotelId: string, def: AgentDefinition): Promise<ResolvedAgentConfig> {
   const { rows } = await db.query<AgentConfigRow>(
     "select gate, monthly_ceiling_usd, currency, alert_threshold_pct from public.agent_config where hotel_id = $1 and agent_name = $2;",
     [hotelId, def.name],
@@ -106,7 +106,7 @@ async function resolveAgentConfig(db: DbClient, hotelId: string, def: AgentDefin
   };
 }
 
-async function costoDelMes(db: DbClient, hotelId: string, agentName: string): Promise<number> {
+export async function costoDelMes(db: DbClient, hotelId: string, agentName: string): Promise<number> {
   const { rows } = await db.query<{ agent_cost_mes: string }>("select public.agent_cost_mes($1, $2) as agent_cost_mes;", [
     hotelId,
     agentName,

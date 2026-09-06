@@ -190,4 +190,86 @@ describe("apps/api: housekeeping + mantenimiento + aprobaciones (integración re
     expect(pendientes.length).toBeGreaterThan(0);
     expect(pendientes.every((a) => a.estado === "pendiente")).toBe(true);
   });
+
+  it("A2/CRÍTICO: bajar el agente a 'shadow' DESPUÉS de pedir la aprobación detiene la ejecución diferida (freno de emergencia real)", async () => {
+    // Agente en autopilot: una acción de dinero que propuso llega a la cola de
+    // aprobación normal.
+    await fixture.app.request(`/hoteles/${hotelId}/agentes/recepcion_virtual/config`, {
+      method: "PATCH",
+      headers: { ...authOf(ownerToken), "content-type": "application/json" },
+      body: JSON.stringify({ gate: "autopilot" }),
+    });
+
+    const crearTicket = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento`, {
+      method: "POST",
+      headers: { ...authOf(gmToken), "content-type": "application/json" },
+      body: JSON.stringify({ roomCode, title: "Fuga menor", description: "Fuga menor bajo el fregadero.", severity: "baja" }),
+    });
+    const { ticketId } = (await crearTicket.json()) as { ticketId: string };
+
+    // Solicitud de aprobación ORIGINADA POR UN AGENTE (requestedBy con el prefijo
+    // "agent:recepcion_virtual:..." que usa runner.ts) -- a diferencia de
+    // "cerrar-con-costo" (que la pide un staff directamente), esta SÍ está gobernada
+    // por el gate del agente.
+    const { rows: aprobacionRows } = await fixture.engine.admin.query<{ id: string }>(
+      `insert into public.agent_approval
+         (org_id, hotel_id, tool_name, input_hash, input_summary, texto_mostrado, requested_by,
+          is_money, required_confirmations, status, requested_at, expires_at, input_json)
+       values ($1, $2, 'autorizar_gasto_mantenimiento', 'hash-a2-test', 'resumen', 'autorizar 900 MXN',
+               'agent:recepcion_virtual:staff-huesped-1', true, 2, 'pendiente', now(), now() + interval '15 minutes',
+               $3::jsonb)
+       returning id;`,
+      [fixture.seed.orgId, hotelId, JSON.stringify({ ticketId, actualCost: 900 })],
+    );
+    const aprobacionId = aprobacionRows[0]!.id;
+
+    // Primera confirmación (gm) -- sigue pendiente, sin ejecutar nada todavía.
+    const primera = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/${aprobacionId}/decidir`, {
+      method: "POST",
+      headers: { ...authOf(gmToken), "content-type": "application/json" },
+      body: JSON.stringify({ decision: "aprobar", textoExacto: "autorizar 900 MXN" }),
+    });
+    expect(primera.status).toBe(200);
+    expect(((await primera.json()) as { estado: string }).estado).toBe("pendiente");
+
+    // El gerente ve algo raro y BAJA el agente a shadow como freno de emergencia --
+    // la solicitud ya está en la cola, a una sola confirmación de ejecutarse.
+    const bajarGate = await fixture.app.request(`/hoteles/${hotelId}/agentes/recepcion_virtual/config`, {
+      method: "PATCH",
+      headers: { ...authOf(ownerToken), "content-type": "application/json" },
+      body: JSON.stringify({ gate: "shadow" }),
+    });
+    expect(bajarGate.status).toBe(200);
+
+    // Segunda confirmación (owner) -- completa la doble confirmación (GOB-026), pero
+    // el gate YA es "shadow": la ejecución debe detenerse aquí, no correr "igual que
+    // si el gate siguiera en autopilot".
+    const segunda = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/${aprobacionId}/decidir`, {
+      method: "POST",
+      headers: { ...authOf(ownerToken), "content-type": "application/json" },
+      body: JSON.stringify({ decision: "aprobar", textoExacto: "autorizar 900 MXN" }),
+    });
+    expect(segunda.status).toBe(200);
+    const segundaBody = (await segunda.json()) as { estado: string; ejecutado: boolean };
+    expect(segundaBody.ejecutado).toBe(false);
+    expect(segundaBody.estado).toBe("bloqueada_por_gate_shadow");
+
+    // El ticket NUNCA se cerró/cobró -- el freno de emergencia sí detuvo el efecto real.
+    const { rows: ticketRows } = await fixture.engine.admin.query<{ status: string; actual_cost: string | null }>(
+      "select status, actual_cost from public.maintenance_ticket where id = $1;",
+      [ticketId],
+    );
+    expect(ticketRows[0]!.status).not.toBe("cerrado");
+    expect(ticketRows[0]!.actual_cost).toBeNull();
+
+    // La aprobación en sí quedó "aprobada" (la doble confirmación humana SÍ se
+    // completó) pero nunca "ejecutada" -- queda disponible para reintentarse si el
+    // gate vuelve a subir, en vez de perderse en silencio.
+    const { rows: aprobacionFinal } = await fixture.engine.admin.query<{ status: string; ejecutada_en: string | null }>(
+      "select status, ejecutada_en from public.agent_approval where id = $1;",
+      [aprobacionId],
+    );
+    expect(aprobacionFinal[0]!.status).toBe("aprobada");
+    expect(aprobacionFinal[0]!.ejecutada_en).toBeNull();
+  });
 });

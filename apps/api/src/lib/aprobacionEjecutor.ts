@@ -5,10 +5,20 @@
 // requerir acceso al panel web") ejecute EXACTAMENTE la misma lógica de negocio,
 // nunca una copia que pueda divergir.
 import type { DbClient } from "@atiende-hoteles/db";
-import { ApprovalError, PostgresApprovalQueue, buildToolContext, createRunBudget } from "@atiende-hoteles/agent-core";
+import { ApprovalError, PostgresApprovalQueue, buildToolContext, createRunBudget, getAgentDefinition } from "@atiende-hoteles/agent-core";
 import { buildToolExecutors } from "./agentTools.ts";
 import { sharedWhatsappAdapter } from "./messaging.ts";
 import { ApiError, Errors } from "./errors.ts";
+import { costoDelMes, resolveAgentConfig } from "../routes/agentes.ts";
+
+/** `AgentRunner`/`runner.ts` construye `requestedBy` como
+ *  `agent:<agentName>:<actorId>` para toda solicitud de aprobación que sale de una
+ *  corrida real -- es el único registro de qué agente originó esta aprobación (el
+ *  esquema de `agent_approval` no tiene una columna `agent_name` propia). */
+function agentNameFromRequestedBy(requestedBy: string): string | undefined {
+  const match = /^agent:([^:]+):/.exec(requestedBy);
+  return match?.[1];
+}
 
 export interface DecidirAprobacionParams {
   db: DbClient;
@@ -47,6 +57,39 @@ export async function decidirYEjecutarAprobacion(params: DecidirAprobacionParams
 
   if (decided.status !== "aprobada") {
     return { id: decided.id, estado: decided.status, ejecutado: false };
+  }
+
+  // A2 (auditoria-2 agentico CRÍTICO): la ejecución DIFERIDA de una aprobación (este
+  // ejecutor corre fuera de una corrida en vivo de AgentRunner, potencialmente minutos
+  // después de que se pidió la aprobación) debe re-comprobar el gate vigente del
+  // agente justo antes de ejecutar -- el único lugar donde `shadow`/`propone`/
+  // `autopilot` se hacía cumplir era dentro de AgentRunner.run(), en el momento en que
+  // la tool SE SOLICITA, nunca en el momento en que SE EJECUTA. Un gerente que baja el
+  // agente a `shadow` como freno de emergencia (p.ej. sospecha de un ticket
+  // fabricado) no tenía ninguna garantía de que una aprobación ya en la cola se
+  // detuviera -- se ejecutaba igual, exactamente como si el gate siguiera en
+  // `autopilot`. También se re-comprueba el presupuesto mensual del agente: si ya se
+  // agotó desde que se pidió la aprobación, tampoco se ejecuta "gratis".
+  //
+  // Solo aplica cuando la aprobación de verdad la originó un AGENTE (`requestedBy`
+  // con el prefijo `agent:<agentName>:...` que usa `runner.ts`) -- una aprobación que
+  // un STAFF pidió directamente por una ruta de negocio (p.ej.
+  // `POST /mantenimiento/:id/cerrar-con-costo`, `requestedBy: "staff:<userId>:..."`)
+  // no tiene ningún agente/gate que gobierne su ejecución, así que no aplica este
+  // freno -- solo GOB-026 (doble confirmación), ya cubierto por `decide()`.
+  const agentName = agentNameFromRequestedBy(decided.requestedBy);
+  if (agentName) {
+    const agentDef = getAgentDefinition(agentName);
+    if (agentDef) {
+      const agentConfig = await resolveAgentConfig(params.db, decided.hotelId, agentDef);
+      if (agentConfig.gate === "shadow") {
+        return { id: decided.id, estado: "bloqueada_por_gate_shadow", ejecutado: false };
+      }
+      const consumido = await costoDelMes(params.db, decided.hotelId, agentName);
+      if (consumido >= agentConfig.monthlyCeilingUsd) {
+        return { id: decided.id, estado: "bloqueada_por_presupuesto_agotado", ejecutado: false };
+      }
+    }
   }
 
   // A4 (auditoria-2): reclamación atómica -- si esta aprobación ya se ejecutó antes
