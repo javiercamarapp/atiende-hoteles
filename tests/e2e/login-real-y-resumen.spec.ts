@@ -127,7 +127,9 @@ test("login real (credenciales de la seed) → Resumen con cifras reales calcula
 
     // ADR real de la seed (Estándar $1200 + Suite $2500 ponderado por 5 habitaciones
     // cada uno → promedio 1850) debe aparecer como cifra real, no como guion "—".
-    await expect(page.getByText("$1850 MXN")).toBeVisible();
+    // auditoria-2/frontend [BAJO], corregido: "$1,850 MXN" con separador de miles
+    // (formatMoney compartido, packages/ui) -- antes se leía "$1850 MXN" sin separador.
+    await expect(page.getByText("$1,850 MXN")).toBeVisible();
   } finally {
     matarProceso(apiProc);
     matarProceso(webProc);
