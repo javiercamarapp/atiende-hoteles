@@ -153,6 +153,31 @@ adaptador de Redis después, sin tocar el middleware), un límite por IP
 - `audit_log` (append-only, hash encadenado, `packages/db`) se escribe en toda mutación
   de negocio vía `record_audit_log()` dentro de la misma transacción.
 
+## Auditoría-1: hallazgos cerrados en H4
+
+- **[CRÍTICO] Cancelar/no-show no liberaba inventario**: `POST .../cancelar` y
+  `jobs/noShow.ts` llaman `public.release_availability()` (migración 0013) por cada
+  noche de la estancia. Prueba: `tests/integration/reservas/cancelacion-libera-
+  inventario.spec.ts` (fuerza `total_rooms=1`, confirma 409 antes de cancelar y 201 de
+  otra reserva después).
+- **[CRÍTICO] Una noche sin tarifa se cobraba en $0**: `POST /reservas` y `PATCH
+  .../fechas` cotizan con `@atiende-hoteles/domain-hotel` `computeQuote()`, que lanza
+  `sin_tarifa` (409) si falta la fila de `rate_plan` de cualquier noche del rango —
+  nunca suma 0 en silencio. Prueba: `tests/integration/reservas/monto-exacto-multi-
+  noche.spec.ts`.
+- **[ALTO] No había camino en la API para crear un folio**: `PATCH .../transicion`
+  crea el `folio` (idempotente, `on conflict do nothing`) la primera vez que la reserva
+  llega a `confirmada`; `GET /reservas` y `GET /reservas/:id` exponen `folioId`. Prueba:
+  `tests/integration/reservas/folio-al-confirmar.spec.ts` (sin usar el cliente admin).
+- **[ALTO] La cadena de `audit_log` se bifurcaba bajo escritura concurrente del mismo
+  tenant**: `packages/db/migrations/0015` reemplaza el intento fallido de
+  `pg_advisory_xact_lock` (documentado y descartado en el propio archivo) por una tabla
+  `audit_log_chain_head` bloqueada con `SELECT ... FOR UPDATE` por tenant. Prueba:
+  `tests/integration/audit-log-concurrencia.spec.ts` (8 rondas de 20 escrituras
+  concurrentes, 160 filas, sin bifurcación).
+- Ver `docs/auditoria-1/backend.md` y `docs/auditoria-1/pruebas.md` para el detalle
+  completo de cada hallazgo.
+
 ## Errores
 
 Formato uniforme en toda respuesta de error: `{code, message, request_id}` — nunca un
@@ -177,13 +202,27 @@ stack trace. Ver `src/lib/errors.ts` (`ApiError` + mapeo de errores de dominio d
 | GET | `/hoteles/:hotelId/folios/:id` | Solo roles con acceso a dinero. |
 | POST | `/hoteles/:hotelId/folios/:id/cargos` | Idempotente. |
 | POST | `/hoteles/:hotelId/folios/:id/pagos` | Idempotente. |
+| POST | `/hoteles/:hotelId/quotes` | H4: motor de cotización determinista (`@atiende-hoteles/domain-hotel`), min-stay/CTA/CTD. |
+| PATCH | `/hoteles/:hotelId/reservas/:id/fechas` | H4: modifica fechas/tipo bajo el mismo advisory lock (libera lo viejo, reserva lo nuevo), exige `Idempotency-Key`. |
+| POST | `/hoteles/:hotelId/reservas/:id/cancelar` | H4: cancelación por staff, aplica `hotel_cancellation_policy`, libera inventario. |
+| POST | `/hoteles/:hotelId/reservas/procesar-no-show` | H4: dispara `jobs/noShow.ts` (idempotente por construcción: filtra `status='confirmada'`). |
+| POST | `/reservas/cancelacion-publica` | H4: cancelación SIN sesión de staff, verificada por código de reserva + apellido (REQ-RES-005). |
+| GET, PUT | `/hoteles/:hotelId/tarifas` | H4: CRUD de `rate_plan` (precio/min-stay/CTA/CTD) por rango de fechas, roles `MANAGE_INVENTORY_ROLES`. |
+| GET, PUT | `/hoteles/:hotelId/impuestos` | H4: IVA/ISH por hotel, roles `owner`/`gm`. |
+| GET, PUT | `/hoteles/:hotelId/politica-cancelacion` | H4: política en 4 puntos (free_until/penalty/no_show/deposit). |
+| GET | `/hoteles/:hotelId/disponibilidad/grid?desde&hasta` | H4: desglose POR DÍA (a diferencia de `/disponibilidad`, que agrega el rango) para la grilla del frontend. |
 
 ## Qué falta (declarado explícitamente, no simulado)
 
-- RPC `SECURITY DEFINER` para escritura anónima/pública con precio recalculado en
-  servidor (`REQ-TEN-004`) — no existe todavía ninguna ruta pública sin autenticación.
 - Conector PMS/webhooks entrantes (HMAC, dedupe por `source.event_id`, `REQ-INT-014`) —
-  no hay ningún proveedor externo con credenciales en esta fase (ADR-007).
+  no hay ningún proveedor externo con credenciales en esta fase (ADR-007); H4 sí agrega
+  `POST /reservas/cancelacion-publica`, la primera ruta pública sin sesión de staff
+  (verificada por código+apellido, `cancel_reservation_public()` SECURITY DEFINER).
+- Cobro real de tarjeta ante un no-show (`REQ-RES-008`): el job (`jobs/noShow.ts`)
+  determina el no-show, libera inventario y calcula el monto, pero no ejecuta ningún
+  cargo real — requiere pasarela de pago, pendiente de credenciales.
+- El job de no-show no corre automáticamente todavía (sin cron propio); se dispara vía
+  `POST /hoteles/:hotelId/reservas/procesar-no-show` (rol admin) o manualmente.
 - El worker de outbox no corre automáticamente (sin proceso propio/cron todavía).
 - Sin *connection pooling*: cada request abre una conexión Postgres nueva
   (`withAppSession`, mismo mecanismo que `packages/db`) — aceptable para esta fase de
