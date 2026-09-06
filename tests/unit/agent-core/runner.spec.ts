@@ -361,6 +361,54 @@ describe("AgentRunner", () => {
     expect(runSpy).not.toHaveBeenCalled();
   });
 
+  it("loop-guard: en la ultima ronda CON una tool terminal disponible, la terminal SI se " +
+    "ejecuta y las no-terminales de la misma ronda se omiten (aud-1 tool-calling.md " +
+    "MEDIO #5: rama sin cobertura previa)", async () => {
+    const terminalSpy = vi.fn(() => ({ ok: true, summary: "folio cerrado" }));
+    const noTerminalSpy = vi.fn(() => ({ ok: true, summary: "no deberia correr" }));
+    const tools = new ToolRegistry();
+    tools.register(
+      defineTool({
+        name: "cerrar_folio_terminal",
+        description: "cierra el folio (terminal, su resultado no vuelve al modelo)",
+        inputSchema: z.object({}),
+        effect: "write",
+        needsApproval: false,
+        run: terminalSpy,
+      }),
+    );
+    tools.register(
+      defineTool({
+        name: "consultar_extra",
+        description: "consulta algo mas",
+        inputSchema: z.object({}),
+        effect: "read",
+        needsApproval: false,
+        run: noTerminalSpy,
+      }),
+    );
+    const provider = new FakeProvider([
+      {
+        kind: "tool_calls",
+        calls: [
+          { name: "cerrar_folio_terminal", input: {} },
+          { name: "consultar_extra", input: {} },
+        ],
+      },
+    ]);
+    const runner = new AgentRunner(
+      baseOptions({ provider, tools, maxSteps: 1, terminalToolNames: ["cerrar_folio_terminal"] }),
+    );
+    const result = await runner.run(ctxFor(), "cierra mi folio");
+    // La mutacion terminal SI corrio en el limite del loop-guard...
+    expect(terminalSpy).toHaveBeenCalledTimes(1);
+    // ...pero la tool no-terminal de la MISMA ronda se omitio, nunca corrio "de gratis".
+    expect(noTerminalSpy).not.toHaveBeenCalled();
+    // Como se agoto maxSteps justo despues de ejecutar la terminal, el cierre es honesto:
+    // no hay otra ronda para que el modelo confirme que termino.
+    expect(result.status).toBe("agotado_pasos");
+  });
+
   it("presupuesto agotado antes de la primera llamada cierra explicitamente sin llamar al proveedor", async () => {
     const completeSpy = vi.fn();
     const provider = { id: "fake", isAvailable: () => true, complete: completeSpy } as const;
