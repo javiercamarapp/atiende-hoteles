@@ -34,6 +34,7 @@ import { aprobacionesWhatsappRoutes } from "./routes/aprobacionesWhatsapp.ts";
 import { mensajeriaRoutes } from "./routes/mensajeria.ts";
 import { agentesRoutes } from "./routes/agentes.ts";
 import { roiRoutes } from "./routes/roi.ts";
+import { privacidadRoutes } from "./routes/privacidad.ts";
 import { toErrorBody } from "./lib/errors.ts";
 import { buildMoneyAlertLog, isMoneyPath } from "./lib/moneyAlert.ts";
 import { ipRateLimit, requestId, userRateLimit } from "./middleware.ts";
@@ -175,6 +176,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", mensajeriaRoutes(deps));
   app.route("/", agentesRoutes(deps));
   app.route("/", roiRoutes(deps));
+  app.route("/", privacidadRoutes(deps));
 
   return app;
 }
