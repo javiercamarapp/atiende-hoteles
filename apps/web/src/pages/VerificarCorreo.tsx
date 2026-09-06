@@ -34,16 +34,20 @@ export function VerificarCorreo() {
       setMensaje("Este enlace no incluye un token de verificación. Revisa que copiaste la URL completa del correo.");
       return;
     }
+    // Guard SOLO para evitar una segunda llamada real (React 18 StrictMode en dev
+    // invoca los efectos dos veces) -- a propósito NO se descarta el resultado con un
+    // flag de "cleanup" tipo `vivo`: `account_token` es de un solo uso real, así que la
+    // ÚNICA llamada que de verdad sale a la red debe poder actualizar el estado cuando
+    // responda, incluso si el efecto que la disparó ya se "limpió" en el remount falso
+    // de StrictMode (un descarte aquí dejaría la pantalla en "Confirmando…" para
+    // siempre pese a que el backend sí confirmó el correo).
     if (yaLlamado.current) return;
     yaLlamado.current = true;
-    let vivo = true;
     verificarCorreo(token)
       .then(() => {
-        if (!vivo) return;
         setEstado("exito");
       })
       .catch((err) => {
-        if (!vivo) return;
         setEstado("error");
         if (err instanceof ApiUnavailableError) {
           setMensaje(
@@ -55,9 +59,6 @@ export function VerificarCorreo() {
           setMensaje("No se pudo confirmar tu correo. Inténtalo de nuevo.");
         }
       });
-    return () => {
-      vivo = false;
-    };
   }, [token]);
 
   const handleReenviar = async () => {
