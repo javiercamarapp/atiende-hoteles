@@ -336,4 +336,128 @@ describe("apps/api: housekeeping + mantenimiento + aprobaciones (integración re
     expect(aprobacionFinal[0]!.status).toBe("aprobada");
     expect(aprobacionFinal[0]!.ejecutada_en).toBeNull();
   });
+
+  describe("A6 (auditoria-2 agentico ALTO): segundo aprobador delegado para hoteles de un solo administrador", () => {
+    it("sin delegado configurado: un no-admin (housekeeping) NO puede decidir (403), igual que antes", async () => {
+      const crearTicket = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento`, {
+        method: "POST",
+        headers: { ...authOf(gmToken), "content-type": "application/json" },
+        body: JSON.stringify({ roomCode, title: "Prueba delegado sin config", description: "x", severity: "media", estimatedCost: 1000 }),
+      });
+      const { ticketId } = (await crearTicket.json()) as { ticketId: string };
+      const cerrar = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/${ticketId}/cerrar-con-costo`, {
+        method: "POST",
+        headers: { ...authOf(gmToken), "content-type": "application/json" },
+        body: JSON.stringify({ actualCost: 900 }),
+      });
+      const { aprobacionId } = (await cerrar.json()) as { aprobacionId: string };
+
+      const intento = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/${aprobacionId}/decidir`, {
+        method: "POST",
+        headers: { ...authOf(housekeepingToken), "content-type": "application/json" },
+        body: JSON.stringify({ decision: "aprobar", textoExacto: "Autorizo." }),
+      });
+      expect(intento.status).toBe(403);
+    });
+
+    it("owner designa a maintenance como delegado -> maintenance SÍ puede completar la segunda confirmación (rol real distinto, GOB-026 intacto)", async () => {
+      // El delegado debe poder ejecutar de verdad el EFECTO de la tool aprobada
+      // (`autorizar_gasto_mantenimiento` escribe `maintenance_ticket` bajo la RLS del
+      // PROPIO delegado, no de "sistema") -- la RLS de `maintenance_ticket` solo
+      // permite escribir a owner/gm o al técnico de mantenimiento ASIGNADO al ticket,
+      // así que se usa "maintenance" (asignado al ticket) como delegado, no
+      // housekeeping (que nunca podría escribir ese ticket aunque decidiera la
+      // aprobación).
+      const maintenanceStaff = fixture.seed.hotels[0]!.staff.find((s) => s.role === "maintenance")!;
+      const maintenanceToken = await loginAs(fixture.app, maintenanceStaff.email);
+
+      // Sin ser owner/gm, no puede auto-designarse.
+      const intentoNoAutorizado = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/delegado`, {
+        method: "PUT",
+        headers: { ...authOf(maintenanceToken), "content-type": "application/json" },
+        body: JSON.stringify({ userId: maintenanceStaff.id }),
+      });
+      expect(intentoNoAutorizado.status).toBe(403);
+
+      // owner designa a maintenance como segundo aprobador delegado.
+      const designar = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/delegado`, {
+        method: "PUT",
+        headers: { ...authOf(ownerToken), "content-type": "application/json" },
+        body: JSON.stringify({ userId: maintenanceStaff.id }),
+      });
+      expect(designar.status).toBe(200);
+
+      const consulta = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/delegado`, { headers: authOf(gmToken) });
+      const { delegado } = (await consulta.json()) as { delegado: { userId: string } | null };
+      expect(delegado?.userId).toBe(maintenanceStaff.id);
+
+      // Ticket de mantenimiento, asignado al técnico delegado -> primera confirmación
+      // (gm) -> segunda confirmación por el DELEGADO (rol real "maintenance",
+      // distinto de "gm").
+      const crearTicket = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento`, {
+        method: "POST",
+        headers: { ...authOf(gmToken), "content-type": "application/json" },
+        body: JSON.stringify({ roomCode, title: "Prueba delegado", description: "x", severity: "media", estimatedCost: 1200 }),
+      });
+      const { ticketId } = (await crearTicket.json()) as { ticketId: string };
+      const asignar = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/${ticketId}/asignar`, {
+        method: "PATCH",
+        headers: { ...authOf(gmToken), "content-type": "application/json" },
+        body: JSON.stringify({ assignedTo: maintenanceStaff.id }),
+      });
+      expect(asignar.status).toBe(200);
+      const { rows: asignadoRows } = await fixture.engine.admin.query<{ assigned_to: string | null }>(
+        "select assigned_to from public.maintenance_ticket where id = $1;",
+        [ticketId],
+      );
+      expect(asignadoRows[0]!.assigned_to).toBe(maintenanceStaff.id);
+
+      const cerrar = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/${ticketId}/cerrar-con-costo`, {
+        method: "POST",
+        headers: { ...authOf(gmToken), "content-type": "application/json" },
+        body: JSON.stringify({ actualCost: 1150 }),
+      });
+      const { aprobacionId } = (await cerrar.json()) as { aprobacionId: string };
+
+      const primera = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/${aprobacionId}/decidir`, {
+        method: "POST",
+        headers: { ...authOf(gmToken), "content-type": "application/json" },
+        body: JSON.stringify({ decision: "aprobar", textoExacto: "Autorizo." }),
+      });
+      expect(primera.status).toBe(200);
+      expect(((await primera.json()) as { estado: string }).estado).toBe("pendiente");
+
+      const segunda = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/${aprobacionId}/decidir`, {
+        method: "POST",
+        headers: { ...authOf(maintenanceToken), "content-type": "application/json" },
+        body: JSON.stringify({ decision: "aprobar", textoExacto: "Autorizo como delegado." }),
+      });
+      expect(segunda.status).toBe(200);
+      const segundaBody = (await segunda.json()) as { estado: string; ejecutado: boolean };
+      expect(segundaBody.estado).toBe("aprobada");
+      expect(segundaBody.ejecutado).toBe(true);
+
+      const { rows } = await fixture.engine.admin.query<{ status: string; actual_cost: string }>(
+        "select status, actual_cost from public.maintenance_ticket where id = $1;",
+        [ticketId],
+      );
+      expect(rows[0]!.status).toBe("cerrado");
+      expect(Number(rows[0]!.actual_cost)).toBe(1150);
+
+      // Solo owner/gm pueden revocar.
+      const revocarNoAutorizado = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/delegado`, {
+        method: "DELETE",
+        headers: authOf(housekeepingToken),
+      });
+      expect(revocarNoAutorizado.status).toBe(403);
+
+      const revocar = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/delegado`, {
+        method: "DELETE",
+        headers: authOf(ownerToken),
+      });
+      expect(revocar.status).toBe(200);
+      const consultaFinal = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/delegado`, { headers: authOf(gmToken) });
+      expect(((await consultaFinal.json()) as { delegado: unknown }).delegado).toBeNull();
+    });
+  });
 });
