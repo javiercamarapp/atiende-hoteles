@@ -107,11 +107,16 @@ export interface EmbeddedPostgresEngine {
   /** Cliente `postgres` (superusuario del cluster embebido): usado por el runner de
    *  migraciones y los seeds, nunca por el codigo de aplicacion en runtime. */
   admin: DbClient;
-  /** Abre una conexion NUEVA de sistema operativo autenticada como `atiende_app`
-   *  (rol de aplicacion sin BYPASSRLS, ADR-004) y ejecuta `fn` dentro de una
-   *  transaccion con los claims de sesion ya aplicados. Cada llamada usa un cliente
-   *  `pg` propio para que dos llamadas concurrentes representen conexiones reales
-   *  distintas (necesario para probar contencion real, ADR-003). */
+  /** Presta una conexion de un `pg.Pool` de proceso (auditoria-1/backend [MEDIO]: antes
+   *  abria un `pg.Client` NUEVO por llamada, sin pool ni timeout -- ver comentario de
+   *  `openEmbeddedPostgres` mas abajo) autenticada como `atiende_app` (sin BYPASSRLS,
+   *  ADR-004) y ejecuta `fn` dentro de una transaccion con los claims de sesion ya
+   *  aplicados via `set local` (alcance de transaccion, ADR-004): al hacer
+   *  commit/rollback, Postgres descarta esos valores automaticamente ANTES de que la
+   *  conexion vuelva al pool -- ninguna transaccion siguiente sobre la misma conexion
+   *  fisica reciclada puede heredar `auth.uid()`/rol de la anterior (verificado en
+   *  tests/integration/pool-sin-fuga-de-claims.spec.ts forzando `poolMax: 1`, la MISMA
+   *  conexion fisica, entre dos sesiones consecutivas de hoteles distintos). */
   withAppSession<T>(
     claims: { userId?: string | null },
     fn: (session: DbClient) => Promise<T>,
@@ -130,6 +135,20 @@ export interface OpenEmbeddedPostgresOptions {
   /** `false` (default) borra el data dir al primer `initialise()`; `true` lo conserva
    *  entre reinicios (servidor de desarrollo). No aplica si el directorio ya existe. */
   persistent?: boolean;
+  /** Tamaño máximo del `pg.Pool` de `atiende_app` compartido por el proceso (default
+   *  20). Los tests de concurrencia real (advisory locks, contención) siguen viendo
+   *  conexiones de sistema operativo genuinas y distintas mientras el número de
+   *  sesiones simultáneas no exceda este máximo -- ver ADR-003. */
+  poolMax?: number;
+  /** Milisegundos que `pool.connect()` espera por una conexión libre/nueva antes de
+   *  fallar explícito (auditoria-1/backend [MEDIO]: antes no existía ningún timeout,
+   *  un request podía quedar colgado indefinidamente esperando `client.connect()`).
+   *  Default 5000. */
+  connectionTimeoutMs?: number;
+  /** `statement_timeout` de Postgres (ms) aplicado a cada conexión del pool: una
+   *  consulta que se cuelga del lado del servidor falla explícito en vez de bloquear
+   *  la conexión (y el slot del pool) indefinidamente. Default 30000. */
+  statementTimeoutMs?: number;
 }
 
 export async function openEmbeddedPostgres(
@@ -169,19 +188,46 @@ export async function openEmbeddedPostgres(
 
   const connectionInfo = { host: "127.0.0.1", port, database: "postgres" };
 
+  // auditoria-1/backend [MEDIO]: "cada request abre una conexion Postgres nueva, sin
+  // pool ni timeout" -- `withAppSession` abria un `pg.Client` NUEVO (connect/end) en
+  // CADA llamada, reusado sin cambios por `apps/api/src/middleware.ts` (dbSession) en
+  // produccion/desarrollo, no solo en pruebas. Bajo trafico real, cada request compite
+  // por una conexion de sistema operativo nueva sin limite ni timeout de espera.
+  //
+  // Arreglo: un `pg.Pool` de proceso (una vez por `EmbeddedPostgresEngine`, no por
+  // llamada) con tamano/timeouts configurables. `withAppSession` sigue abriendo una
+  // transaccion nueva y fijando los claims de sesion con `set local` (alcance de
+  // TRANSACCION, no de conexion) -- Postgres los descarta automaticamente al hacer
+  // commit/rollback, ANTES de que `client.release()` devuelva la conexion fisica al
+  // pool, asi que ninguna sesion siguiente sobre la MISMA conexion reciclada puede ver
+  // el `auth.uid()`/rol de la anterior (verificado con `poolMax: 1` forzando la reutilizacion
+  // exacta de una sola conexion fisica entre dos sesiones consecutivas de hoteles
+  // distintos, ver tests/integration/pool-sin-fuga-de-claims.spec.ts). Un error a mitad
+  // de sesion libera la conexion con `client.release(err)` (en vez de sin argumento):
+  // le indica al pool que la conexion puede haber quedado en un estado inconsistente
+  // (ej. `rollback` que tambien fallo) y debe destruirla en vez de reciclarla.
+  const pool = new pg.Pool({
+    host: connectionInfo.host,
+    port: connectionInfo.port,
+    database: connectionInfo.database,
+    user: "atiende_app",
+    password: "atiende_app_dev_only_local",
+    max: options.poolMax ?? 20,
+    connectionTimeoutMillis: options.connectionTimeoutMs ?? 5000,
+    statement_timeout: options.statementTimeoutMs ?? 30_000,
+  });
+  // Un error en una conexion ociosa del pool (ej. el servidor la cerro) no debe tumbar
+  // el proceso -- node-pg lo emite como evento si nadie lo escucha.
+  pool.on("error", () => {
+    /* silenciado: la siguiente `pool.connect()` simplemente abre una conexion nueva */
+  });
+
   return {
     kind: "pg",
     admin,
     connectionInfo,
     async withAppSession(claims, fn) {
-      const client = new pg.Client({
-        host: connectionInfo.host,
-        port: connectionInfo.port,
-        database: connectionInfo.database,
-        user: "atiende_app",
-        password: "atiende_app_dev_only_local",
-      });
-      await client.connect();
+      const client = await pool.connect();
       try {
         await client.query("begin;");
         await client.query("set local role authenticated;");
@@ -191,15 +237,16 @@ export async function openEmbeddedPostgres(
         const session = wrapPgClient(client);
         const result = await fn(session);
         await client.query("commit;");
+        client.release();
         return result;
       } catch (err) {
         await client.query("rollback;").catch(() => undefined);
+        client.release(err instanceof Error ? err : new Error(String(err)));
         throw err;
-      } finally {
-        await client.end();
       }
     },
     async stop() {
+      await pool.end();
       await adminClient.end();
       await pgServer.stop();
       // Un data dir persistente (servidor de desarrollo, `apps/api/src/db.ts`) se

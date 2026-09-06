@@ -224,6 +224,11 @@ stack trace. Ver `src/lib/errors.ts` (`ApiError` + mapeo de errores de dominio d
 - El job de no-show no corre automáticamente todavía (sin cron propio); se dispara vía
   `POST /hoteles/:hotelId/reservas/procesar-no-show` (rol admin) o manualmente.
 - El worker de outbox no corre automáticamente (sin proceso propio/cron todavía).
-- Sin *connection pooling*: cada request abre una conexión Postgres nueva
-  (`withAppSession`, mismo mecanismo que `packages/db`) — aceptable para esta fase de
-  desarrollo/pruebas, no para producción con tráfico real.
+- **Corregido en auditoría-1/bd**: `withAppSession` (`packages/db/src/engines.ts`) usa un
+  `pg.Pool` de proceso (tamaño/timeouts configurables vía `poolMax`/
+  `connectionTimeoutMs`/`statementTimeoutMs`), no un `pg.Client` nuevo por request. Los
+  claims de sesión (`set local role`, `request.jwt.claim.sub`) siguen fijados con
+  alcance de TRANSACCIÓN — Postgres los descarta al hacer commit/rollback antes de que
+  la conexión física vuelva al pool, así que ninguna sesión reciclada hereda el actor de
+  la anterior (verificado con `poolMax: 1` forzando la misma conexión física, ver
+  `tests/integration/pool-sin-fuga-de-claims.spec.ts`).
