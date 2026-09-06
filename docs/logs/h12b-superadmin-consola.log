@@ -1,0 +1,19 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/.claude/worktrees/agent-a0db8bb330ec537a6
+
+ ✓ tests/unit/rls/platform-admin.spec.ts (5 tests) 89599ms
+   ✓ consola superadmin: platform_admin/admin_negocio (RLS + security definer) > un staff normal no ve filas de platform_admin ni de platform_admin_audit_log (RLS vacía)  19873ms
+   ✓ consola superadmin: platform_admin/admin_negocio (RLS + security definer) > admin_negocio() lanza no_autorizado para un staff que no es superadmin de plataforma  15967ms
+   ✓ consola superadmin: platform_admin/admin_negocio (RLS + security definer) > admin_negocio() agrega AMBOS hoteles cruzando tenants una vez otorgado platform_admin, y queda auditado  16948ms
+   ✓ consola superadmin: platform_admin/admin_negocio (RLS + security definer) > admin_reintentar_outbox() es la única escritura permitida: revive un evento dead-letter sin tocar datos de negocio  16982ms
+   ✓ consola superadmin: platform_admin/admin_negocio (RLS + security definer) > admin_reintentar_outbox() también lanza no_autorizado para un staff que no es superadmin  19826ms
+ ✓ tests/adversarial/superadmin-consola.spec.ts (6 tests) 11348ms
+   ✓ adversarial: consola /admin (superadmin cross-tenant) > un owner de hotel (no superadmin de plataforma) recibe 403 en /admin/negocio y /admin/auditoria  974ms
+   ✓ adversarial: consola /admin (superadmin cross-tenant) > ser superadmin de plataforma NO otorga membresía de hotel: sigue sin poder transicionar una reserva de hotel B (403 por RLS/requireHotelMembership, no por /admin)  364ms
+   ✓ adversarial: consola /admin (superadmin cross-tenant) > la única escritura permitida desde /admin es reintentar un evento outbox en dead-letter, y queda auditada  519ms
+
+ Test Files  2 passed (2)
+      Tests  11 passed (11)
+   Start at  16:16:03
+   Duration  112.44s (transform 4.31s, setup 0ms, collect 9.42s, tests 100.95s, environment 0ms, prepare 368ms)
+

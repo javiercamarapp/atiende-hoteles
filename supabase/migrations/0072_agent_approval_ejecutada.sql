@@ -1,0 +1,16 @@
+-- ORIGEN: packages/db/migrations/0072_agent_approval_ejecutada.sql sha256:6d6783e34cbf2aa4945ea0adb867ee63477d4758fef24af1e62d10df63a7a9da
+-- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
+-- nuevo el script tras cambiar la migración fuente.
+
+-- A4 (auditoria-2 agentico/tool-calling): una aprobación ya "aprobada" es reutilizable
+-- por `request()` (misma tool+input+hotel+requestedBy dentro del TTL, por diseño --
+-- para no duplicar la SOLICITUD de aprobación humana) pero nada marcaba que su EFECTO
+-- (la tool aprobada) ya se había ejecutado -- un reintento del modelo, o una segunda
+-- ejecución fuera de banda (`decidirYEjecutarAprobacion`) sobre la MISMA fila
+-- "aprobada", volvía a correr la tool sin ninguna decisión humana nueva.
+--
+-- `ejecutada_en` se fija UNA sola vez (ver `markExecuted()`,
+-- packages/agent-core/src/postgresApproval.ts): `UPDATE ... WHERE ejecutada_en IS
+-- NULL RETURNING id` es la reclamación atómica -- solo la llamada que de verdad
+-- actualiza la fila (0 o 1 fila afectada) debe ejecutar la tool.
+alter table public.agent_approval add column ejecutada_en timestamptz;

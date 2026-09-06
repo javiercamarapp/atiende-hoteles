@@ -1,0 +1,14 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/.claude/worktrees/agent-a0db8bb330ec537a6
+
+ ✓ tests/unit/web/offline-csp.spec.ts (3 tests) 11ms
+ ✓ tests/unit/web/csp-meta.spec.ts (6 tests) 14ms
+ ✓ tests/unit/api/db-production.spec.ts (3 tests) 5ms
+ ✓ tests/unit/supabase-export.spec.ts (6 tests) 1819ms
+   ✓ scripts/export-supabase-migrations.ts > supabase/migrations/ está sincronizado con packages/db/migrations/ (--check pasa)  1536ms
+
+ Test Files  4 passed (4)
+      Tests  18 passed (18)
+   Start at  16:19:04
+   Duration  4.44s (transform 1.14s, setup 0ms, collect 3.23s, tests 1.85s, environment 1ms, prepare 1.52s)
+

@@ -293,3 +293,134 @@ export async function openEmbeddedPostgres(
     },
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// H12b · LAUNCH-009/D-001: motor de PRODUCCIÓN contra un Postgres GESTIONADO (Supabase u
+// otro proveedor equivalente) -- nunca spawnea un servidor propio (a diferencia de
+// `openEmbeddedPostgres`, que es exclusivamente de desarrollo/pruebas locales, ADR-003).
+// Misma forma de objeto que `EmbeddedPostgresEngine` (mismo `withAppSession`, mismo
+// patrón `set local role authenticated` + claim de sesión por transacción) para que
+// `apps/api/src/app.ts`/`middleware.ts` no necesiten distinguir el motor -- pero
+// DELIBERADAMENTE sin superusuario: `admin` aquí es el MISMO rol de mínimo privilegio
+// `atiende_app` que usa `withAppSession`, nunca una credencial de superusuario embebida
+// en el runtime de la API (ver deploy/README.md "Por qué `admin` de producción no es
+// superusuario"). Las migraciones contra un proyecto gestionado las aplica el USUARIO
+// con `supabase db push` (GOB-058, docs/runbooks/migracion-a-supabase.md) -- este motor
+// nunca llama a `applyMigrations`.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ManagedPostgresConfig {
+  host: string;
+  port?: number;
+  database?: string;
+  /** Rol de LOGIN de mínimo privilegio (típicamente `atiende_app`, creado por
+   *  `supabase/migrations/0001_...sql` transformado) -- NUNCA `postgres`/superusuario. */
+  user: string;
+  password: string;
+  /** `true` (default) exige TLS con verificación de certificado -- el patrón estándar
+   *  para conectar a Supabase/cualquier Postgres gestionado por red pública. Poner en
+   *  `false` únicamente para un túnel local de un solo uso (nunca en producción real). */
+  ssl?: boolean;
+  poolMax?: number;
+  connectionTimeoutMs?: number;
+  statementTimeoutMs?: number;
+}
+
+export interface ManagedPostgresEngine {
+  kind: "pg";
+  /** Cliente de solo lectura de mínimo privilegio (rol `atiende_app`, NO superusuario) --
+   *  usado por `/ready` (packages/db/migrations/0101 le otorga `select` sobre
+   *  `schema_migrations`) y por scripts de solo lectura. Nunca se usa para aplicar
+   *  migraciones (ver cabecera de esta sección). */
+  admin: DbClient;
+  withAppSession<T>(claims: { userId?: string | null }, fn: (session: DbClient) => Promise<T>): Promise<T>;
+  connectionInfo: { host: string; port: number; database: string };
+  /** auditoria-2/operabilidad [ALTO], misma forma que `EmbeddedPostgresEngine`: total de
+   *  eventos `pool.on("error")` del pool gestionado, para que `routes/metrics.ts` no
+   *  tenga que distinguir el motor al publicar `db_pool_errors_total`. */
+  getPoolErrorCount(): number;
+  stop(): Promise<void>;
+}
+
+export function openManagedPostgres(config: ManagedPostgresConfig): ManagedPostgresEngine {
+  const pool = new pg.Pool({
+    host: config.host,
+    port: config.port ?? 5432,
+    database: config.database ?? "postgres",
+    user: config.user,
+    password: config.password,
+    max: config.poolMax ?? 10,
+    connectionTimeoutMillis: config.connectionTimeoutMs ?? 5000,
+    statement_timeout: config.statementTimeoutMs ?? 30_000,
+    ssl: config.ssl === false ? undefined : { rejectUnauthorized: true },
+  });
+  let poolErrorCount = 0;
+  pool.on("error", (err) => {
+    // Mismo criterio que openEmbeddedPostgres: la siguiente pool.connect() simplemente
+    // abre una conexión nueva, nunca se relanza -- pero sí se cuenta y se deja rastro
+    // estructurado en stderr (auditoria-2/operabilidad [ALTO]).
+    poolErrorCount += 1;
+    console.error(
+      JSON.stringify({
+        level: "error",
+        event: "db_pool_error",
+        message: err instanceof Error ? err.message : String(err),
+        pool_error_count: poolErrorCount,
+        timestamp: new Date().toISOString(),
+      }),
+    );
+  });
+
+  const connectionInfo = { host: config.host, port: config.port ?? 5432, database: config.database ?? "postgres" };
+
+  // `admin` reutiliza EL MISMO pool/rol que `withAppSession` -- una conexión SIN claims
+  // de sesión (ningún `set local role`/`set_config` aplicado), así que solo puede leer
+  // lo que las políticas RLS ya permiten a `atiende_app` fuera de una sesión de usuario
+  // (en la práctica: nada de negocio, solo `schema_migrations` vía el GRANT de 0101).
+  const admin: DbClient = {
+    async query<T>(sql: string, params?: unknown[]) {
+      const client = await pool.connect();
+      try {
+        const res = await client.query(sql, params as unknown[] | undefined);
+        return { rows: res.rows as T[] };
+      } finally {
+        client.release();
+      }
+    },
+    async exec(sql: string) {
+      const client = await pool.connect();
+      try {
+        await client.query(sql);
+      } finally {
+        client.release();
+      }
+    },
+  };
+
+  return {
+    kind: "pg",
+    admin,
+    connectionInfo,
+    getPoolErrorCount: () => poolErrorCount,
+    async withAppSession(claims, fn) {
+      const client = await pool.connect();
+      try {
+        await client.query("begin;");
+        await client.query("set local role authenticated;");
+        await client.query("select set_config('request.jwt.claim.sub', $1, true);", [claims.userId ?? ""]);
+        const session = wrapPgClient(client);
+        const result = await fn(session);
+        await client.query("commit;");
+        client.release();
+        return result;
+      } catch (err) {
+        await client.query("rollback;").catch(() => undefined);
+        client.release(err instanceof Error ? err : new Error(String(err)));
+        throw err;
+      }
+    },
+    async stop() {
+      await pool.end();
+    },
+  };
+}

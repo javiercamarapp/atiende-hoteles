@@ -87,7 +87,10 @@ export function toErrorBody(err: unknown, requestId: string): { status: number; 
   // (nunca contra un parametro que el llamador podria inventar) levantan estos
   // errcodes 42501 con un mensaje propio -- se mapean a 403 igual que la RLS nativa,
   // sin filtrar detalle interno.
-  if (/tenant_no_autorizado|hotel_no_autorizado|rol_no_autorizado|acceso_boveda_no_autorizado/.test(message)) {
+  // H12b · LAUNCH-007: `admin_negocio()`/`admin_reintentar_outbox()` (0100) levantan
+  // `no_autorizado` cuando `is_platform_admin()` es falso -- backstop de la función SQL
+  // detrás del 403 explícito que ya pone `requirePlatformAdmin` en routes/admin.ts.
+  if (/tenant_no_autorizado|hotel_no_autorizado|rol_no_autorizado|acceso_boveda_no_autorizado|no_autorizado/.test(message)) {
     return {
       status: 403,
       body: { code: "forbidden", message: "No tienes permiso para realizar esta acción.", request_id: requestId },

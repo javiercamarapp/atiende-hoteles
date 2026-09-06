@@ -1,0 +1,31 @@
+
+> atiende-hoteles@0.0.0 db:reset
+> node packages/db/src/cli.ts reset
+
+[embedded-postgres] 2026-09-06 17:02:15.861 CST [29604] LOG:  starting PostgreSQL 18.4 on x86_64-apple-darwin24.6.0, compiled by Apple clang version 17.0.0 (clang-1700.6.3.2), 64-bit
+
+[embedded-postgres] 2026-09-06 17:02:15.862 CST [29604] LOG:  listening on IPv6 address "::1", port 54329
+2026-09-06 17:02:15.862 CST [29604] LOG:  listening on IPv4 address "127.0.0.1", port 54329
+
+[embedded-postgres] 2026-09-06 17:02:15.863 CST [29604] LOG:  listening on Unix socket "/tmp/.s.PGSQL.54329"
+
+[embedded-postgres] 2026-09-06 17:02:15.869 CST [29611] LOG:  database system was shut down at 2026-09-06 16:48:33 CST
+
+[embedded-postgres] 2026-09-06 17:02:15.872 CST [29604] LOG:  database system is ready to accept connections
+
+Esquema reiniciado. Migraciones aplicadas: 60
+[embedded-postgres] 2026-09-06 17:02:16.167 CST [29604] LOG:  received fast shutdown request
+
+[embedded-postgres] 2026-09-06 17:02:16.167 CST [29604] LOG:  aborting any active transactions
+
+[embedded-postgres] 2026-09-06 17:02:16.168 CST [29604] LOG:  background worker "logical replication launcher" (PID 29614) exited with exit code 1
+
+[embedded-postgres] 2026-09-06 17:02:16.169 CST [29609] LOG:  shutting down
+
+[embedded-postgres] 2026-09-06 17:02:16.169 CST [29609] LOG:  checkpoint starting: shutdown immediate
+
+[embedded-postgres] 2026-09-06 17:02:16.185 CST [29609] LOG:  checkpoint complete: wrote 550 buffers (3.4%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.007 s, total=0.017 s; sync files=392, longest=0.001 s, average=0.001 s; distance=5712 kB, estimate=5712 kB; lsn=0/29A8CC0, redo lsn=0/29A8CC0
+
+[embedded-postgres] 2026-09-06 17:02:16.190 CST [29604] LOG:  database system is shut down
+
+DBRESET_EXIT=0
