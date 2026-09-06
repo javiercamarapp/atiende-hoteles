@@ -1,0 +1,6 @@
+$ npm run lint
+
+> atiende-hoteles@0.0.0 lint
+> eslint .
+
+exit code: 0

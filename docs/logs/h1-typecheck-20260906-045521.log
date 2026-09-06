@@ -1,0 +1,6 @@
+$ npm run typecheck
+
+> atiende-hoteles@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+
+exit code: 0
