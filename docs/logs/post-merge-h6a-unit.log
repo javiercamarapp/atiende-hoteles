@@ -1,0 +1,6 @@
+# compuertas post-merge H6a Sun Sep  6 05:48:59 CST 2026
+ Test Files  19 passed (19)
+      Tests  117 passed (117)
+   Start at  05:49:00
+   Duration  12.21s (transform 390ms, setup 0ms, collect 2.34s, tests 91.58s, environment 3ms, prepare 1.37s)
+
