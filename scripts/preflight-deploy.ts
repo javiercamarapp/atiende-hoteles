@@ -52,23 +52,33 @@ export const REQUIRED_ENV_VARS: EnvRequirement[] = [
   { name: "VITE_API_URL", app: "apps/web", motivo: "Sin ella, el panel no tiene a dónde conectarse (apps/web/src/lib/api.ts)." },
 ];
 
+function describeEnvRequirement(v: EnvRequirement): string {
+  return v.name + " (" + v.app + ": " + v.motivo + ")";
+}
+
 export function checkRequiredEnvVars(source: NodeJS.ProcessEnv = process.env): StepResult {
   const faltantes = REQUIRED_ENV_VARS.filter((v) => !source[v.name] || source[v.name]!.trim() === "");
   if (faltantes.length > 0) {
+    const descripciones = faltantes.map(describeEnvRequirement).join("; ");
     return {
       name: "variables_de_entorno",
       ok: false,
-      detail: `Faltan ${faltantes.length} variable(s) obligatoria(s): ${faltantes
-        .map((v) => `${v.name} (${v.app}: ${v.motivo})`)
-        .join("; ")}`,
+      detail: "Faltan " + faltantes.length + " variable(s) obligatoria(s): " + descripciones,
     };
   }
-  return { name: "variables_de_entorno", ok: true, detail: `Las ${REQUIRED_ENV_VARS.length} variables obligatorias están presentes.` };
+  return {
+    name: "variables_de_entorno",
+    ok: true,
+    detail: "Las " + REQUIRED_ENV_VARS.length + " variables obligatorias están presentes.",
+  };
 }
 
 /** Confirma que cada variable requerida está también DOCUMENTADA en el `.env.example`
- *  de su app -- evita que este script y `apps/*/.env.example` se desincronicen (una
- *  variable que el preflight exige pero nadie documentó en el `.env.example` real). */
+ *  de su app -- evita que este script y el `.env.example` real de cada app (apps/api,
+ *  apps/web) se desincronicen (una variable que el preflight exige pero nadie
+ *  documentó ahí). NOTA: evitar el patrón "carpeta/asterisco/carpeta" en este bloque de
+ *  comentario -- una secuencia literal asterisco-diagonal cierra el comentario antes de
+ *  tiempo (fue justo el bug que rompió este archivo la primera vez que se escribió). */
 export function checkEnvExamplesDocumentRequiredVars(): StepResult {
   const faltantes: string[] = [];
   for (const v of REQUIRED_ENV_VARS) {

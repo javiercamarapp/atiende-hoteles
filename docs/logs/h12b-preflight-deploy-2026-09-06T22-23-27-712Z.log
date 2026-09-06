@@ -1,0 +1,44 @@
+[OK] variables_de_entorno
+Las 5 variables obligatorias están presentes.
+
+[OK] env_example_documentado
+Todas las variables requeridas están documentadas en su .env.example.
+
+[OK] migraciones_desde_cero
+53 migración(es) aplicadas desde cero, 0 omitida por error.
+
+[FALLÓ] npm_test
+
+ FAIL  tests/integration/audit-log-concurrencia.spec.ts > audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > dos tenants distintos escribiendo concurrentemente no se bloquean entre sí (el lock de la cabeza de cadena es por tenant, no global)
+Unknown Error: undefined
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[57/62]⎯
+
+ FAIL  tests/integration/pool-sin-fuga-de-claims.spec.ts > pool de conexiones: set_config por transacción no filtra claims entre requests reciclados (auditoria-1/backend MEDIO) > con poolMax=1 (misma conexión física forzada), el claim de la sesión A nunca es visible en la sesión B
+Unknown Error: undefined
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[58/62]⎯
+
+ FAIL  tests/integration/pool-sin-fuga-de-claims.spec.ts > pool de conexiones: set_config por transacción no filtra claims entre requests reciclados (auditoria-1/backend MEDIO) > una sesión sin userId (claim vacío) tras una sesión CON userId, en la misma conexión reciclada, queda anónima (auth.uid() null) — nunca hereda al actor anterior
+Error: Postgres init script failed (code: 1, signal: null). ERROR OUTPUT: 2026-09-06 16:22:41.919 CST [96435] FATAL:  could not create shared memory segment: No space left on device
+2026-09-06 16:22:41.919 CST [96435] DETAIL:  Failed system call was shmget(key=23005664, size=56, 03600).
+2026-09-06 16:22:41.919 CST [96435] HINT:  This error does *not* mean that you have run out of disk space.  It occurs either if all available shared memory IDs have been taken, in which case you need to raise the SHMMNI parameter in your kernel, or because the system's overall limit for shared memory has been reached.
+	The PostgreSQL documentation contains more information about shared memory configuration.
+child process exited with exit code 1
+initdb: removing contents of data directory "/var/folders/7l/lhfhb62s0831p83p7d0v3s6h0000gn/T/atiende-hoteles-pg-7C2o3f"
+
+ ❯ ChildProcess.<anonymous> node_modules/embedded-postgres/dist/index.js:176:36
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[59/62]⎯
+
+[OK] npm_build
+dist/assets/index-VbEnl4Kh.css   42.68 kB │ gzip:   9.07 kB
+dist/assets/index-D0GwLkl9.js   537.41 kB │ gzip: 158.16 kB
+
+✓ built in 2.21s
+
+
+[OK] presupuesto_bundle
+JS de apps/web/dist: 524.8 KB (presupuesto: 900 KB).
+
+[OK] npm_audit
+found 0 vulnerabilities
+

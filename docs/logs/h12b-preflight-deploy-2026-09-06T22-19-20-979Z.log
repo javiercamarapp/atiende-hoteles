@@ -1,0 +1,5 @@
+[FALLÓ] variables_de_entorno
+Faltan 5 variable(s) obligatoria(s): JWT_SECRET (apps/api: Firma/verificación de sesión (REQ-SEG-013) -- sin default en producción.); CORS_ALLOWED_ORIGINS (apps/api: Lista blanca explícita, nunca '*' (auditoria-1/seguridad [MEDIO]).); SUPABASE_DB_HOST (apps/api: apps/api nunca arranca embedded-postgres en producción (ADR-003) -- ver apps/api/src/dbProduction.ts.); SUPABASE_DB_PASSWORD_APP (apps/api: Contraseña real de atiende_app (docs/runbooks/migracion-a-supabase.md paso 6), nunca el placeholder de la migración.); VITE_API_URL (apps/web: Sin ella, el panel no tiene a dónde conectarse (apps/web/src/lib/api.ts).)
+
+[OK] env_example_documentado
+Todas las variables requeridas están documentadas en su .env.example.
