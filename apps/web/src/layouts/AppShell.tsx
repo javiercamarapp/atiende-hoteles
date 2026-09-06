@@ -13,6 +13,7 @@ import {
   Building2,
   Settings,
   ShieldCheck,
+  Bot,
 } from "lucide-react";
 import { Sidebar, BottomNav, MobileHeader, AtiendeWordmark, type SidebarSection, type BottomNavItem } from "@atiende/ui";
 import { useAuth } from "../hooks/useAuth";
@@ -56,6 +57,7 @@ const sections: SidebarSection[] = [
     title: "ADMINISTRAR",
     items: [
       { to: "/aprobaciones", label: "Aprobaciones", icon: ShieldCheck },
+      { to: "/agentes", label: "Agentes", icon: Bot },
       { to: "/back-office", label: "Back office", icon: Building2 },
       { to: "/configuracion", label: "Configuración", icon: Settings },
     ],

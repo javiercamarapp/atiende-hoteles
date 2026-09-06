@@ -765,3 +765,102 @@ export async function obtenerConfigMensajeria(hotelId: string): Promise<{ planti
 export async function actualizarConfigMensajeria(hotelId: string, plantillasTransaccionales: string[]): Promise<{ plantillasTransaccionales: string[] }> {
   return request(`/hoteles/${hotelId}/mensajeria/config`, { method: "PATCH", body: JSON.stringify({ plantillasTransaccionales }) });
 }
+
+// H7 · Runtime de agentes por rol (ADR-006): catálogo, gate/techo por hotel, corridas
+// (demo determinista o real, según credenciales del entorno) y ROI (REQ-AGT-003/H17).
+export type AgentGate = "shadow" | "propone" | "autopilot";
+
+export interface AgenteCatalogo {
+  agente: string;
+  etiqueta: string;
+  descripcion: string;
+  rolModelo: string;
+  rolesPermitidos: string[];
+  gate: AgentGate;
+  techoMensualUsd: number;
+  moneda: string;
+  umbralAlertaPct: number;
+}
+
+export interface AgenteCosto {
+  agente: string;
+  etiqueta: string;
+  gate: AgentGate;
+  techoMensualUsd: number;
+  moneda: string;
+  consumidoUsd: number;
+  pctUsado: number;
+  umbralAlertaPct: number;
+  alerta: boolean;
+  sinDatos: boolean;
+}
+
+export interface AgenteEjecucionResultado {
+  estado: string;
+  mensaje: string;
+  runId?: string;
+  pasos?: number;
+  tokensEntrada?: number;
+  tokensSalida?: number;
+  costoUsd?: number;
+  gate: AgentGate;
+  aprobacionesPendientes?: string[];
+  simulado: boolean;
+  modelo?: string;
+  techoMensualUsd?: number;
+  consumidoUsd?: number;
+}
+
+export async function listarAgentes(hotelId: string): Promise<AgenteCatalogo[]> {
+  return request<AgenteCatalogo[]>(`/hoteles/${hotelId}/agentes`);
+}
+
+export async function listarCostosAgentes(hotelId: string): Promise<AgenteCosto[]> {
+  return request<AgenteCosto[]>(`/hoteles/${hotelId}/agentes/costos`);
+}
+
+export async function actualizarConfigAgente(
+  hotelId: string,
+  agente: string,
+  input: { gate?: AgentGate; techoMensualUsd?: number },
+): Promise<{ agente: string; gate: AgentGate; techoMensualUsd: number }> {
+  return request(`/hoteles/${hotelId}/agentes/${agente}/config`, { method: "PATCH", body: JSON.stringify(input) });
+}
+
+export async function ejecutarAgente(
+  hotelId: string,
+  agente: string,
+  input: { mensaje: string; canal?: "voz" | "texto"; demo?: boolean },
+): Promise<AgenteEjecucionResultado> {
+  return request(`/hoteles/${hotelId}/agentes/${agente}/ejecutar`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export interface RoiEvento {
+  id: string;
+  agente: string;
+  tipoEvento: string;
+  montoEstimado: number | null;
+  montoVerificado: number | null;
+  metodoContrafactual: string;
+  confianza: number;
+  supuestoVersion: string;
+  estimado: boolean;
+  referenciaTipo: string;
+  referenciaCodigo: string | null;
+  notas: string | null;
+  creadoEn: string;
+}
+
+export interface RoiResumen {
+  eventos: RoiEvento[];
+  sumaEstimadoUsd: number;
+  sumaVerificadoUsd: number;
+  sinDatos: boolean;
+  supuestoVersion: string;
+  supuestoUrl: string;
+}
+
+export async function obtenerRoi(hotelId: string, agente?: string): Promise<RoiResumen> {
+  const qs = agente ? `?agente=${agente}` : "";
+  return request<RoiResumen>(`/hoteles/${hotelId}/roi${qs}`);
+}

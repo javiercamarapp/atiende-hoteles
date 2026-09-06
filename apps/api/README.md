@@ -303,6 +303,11 @@ stack trace. Ver `src/lib/errors.ts` (`ApiError` + mapeo de errores de dominio d
 | GET, PATCH | `/hoteles/:hotelId/mensajeria/config` | H6b: plantillas transaccionales del hotel (auto-aprobación), solo owner/gm. |
 | POST | `/hoteles/:hotelId/mensajeria/mensajes` | H6b: reusa la tool `enviar_mensaje_whatsapp_plantilla`; plantilla transaccional → envío inmediato, cualquier otra → `agent_approval`. |
 | POST | `/hoteles/:hotelId/mensajeria/webhook` | H6b: **PÚBLICO** (sin Bearer de staff) — HMAC contra `hotel_messaging_config.webhook_secret` + idempotencia por `event_id` (`idempotency_key`, scope `whatsapp.webhook`). Firma inválida → 401; replay → 200 `{estado:"duplicado"}` sin reprocesar. |
+| GET | `/hoteles/:hotelId/agentes` | H7: catálogo de agentes (`@atiende-hoteles/agent-core` `AGENT_DEFINITIONS`) con el gate/techo efectivo por hotel (fila de `agent_config` o default de código). |
+| GET | `/hoteles/:hotelId/agentes/costos` | H7: consumido del mes (`agent_cost_mes()`) vs techo, `pctUsado`, `alerta` al 80% (configurable), `sinDatos` honesto por CONTEO de corridas (no por costo=0). |
+| PATCH | `/hoteles/:hotelId/agentes/:agente/config` | H7: solo owner/gm — cambia gate y/o techo mensual USD (`agent_config`, upsert). |
+| POST | `/hoteles/:hotelId/agentes/:agente/ejecutar` | H7: rol restringido por `AGENT_DEFINITIONS[agente].allowedStaffRoles`; corta por presupuesto ANTES de invocar al proveedor (`presupuesto_agotado` honesto, `agent_run` costo 0); sin `demo:true` usa `EnvProvider` real (→ `no_configurado` sin credenciales, ADR-007); con `demo:true` corre un guion determinista de `FakeProvider` (check-in con incidencia) etiquetado `simulado:true` en la respuesta. Body `.strict()`: `hotelId`/`orgId`/`gate` en el cuerpo → 400, nunca se leen del cliente. Cada paso (`AgentTraceEvent`) → `audit_log`; el resumen agregado → `agent_run`; ambos en la misma transacción por-request. |
+| GET | `/hoteles/:hotelId/roi` | H7: eventos de `roi_event` (REQ-AGT-003/H17-001) + suma estimada/verificada + `supuestoVersion` — sin línea base firmada (REQ-REV-018), no habilita ningún cobro por resultado. |
 
 ## Qué falta (declarado explícitamente, no simulado)
 
@@ -343,3 +348,20 @@ stack trace. Ver `src/lib/errors.ts` (`ApiError` + mapeo de errores de dominio d
 - `housekeeping_task`/`maintenance_ticket` no tienen columna de "piso": el tablero de
   `/housekeeping` ordena por código de habitación, no agrupa por piso (el esquema de
   `room`, H1, no modela ese dato) — documentado, no fabricado en el frontend.
+- **H7 (runtime de agentes)**: `POST /hoteles/:hotelId/agentes/:agente/ejecutar` sin
+  `demo:true` usa `EnvProvider` (`@atiende-hoteles/agent-core`) — sin `ANTHROPIC_API_KEY`/
+  `OPENROUTER_API_KEY` en el entorno (ADR-007, sigue igual que H6a) se declara
+  `no_configurado` de forma honesta; NINGUNA llamada real a un proveedor LLM ocurre en
+  este hito, ni siquiera con credenciales presentes (la integración real queda
+  pendiente, ver README de `packages/agent-core`). `demo:true` es la ÚNICA forma de ver
+  una corrida completa hoy, y siempre etiquetada `simulado:true` en la respuesta.
+- **H7 (ROI/línea base, REQ-REV-018)**: `GET /hoteles/:hotelId/roi` expone los eventos
+  capturados (`roi_event`, REQ-AGT-003) con su `supuestoVersion`, pero la lógica de
+  "línea base firmada" y activación de cobro por resultado sobre esos eventos NO está
+  implementada — ningún endpoint de este hito activa un cobro, solo registra/expone el
+  valor estimado.
+- **H7 (agentes)**: sin scheduler real para `auditor_nocturno` (se dispara manualmente
+  vía `POST .../ejecutar`, con o sin `demo:true`); sin suite de red-teaming/prompt
+  injection en CI (REQ-AGT-009, requiere su propio simulador de huéspedes, fuera de
+  alcance de este hito); sin flujo de aprobación de e.firma para presentación SAT
+  (REQ-BO-006, dominio fiscal distinto, no tocado aquí).

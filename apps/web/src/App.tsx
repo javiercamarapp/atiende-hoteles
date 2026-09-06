@@ -22,6 +22,7 @@ import { Reputacion } from "./pages/Reputacion";
 import { BackOffice } from "./pages/BackOffice";
 import { Aprobaciones } from "./pages/Aprobaciones";
 import { Configuracion } from "./pages/Configuracion";
+import { Agentes } from "./pages/Agentes";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,6 +65,7 @@ export function App() {
                   <Route path="/reputacion" element={<Reputacion />} />
                   <Route path="/back-office" element={<BackOffice />} />
                   <Route path="/aprobaciones" element={<Aprobaciones />} />
+                  <Route path="/agentes" element={<Agentes />} />
                   <Route path="/configuracion" element={<Configuracion />} />
                 </Route>
 

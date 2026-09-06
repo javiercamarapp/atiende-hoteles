@@ -229,3 +229,32 @@ paquete (session/API) y queda **pendiente** -- ver
   de `@atiende-hoteles/agent-core`. Se corrigio tambien en `packages/mcp-servers/shared`
   y `packages/mcp-servers/whatsapp` por la misma razon (H6b es quien primero conecta
   agent-core y un adaptador de mcp-servers a un proceso que arranca con ese runtime).
+
+## H7: catálogo de agentes como configuración + `registrar_evento_roi`
+
+- `src/agents.ts` declara `AGENT_DEFINITIONS`: los 3 agentes de este hito
+  (`recepcion_virtual` canal/Sonnet 5, `enrutador_mensajes` enrutador/Haiku 4.5 sin
+  tools, `auditor_nocturno` batch_nocturno/Opus 5), cada uno con `role` (roles.ts),
+  `toolNames` permitidas, `allowedStaffRoles` (defensa en profundidad además de RLS),
+  `defaultGate` (siempre `"shadow"`, BP-016) y `defaultMonthlyCeilingUsd` (dentro de la
+  banda LLM-026 ≈USD 27-158/mes por hotel de 45 habitaciones). Agregar un agente nuevo es
+  agregar una entrada aquí (REQ-AGT-018, patrón registry) — `apps/api/src/routes/agentes.ts`
+  es el ÚNICO lugar que traduce `toolNames` a fábricas de tool concretas.
+- `src/tools/roiTools.ts` (`registrar_evento_roi`, REQ-AGT-003/H17-001): `effect="write"`
+  sin `needsApproval` — es un registro de observabilidad de valor económico, no una
+  acción que mueva dinero; por eso SÍ se omite en gate `"shadow"` (como cualquier tool
+  write) pero nunca exige aprobación humana. Rechaza (sin tocar la BD) un evento sin
+  `montoEstimado` NI `montoVerificado`. La columna `estimado` de `roi_event`
+  (`packages/db/migrations/0026`) la recalcula un TRIGGER en Postgres a partir de si hay
+  `monto_verificado` — la tool nunca decide esa bandera.
+- `apps/api/src/routes/agentes.ts` es quien construye el `ToolContext` (desde la sesión,
+  nunca del cliente), resuelve el gate/techo efectivo (`agent_config` o default de
+  código), corta por presupuesto ANTES de invocar al proveedor
+  (`public.agent_cost_mes()`, `packages/db/migrations/0024`) y persiste
+  `AgentRunner.onTrace()` en `audit_log`+`agent_run` dentro de la misma transacción por
+  request — ver `apps/api/README.md` §H7 para el detalle de rutas.
+- Pendiente/rojo declarado: sin corrida nocturna programada real de `auditor_nocturno`
+  (se dispara manualmente vía API/demo, sin scheduler); `EnvProvider` sigue en el mismo
+  estado honesto desde H6a (con credenciales declara la integración real pendiente, sin
+  ellas se declara `no_configurado`) — H7 no agrega ninguna llamada real a un proveedor
+  LLM.

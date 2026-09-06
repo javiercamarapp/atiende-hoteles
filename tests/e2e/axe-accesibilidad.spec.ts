@@ -20,6 +20,8 @@ const RUTAS: Array<{ nombre: string; ruta: string; protegida: boolean }> = [
   { nombre: "mantenimiento", ruta: "/mantenimiento", protegida: true },
   { nombre: "mensajeria", ruta: "/mensajeria", protegida: true },
   { nombre: "aprobaciones", ruta: "/aprobaciones", protegida: true },
+  // H7: gate/techo por agente, demo determinista y tarjeta de ROI en Resumen.
+  { nombre: "agentes", ruta: "/agentes", protegida: true },
 ];
 
 for (const { nombre, ruta, protegida } of RUTAS) {

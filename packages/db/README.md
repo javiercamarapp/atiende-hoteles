@@ -160,3 +160,25 @@ grants mínimos otorgados solo al rol `authenticated` (ver `migrations/0010_gran
   `message.simulated=true`); `transactional_templates` decide qué plantillas se
   auto-aprueban sin espera humana. Índices únicos por hotel para idempotencia de envío
   (`client_message_id`) y de webhook (`external_message_id`).
+
+## Cambios de H7 (migraciones 0024-0026, expand-only sobre H1-H6b; rango asignado 0024-0029)
+
+- `agent_run`: una fila AGREGADA por corrida completa de `AgentRunner` (tokens/costo/
+  pasos/duración/estado terminal/`request_id`) — append-only, sin policy de
+  `UPDATE`/`DELETE` para `authenticated` (mismo criterio que `audit_log`). El detalle
+  paso a paso de cada corrida se escribe aparte en `audit_log` vía `record_audit_log()`
+  (0008/0016); esta tabla solo agrega el resumen que necesita el presupuesto/reporte de
+  costo. `agent_cost_mes(hotel_id, agent_name default null)`: suma el costo del MES EN
+  CURSO (REQ-AGT-020).
+- `agent_config`: gate (`shadow`/`propone`/`autopilot`, BP-016) y techo mensual USD por
+  (hotel, agente) — sin fila explícita, la aplicación usa el default de código
+  (`@atiende-hoteles/agent-core` `AGENT_DEFINITIONS`). RLS: SELECT abierto a todo el
+  staff del hotel, INSERT/UPDATE reservado a owner/gm (mismo nivel que decidir una
+  `agent_approval`).
+- `roi_event`: REQ-AGT-003/REQ-REV-018 (H17-001) — `monto_estimado`/`monto_verificado`/
+  `metodo_contrafactual`/`confianza`/`supuesto_version` (versionado explícito de la
+  fórmula H17 usada). La columna `estimado` la recalcula un TRIGGER a partir de si hay
+  `monto_verificado` — nunca se confía en lo que mande la aplicación. Append-only.
+  Captura el evento; la lógica de "línea base firmada" que exige REQ-REV-018 para
+  activar un cobro por resultado sobre estos eventos queda pendiente de un hito
+  posterior.

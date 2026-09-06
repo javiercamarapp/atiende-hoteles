@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { Percent, Coins, TrendingUp, CalendarCheck } from "lucide-react";
-import { StatCard, EstadoError } from "@atiende/ui";
+import { Link } from "react-router-dom";
+import { Percent, Coins, TrendingUp, CalendarCheck, Sparkles } from "lucide-react";
+import { StatCard, EstadoError, Card, CardHeader, CardTitle, CardContent, Badge } from "@atiende/ui";
 import { PageHeader } from "../components/PageHeader";
 import { useHotel } from "../hooks/useHotel";
-import { obtenerResumen } from "../lib/api";
+import { obtenerResumen, obtenerRoi } from "../lib/api";
 
 /**
  * REQ-UX-002 / observación del orquestador (docs/PROGRESO.md, entrada H3): con la API
@@ -19,6 +20,12 @@ export function Resumen() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["resumen", hotelActivoId],
     queryFn: () => obtenerResumen(hotelActivoId as string),
+    enabled: Boolean(hotelActivoId),
+    retry: false,
+  });
+  const roi = useQuery({
+    queryKey: ["roi-resumen", hotelActivoId],
+    queryFn: () => obtenerRoi(hotelActivoId as string),
     enabled: Boolean(hotelActivoId),
     retry: false,
   });
@@ -67,6 +74,40 @@ export function Resumen() {
           sinDato={data?.reservasHoy == null ? sinDato : undefined}
         />
       </div>
+
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="size-4" aria-hidden="true" /> Valor generado por agentes de IA
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {roi.isError || !hotelActivoId ? (
+            <p className="text-sm text-muted-foreground">Sin conexión con el API.</p>
+          ) : roi.isLoading ? (
+            <p className="text-sm text-muted-foreground">Cargando…</p>
+          ) : !roi.data || roi.data.sinDatos ? (
+            <p className="text-sm text-muted-foreground">Sin datos todavía: ningún agente ha registrado un evento de ROI este período.</p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-2xl font-semibold text-foreground">
+                ${roi.data.sumaEstimadoUsd.toFixed(2)} USD{" "}
+                <Badge variant="secondary" className="align-middle ml-1">
+                  estimado, supuestos {roi.data.supuestoVersion}
+                </Badge>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {roi.data.eventos.length} evento(s) registrado(s)
+                {roi.data.sumaVerificadoUsd > 0 ? ` · $${roi.data.sumaVerificadoUsd.toFixed(2)} USD ya verificado contra línea base` : ""}.
+                Cifra sin línea base firmada todavía (REQ-REV-018): no habilita ningún cobro por resultado.
+              </p>
+              <Link to="/agentes" className="text-xs text-primary underline underline-offset-2">
+                Ver supuestos de la fórmula (H17) y el detalle por agente →
+              </Link>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

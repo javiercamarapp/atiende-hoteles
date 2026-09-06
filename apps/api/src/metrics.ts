@@ -35,6 +35,11 @@ function escapeLabel(v: string): string {
 export class MetricsRegistry {
   private histograms = new Map<string, HistogramState>();
   private counters = new Map<string, number>();
+  // H7 · REQ-AGT-020: costo estimado USD acumulado por (hotel, agente) desde que el
+  // proceso arrancó -- espejo en memoria de lo que ya vive de forma durable en
+  // `agent_run`/`agent_cost_mes()` (packages/db/migrations/0024), para que un panel de
+  // Prometheus/Grafana externo pueda alertar sin tener que consultar la BD.
+  private agentCostUsd = new Map<string, number>();
 
   private getHistogram(key: string): HistogramState {
     let h = this.histograms.get(key);
@@ -76,10 +81,20 @@ export class MetricsRegistry {
     this.counters.set("reservations_created_total", (this.counters.get("reservations_created_total") ?? 0) + 1);
   }
 
+  /** REQ-AGT-020: acumula el costo USD estimado de una corrida de agente, etiquetado
+   *  por hotel y por agente -- llamado una vez por corrida desde routes/agentes.ts
+   *  después de insertar el `agent_run` correspondiente (misma cifra, dos superficies:
+   *  BD para reporte/presupuesto, Prometheus para alertar en vivo). */
+  incrementAgentCost(hotelId: string, agentName: string, costUsd: number): void {
+    const key = labelKey({ hotel: hotelId, agente: agentName });
+    this.agentCostUsd.set(key, (this.agentCostUsd.get(key) ?? 0) + costUsd);
+  }
+
   /** Solo para pruebas: limpia todo el estado acumulado. */
   reset(): void {
     this.histograms.clear();
     this.counters.clear();
+    this.agentCostUsd.clear();
   }
 
   private renderHistograms(): string {
@@ -127,12 +142,24 @@ export class MetricsRegistry {
     return out.join("\n") + (out.length ? "\n" : "");
   }
 
+  private renderAgentCost(): string {
+    if (this.agentCostUsd.size === 0) return "";
+    const lines = [
+      "# HELP agent_cost_usd_total Costo estimado en USD acumulado por corrida de agente, por hotel y agente.",
+      "# TYPE agent_cost_usd_total counter",
+    ];
+    for (const [key, value] of this.agentCostUsd) {
+      lines.push(`agent_cost_usd_total{${key}} ${value}`);
+    }
+    return lines.join("\n") + "\n";
+  }
+
   /** Combina las métricas en memoria (latencia/errores/reservas) con los gauges que
    *  requieren una consulta en vivo a la BD (outbox pendiente/dead-letter, aprobaciones
    *  pendientes). Nunca lanza: si una consulta falla, reporta el gauge como
    *  indisponible en un comentario en vez de tumbar todo `/metrics`. */
   async render(admin: DbClient): Promise<string> {
-    const parts: string[] = [this.renderHistograms(), this.renderCounters()];
+    const parts: string[] = [this.renderHistograms(), this.renderCounters(), this.renderAgentCost()];
 
     parts.push(await this.renderOutboxGauges(admin));
     parts.push(await this.renderApprovalsGauge(admin));

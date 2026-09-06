@@ -9,6 +9,7 @@ export * from "./approval.ts";
 export * from "./sql.ts";
 export * from "./postgresApproval.ts";
 export * from "./roles.ts";
+export * from "./agents.ts";
 export * from "./pricing.ts";
 export * from "./provider.ts";
 export * from "./trace.ts";

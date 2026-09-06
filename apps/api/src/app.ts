@@ -26,6 +26,8 @@ import { housekeepingRoutes } from "./routes/housekeeping.ts";
 import { mantenimientoRoutes } from "./routes/mantenimiento.ts";
 import { aprobacionesRoutes } from "./routes/aprobaciones.ts";
 import { mensajeriaRoutes } from "./routes/mensajeria.ts";
+import { agentesRoutes } from "./routes/agentes.ts";
+import { roiRoutes } from "./routes/roi.ts";
 import { toErrorBody } from "./lib/errors.ts";
 import { buildMoneyAlertLog, isMoneyPath } from "./lib/moneyAlert.ts";
 import { ipRateLimit, requestId, userRateLimit } from "./middleware.ts";
@@ -157,6 +159,8 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", mantenimientoRoutes(deps));
   app.route("/", aprobacionesRoutes(deps));
   app.route("/", mensajeriaRoutes(deps));
+  app.route("/", agentesRoutes(deps));
+  app.route("/", roiRoutes(deps));
 
   return app;
 }
