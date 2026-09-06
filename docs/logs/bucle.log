@@ -40,3 +40,4 @@
 2026-09-06 06:39:37 ciclo=16 evento=fix_agent-core_completo 16/16 espera=H4
 2026-09-06 07:00:02 cron=4fe17d3a evento=RECUPERACION_POR_CRON bucle_dinamico=muerto_por_429 (ScheduleWakeup bloqueado por clasificador) → reanudar H4 y rearmar
 2026-09-06 07:05:12 ciclo=17 evento=latido_dinamico(tick previo sobrevivió) H4=reanudado
+2026-09-06 07:29:39 ciclo=18 evento=H4_completado+merge_H9H11 verde(303u/38i/57a) despacho=fixBD(#30 main),H5(#31 wt),H6b(#32 wt)
