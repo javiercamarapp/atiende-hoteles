@@ -209,4 +209,51 @@ describe("contrato: aprobación completada por botón de WhatsApp, sin panel web
     expect(res.status).toBe(200);
     expect(((await res.json()) as { estado: string }).estado).toBe("ignorado");
   });
+
+  it("backend ALTO: si el efecto real falla DESPUÉS de reclamar el event_id, la reclamación se revierte junto con el efecto -- un reintento del MISMO event_id vuelve a intentarlo, no se pierde en silencio", async () => {
+    // buttonId con un approvalId que NO EXISTE: decidirYEjecutarAprobacion() lanza un
+    // error (ApprovalError -> ApiError 409) DESPUÉS de que la reclamación de
+    // idempotencia ya se insertó dentro de la MISMA transacción -- simula "el proceso
+    // muere/falla a medio camino" sin necesitar matar el proceso de verdad.
+    const approvalIdInexistente = "00000000-0000-0000-0000-000000000000";
+    const secret = await webhookSecret();
+    const eventId = "evt-atomicidad-1";
+    const { rawBody, signature } = FakeWhatsappAdapter.signWebhookFixture(
+      payloadBotón(eventId, GM_PHONE, `aprobar:${approvalIdInexistente}`),
+      secret,
+    );
+
+    const primero = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/webhook`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-hub-signature-256": signature },
+      body: rawBody,
+    });
+    expect(primero.status).toBeGreaterThanOrEqual(400); // el efecto real falló
+
+    // La reclamación de idempotencia se revirtió junto con el efecto -- NO queda
+    // "consumida" en la base pese a que el intento falló.
+    const { rows: claimRows } = await fixture.engine.admin.query(
+      "select id from public.idempotency_key where scope = 'whatsapp.aprobacion_webhook' and key = $1;",
+      [eventId],
+    );
+    expect(claimRows).toHaveLength(0);
+
+    // Un reintento de Meta con el MISMO event_id (esta vez sobre una aprobación real)
+    // vuelve a intentar el efecto -- nunca cae directo a "duplicado" perdiendo el
+    // clic del owner en silencio.
+    const aprobacionId = await crearAprobacionPendiente("+5215500009999", "oferta_upsell_boton_atomicidad");
+    const { rawBody: rawBody2, signature: signature2 } = FakeWhatsappAdapter.signWebhookFixture(
+      payloadBotón(eventId, GM_PHONE, `aprobar:${aprobacionId}`),
+      secret,
+    );
+    const segundo = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/webhook`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-hub-signature-256": signature2 },
+      body: rawBody2,
+    });
+    expect(segundo.status).toBe(200);
+    const segundoBody = (await segundo.json()) as { estado: string; ejecutado: boolean };
+    expect(segundoBody.estado).toBe("aprobada");
+    expect(segundoBody.ejecutado).toBe(true);
+  });
 });
