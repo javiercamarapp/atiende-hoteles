@@ -130,25 +130,18 @@ describe("GET /hoteles/:hotelId/agentes/costos", () => {
 });
 
 describe("GET /hoteles/:hotelId/roi", () => {
-  it("expone los eventos de ROI registrados por el agente con su supuesto versionado", async () => {
-    // El agente arranca en gate "shadow" por default (BP-016): en shadow, AgentRunner
-    // NUNCA ejecuta tools write/external/money (solo registra la intención) -- para que
-    // `registrar_evento_roi` (effect="write") se ejecute de verdad hace falta subir el
-    // gate a "propone" primero, con el mismo endpoint de configuración que usaría
-    // owner/gm desde /agentes en el frontend.
-    const cfgRes = await fixture.app.request(`/hoteles/${hotelId}/agentes/auditor_nocturno/config`, {
-      method: "PATCH",
-      headers: auth(ownerToken),
-      body: JSON.stringify({ gate: "propone" }),
-    });
-    expect(cfgRes.status).toBe(200);
-
-    const runRes = await fixture.app.request(`/hoteles/${hotelId}/agentes/auditor_nocturno/ejecutar`, {
-      method: "POST",
-      headers: auth(ownerToken),
-      body: JSON.stringify({ mensaje: "Cierre nocturno.", demo: true }),
-    });
-    expect(runRes.status).toBe(200);
+  it("expone los eventos de ROI registrados con su supuesto versionado", async () => {
+    // A1 (auditoria-2 agentico CRÍTICO): una demo SIEMPRE fuerza gate "shadow" (ver
+    // prueba dedicada más abajo), así que ya no sirve para poblar datos reales de ROI
+    // en esta prueba -- se siembra el evento directo en BD (lo que en producción
+    // insertaría `registrar_evento_roi` en una corrida REAL, no de demo) para probar
+    // exclusivamente el endpoint de lectura.
+    await fixture.engine.admin.query(
+      `insert into public.roi_event
+         (org_id, hotel_id, agent_name, tipo_evento, monto_estimado, metodo_contrafactual, confianza, supuesto_version, referencia_tipo)
+       values ($1, $2, 'auditor_nocturno', 'revenue_ajuste_nocturno_detectado', 42, 'metodo de prueba', 0.5, 'H17-v1', 'ninguna');`,
+      [fixture.seed.orgId, hotelId],
+    );
 
     const res = await fixture.app.request(`/hoteles/${hotelId}/roi`, { headers: auth(ownerToken) });
     expect(res.status).toBe(200);
@@ -158,5 +151,70 @@ describe("GET /hoteles/:hotelId/roi", () => {
     expect(body.eventos[0]!.estimado).toBe(true);
     expect(body.eventos[0]!.supuestoVersion).toBe("H17-v1");
     expect(body.sumaEstimadoUsd).toBeGreaterThan(0);
+  });
+});
+
+describe("A1 (auditoria-2 agentico CRÍTICO): la demo SIEMPRE corre en gate shadow, sin importar el gate real configurado", () => {
+  it("un hotel/agente en gate 'autopilot' que corre demo:true NO ejecuta ningún efecto real (ni tarea, ni ticket, ni ROI, ni fuera de servicio)", async () => {
+    // El GM sube el agente a autopilot (el paso normal para pasar a producción) --
+    // ANTES del fix, una demo en este estado ejecutaba las tools de verdad, incluida
+    // `crear_ticket_mantenimiento` con severity:"alta" (marca una habitación fuera de
+    // servicio) sobre el primer cuarto REAL del hotel.
+    const cfgRes = await fixture.app.request(`/hoteles/${hotelId}/agentes/recepcion_virtual/config`, {
+      method: "PATCH",
+      headers: auth(ownerToken),
+      body: JSON.stringify({ gate: "autopilot" }),
+    });
+    expect(cfgRes.status).toBe(200);
+
+    const { rows: roomsAntes } = await fixture.engine.admin.query<{ id: string; status: string }>(
+      "select id, status from public.room where hotel_id = $1;",
+      [hotelId],
+    );
+
+    const res = await fixture.app.request(`/hoteles/${hotelId}/agentes/recepcion_virtual/ejecutar`, {
+      method: "POST",
+      headers: auth(ownerToken),
+      body: JSON.stringify({ mensaje: "Huésped reporta AC descompuesto al hacer check-in.", demo: true }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { estado: string; simulado: boolean; gate: string };
+    expect(body.estado).toBe("completado");
+    expect(body.simulado).toBe(true);
+    // El gate EFECTIVO de esta corrida (lo que de verdad gobernó la ejecución) es
+    // "shadow", aunque el hotel esté configurado en "autopilot" -- la respuesta no
+    // debe aparentar que corrió con el gate real.
+    expect(body.gate).toBe("shadow");
+
+    // Ninguna habitación real cambió de estado (el hallazgo original: una demo podía
+    // marcar el primer cuarto real del hotel como fuera de servicio).
+    const { rows: roomsDespues } = await fixture.engine.admin.query<{ id: string; status: string }>(
+      "select id, status from public.room where hotel_id = $1;",
+      [hotelId],
+    );
+    expect(roomsDespues).toEqual(roomsAntes);
+    expect(roomsDespues.every((r) => r.status !== "fuera_de_servicio")).toBe(true);
+
+    // Ninguna tarea/ticket/mensaje/evento de ROI real se creó.
+    const { rows: tasks } = await fixture.engine.admin.query("select id from public.housekeeping_task where hotel_id = $1;", [hotelId]);
+    expect(tasks).toHaveLength(0);
+    const { rows: tickets } = await fixture.engine.admin.query("select id from public.maintenance_ticket where hotel_id = $1;", [hotelId]);
+    expect(tickets).toHaveLength(0);
+    const { rows: messages } = await fixture.engine.admin.query("select id from public.message where hotel_id = $1;", [hotelId]);
+    expect(messages).toHaveLength(0);
+    const { rows: roiEvents } = await fixture.engine.admin.query(
+      "select id from public.roi_event where hotel_id = $1 and agent_name = 'recepcion_virtual';",
+      [hotelId],
+    );
+    expect(roiEvents).toHaveLength(0);
+
+    // El propio `agent_run` guarda el gate EFECTIVO (shadow), no el gate real del
+    // hotel (autopilot) -- el registro de auditoría no debe sugerir que la corrida
+    // gobernó con el gate de producción.
+    const { rows: runs } = await fixture.engine.admin.query<{ gate: string }>(
+      "select gate from public.agent_run where hotel_id = $1 and agent_name = 'recepcion_virtual' order by created_at desc limit 1;",
+      [hotelId],
+    );
+    expect(runs[0]!.gate).toBe("shadow");
   });
 });
