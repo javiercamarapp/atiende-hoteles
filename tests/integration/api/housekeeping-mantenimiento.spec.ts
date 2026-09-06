@@ -3,6 +3,7 @@
 // mantenimiento incluida la autorización de gasto con doble confirmación de DOS actores
 // reales (owner + gm) a través de /aprobaciones.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { DEV_SEED_PASSWORD, hashPassword } from "@atiende-hoteles/db";
 import { createApiFixture, destroyApiFixture, loginAs, type ApiFixture } from "../../support/api-fixture.ts";
 
 describe("apps/api: housekeeping + mantenimiento + aprobaciones (integración real)", () => {
@@ -164,6 +165,69 @@ describe("apps/api: housekeeping + mantenimiento + aprobaciones (integración re
     );
     expect(rows[0]!.status).toBe("cerrado");
     expect(Number(rows[0]!.actual_cost)).toBe(4800);
+  });
+
+  it("backend ALTO/CRÍTICO: un segundo 'owner' NO puede completar la doble confirmación mintiendo su rol en el body -- el rol SIEMPRE sale de la sesión real (GOB-026)", async () => {
+    // Segundo owner REAL del mismo hotel (dos co-propietarios, escenario realista) --
+    // el hallazgo es que, ANTES del fix, un segundo actor con el MISMO rol real podía
+    // mandar {"role":"gm"} en el body y colarse como si fuera un segundo nivel
+    // jerárquico distinto, vaciando la exigencia de "dos ROLES distintos" de GOB-026.
+    const passwordHash = await hashPassword(DEV_SEED_PASSWORD);
+    const { rows: owner2Rows } = await fixture.engine.admin.query<{ id: string }>(
+      "insert into public.staff_user (email, full_name, password_hash) values ($1, 'Segundo Propietario', $2) returning id;",
+      [`owner2-role-test@example.com`, passwordHash],
+    );
+    await fixture.engine.admin.query(
+      "insert into public.hotel_staff (org_id, hotel_id, user_id, role) values ($1, $2, $3, 'owner');",
+      [fixture.seed.orgId, hotelId, owner2Rows[0]!.id],
+    );
+    const owner2Token = await loginAs(fixture.app, "owner2-role-test@example.com");
+
+    const crearTicket = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento`, {
+      method: "POST",
+      headers: { ...authOf(gmToken), "content-type": "application/json" },
+      body: JSON.stringify({ roomCode, title: "Filtro de agua dañado", description: "El filtro gotea.", severity: "media", estimatedCost: 3000 }),
+    });
+    const { ticketId } = (await crearTicket.json()) as { ticketId: string };
+    const cerrar = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/${ticketId}/cerrar-con-costo`, {
+      method: "POST",
+      headers: { ...authOf(ownerToken), "content-type": "application/json" },
+      body: JSON.stringify({ actualCost: 2900 }),
+    });
+    const { aprobacionId } = (await cerrar.json()) as { aprobacionId: string };
+
+    // Primer owner confirma con su rol real.
+    const primera = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/${aprobacionId}/decidir`, {
+      method: "POST",
+      headers: { ...authOf(ownerToken), "content-type": "application/json" },
+      body: JSON.stringify({ decision: "aprobar", textoExacto: "Autorizo." }),
+    });
+    expect(primera.status).toBe(200);
+    expect(((await primera.json()) as { estado: string }).estado).toBe("pendiente");
+
+    // "role" en el body es un campo desconocido ahora (`.strict()`) -- 400 explícito,
+    // nunca se usa en silencio para suplantar un rol distinto al real de sesión.
+    const intentoConRoleFalso = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/${aprobacionId}/decidir`, {
+      method: "POST",
+      headers: { ...authOf(owner2Token), "content-type": "application/json" },
+      body: JSON.stringify({ decision: "aprobar", textoExacto: "Autorizo.", role: "gm" }),
+    });
+    expect(intentoConRoleFalso.status).toBe(400);
+
+    // Sin mentir sobre el rol, el segundo owner (MISMO rol real que el primero) NO
+    // logra completar la doble confirmación -- GOB-026 exige un rol real distinto.
+    const segundaConRolReal = await fixture.app.request(`/hoteles/${hotelId}/aprobaciones/${aprobacionId}/decidir`, {
+      method: "POST",
+      headers: { ...authOf(owner2Token), "content-type": "application/json" },
+      body: JSON.stringify({ decision: "aprobar", textoExacto: "Autorizo." }),
+    });
+    expect(segundaConRolReal.status).toBe(409);
+
+    const { rows } = await fixture.engine.admin.query<{ status: string }>(
+      "select status from public.maintenance_ticket where id = $1;",
+      [ticketId],
+    );
+    expect(rows[0]!.status).not.toBe("cerrado"); // nunca se ejecutó
   });
 
   it("GET /aprobaciones lista y filtra por ?estado= (regresión: cast de enum agent_approval_status)", async () => {

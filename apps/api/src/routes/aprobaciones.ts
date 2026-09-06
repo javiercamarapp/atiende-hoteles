@@ -14,11 +14,18 @@ import { assertRole, authMiddleware, dbSession, requireHotelMembership } from ".
 import { ADMIN_ROLES } from "../domain/roles.ts";
 import type { AppDeps, HonoEnvBindings } from "../types.ts";
 
-const decidirSchema = z.object({
-  decision: z.enum(["aprobar", "rechazar"]),
-  role: z.string().trim().min(1).max(60).optional(),
-  textoExacto: z.string().trim().min(1).max(1000),
-});
+// backend ALTO (auditoria-2): `role` NUNCA se acepta del cliente -- GOB-026 exige DOS
+// ROLES DISTINTOS reales para la doble confirmación de dinero; si el cliente pudiera
+// mandar su propio `role`, dos personas con el MISMO rol real (p.ej. dos co-propietarios
+// "owner") podrían mentir sobre su rol y auto-aprobar un gasto grande sin la segunda
+// jerarquía real que la regla busca. El rol SIEMPRE sale de `c.get("hotelRole")`
+// (resuelto por `requireHotelMembership` desde `hotel_staff`, nunca del body).
+const decidirSchema = z
+  .object({
+    decision: z.enum(["aprobar", "rechazar"]),
+    textoExacto: z.string().trim().min(1).max(1000),
+  })
+  .strict();
 
 interface ApprovalRow {
   id: string;
@@ -136,7 +143,7 @@ export function aprobacionesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       hotelId,
       approvalId,
       actor: c.get("userId"),
-      role: body.role ?? c.get("hotelRole"),
+      role: c.get("hotelRole"),
       decision: body.decision,
       textoExacto: body.textoExacto,
       requestId: c.get("requestId"),
