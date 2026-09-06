@@ -41,3 +41,5 @@
 2026-09-06 07:00:02 cron=4fe17d3a evento=RECUPERACION_POR_CRON bucle_dinamico=muerto_por_429 (ScheduleWakeup bloqueado por clasificador) → reanudar H4 y rearmar
 2026-09-06 07:05:12 ciclo=17 evento=latido_dinamico(tick previo sobrevivió) H4=reanudado
 2026-09-06 07:29:39 ciclo=18 evento=H4_completado+merge_H9H11 verde(303u/38i/57a) despacho=fixBD(#30 main),H5(#31 wt),H6b(#32 wt)
+2026-09-06 07:30:59 ciclo=18 evento=modelos_verificados #30,#31,#32
+2026-09-06 07:54:31 ciclo=19 evento=fixBD_completo 4C cerrados despacho=H8(#33 main) en_curso=H5,H6b
