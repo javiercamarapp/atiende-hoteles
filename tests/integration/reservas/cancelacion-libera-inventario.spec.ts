@@ -38,11 +38,22 @@ describe("cancelación de reserva por staff libera inventario (REQ-RES-004)", ()
     await destroyApiFixture(fixture);
   });
 
-  it("cancela dentro de la ventana libre (sin penalización) y libera las 2 noches reservadas", async () => {
+  it("cancela dentro de la ventana libre (sin penalización), libera las 2 noches reservadas Y OTRA RESERVA PUEDE TOMAR ESA MISMA HABITACIÓN (auditoría-1 CRÍTICO)", async () => {
     // Un check-in bien adelante en el horizonte sembrado asegura >24h de anticipación
     // real desde "ahora" (free_until_hours=24 de la política sembrada).
     const checkIn = seededDates[10]!;
     const checkOut = nightAfter(checkIn, 2);
+
+    // Deja solo 1 habitación de cupo en estas 2 noches: así, si la cancelación NO
+    // libera de verdad el inventario (el bug original), la SEGUNDA reserva de abajo
+    // recibiría 409 "sin_disponibilidad" en vez de 201 -- la prueba deja de poder
+    // pasar por casualidad (con 5 habitaciones sembradas, una fuga de inventario podría
+    // pasar desapercibida durante mucho tiempo).
+    await fixture.engine.admin.query(
+      "update public.availability set total_rooms = 1 where hotel_id = $1 and room_type_id = $2 and date in ($3, $4);",
+      [hotelId, roomTypeId, checkIn, nightAfter(checkIn, 1)],
+    );
+
     const creada = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
       headers: { authorization: `Bearer ${gmToken}`, "content-type": "application/json", "idempotency-key": randomUUID() },
@@ -56,6 +67,15 @@ describe("cancelación de reserva por staff libera inventario (REQ-RES-004)", ()
       [hotelId, roomTypeId, checkIn, nightAfter(checkIn, 1)],
     );
     expect(antes.every((r) => r.booked_rooms === 1)).toBe(true);
+
+    // Con total_rooms=1 ya ocupado, un segundo intento de reservar la misma
+    // habitación/noches debe rechazarse (todavía no se ha cancelado nada).
+    const segundoIntentoAntes = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${gmToken}`, "content-type": "application/json", "idempotency-key": randomUUID() },
+      body: JSON.stringify({ roomTypeId, checkInDate: checkIn, checkOutDate: checkOut }),
+    });
+    expect(segundoIntentoAntes.status).toBe(409);
 
     const cancelada = await fixture.app.request(`/hoteles/${hotelId}/reservas/${id}/cancelar`, {
       method: "POST",
@@ -72,6 +92,15 @@ describe("cancelación de reserva por staff libera inventario (REQ-RES-004)", ()
       [hotelId, roomTypeId, checkIn, nightAfter(checkIn, 1)],
     );
     expect(despues.every((r) => r.booked_rooms === 0)).toBe(true);
+
+    // La prueba real que pidió la auditoría: OTRA reserva puede tomar la misma
+    // habitación/noches ahora que la cancelación liberó el inventario.
+    const otraReserva = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${gmToken}`, "content-type": "application/json", "idempotency-key": randomUUID() },
+      body: JSON.stringify({ roomTypeId, checkInDate: checkIn, checkOutDate: checkOut }),
+    });
+    expect(otraReserva.status).toBe(201);
   });
 
   it("una reserva ya cancelada no admite cancelarse de nuevo (409)", async () => {
