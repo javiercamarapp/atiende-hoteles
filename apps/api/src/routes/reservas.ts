@@ -361,6 +361,13 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       folioId = existing[0]?.id ?? null;
     }
 
+    // REQ-REC-011/REQ-SEG-004 · arranca el reloj de retención de la bóveda de
+    // identidad al checkout (idempotente: set_identity_checkout, migración 0051, solo
+    // toca filas con checkout_at todavía nulo).
+    if (body.toStatus === "check_out") {
+      await db.query("select public.set_identity_checkout($1);", [reservationId]);
+    }
+
     return c.json({ id: rows[0]!.id, estado: rows[0]!.status, folioId });
   });
 

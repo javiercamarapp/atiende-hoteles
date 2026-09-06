@@ -50,6 +50,13 @@ export {
   type FolioCloseResult,
 } from "./folioEngine.ts";
 export {
+  computeMrzCheckDigit,
+  parsePassportMrz,
+  buildPassportMrz,
+  InvalidMrzError,
+  type ParsedPassportMrz,
+} from "./mrz.ts";
+export {
   computeIva,
   computeIsh,
   computeDsa,
