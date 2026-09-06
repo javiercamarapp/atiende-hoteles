@@ -1,0 +1,9 @@
+{
+  "name": "atiende-hoteles",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*", "packages/mcp-servers/*"],
+  "engines": { "node": ">=22" },
+  "scripts": {}
+}

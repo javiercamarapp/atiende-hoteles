@@ -27,3 +27,6 @@ Formato: requisito · acción · archivos/commit · prueba · resultado · sigui
 **Pendiente (no ejecutable sin el usuario):** TODO el código (H1–H11) — el encargo limita el trabajo a requisitos/investigación mientras la carpeta destino no exista (B-001). Decisiones expuestas D-001..D-004.
 **Motivo de parada:** bloqueo externo B-001 (2 intentos documentados, búsqueda local agotada) sin trabajo independiente restante. Cron f24bfd35 eliminado; /loop detenido.
 **Reanudar:** confirmar ruta destino → `mv atiende-hoteles-staging <ruta>/atiende-hoteles` → `claude --model fable` → `/loop` + "reanuda desde docs/PROGRESO.md; hito H1 de docs/ARQUITECTURA.md; solo agentes model=sonnet".
+
+## 2026-09-06
+- Reanudación · usuario: "continua" · B-001 reclasificado a reubicación pendiente; D-001..D-004 con defaults documentados · cron 4fe17d3a · siguiente: H1 (db+scaffold) en main y H3 (frontend) en worktree, ambos Sonnet.

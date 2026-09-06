@@ -1,6 +1,7 @@
 # Bloqueos
 
-## B-001 — Carpeta "empresas agénticas" no localizada (ABIERTO)
+## B-001 — Carpeta "empresas agénticas" no localizada (RECLASIFICADO 2026-09-06: tarea de reubicación pendiente, ya no bloquea)
+- **2026-09-06:** el usuario respondió "continua" al informe de parada. Se interpreta como decisión de construir en el repo provisional; la reubicación se hará con `mv` cuando indique la ruta (sin reescribir historia). NO se crea ninguna carpeta llamada "empresas agénticas".
 - **Fecha:** 2026-09-05
 - **Qué se buscó (evidencia, sin inventar):**
   - `find ~ -maxdepth 4 -type d -iname "*empresas*agent*"` y variantes (`agentic`, `agéntica`, `EmpresasAgenticas`) → sin resultados.
@@ -19,7 +20,7 @@
 - Hay red npm (`@electric-sql/pglite@0.5.8`, `supabase@2.116.0` resolvibles; `vitest@4.1.11` resuelto en instalación real — ver nota bajo este bloqueo). Chrome 152 disponible para render headless. `gh` autenticado (javiercamarapp).
 - Decisión de stack tomada por el agente de arquitectura (Sonnet) y documentada en `docs/ARQUITECTURA.md` ADR-003: **solo para el entorno local de desarrollo/pruebas de esta máquina** (PGlite + `embedded-postgres`), sin tocar la decisión de producción — ver D-001 abajo. No se instalan paquetes de sistema sin autorización.
 
-## D-001 — Decisión pendiente del usuario: ¿producción sigue sobre Supabase gestionado, o se evalúa Postgres autogestionado? (EXPUESTA, no bloquea trabajo local)
+## D-001 — [2026-09-06 default aplicado: Supabase gestionado sigue siendo destino de producción; Postgres embebido solo local (ADR-003)] — Decisión pendiente del usuario: ¿producción sigue sobre Supabase gestionado, o se evalúa Postgres autogestionado? (EXPUESTA, no bloquea trabajo local)
 - **Fecha:** 2026-09-05
 - **Qué dice cada fuente:** H20 (`docs/referencia/03-investigacion-H12-H21.md:151`) fija Supabase multi-tenant (Postgres cloud gestionado + RLS + GoTrue + PostgREST) como plataforma de datos de **producción**. `REQ-GOB-012`/`REQ-AGT-011` (fuentes GOB-051/LLM-022) fijan que cualquier cambio de proveedor de BD requiere decisión reservada al fundador, registrada antes de mergear/ejecutar.
 - **Qué se hizo en este repo:** `docs/ARQUITECTURA.md` ADR-003 usa Postgres local (PGlite para pruebas unitarias, `embedded-postgres` para integración/concurrencia) **exclusivamente como entorno de desarrollo y pruebas en esta máquina**, porque Docker/Supabase CLI no funcionan aquí (B-002). El esquema y las políticas RLS se mantienen compatibles con Supabase (`auth.uid()`/claims JWT) para poder apuntar a un proyecto Supabase real sin reescribir RLS. **No se decidió, ni se propone aquí, abandonar Supabase en producción.**
@@ -27,7 +28,7 @@
 - **Acción tomada mientras tanto:** ninguna decisión de producción se toma por defecto; el trabajo de esquema/RLS/migraciones continúa en el entorno local compatible, sin cerrar la opción de Supabase remoto.
 - **Intentos:** 0 (no es un bloqueo técnico; es una decisión reservada al fundador que se expone aquí para que quede registrada y visible, no para detener el ciclo de construcción local).
 
-## D-002 — Decisión pendiente del usuario: confirmar la Opción C (Anthropic Sonnet 5/Haiku 4.5/Opus 5) como decisión LLM definitiva, o mantenerla como default reversible (EXPUESTA, no bloquea trabajo)
+## D-002 — [2026-09-06 default aplicado: Opción C como default reversible detrás de variables de entorno (ADR-006)] — Decisión pendiente del usuario: confirmar la Opción C (Anthropic Sonnet 5/Haiku 4.5/Opus 5) como decisión LLM definitiva, o mantenerla como default reversible (EXPUESTA, no bloquea trabajo)
 - **Fecha:** 2026-09-05
 - **Qué dice la fuente:** `DECISIONLLMHOTELES` (contradicción #6 de `docs/REQUISITOS.md:410`) recomienda la Opción C como estándar de producto (LLM-008) pero la declara explícitamente "propuesta para decisión humana" (decisión #7 del catálogo externo `DECISIONS-HUMANAS.pdf`, citado en `docs/referencia/01-blueprint-y-decision-llm.md:370,396` — ese PDF no existe como archivo local `docs/DECISIONS-HUMANAS.md` en este repositorio, solo en la carpeta de fuentes de referencia; este bloqueo D-002 es el registro local equivalente); mientras no haya decisión del fundador, el loop de construcción sigue con esa opción por defecto.
 - **Qué se hizo en este repo:** `docs/ARQUITECTURA.md` ADR-006 y la sección "Resolución de las 10 contradicciones" (punto 6) documentan que se construye con la Opción C como default, sin tratarla como decisión cerrada; un cambio de proveedor de modelo sigue reservado al fundador (`REQ-AGT-011`/`REQ-GOB-012`).
@@ -35,7 +36,7 @@
 - **Acción tomada mientras tanto:** se sigue construyendo sobre la Opción C sin cerrar la puerta a un cambio; ningún commit trata esta elección como definitiva.
 - **Intentos:** 0 (decisión reservada al fundador, no un bloqueo técnico).
 
-## D-003 — Decisión pendiente del usuario: umbrales y contenido de los protocolos de huracán/sargazo (EXPUESTA, no bloquea trabajo)
+## D-003 — [2026-09-06 default aplicado: umbrales como configuración por hotel con valores placeholder marcados 'sin validar' en UI] — Decisión pendiente del usuario: umbrales y contenido de los protocolos de huracán/sargazo (EXPUESTA, no bloquea trabajo)
 - **Fecha:** 2026-09-05
 - **Qué dice la fuente:** GOB-052 reserva explícitamente al fundador "protocolos de huracán (umbrales de aviso, mensajes masivos)"; `REQ-HUE-025`/`REQ-HK-017`/`REQ-REC-013` fijan las ventanas de fase (72/48/24h) pero no los umbrales exactos de activación ni el contenido/aprobación de los mensajes masivos de la fase crítica.
 - **Qué se hizo en este repo:** `docs/ARQUITECTURA.md` "Resolución de las 10 contradicciones" (punto 2) resuelve el mecanismo técnico de reconciliación de la copia local cifrada con Supabase (mismo patrón de Outbox/command bus idempotente que los conectores externos), dejando explícitamente fuera de esa resolución los umbrales/contenido del protocolo en sí.
@@ -43,7 +44,7 @@
 - **Acción tomada mientras tanto:** el mecanismo técnico de sincronización offline se construye igual; solo la política de umbrales/contenido queda pendiente.
 - **Intentos:** 0 (decisión reservada al fundador, no un bloqueo técnico).
 
-## D-004 — Decisión pendiente del usuario: integración de cerraduras y módulo "hotel sin recepción nocturna" (EXPUESTA, no bloquea trabajo)
+## D-004 — [2026-09-06 default aplicado: LockPort con adaptador simulado etiquetado; módulo 'sin recepción nocturna' fuera de alcance hasta decisión] — Decisión pendiente del usuario: integración de cerraduras y módulo "hotel sin recepción nocturna" (EXPUESTA, no bloquea trabajo)
 - **Fecha:** 2026-09-05
 - **Qué dice la fuente:** GOB-052 reserva al fundador, como dos ítems separados, "control físico de AC/cerraduras/emisión de llaves" y el modo "hotel sin recepción nocturna". `REQ-GOB-018` ya fija que ambos son de fase posterior, no del alcance inicial.
 - **Qué se hizo en este repo:** ADR-011 construye el contrato `LockPort` con la garantía de autenticación fuerte + evento del PMS antes de emitir una llave, y su adaptador simulado, sin activar ninguna integración real de cerraduras ni el módulo "sin recepción nocturna". La contradicción #9 de `docs/REQUISITOS.md` (H07-039/BP-094 vs. GOB-052/BP-066/BP-092) se deja expresamente sin resolver en `docs/ARQUITECTURA.md`, remitida aquí.
