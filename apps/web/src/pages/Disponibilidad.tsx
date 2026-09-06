@@ -52,6 +52,14 @@ export function Disponibilidad() {
 
   const totalDisponibles = resumenQuery.data?.reduce((acc, f) => acc + f.disponibles, 0);
 
+  // auditoria-2/frontend [MEDIO]: `listarDisponibilidad` → GET /hoteles/:hotelId/disponibilidad
+  // agrega `room_type`/`availability` PROPIOS del hotel (apps/api/src/routes/disponibilidad.ts,
+  // comentario del propio archivo) -- nunca dependió de un PMS externo. Mismo texto
+  // "Pendiente de credenciales del PMS" ya corregido en Resumen.tsx por la misma razón
+  // (ver comentario ahí): con la API caída/sin responder el motivo real es "sin
+  // conexión con el API", nunca una integración pendiente.
+  const sinDatoStatCard = !hotelActivoId ? "Sin hotel seleccionado." : resumenQuery.isError ? "Sin conexión con el API." : "Sin datos todavía.";
+
   return (
     <div>
       <PageHeader titulo="Disponibilidad" descripcion="Inventario y tarifa por tipo de habitación, noche a noche." />
@@ -61,7 +69,7 @@ export function Disponibilidad() {
           icon={BedDouble}
           label="Habitaciones disponibles hoy"
           value={totalDisponibles != null ? String(totalDisponibles) : "—"}
-          sinDato={totalDisponibles == null ? "Pendiente de credenciales del PMS." : undefined}
+          sinDato={totalDisponibles == null ? sinDatoStatCard : undefined}
         />
       </div>
 
