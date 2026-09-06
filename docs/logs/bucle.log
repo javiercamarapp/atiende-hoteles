@@ -33,3 +33,4 @@
 2026-09-06 06:03:47 ciclo=13 evento=auditoria-1 tool-calling=3/10(2C/3A) backend=5/10(2C/3A) → críticos de reservas enviados al agente H4 (dueño del código en curso)
 2026-09-06 06:04:19 ciclo=13 evento=mensaje_a_H4 con C1,C2,A1,A2 de backend; fix agent-core diferido hasta informe agéntico (misma carpeta)
 2026-09-06 06:04:33 ciclo=13 evento=auditoria-1 pruebas=5/10(1C/2A) crítico_de_monto→H4
+2026-09-06 06:06:02 ciclo=13 evento=auditoria-1 datos=3/10(2C/1A) falta=agentico
