@@ -30,6 +30,11 @@ export interface AgentRunnerOptions {
   readonly systemPrompt: string;
   readonly modelSlug: string;
   readonly temperature: number;
+  /** MEDIO (auditoria-2 agentico): REQ-AGT-005/REQ-AGT-016 -- effort del modelo para
+   * esta corrida, típicamente `roleParamsForChannel(role, canal).effort` (roles.ts)
+   * resuelto por el llamador (apps/api) desde el canal real de la conversación
+   * (voz/texto). Se reenvía tal cual a `LlmProvider.complete()` en cada llamada. */
+  readonly effort?: "low" | "medium" | "high";
   /** Techo duro de rondas (loop-guard). */
   readonly maxSteps: number;
   readonly maxOutputTokensPerCall?: number;
@@ -171,6 +176,7 @@ export class AgentRunner {
           messages,
           toolNames: opts.tools.list().map((tool) => tool.name),
           temperature: opts.temperature,
+          effort: opts.effort,
           maxOutputTokens: opts.maxOutputTokensPerCall ?? 1024,
           // REQ-AGT-004 / aud-1 agentico.md ALTO: nunca se le pide al proveedor que
           // decida en paralelo dos (o mas) tool calls en la misma respuesta.

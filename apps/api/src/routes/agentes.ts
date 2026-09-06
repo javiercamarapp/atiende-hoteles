@@ -35,7 +35,7 @@ import {
   EnvProvider,
   FakeProvider,
   PostgresApprovalQueue,
-  ROLE_PARAMS,
+  roleParamsForChannel,
   ToolRegistry,
   buildToolContext,
   createHousekeepingTaskTool,
@@ -439,6 +439,14 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       createRunBudget({ maxUsd: restante, maxMs: 60_000, maxTokens: 200_000 }),
     );
 
+    // MEDIO (auditoria-2 agentico): REQ-AGT-005/REQ-AGT-016 (TTFT <600ms p50 en voz) --
+    // `roleParamsForChannel()` (agent-core roles.ts) ya calculaba el effort correcto
+    // por canal desde la ronda 1, pero ningún código de apps/api lo llamaba: el único
+    // punto real de construcción de AgentRunner seguía usando `ROLE_PARAMS[def.role]`
+    // a secas, ignorando `body.canal`. Ahora se resuelve aquí y se reenvía al
+    // proveedor (provider.ts `LlmCompleteParams.effort`, agregado en este mismo fix).
+    const roleParams = roleParamsForChannel(def.role, body.canal);
+
     const runner = new AgentRunner({
       agentName: def.name,
       provider,
@@ -446,7 +454,8 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       approvalQueue,
       systemPrompt: def.systemPrompt,
       modelSlug,
-      temperature: ROLE_PARAMS[def.role].temperature,
+      temperature: roleParams.temperature,
+      effort: roleParams.effort,
       maxSteps: def.maxSteps,
       maxOutputTokensPerCall: def.maxOutputTokensPerCall,
       pricing,

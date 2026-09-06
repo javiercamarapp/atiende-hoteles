@@ -573,6 +573,21 @@ describe("AgentRunner", () => {
     expect(completeSpy).toHaveBeenCalledWith(expect.objectContaining({ disableParallelToolUse: true }));
   });
 
+  it("MEDIO (auditoria-2 agentico): AgentRunnerOptions.effort SÍ llega al proveedor en cada llamada (antes, LlmCompleteParams no tenía dónde recibirlo)", async () => {
+    const completeSpy = vi.fn(async () => ({
+      modelSlug: "claude-sonnet-5",
+      text: "listo",
+      toolCalls: [],
+      usage: { inputTokens: 1, outputTokens: 1 },
+      truncated: false,
+      stopReason: "end_turn" as const,
+    }));
+    const provider = { id: "fake", isAvailable: () => true, complete: completeSpy };
+    const runner = new AgentRunner(baseOptions({ provider, effort: "low" }));
+    await runner.run(ctxFor(), "hola");
+    expect(completeSpy).toHaveBeenCalledWith(expect.objectContaining({ effort: "low" }));
+  });
+
   it("el presupuesto se comprueba tambien DESPUES de contabilizar el costo real de la " +
     "ronda, ANTES de ejecutar cualquier tool de esa misma ronda (aud-1 agentico.md " +
     "MEDIO: antes solo se comprobaba al inicio de la ronda siguiente)", async () => {
