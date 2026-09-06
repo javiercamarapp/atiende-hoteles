@@ -1,0 +1,134 @@
+# Inventario de REQ P0 sin dependencia externa pendientes de cierre
+
+Generado sobre `docs/REQUISITOS.md` (matriz de requisitos) y `docs/ACEPTACION.md`
+(estado/evidencia real) el 2026-09-06, en el worktree aislado de este agente
+(migraciones propias 0050-0059). Filtro aplicado: `Prioridad = P0` **y**
+`Dependencia externa = ninguna` (columna de REQUISITOS.md) **y** `Estado` en
+ACEPTACION.md distinto de `hecho`/`**hecho**` (se aceptan `parcial`/`pendiente` como
+"no completo"). Se excluye explícitamente:
+
+- **Todo `REQ-AGT-*`** y **`REQ-REV-018`/`REQ-GOB-016`/`REQ-GOB-019`** (ROIEvent/línea
+  base firmada/catálogo de agentes): pertenecen al frente H7 (`agentes.ts`/`roi.ts`,
+  migraciones 0024-0029), que trabaja en `main` en paralelo — no se duplica ese trabajo
+  desde este worktree.
+- Requisitos cuya columna dice `ninguna` pero que en la práctica **no son
+  verificables sin una credencial/servicio real** (justificado caso por caso en la
+  sección 2, nunca se marcan "cerrados" con un mock).
+
+Orden: **riesgo de seguridad/dinero primero**, luego gobierno/proceso, luego
+producto/UX, luego observabilidad/estructura.
+
+## 1. Lista ordenada por riesgo
+
+### 1.1 Seguridad / identidad / PII (más alto riesgo)
+
+| ID | Estado (ACEPTACION.md) | Criterio de aceptación (resumen) | Acción en este pase |
+|---|---|---|---|
+| REQ-TEN-004 | pendiente | RPC `SECURITY DEFINER` recalcula precio/valor en servidor para escritura anónima; cliente nunca fija el monto. | **Cerrado en este pase** (ver §3). |
+| REQ-REC-011 | pendiente | Imagen de identificación borrada tras OCR; datos cifrados en reposo; retención ≤30 días con purga automática verificada; `identity_ref` expone solo campos mínimos. | **Cerrado en este pase** (ver §3). |
+| REQ-SEG-014 | pendiente | Bóveda de identidad aislada (llaves por tenant, doble control, bitácora inmutable); resto de módulos solo ve campos mínimos vía `identity_ref`. | **Cerrado en este pase** (comparte implementación con REQ-REC-011, ver §3). |
+| REQ-SEG-004 | pendiente | Retención ≤30 días post-checkout de copias de identificación con purga automática (job programado). | **Cerrado en este pase** (mismo job de purga que REQ-REC-011). |
+| REQ-HUE-022 / REQ-SEG-003 | pendiente | Sin reconocimiento facial en check-in; dato biométrico exige consentimiento explícito y diferenciado del aviso general. | Backlog — requiere el flujo de check-in online completo (UI de captura) con opción de consentimiento diferenciado; el formulario de check-in de este pase (REQ-RES-016) no captura ningún dato biométrico (solo foto de documento para OCR, que se borra tras extraer campos), por lo que el requisito de "0 reconocimiento facial" ya se cumple estructuralmente, pero el consentimiento diferenciado explícito en UI queda pendiente de una pantalla dedicada — no se cierra formalmente esta vez. |
+| REQ-HUE-023 | pendiente | Guardrails conversacionales (no revelar habitación/presencia, OTP en cambio de contacto, escalar menor no acompañado, 0 notas discriminatorias). | Backlog — depende del agente conversacional (agent-core) integrado a WhatsApp/voz con credenciales; no implementable de forma verificable sin ese canal real. Fuera del alcance de este pase. |
+| REQ-SEG-001 | pendiente | Aviso de Privacidad LFPDPPP publicado y accesible desde el primer contacto, con cláusula de transferencia internacional. | Backlog — es contenido legal/negocio (texto del aviso) que requiere aprobación del fundador antes de publicarse como definitivo (catálogo de decisiones reservadas, REQ-GOB-012); no se redacta un aviso legal desde este pase sin esa aprobación. |
+| REQ-SEG-007 | pendiente | Ninguna campaña de marketing sin opt-in explícito registrado; todo mensaje de marketing incluye opción de baja. | Backlog — se solapa con REQ-HUE-020/021 (mensajería WhatsApp real); implementable solo cuando exista el módulo de campañas de CRM, aún no construido. |
+| REQ-SEG-012 | pendiente | Nunca persistir PAN/CVV/e.firma/tokens/contraseñas en código, logs, fixtures, prompts o commits; CI escanea secretos en cada PR. | Backlog — requiere agregar un scanner de secretos al pipeline de CI (fuera de `apps/api`/`apps/web`, es config de repositorio); no se tocó en este pase por enfoque en app/dominio, queda documentado como pendiente real. |
+| REQ-REC-012 | parcial (alcance distinto) | Doble verificación de identidad antes de cargo a folio, con límites por reserva y alerta a front desk. | Backlog — ACEPTACION.md ya registra un alcance parcial construido en H5 (autorización por rol/umbral); la verificación "apellido+habitación o token de check-in" específica del huésped sin cuenta queda pendiente de una superficie propia — no se tocó en este pase. |
+
+### 1.2 Dinero / fiscal / revenue
+
+| ID | Estado | Criterio de aceptación (resumen) | Acción en este pase |
+|---|---|---|---|
+| REQ-RES-022 | pendiente | `grep` confirma 0 conectividad OTA propia fuera del `PmsPort`/channel manager. | **Cerrado en este pase** (ver §3). |
+| REQ-REV-008 | pendiente | `grep` confirma 0 conectividad OTA propia; orden de prioridad de conectores (Cloudbeds→Mews→SiteMinder→OHIP) reflejado en el registro. | **Cerrado en este pase** (ver §3). |
+| REQ-REV-013 (cron) | hecho (independiente del PMS), cron pendiente | Night audit propio, con lock por hotel e idempotencia, ejecutable también por CLI/planificador (no solo bajo demanda vía HTTP). | **Cerrado en este pase** (ver §3): se agrega el planificador en proceso + CLI; la lógica de negocio del night audit ya estaba hecha y probada desde H5. |
+| REQ-BO-010 | pendiente | P&L USALI 12ª ed., forecast 90 días, punto de equilibrio dinámico, owner's report, proyección de caja 13 semanas. | Backlog — requiere el motor de reporting financiero completo (fuera de alcance realista de una tarea entre varias en este pase); no se implementa parcialmente para evitar un P&L "de mentiras" con datos incompletos. |
+| REQ-BO-014 | pendiente | GM Copilot sin poderes de ejecución propios; toda acción de dinero requiere aprobación humana explícita por WhatsApp. | Backlog — depende de que exista el "GM Copilot" (aún no construido) y del canal WhatsApp real; el patrón de aprobación humana ya existe para otras superficies (`agent_approval`, migración 0042) y se reutilizaría cuando el copiloto exista. |
+| REQ-BO-024 | pendiente | Checador/registro de asistencia inalterable exportable a STPS, cruzado contra horario programado. | Backlog — módulo de RR.HH./nómina no construido todavía; no hay tabla de horarios/turnos sobre la cual cruzar asistencia. |
+| REQ-BO-025 | pendiente | Ninguna decisión de contratación/despido/compensación automática; requiere aprobación humana. | Backlog — regla de proceso sin superficie de producto propia todavía (no existe módulo de RR.HH.); se deja documentada, no hay código que hoy pueda violarla porque no existe el módulo. |
+| REQ-BO-035 | pendiente | "Ocupación de equilibrio del mes" recalculada mensualmente con P&L real, publicada en Daily Flash. | Backlog — depende de REQ-BO-010 (P&L real) y del Daily Flash (REQ-BO-011, requiere WhatsApp real). |
+| REQ-REV-003 | pendiente | Motor de revenue en modo "shadow" ≥90 días con backtesting walk-forward antes de autopilot. | Backlog — el motor de revenue dinámico (pricing automático) no está construido; este requisito gobierna su fase de arranque, no aplica todavía. |
+| REQ-CRM-005 | pendiente | Suprimir solicitud de reseña pública si hay ticket de incidente abierto; nunca gating ni incentivos. | Backlog — depende del módulo CRM/reseñas (no construido) y de integraciones de reseñas de terceros (dependencia real pese a decir "ninguna" en la columna: el envío de la *solicitud* de reseña usa WhatsApp/email real). |
+
+### 1.3 Gobierno / proceso de construcción
+
+| ID | Estado | Criterio de aceptación (resumen) | Acción en este pase |
+|---|---|---|---|
+| REQ-GOB-007 | pendiente | Backlog modelado como máquina de estados `draft→ready→doing→review→done` + laterales, un `gate` declarado. | **Cerrado en este pase** (ver §3). |
+| REQ-GOB-009 | pendiente | 0 comandos destructivos/productivos (`supabase db push`, `git push --force`) invocados por el agente fuera de CI/fundador. | **Cerrado en este pase** (ver §3). |
+| REQ-GOB-012 | pendiente | Catálogo cerrado de decisiones reservadas al fundador, con aprobación explícita registrada antes de mergear/ejecutar en esos dominios. | Backlog — es un catálogo de gobernanza (lista + proceso de aprobación), no una superficie de producto; ya vive como prosa en REQUISITOS.md §3.16 y en BLOQUEOS.md; formalizarlo como "registro de aprobaciones" verificable en código es un proyecto propio, fuera del alcance de este pase. |
+| REQ-GOB-013 | pendiente | PMS fuente de verdad; ningún módulo de negocio escribe en `pms_mirror`; ninguna regla automática invoca cerraduras directamente. | Backlog — `pms_mirror` todavía no existe como tabla (se crea en H4/H9 real con conector PMS certificado, per ACEPTACION.md H1); la regla "0 invocación directa a cerraduras" ya se cumple hoy (no existe ningún código de cerraduras en el repo), pero no hay un check estático que lo congele — se deja para cuando exista el primer conector de cerraduras real. |
+| REQ-QA-002 | pendiente | Nunca comentar/borrar/`skip` una prueba existente. | Backlog — regla de proceso sin artefacto de código propio verificable de forma automática sin acoplarse a git history; se sigue por convención en este repo (ningún `.skip`/`.only` encontrado, ver §3 compuertas). |
+| REQ-QA-003 / REQ-QA-004 / REQ-QA-005 | pendiente | Gates `connector`/`money`/`physical` con contract tests/pruebas específicas antes de mergear. | Backlog — requiere un mecanismo de CI que lea el `gate` declarado de una tarea (ligado a REQ-GOB-007, que si se cierra en este pase) y dispare la suite correspondiente; el runner de gates en CI es trabajo adicional no incluido aquí. |
+| REQ-QA-009 | parcial | E2E de recorridos esenciales (reserva, check-in, ticket, checkout con CFDI) + adversariales de aislamiento. | Backlog (parcial ya existente) — el check-in online E2E de este pase (REQ-RES-016) añade cobertura nueva; el resto de recorridos ya tiene cobertura parcial documentada en ACEPTACION.md. |
+| REQ-OBS-003 / REQ-OBS-004 / REQ-OBS-005 | pendiente | Auditoría periódica automatizada del backlog con veredicto fechado; checklist de auditoría de release. | Backlog — requiere que exista primero el backlog como máquina de estados con archivos reales por tarea (REQ-GOB-007 cierra la máquina de estados en abstracto en este pase, pero migrar el proceso operativo de "tareas reales como archivos" es un cambio de flujo de trabajo del equipo, no solo código). |
+| REQ-OBS-010 | pendiente | Cada tarea del backlog se cierra solo con evidencia guardada en un directorio por tarea. | Backlog — mismo razonamiento que OBS-003/004/005: ya se practica informalmente (`docs/logs/*.log` por tarea en este propio pase), falta el mecanismo que lo haga obligatorio. |
+| REQ-GOB-001..006 | pendiente | Selección de tarea siguiente del backlog, estudio previo, `blocked` si falta criterio, scope acotado, cierre con commit+ADR, 3 intentos→`blocked`. | Backlog — son reglas de proceso que este propio agente sigue por convención (`docs/AGENTES.md`, este mismo documento), pero no tienen hoy una superficie de código que las aplique mecánicamente porque el backlog-como-archivos (REQ-GOB-007) recién se modela en este pase; automatizar 001-006 sobre esa máquina de estados es trabajo posterior. |
+
+### 1.4 Producto / UX
+
+| ID | Estado | Criterio de aceptación (resumen) | Acción en este pase |
+|---|---|---|---|
+| REQ-RES-016 | pendiente | Check-in online (pre-llegada): datos, foto+OCR, firma, pago/garantía, ETA, RFC, vía WhatsApp Flow cifrado o formulario web de un solo uso; nunca por chat libre. | **Cerrado en este pase** (ver §3, alcance: formulario web de un solo uso — el WhatsApp Flow requiere credenciales reales de Meta y se documenta como no cerrable sin ellas). |
+| REQ-UX-004 | pendiente | Cada línea de cobro variable del panel del dueño enlaza a su reporte de ahorro/valor (`roi_event`). | **Cerrado en este pase, con estado vacío honesto** (ver §3): la fuente de datos real (`roi_event`, propiedad de H7) todavía no tiene filas en este entorno — la pantalla muestra el enlace cuando existe evidencia y un estado vacío explícito cuando no, nunca un dato simulado. |
+| REQ-UX-005 | pendiente | Panel del gerente actualiza conocimiento local (sargazo/clima/playa/ferry/eventos) reflejado en <30 s en el agente. | **Cerrado en este pase, con estado vacío honesto** (ver §3): se implementa la fuente de datos real (tabla + API) y la pantalla de edición; la medición end-to-end de "<30 s reflejado en el agente conversacional" no es verificable todavía porque el agente conversacional de WhatsApp/voz no existe en este repo — se prueba la latencia de lectura de la fuente de datos (que sí es real), documentado explícitamente como el límite de esta verificación. |
+| REQ-UX-006 | pendiente | Aprobaciones operativas del gerente ejecutables por botón desde WhatsApp, sin acceso al panel web. | Backlog — depende de canal WhatsApp real con botones interactivos (credencial Meta); el backend de aprobaciones (`agent_approval`, migración 0042) ya existe y es channel-agnostic, pero "ejecutable **desde WhatsApp**" específicamente no es verificable sin ese canal. Se documenta como bloqueado por credencial real, no se simula. |
+| REQ-UX-001 | pendiente | Paridad visual completa con el frontend de Restaurantes (logo, tipografía, sidebar, estructura). | Backlog — es un rediseño integral de `apps/web` fuera del alcance de una tarea entre varias de este pase (alto riesgo de romper páginas existentes sin una revisión visual dedicada); no se toca aquí. |
+| REQ-UX-002 | pendiente | Toda pantalla con estados vacíos honestos y errores accionables. | Backlog salvo lo cubierto por las nuevas pantallas de REQ-UX-004/005 (que sí cumplen este criterio) — auditar **todas** las pantallas existentes de `apps/web` es un proyecto de UX propio, no cabe en este pase. |
+| REQ-UX-003 | pendiente | Accesibilidad básica + experiencia móvil funcional en pantallas operativas del personal. | Backlog — mismo razonamiento que UX-001/002: auditoría de accesibilidad de toda la PWA de personal es un proyecto propio. |
+| REQ-RES-001 | pendiente | Cotizar/confirmar 24/7 en ≥5 canales (WhatsApp, web chat, voz, email, Instagram) con precio total desde la primera pantalla. | Backlog — el canal "web chat"/API de cotización ya existe (`routes/quotes.ts`, REQ-REV-001 hecho); los otros 4 canales (WhatsApp, voz, email, Instagram) requieren credenciales reales de terceros pese a que la columna diga "ninguna" — se documenta aquí como la justificación de por qué NO se cierra: la dependencia real está oculta en "el canal", no en el cálculo de precio. |
+| REQ-HUE-005 / 006 / 009 / 014 / 016 / 017 / 021 | pendiente | Comportamientos del agente conversacional de WhatsApp/voz (transferencia a humano, disclosure, guardrails de voz, tickets desde mensaje, encuestas de pulso/NPS, diferenciación transaccional/marketing). | Backlog — todos requieren el agente conversacional de WhatsApp/voz real (credencial Meta/Telnyx) para ser verificables end-to-end pese a decir "ninguna" en la columna de REQUISITOS.md; la dependencia real está en el canal, no en la regla de negocio en sí. Ninguno se cierra con un mock de canal en este pase (violaría la instrucción de "nunca declarar completo con mock", §5 de REQUISITOS.md). |
+| REQ-AB-004 | pendiente | Orden con alergia declarada requiere confirmación humana del cocinero antes de asegurar que el platillo es seguro. | Backlog — el módulo de pedidos F&B (KDS/cocina) no existe todavía en este repo; no hay superficie sobre la cual aplicar la regla. |
+
+### 1.5 Observabilidad / estructura de tenancy (riesgo más bajo de esta lista)
+
+| ID | Estado | Criterio de aceptación (resumen) | Acción en este pase |
+|---|---|---|---|
+| REQ-OBS-001 / REQ-OBS-002 / REQ-OBS-007 | pendiente | SLOs de canal/técnicos medidos y reportados; reporte mensual distingue "verificado" de "estimado". | Backlog — requiere los canales reales (WhatsApp/voz) y el motor de ROI (H7) para tener datos que medir; sin ellos, cualquier "SLO reportado" sería simulado. |
+| REQ-TEN-002 | pendiente | `location.kind='hotel'` bajo `org`; restaurante asociado enlaza por `property_id` a la misma `org`. | Backlog — es una migración estructural de datos que toca el modelo base compartido con Restaurantes; alto riesgo de conflicto con el trabajo de otros frentes sobre el mismo esquema base sin coordinación explícita del fundador (impacta `org`/`location`, tocado por casi todos los módulos). No se toca en un pase de cierre P0 acotado. |
+| REQ-TEN-006 | pendiente | Disclosure engine central; ningún componente hardcodea texto de disclosure. | Backlog — depende de que exista contenido de disclosure real aprobado (texto legal, REQ-GOB-012) antes de tener sentido centralizarlo; construir el motor vacío sin contenido real sería, en la práctica, simular el requisito. |
+| REQ-INT-012 / REQ-INT-014 | parcial | Pipeline Ingress→RawEvent→Adapter→command bus→Reducer→Outbox→stream; webhooks HMAC+dedupe. | Backlog — ya parcial (H2) según ACEPTACION.md; cerrar el resto requiere el primer webhook entrante real (WhatsApp/PMS/pasarela), que son todas dependencias externas reales. |
+
+## 2. Requisitos con "ninguna" en la columna que en realidad requieren credencial/servicio real
+
+Estos NO se intentan cerrar con un mock en este pase (violaría la instrucción explícita
+de la tarea y `docs/REQUISITOS.md` §5):
+
+| ID | Por qué la columna "ninguna" es engañosa |
+|---|---|
+| REQ-RES-001 | El cálculo de precio total es local (ya hecho, REQ-REV-001), pero "disponible en ≥5 canales" exige WhatsApp Business API, telefonía/voz e Instagram Graph API reales — sin ellos, cualquier verificación de "primera respuesta con precio total" en esos 4 canales sería teatro. |
+| REQ-HUE-005/006/009/014/016/017/021/023 | Todas hablan de comportamiento del agente conversacional **de WhatsApp o de voz**; sin la credencial del canal (Meta/Telnyx) no existe ningún mensaje/llamada real que auditar — solo se podría probar contra un doble de prueba, que el propio REQUISITOS.md §5 prohíbe declarar como cierre. |
+| REQ-SEG-007 / REQ-CRM-005 | Ambos regulan el **envío** de mensajes de marketing/reseña; sin WhatsApp/email real no hay envío que suprimir o que exigir con opt-in. |
+| REQ-UX-006 | "Ejecutable por botón **en el mensaje de WhatsApp**" es, por definición, un requisito sobre el canal WhatsApp real (botones interactivos de WhatsApp Cloud API). |
+| REQ-BO-014 / REQ-BO-035 / REQ-BO-024 | Dependen de módulos de negocio (GM Copilot, P&L real, RR.HH./nómina) que a su vez dependen de fuentes de datos reales (WhatsApp para aprobación, contabilidad real para P&L, nómina real para checador) no construidas todavía; cerrarlos ahora exigiría simular esas fuentes. |
+
+## 3. Cerrados en este pase (ver commits, uno por REQ)
+
+1. **REQ-TEN-004** — RPC `SECURITY DEFINER` de "pedido de huésped sin cuenta" (catálogo
+   de experiencias): `packages/db/migrations/0050_experience_catalog_and_public_order.sql`,
+   `apps/api/src/routes/experienciasPublicas.ts`,
+   `tests/adversarial/rpc-security-definer.spec.ts`.
+2. **REQ-RES-022** — check estático `grep`: 0 conectividad OTA propia fuera del
+   `PmsPort`/registro central de conectores.
+3. **REQ-REV-008** — check estático: 0 conectividad OTA propia + orden de prioridad de
+   conectores (Cloudbeds→Mews→SiteMinder→OHIP) reflejado en el registro real.
+4. **REQ-GOB-009** — check estático: 0 comandos destructivos/productivos del catálogo
+   (`supabase db push`, `git push --force`, etc.) invocados fuera de scripts de
+   CI/runbooks explícitamente marcados como tales.
+5. **REQ-GOB-007** — máquina de estados de backlog (`draft→ready→doing→review→done` +
+   `blocked`/`needs-human`) como módulo puro de dominio + pruebas unitarias.
+6. **REQ-REC-011 / REQ-SEG-014 / REQ-SEG-004** — bóveda de identidad: cifrado en
+   reposo con clave de entorno, borrado de imagen tras OCR, acceso auditado por rol,
+   retención configurable con purga por lote.
+7. **Purga por lote de `idempotency_key`** (auditoría-1/datos, pendiente documentado) —
+   job de purga ejecutable por CLI, con prueba de integración.
+8. **REQ-REV-013 (cron)** — planificador en proceso del night audit con lock por hotel
+   (reutiliza `night_audit_claim`) e idempotencia, ejecutable también por CLI.
+9. **REQ-RES-016** — check-in online de un solo uso (formulario web; el WhatsApp Flow
+   cifrado queda documentado como bloqueado por credencial real de Meta), con OCR
+   simulado localmente (sin servicio externo), firma, ETA y RFC.
+10. **REQ-UX-004 / REQ-UX-005** — pantallas del panel del dueño/gerente con fuente de
+    datos real y estado vacío honesto donde la fuente aún no tiene datos.
+
+Ver `docs/ACEPTACION.md` y `docs/PROGRESO.md` (líneas añadidas al final) para el
+detalle de evidencia de cada uno, y `docs/logs/p0-*.log` para las compuertas finales.
