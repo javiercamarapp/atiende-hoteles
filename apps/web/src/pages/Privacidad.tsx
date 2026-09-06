@@ -29,7 +29,30 @@ const SECCIONES: SeccionLegal[] = [
     fundamento: "Ver docs/REQUISITOS.md §3.16 (integraciones externas) de este mismo proyecto para el catálogo completo, incluidas las pendientes de credenciales.",
     parrafos: [
       "Con los proveedores que hacen posible el servicio, únicamente en la medida necesaria para operarlo: WhatsApp Cloud API (Meta), el proveedor de gestión hotelera (PMS), el proveedor de pagos y el PAC de facturación (CFDI).",
+      "**Con el proveedor de inteligencia artificial que redacta las respuestas del asistente conversacional** (Anthropic y/o, según la configuración de cada hotel, OpenRouter como enrutador hacia otros modelos): el texto de tu conversación por WhatsApp/voz/web con el asistente —tu mensaje y el contexto mínimo necesario de tu reserva— se envía a ese proveedor para generar la respuesta. Es un tratamiento necesario para que el asistente funcione, no un uso adicional o publicitario del dato. Estos proveedores operan fuera de México (transferencia internacional de datos personales); no se les envía el número completo de tu documento de identidad ni datos de tarjeta.",
+      "Si prefieres no interactuar con el asistente de inteligencia artificial, puedes pedir en cualquier momento que te atienda una persona del hotel — el propio asistente lo ofrece desde el primer mensaje (ver sección 6).",
       "No se comparten los datos de los huéspedes de un hotel con otro hotel distinto dado de alta en la plataforma — cada hotel solo ve sus propias reservas y huéspedes.",
+    ],
+  },
+  {
+    titulo: "5. Consentimiento",
+    parrafos: [
+      "Antes de capturar tu documento de identidad en el check-in en línea, se te pide aceptar expresamente este aviso — esa aceptación queda registrada con fecha, canal y la versión del aviso vigente en ese momento.",
+      "Si el hotel te contacta con fines de mercadotecnia (promociones, encuestas fuera de tu estancia), puedes darte de baja en cualquier momento respondiendo \"BAJA\" o pidiéndolo directamente — dejarás de recibir esos mensajes. Esto no afecta los mensajes operativos de tu reserva (confirmaciones, recordatorios de check-in, etc.).",
+    ],
+  },
+  {
+    titulo: "6. Uso de inteligencia artificial",
+    parrafos: [
+      "El asistente que te atiende por WhatsApp se identifica como un sistema de inteligencia artificial desde el primer mensaje de cada conversación, y te indica que una persona del hotel puede intervenir cuando lo necesites.",
+      "El asistente nunca decide el precio de tu reserva, ni presenta impuestos/ISH, ni autoriza cargos por sí mismo — esas decisiones siempre pasan por el motor de reglas del hotel o por una persona.",
+    ],
+  },
+  {
+    titulo: "7. Derechos ARCO (Acceso, Rectificación, Cancelación, Oposición)",
+    parrafos: [
+      "Puedes pedir una copia de tus datos a través de un enlace de un solo uso que el hotel te puede generar bajo solicitud (recepción/gerencia verifica tu identidad y te lo entrega).",
+      "Para pedir la rectificación de un dato incorrecto, la cancelación (borrado) de tus datos, u oponerte a un tratamiento en particular, puedes presentar una solicitud directamente con el hotel — queda registrada con un plazo de respuesta y seguimiento auditable.",
     ],
   },
 ];
@@ -43,9 +66,12 @@ export function Privacidad() {
       secciones={SECCIONES}
       aviso={
         <FaltaDato>
-          Este documento describe el tratamiento de datos previsto por el diseño del producto (H3, frontend). La fecha
-          de vigencia, el domicilio del responsable y el proceso de ejercicio de derechos ARCO están pendientes de que
-          el fundador los confirme antes de publicarse como aviso legal definitivo — no se inventan aquí.
+          Este documento describe el tratamiento de datos previsto por el diseño del producto (H3, frontend). El
+          camino técnico para ejercer derechos ARCO ya existe (exportación por enlace de un solo uso + solicitud
+          auditada con plazo, auditoría-2/correccion-A). Pendientes de que el fundador/equipo legal los confirme antes
+          de publicarse como aviso legal definitivo — no se inventan aquí: la fecha de vigencia, el domicilio del
+          responsable, el texto final de esta página, el nombre exacto del DPO/responsable de datos, y el plazo legal
+          preciso de respuesta a una brecha de seguridad (ver docs/runbooks/incidentes.md).
         </FaltaDato>
       }
       pie={<p>¿Dudas sobre tus datos? Escribe a la gerencia de tu hotel o al correo de soporte que te proporcionaron al darte de alta.</p>}
