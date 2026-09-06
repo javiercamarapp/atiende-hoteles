@@ -81,3 +81,4 @@
 2026-09-06 12:32:51 ciclo=38 evento=RATE_LIMIT_429 masivo: cortó B,C,H12a,H12b,H12c; usuario 'continua'; reanudando los 5 desde transcript
 2026-09-06 12:42:38 ciclo=40 evento=servidor_disponible; usuario pide GitHub+Vercel+contribuciones; wip guardado en worktrees; identidad repo=Javier Camara <javiercamaraportepetit@gmail.com>
 2026-09-06 12:45:39 ciclo=40 evento=GITHUB_PUBLICADO repo=javiercamarapp/atiende-hoteles commits_main=188 autor=javiercamaraportepetit@gmail.com
+2026-09-06 12:59:57 cron=4fe17d3a evento=disparo_cron agentes=0 vivos (429 masivo) → reanudar los 5
