@@ -43,3 +43,6 @@
 2026-09-06 07:29:39 ciclo=18 evento=H4_completado+merge_H9H11 verde(303u/38i/57a) despacho=fixBD(#30 main),H5(#31 wt),H6b(#32 wt)
 2026-09-06 07:30:59 ciclo=18 evento=modelos_verificados #30,#31,#32
 2026-09-06 07:54:31 ciclo=19 evento=fixBD_completo 4C cerrados despacho=H8(#33 main) en_curso=H5,H6b
+2026-09-06 07:55:06 ciclo=19 evento=H8 despachado modelo_verificado
+2026-09-06 08:26:18 ciclo=20 evento=latido_dinamico en_curso=H5,H6b,H8
+2026-09-06 08:29:41 ciclo=21 evento=H5_completado worktree merge=pendiente_H8
