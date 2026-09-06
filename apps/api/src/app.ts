@@ -35,6 +35,7 @@ import { mensajeriaRoutes } from "./routes/mensajeria.ts";
 import { agentesRoutes } from "./routes/agentes.ts";
 import { roiRoutes } from "./routes/roi.ts";
 import { privacidadRoutes } from "./routes/privacidad.ts";
+import { adminRoutes } from "./routes/admin.ts";
 import { toErrorBody } from "./lib/errors.ts";
 import { buildMoneyAlertLog, isMoneyPath } from "./lib/moneyAlert.ts";
 import { ipRateLimit, requestId, userRateLimit } from "./middleware.ts";
@@ -68,17 +69,32 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
     }),
   );
 
-  // Cabeceras de seguridad (auditoria-1/seguridad.md): HSTS solo en producción (nunca
-  // en dev/test sobre HTTP plano, donde el navegador la ignoraría pero declararla es
-  // información falsa), X-Content-Type-Options siempre, frame-ancestors 'none' (esta
-  // API nunca sirve HTML embebible en un iframe de otro origen).
+  // Cabeceras de seguridad (auditoria-1/seguridad.md, H12b LAUNCH-021 "completar CSP"):
+  // HSTS solo en producción (nunca en dev/test sobre HTTP plano, donde el navegador la
+  // ignoraría pero declararla es información falsa), X-Content-Type-Options siempre.
+  //
+  // CSP completa siguiendo el patrón de `likida/next.config.ts` §"/api/:path*": esta
+  // API NUNCA sirve HTML (solo JSON, y los tres webhooks públicos -- mensajeria.ts,
+  // aprobacionesWhatsapp.ts, cancelacionPublica.ts -- tampoco devuelven HTML), así que
+  // `default-src 'none'` no tiene nada legítimo que romper: cero script, cero estilo,
+  // cero imagen que un navegador pudiera intentar cargar desde una respuesta de esta
+  // API. Sin `unsafe-inline`/`unsafe-eval` en ninguna directiva (no hace falta: no hay
+  // HTML que ejecute nada). `frame-ancestors`/`base-uri`/`form-action` en 'none' porque
+  // nada de esto se sirve para incrustarse ni sirve de base de un formulario.
   app.use(
     "*",
     secureHeaders({
       strictTransportSecurity: deps.env.nodeEnv === "production" ? "max-age=15552000; includeSubDomains" : false,
       xContentTypeOptions: true,
-      contentSecurityPolicy: { frameAncestors: ["'none'"] },
+      contentSecurityPolicy: {
+        defaultSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'none'"],
+        formAction: ["'none'"],
+      },
       xFrameOptions: "DENY",
+      referrerPolicy: "strict-origin-when-cross-origin",
+      permissionsPolicy: { geolocation: [], microphone: [], camera: [] },
     }),
   );
 
@@ -177,6 +193,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", agentesRoutes(deps));
   app.route("/", roiRoutes(deps));
   app.route("/", privacidadRoutes(deps));
+  app.route("/", adminRoutes(deps));
 
   return app;
 }

@@ -1,0 +1,62 @@
+<!doctype html>
+<!--
+  H12b · PWA "pantalla offline honesta" (ADR-002 hotel-staff-pwa): se sirve SOLO cuando
+  el service worker (sw.js) no tiene ni la ruta en caché ni conexión de red -- nunca
+  simula datos ni pretende que la app cargó. Archivo estático fuera del build de Vite
+  (no pasa por cspMetaPlugin), así que declara su propia CSP mínima directamente.
+-->
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <!-- style-src usa el HASH sha256 exacto del bloque de estilo de abajo (página
+         estática, contenido fijo, verificable -- ninguna directiva de esta CSP admite
+         estilo/script arbitrario) -- si ese bloque cambia, hay que recalcular el hash
+         (ver tests/unit/web/offline-csp.spec.ts, que falla si se desincroniza). -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'sha256-zJjAWm0gqjK6gXecUQq39C1BA7UGt0j2mn6L7PDrGZQ='; img-src 'self'; base-uri 'none'; form-action 'none'" />
+    <title>Sin conexión — Atiende Hoteles</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f7f9fc;
+        color: #1e293b;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      .tarjeta {
+        max-width: 22rem;
+        margin: 1.5rem;
+        padding: 2rem;
+        border-radius: 1rem;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        text-align: center;
+      }
+      h1 { font-size: 1.125rem; margin: 0 0 0.5rem; color: #0f172a; }
+      p { font-size: 0.9rem; line-height: 1.5; color: #475569; margin: 0 0 1.25rem; }
+      button {
+        border: none;
+        border-radius: 0.5rem;
+        background: #1d4ed8;
+        color: #fff;
+        padding: 0.6rem 1.25rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="tarjeta">
+      <h1>Sin conexión</h1>
+      <p>
+        Esta pantalla del panel de Atiende Hoteles todavía no se descargó a este dispositivo y no hay
+        red disponible ahora mismo. No se muestran datos de ejemplo: reconéctate e inténtalo de nuevo.
+      </p>
+      <button type="button" onclick="location.reload()">Reintentar</button>
+    </main>
+  </body>
+</html>

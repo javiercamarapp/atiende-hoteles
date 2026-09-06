@@ -5,6 +5,7 @@
 import { serve } from "@hono/node-server";
 import { createApp } from "./app.ts";
 import { bootstrapDevEngine } from "./db.ts";
+import { bootstrapProductionEngine, readProductionDbConfig } from "./dbProduction.ts";
 import { loadEnv } from "./env.ts";
 import { rootLogger } from "./logger.ts";
 import { RateLimiter } from "./lib/rateLimit.ts";
@@ -20,7 +21,22 @@ async function main() {
 
   logger.info({ port: env.port, nodeEnv: env.nodeEnv }, "arrancando apps/api");
 
-  const engine = await bootstrapDevEngine(env);
+  // H12b · LAUNCH-009/D-006: `SUPABASE_DB_HOST`/`SUPABASE_DB_PASSWORD_APP` presentes ->
+  // motor de producción contra Postgres gestionado (nunca arranca un servidor propio,
+  // nunca aplica migraciones -- ver dbProduction.ts). Sin esas variables (el caso de
+  // desarrollo/CI de hoy) se mantiene exactamente el comportamiento anterior
+  // (`bootstrapDevEngine`, embedded-postgres persistente, ADR-003). En
+  // `NODE_ENV=production` sin esas variables, falla explícito -- nunca arranca un
+  // Postgres embebido "por accidente" en un despliegue real (ADR-003 "producción sigue
+  // siendo Supabase", nunca embedded-postgres).
+  const productionDbConfig = readProductionDbConfig(process.env);
+  if (env.nodeEnv === "production" && !productionDbConfig) {
+    throw new Error(
+      "NODE_ENV=production sin SUPABASE_DB_HOST/SUPABASE_DB_PASSWORD_APP -- ver deploy/env-matrix.md. " +
+        "apps/api nunca arranca un Postgres embebido en producción (ADR-003).",
+    );
+  }
+  const engine = productionDbConfig ? bootstrapProductionEngine(productionDbConfig) : await bootstrapDevEngine(env);
 
   const deps: AppDeps = {
     engine,

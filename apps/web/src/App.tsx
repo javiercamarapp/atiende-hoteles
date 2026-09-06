@@ -24,6 +24,11 @@ import { BackOffice } from "./pages/BackOffice";
 import { Aprobaciones } from "./pages/Aprobaciones";
 import { Configuracion } from "./pages/Configuracion";
 import { Agentes } from "./pages/Agentes";
+import { AdminLayout } from "./pages/admin/AdminLayout";
+import { AdminNegocio } from "./pages/admin/AdminNegocio";
+import { AdminCostoIA } from "./pages/admin/AdminCostoIA";
+import { AdminSalud } from "./pages/admin/AdminSalud";
+import { AdminAuditoria } from "./pages/admin/AdminAuditoria";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,6 +74,25 @@ export function App() {
                   <Route path="/aprobaciones" element={<Aprobaciones />} />
                   <Route path="/agentes" element={<Agentes />} />
                   <Route path="/configuracion" element={<Configuracion />} />
+                </Route>
+
+                {/* H12b · LAUNCH-007: consola superadmin cross-tenant, deliberadamente
+                    FUERA de <AppShell> (sin selector de hotel, sin sidebar operativo) --
+                    solo exige sesión (RutaProtegida); la autorización real de "eres
+                    superadmin de plataforma" la impone la API (apps/api/src/routes/admin.ts,
+                    403 explícito) y cada subpágina la refleja vía DataState/EstadoError. */}
+                <Route
+                  path="/admin"
+                  element={
+                    <RutaProtegida>
+                      <AdminLayout />
+                    </RutaProtegida>
+                  }
+                >
+                  <Route index element={<AdminNegocio />} />
+                  <Route path="costo-ia" element={<AdminCostoIA />} />
+                  <Route path="salud" element={<AdminSalud />} />
+                  <Route path="auditoria" element={<AdminAuditoria />} />
                 </Route>
 
                 <Route path="*" element={<NotFound />} />

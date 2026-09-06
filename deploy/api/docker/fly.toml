@@ -1,0 +1,57 @@
+# H12b · LAUNCH-010/D-006 — Opción (b) recomendada. Config de ejemplo para Fly.io usando
+# `deploy/api/docker/Dockerfile`. `app` queda vacío a propósito: 👤 el USUARIO lo asigna
+# con `fly launch`/`fly apps create` (este agente no crea apps/proyectos reales, ver
+# encargo). NO SE EJECUTÓ `fly deploy`/`flyctl` en este entorno (sin `flyctl` instalado,
+# B-002) -- validado con `toml.parse` (ver deploy/README.md "Cómo se verificó").
+
+app = ""
+primary_region = "qro" # Querétaro -- región de Fly.io más cercana a México; ajustar si el fundador decide otra.
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3001"
+  # El resto de las variables (JWT_SECRET, CORS_ALLOWED_ORIGINS, SUPABASE_DB_HOST,
+  # SUPABASE_DB_PASSWORD_APP, RATE_LIMIT_*) son SECRETAS o dependen del entorno -- se
+  # configuran con `fly secrets set NOMBRE=valor`, nunca en este archivo (que sí se
+  # versiona en git). Ver deploy/env-matrix.md.
+
+[[services]]
+  internal_port = 3001
+  protocol = "tcp"
+  auto_stop_machines = false   # 3 schedulers en proceso (night audit, purgas) + outbox:
+                                # una máquina que se detiene sola pierde esos crons --
+                                # a diferencia de un servicio HTTP puro sin estado.
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.http_checks]]
+    interval = "15s"
+    grace_period = "10s"
+    method = "get"
+    path = "/health"
+    protocol = "http"
+    timeout = "5s"
+
+[[services.tcp_checks]]
+  interval = "15s"
+  timeout = "5s"
+
+# Sin bloque [metrics]: `/metrics` vive en el MISMO puerto que la app (3001, no un puerto
+# interno separado) y puede exigir la cabecera `X-Metrics-Token` (METRICS_TOKEN, ver
+# apps/api/src/routes/metrics.ts) -- el auto-scrape nativo de Fly no manda cabeceras
+# personalizadas, así que un `[metrics]` aquí apuntaría a un endpoint que Fly no podría
+# leer si METRICS_TOKEN está configurado. Scrapear con Prometheus/Grafana Cloud externo
+# apuntando a `https://<app>.fly.dev/metrics` con esa cabecera, documentado en
+# deploy/README.md.

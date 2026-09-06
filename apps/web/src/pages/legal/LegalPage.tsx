@@ -3,6 +3,7 @@
 // identidad que no se conoce se SEÑALA en el texto, nunca se inventa.
 import { Link } from "react-router-dom";
 import { AtiendeWordmark } from "@atiende/ui";
+import { useSeoRobots } from "../../hooks/useSeoRobots";
 
 export interface SeccionLegal {
   titulo: string;
@@ -49,6 +50,10 @@ export function LegalPage({
   pie?: React.ReactNode;
   vigenteDesde: string;
 }) {
+  // H12b · LAUNCH-028: única excepción al noindex global del panel — ver
+  // apps/web/src/hooks/useSeoRobots.ts y apps/web/public/robots.txt.
+  useSeoRobots("index, follow");
+
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-2xl px-5 py-10 text-[15px] leading-relaxed text-muted-foreground">

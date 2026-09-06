@@ -3,9 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- H12b · LAUNCH-028 (inventario fila 28): panel operativo interno, no un sitio de
+         marketing -- mismo criterio que atiende-restaurantes (`noindex,nofollow`
+         explícito). La landing pública/indexable es responsabilidad de otro proyecto
+         (D-005/H12c), no de este SPA. Ver apps/web/public/robots.txt. -->
     <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="Panel operativo de Atiende Hoteles: reservas, recepción, housekeeping, mantenimiento, mensajería y agentes de IA para el personal del hotel." />
     <meta name="theme-color" content="#1D4ED8" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Atiende Hoteles" />
+    <meta property="og:title" content="Atiende Hoteles — Panel de personal" />
+    <meta property="og:description" content="Panel operativo de Atiende Hoteles para recepción, housekeeping, mantenimiento y agentes de IA." />
+    <meta property="og:image" content="/favicon.svg" />
+    <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -1,0 +1,16 @@
+# H12b · LAUNCH-028 (docs/referencia/08-inventario-punta-a-punta.md fila 28): "noindex
+# del panel, index solo de páginas públicas". El panel operativo completo bloquea
+# indexación (mismo patrón que atiende-restaurantes/public/robots.txt); las dos páginas
+# realmente públicas (/terminos, /privacidad) se permiten explícitamente y además relajan
+# su propio <meta name="robots"> en tiempo de ejecución (ver
+# apps/web/src/hooks/useSeoRobots.ts) — el resto de las rutas se queda con el
+# "noindex, nofollow" por defecto de index.html.
+#
+# La landing pública/indexable de venta es responsabilidad de otro proyecto (D-005/H12c),
+# no de este host.
+User-agent: *
+Disallow: /
+Allow: /terminos
+Allow: /privacidad
+
+Sitemap: https://app.atiendehoteles.com/sitemap.xml
