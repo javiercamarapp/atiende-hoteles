@@ -70,3 +70,6 @@
 2026-09-06 10:50:06 ciclo=32 evento=aud-2 rendimiento=4/10(1C) falta=pruebas
 2026-09-06 10:50:39 ciclo=32 evento=aud-2_completa 12/12 media=4.0 crit=20 correccion=A,B en curso
 2026-09-06 10:51:38 ciclo=32 evento=despacho lote C(#52 wt); lotes A,B en curso con críticos reenviados (datos→A; backend,rendimiento,pruebas→B)
+2026-09-06 10:59:52 cron=4fe17d3a evento=disparo_cron bucle_dinamico=activo(11:17) agentes_en_curso=3(lotes A,B,C) accion=solo_latido
+2026-09-06 11:26:24 ciclo=33 evento=latido_dinamico lotes=A(main),B,C en curso
+2026-09-06 11:29:00 ciclo=34 evento=USUARIO_amplía_alcance→H12 despacho=H12a(#53),H12b(#54)

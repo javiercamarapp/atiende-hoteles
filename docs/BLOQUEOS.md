@@ -56,3 +56,7 @@
 - Motivo: `embedded-postgres` no incluye `pg_dump`/`psql`; se necesitaban para la prueba real de backup/restore (REQ-OBS).
 - Alcance: herramienta local gratuita, sin credenciales ni servicios externos. Reversible con `brew uninstall libpq`.
 - El orquestador había pedido "no instalar paquetes de sistema" en hitos previos y no lo repitió en H8; se registra para decisión del usuario (mantener o revertir).
+
+## D-005 — Alcance ampliado por el usuario (2026-09-06): "listo para salir a promoción, nivel Likida / Atiende Restaurantes"
+- Incluye: Google OAuth listo, correos transaccionales con plantillas al estilo Likida/Restaurantes, alta autoservicio de hotel, configuración de despliegue y runbook de salida.
+- Lo que solo el usuario puede aportar (queda cableado y probado con dobles locales): cliente OAuth de Google (ID/secreto + URIs), clave del proveedor de correo (Resend/SMTP) y dominio verificado, proyecto Supabase de producción, proyecto Vercel/host del API, dominio. El bucle NO publica producción ni gasta dinero.
