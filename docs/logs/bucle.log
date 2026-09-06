@@ -91,3 +91,4 @@
 2026-09-06 16:34:42 ciclo=47 evento=latido 16:34; wip asegurado y ramas empujadas; cierre secuencial: lote B primero
 2026-09-06 16:36:28 ciclo=47 evento=loteC_completo merge_en_curso(#58) loteB_activo
 2026-09-06 16:40:51 ciclo=48 evento=LIMPIEZA: shm SysV 30/32 segmentos (causa de shmget en pruebas) + servidor API huérfano pid 9595 (4h) terminado; segmentos huérfanos eliminados=30
+2026-09-06 16:52:16 ciclo=49 evento=merges_B_C_ok push=main siguiente=H12a+H12b cierre
