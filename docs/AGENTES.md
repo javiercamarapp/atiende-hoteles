@@ -35,4 +35,4 @@ Orquestador de esta sesión: claude-fable-5-1 (verificado por el entorno). Ning�
 | 25 | 2026-09-06 05:52 | Auditoría-1 modelo de datos → docs/auditoria-1/datos.md | sonnet | ver grep | en curso |
 | 26 | 2026-09-06 05:52 | Auditoría-1 sistema agéntico → docs/auditoria-1/agentico.md | sonnet | ver grep | en curso |
 | 27 | 2026-09-06 05:52 | Auditoría-1 tool calling → docs/auditoria-1/tool-calling.md | sonnet | ver grep → claude-sonnet-5 | COMPLETADO: nota 3/10; 2 CRÍT (aprobación de dinero reutilizable entre folios por colisión de idempotencyKey; aprobador no ve monto/folio/huésped), 3 ALTOS, 2 MED |
-| 28 | 2026-09-06 05:52 | Auditoría-1 pruebas → docs/auditoria-1/pruebas.md | sonnet | ver grep | en curso |
+| 28 | 2026-09-06 05:52 | Auditoría-1 pruebas → docs/auditoria-1/pruebas.md | sonnet | ver grep → claude-sonnet-5 | COMPLETADO: nota 5/10; 1 CRÍT (total multi-noche sin prueba de monto exacto: bug -50% pasa toda la suite, verificado por mutación), 2 ALTOS (sin prueba de Idempotency-Key concurrente en dinero; npm test no corre adversarial/E2E y no hay ci.yml), 2 MED |
