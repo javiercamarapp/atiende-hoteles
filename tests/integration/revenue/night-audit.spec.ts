@@ -134,6 +134,38 @@ describe("night audit (REQ-REV-013)", () => {
     expect(rows[0]!.count).toBe("1");
   });
 
+  it("P1/ALTO: el resumen de caja agrupa por la FECHA DE NEGOCIO local del hotel (hotel.timezone), no por created_at::date crudo de la sesión", async () => {
+    // La prueba fuerza un timezone de hotel MUY distinto del default de la sesión de
+    // Postgres (para no depender de en qué huso horario corra la máquina que ejecuta
+    // los tests) y elige un `created_at` cuya fecha de calendario difiere entre "cast
+    // crudo" (huso de la sesión/servidor) y "hora local del hotel" -- solo el segundo
+    // debe coincidir con `businessDate`.
+    const businessDate = "2026-09-13";
+    await fixture.engine.admin.query("update public.hotel set timezone = 'Asia/Tokyo' where id = $1;", [hotelId]);
+    const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
+      roomTypeId,
+      checkInDate: businessDate,
+      checkOutDate: "2026-09-14",
+    });
+    // 2026-09-12T17:00:00Z == 2026-09-13 02:00 en Asia/Tokyo (UTC+9, coincide con
+    // businessDate) pero 2026-09-12 en cualquier huso America/* (UTC-5 a UTC-8, NO
+    // coincide) -- si el fix no convierte a la hora local del hotel, este cargo
+    // desaparece del resumen sin importar en qué huso corra la prueba.
+    await fixture.engine.admin.query(
+      `insert into public.charge (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, created_at)
+       values ($1, $2, $3, 'Consumo tardío de bar', 100, 16, 'ab', '2026-09-12T17:00:00Z');`,
+      [fixture.seed.orgId, hotelId, folioId],
+    );
+
+    const res = await runAudit(businessDate);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { cargosPorConcepto: Record<string, number> };
+    // 100 (neto) + 16 (impuesto) del cargo de bar tardío, visible bajo la fecha de
+    // negocio local correcta -- con el bug (created_at::date crudo) este total daba 0
+    // (o solo reflejaba el cargo de hospedaje, sin el de "ab").
+    expect(body.cargosPorConcepto["ab"]).toBeGreaterThanOrEqual(116);
+  });
+
   it("housekeeping no puede disparar ni leer night audit (403)", async () => {
     const hotelA = fixture.seed.hotels[0]!;
     const hkToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "housekeeping")!.email);
