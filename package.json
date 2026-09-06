@@ -7,10 +7,12 @@
   "engines": { "node": ">=22" },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json && tsc --noEmit -p apps/api/tsconfig.json",
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "vitest run --config vitest.config.ts tests/unit",
     "test:integration": "vitest run --config vitest.config.ts tests/integration --pool=forks --poolOptions.forks.singleFork",
+    "test:adversarial": "vitest run --config vitest.config.ts tests/adversarial --pool=forks --poolOptions.forks.singleFork",
+    "build": "npm run build --workspaces --if-present",
     "db:migrate": "node packages/db/src/cli.ts migrate",
     "db:reset": "node packages/db/src/cli.ts reset"
   },
@@ -19,6 +21,7 @@
     "@types/node": "^24.0.0",
     "@types/pg": "^8.15.5",
     "eslint": "^9.36.0",
+    "pino": "10.3.1",
     "turbo": "^2.10.12",
     "typescript": "5.9.3",
     "typescript-eslint": "^8.46.2",
