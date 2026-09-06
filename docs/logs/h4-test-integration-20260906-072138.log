@@ -1,0 +1,30 @@
+
+> atiende-hoteles@0.0.0 test:integration
+> vitest run --config vitest.config.ts tests/integration --pool=forks --poolOptions.forks.singleFork
+
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging
+
+ ✓ tests/integration/audit-log-concurrencia.spec.ts (4 tests) 5033ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > SIN el arreglo: dos record_audit_log() concurrentes del mismo tenant producen dos filas con prev_hash null (cadena bifurcada)  1483ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > CON el arreglo (packages/db/migrations/0015, audit_log_chain_head + SELECT FOR UPDATE): dos escrituras concurrentes SIEMPRE forman una cadena de un solo enlace  980ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > CON el arreglo, 20 escrituras concurrentes reales (sin ningún pg_sleep inyectado) nunca bifurcan la cadena, repetido 8 veces para descartar suerte de scheduling  1543ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > dos tenants distintos escribiendo concurrentemente no se bloquean entre sí (el lock de la cabeza de cadena es por tenant, no global)  1026ms
+ ✓ tests/integration/api/auth-y-resumen.spec.ts (8 tests) 1226ms
+ ✓ tests/integration/api/reservas-y-folios.spec.ts (8 tests) 1795ms
+ ✓ tests/integration/reservas/cancelacion-libera-inventario.spec.ts (3 tests) 1512ms
+ ✓ tests/integration/reservas/monto-exacto-multi-noche.spec.ts (2 tests) 1285ms
+ ✓ tests/integration/reservas/folio-al-confirmar.spec.ts (2 tests) 1330ms
+ ✓ tests/integration/reservas/overbooking-controlado.spec.ts (2 tests) 1245ms
+ ✓ tests/integration/reservas/no-show-idempotente.spec.ts (3 tests) 1085ms
+ ✓ tests/integration/reservas/modificacion-concurrencia.spec.ts (1 test) 1106ms
+ ✓ tests/integration/reservas/disponibilidad-grid.spec.ts (2 tests) 966ms
+ ✓ tests/integration/availability-concurrency.spec.ts (1 test) 899ms
+ ✓ tests/integration/outbox-atomicity.spec.ts (2 tests) 803ms
+
+ Test Files  12 passed (12)
+      Tests  38 passed (38)
+   Start at  07:22:37
+   Duration  19.42s (transform 279ms, setup 0ms, collect 841ms, tests 18.28s, environment 0ms, prepare 53ms)
+
+integration exit=0
