@@ -47,3 +47,4 @@ Orquestador de esta sesión: claude-fable-5-1 (verificado por el entorno). Ning�
 | 37 | 2026-09-06 10:31 | Trazabilidad: reconciliar Estado\/Evidencia REQUISITOS↔ACEPTACION, docs\/TRAZABILIDAD.md | sonnet | ver grep | en curso |
 | 38–49 | 2026-09-06 10:31 | Auditoría-2 (snapshot 488a22a), 12 rubros: frontend, backend, agéntico, tool-calling, seguridad, fiscal, legal, arquitectura, pruebas, operabilidad, rendimiento, datos → docs\/auditoria-2\/<rubro>.md | sonnet ×12 | ver grep | en curso |
 | 38 | aud-2 frontend | → claude-sonnet-5 | COMPLETADO: nota 6\/10; 0 CRÍT, 2 ALTOS (Recepción y A&B llaman endpoints inexistentes con error mal atribuido; 'Estimado $0.00' como medición), 3 MED, 2 BAJOS |
+| 44 | aud-2 legal | → claude-sonnet-5 | COMPLETADO: nota 3\/10; 3 CRÍT (purga de bóveda sin scheduler; aviso de privacidad sin transferencia a proveedor IA; tarjeta escrita por WhatsApp guardada en claro), 4 ALTOS (consentimiento\/ARCO ausentes), 2 MED |
