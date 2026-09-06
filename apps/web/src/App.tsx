@@ -8,6 +8,7 @@ import { AppShell } from "./layouts/AppShell";
 import { Login } from "./pages/Login";
 import { NotFound } from "./pages/NotFound";
 import { Privacidad } from "./pages/Privacidad";
+import { CheckinPublico } from "./pages/CheckinPublico";
 import { Terminos } from "./pages/Terminos";
 import { Resumen } from "./pages/Resumen";
 import { Reservas } from "./pages/Reservas";
@@ -45,6 +46,7 @@ export function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/terminos" element={<Terminos />} />
                 <Route path="/privacidad" element={<Privacidad />} />
+                <Route path="/checkin-publico/:token" element={<CheckinPublico />} />
 
                 <Route
                   element={
