@@ -44,6 +44,13 @@ export interface LlmCompleteParams {
   readonly toolNames: readonly string[];
   readonly temperature: number;
   readonly maxOutputTokens: number;
+  /** REQ-AGT-004: pide al proveedor que NO devuelva varias tool calls en la misma
+   * respuesta -- el core nunca debe tener que decidir en paralelo dos rutas de dinero
+   * (o de efecto en general) generadas en una sola llamada. `AgentRunner` lo envia
+   * siempre en `true`; un `LlmProvider` real (Anthropic: `disable_parallel_tool_use`)
+   * debe honrarlo. Ver tambien el guardarraiz de refuerzo en AgentRunner.run() (aud-1
+   * agentico.md ALTO: "disable_parallel_tool_use no anclado en ningun tipo/chequeo"). */
+  readonly disableParallelToolUse: boolean;
 }
 
 export interface LlmProvider {

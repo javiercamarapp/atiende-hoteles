@@ -409,6 +409,63 @@ describe("AgentRunner", () => {
     expect(result.status).toBe("agotado_pasos");
   });
 
+  it("nunca ejecuta ninguna tool si el modelo propone MAS DE UNA tool effect='money' en la " +
+    "misma ronda -- REQ-AGT-004 (aud-1 agentico.md ALTO: disable_parallel_tool_use)", async () => {
+    const cobrarSpy = vi.fn(() => ({ ok: true, summary: "cobrado" }));
+    const descuentoSpy = vi.fn(() => ({ ok: true, summary: "descuento aplicado" }));
+    const tools = new ToolRegistry();
+    tools.register(
+      defineTool({
+        name: "cobrar_folio",
+        description: "cobra el folio",
+        inputSchema: z.object({ montoMxn: z.number() }),
+        effect: "money",
+        needsApproval: true,
+        run: cobrarSpy,
+      }),
+    );
+    tools.register(
+      defineTool({
+        name: "aplicar_descuento",
+        description: "aplica un descuento",
+        inputSchema: z.object({ montoMxn: z.number() }),
+        effect: "money",
+        needsApproval: true,
+        run: descuentoSpy,
+      }),
+    );
+    const provider = new FakeProvider([
+      {
+        kind: "tool_calls",
+        calls: [
+          { name: "cobrar_folio", input: { montoMxn: 100 } },
+          { name: "aplicar_descuento", input: { montoMxn: 20 } },
+        ],
+      },
+    ]);
+    const runner = new AgentRunner(baseOptions({ provider, tools, gate: "propone" }));
+    const result = await runner.run(ctxFor(), "cobra y aplica un descuento");
+    expect(result.status).toBe("paralelismo_dinero_bloqueado");
+    expect(cobrarSpy).not.toHaveBeenCalled();
+    expect(descuentoSpy).not.toHaveBeenCalled();
+    expect(result.pendingApprovalIds).toHaveLength(0);
+  });
+
+  it("el proveedor SIEMPRE recibe disableParallelToolUse:true (REQ-AGT-004)", async () => {
+    const completeSpy = vi.fn(async () => ({
+      modelSlug: "claude-sonnet-5",
+      text: "listo",
+      toolCalls: [],
+      usage: { inputTokens: 1, outputTokens: 1 },
+      truncated: false,
+      stopReason: "end_turn" as const,
+    }));
+    const provider = { id: "fake", isAvailable: () => true, complete: completeSpy };
+    const runner = new AgentRunner(baseOptions({ provider }));
+    await runner.run(ctxFor(), "hola");
+    expect(completeSpy).toHaveBeenCalledWith(expect.objectContaining({ disableParallelToolUse: true }));
+  });
+
   it("presupuesto agotado antes de la primera llamada cierra explicitamente sin llamar al proveedor", async () => {
     const completeSpy = vi.fn();
     const provider = { id: "fake", isAvailable: () => true, complete: completeSpy } as const;

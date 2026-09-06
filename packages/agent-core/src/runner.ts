@@ -147,6 +147,9 @@ export class AgentRunner {
           toolNames: opts.tools.list().map((tool) => tool.name),
           temperature: opts.temperature,
           maxOutputTokens: opts.maxOutputTokensPerCall ?? 1024,
+          // REQ-AGT-004 / aud-1 agentico.md ALTO: nunca se le pide al proveedor que
+          // decida en paralelo dos (o mas) tool calls en la misma respuesta.
+          disableParallelToolUse: true,
         });
       } catch (err) {
         if (err instanceof ProviderTransientError && !usedFallback && opts.fallbackProvider) {
@@ -213,6 +216,30 @@ export class AgentRunner {
 
       if (completion.toolCalls.length === 0) {
         return this.close(ctx, runId, step + 1, "completado", completion.text, pendingApprovalIds, completion.text ?? "");
+      }
+
+      // aud-1 agentico.md ALTO: REQ-AGT-004 exige que el nucleo nunca deje que el modelo
+      // decida en paralelo dos (o mas) acciones de dinero en una sola generacion. Se pide
+      // `disableParallelToolUse: true` al proveedor arriba, pero eso depende de que el
+      // proveedor real lo honre -- este es el guardarraiz de refuerzo DENTRO del core: si
+      // pese a todo la respuesta trae mas de una tool effect="money", NINGUNA se ejecuta.
+      const moneyCallCount = completion.toolCalls.filter(
+        (call) => opts.tools.get(call.name)?.effect === "money",
+      ).length;
+      if (moneyCallCount > 1) {
+        this.emit(ctx, runId, step, "loop_guard", {
+          message: `el modelo propuso ${moneyCallCount} tools effect="money" en la misma ronda (REQ-AGT-004)`,
+        });
+        return this.close(
+          ctx,
+          runId,
+          step + 1,
+          "paralelismo_dinero_bloqueado",
+          null,
+          pendingApprovalIds,
+          "El modelo propuso mas de una accion de dinero en la misma respuesta; ninguna se " +
+            "ejecuta -- REQ-AGT-004 exige decidir las acciones de dinero de una en una.",
+        );
       }
 
       const hayTerminalDisponible = completion.toolCalls.some((call) => terminal.has(call.name));

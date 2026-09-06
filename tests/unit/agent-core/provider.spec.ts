@@ -18,6 +18,7 @@ const baseParams = {
   toolNames: [],
   temperature: 0,
   maxOutputTokens: 100,
+  disableParallelToolUse: true,
 };
 
 describe("FakeProvider", () => {
