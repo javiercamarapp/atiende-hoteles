@@ -72,7 +72,7 @@ producto/UX, luego observabilidad/estructura.
 | REQ-RES-016 | pendiente | Check-in online (pre-llegada): datos, foto+OCR, firma, pago/garantía, ETA, RFC, vía WhatsApp Flow cifrado o formulario web de un solo uso; nunca por chat libre. | **Cerrado en este pase** (ver §3, alcance: formulario web de un solo uso — el WhatsApp Flow requiere credenciales reales de Meta y se documenta como no cerrable sin ellas). |
 | REQ-UX-004 | pendiente | Cada línea de cobro variable del panel del dueño enlaza a su reporte de ahorro/valor (`roi_event`). | **Cerrado en este pase, con estado vacío honesto** (ver §3): la fuente de datos real (`roi_event`, propiedad de H7) todavía no tiene filas en este entorno — la pantalla muestra el enlace cuando existe evidencia y un estado vacío explícito cuando no, nunca un dato simulado. |
 | REQ-UX-005 | pendiente | Panel del gerente actualiza conocimiento local (sargazo/clima/playa/ferry/eventos) reflejado en <30 s en el agente. | **Cerrado en este pase, con estado vacío honesto** (ver §3): se implementa la fuente de datos real (tabla + API) y la pantalla de edición; la medición end-to-end de "<30 s reflejado en el agente conversacional" no es verificable todavía porque el agente conversacional de WhatsApp/voz no existe en este repo — se prueba la latencia de lectura de la fuente de datos (que sí es real), documentado explícitamente como el límite de esta verificación. |
-| REQ-UX-006 | pendiente | Aprobaciones operativas del gerente ejecutables por botón desde WhatsApp, sin acceso al panel web. | Backlog — depende de canal WhatsApp real con botones interactivos (credencial Meta); el backend de aprobaciones (`agent_approval`, migración 0042) ya existe y es channel-agnostic, pero "ejecutable **desde WhatsApp**" específicamente no es verificable sin ese canal. Se documenta como bloqueado por credencial real, no se simula. |
+| REQ-UX-006 | pendiente | Aprobaciones operativas del gerente ejecutables por botón desde WhatsApp, sin acceso al panel web. | **Cerrado en este pase, offline** (ver §3): REQUISITOS.md §5 marca esta dependencia como verificable offline vía `MessagingPort` + contract test (mismo criterio que los conectores PMS) — se extendió el puerto con `sendInteractiveButtonsMessage`/`interactive.button_clicked` y se implementó el webhook completo contra `FakeWhatsappAdapter`. La integración real con Meta (credenciales) sigue pendiente; `MetaWhatsappAdapter` lanza `PortUnavailableError` honestamente sin ellas. |
 | REQ-UX-001 | pendiente | Paridad visual completa con el frontend de Restaurantes (logo, tipografía, sidebar, estructura). | Backlog — es un rediseño integral de `apps/web` fuera del alcance de una tarea entre varias de este pase (alto riesgo de romper páginas existentes sin una revisión visual dedicada); no se toca aquí. |
 | REQ-UX-002 | pendiente | Toda pantalla con estados vacíos honestos y errores accionables. | Backlog salvo lo cubierto por las nuevas pantallas de REQ-UX-004/005 (que sí cumplen este criterio) — auditar **todas** las pantallas existentes de `apps/web` es un proyecto de UX propio, no cabe en este pase. |
 | REQ-UX-003 | pendiente | Accesibilidad básica + experiencia móvil funcional en pantallas operativas del personal. | Backlog — mismo razonamiento que UX-001/002: auditoría de accesibilidad de toda la PWA de personal es un proyecto propio. |
@@ -99,7 +99,7 @@ de la tarea y `docs/REQUISITOS.md` §5):
 | REQ-RES-001 | El cálculo de precio total es local (ya hecho, REQ-REV-001), pero "disponible en ≥5 canales" exige WhatsApp Business API, telefonía/voz e Instagram Graph API reales — sin ellos, cualquier verificación de "primera respuesta con precio total" en esos 4 canales sería teatro. |
 | REQ-HUE-005/006/009/014/016/017/021/023 | Todas hablan de comportamiento del agente conversacional **de WhatsApp o de voz**; sin la credencial del canal (Meta/Telnyx) no existe ningún mensaje/llamada real que auditar — solo se podría probar contra un doble de prueba, que el propio REQUISITOS.md §5 prohíbe declarar como cierre. |
 | REQ-SEG-007 / REQ-CRM-005 | Ambos regulan el **envío** de mensajes de marketing/reseña; sin WhatsApp/email real no hay envío que suprimir o que exigir con opt-in. |
-| REQ-UX-006 | "Ejecutable por botón **en el mensaje de WhatsApp**" es, por definición, un requisito sobre el canal WhatsApp real (botones interactivos de WhatsApp Cloud API). |
+| REQ-UX-006 (corrección) | Al leer REQUISITOS.md §5 con más detalle se encontró que SÍ declara un camino "offline: MessagingPort + contract test de botones interactivos" para este REQ exacto (igual que los conectores PMS) — no pertenece a esta lista de "engañosos"; se cerró offline en este pase (ver §3), la integración real con Meta queda pendiente de credencial. |
 | REQ-BO-014 / REQ-BO-035 / REQ-BO-024 | Dependen de módulos de negocio (GM Copilot, P&L real, RR.HH./nómina) que a su vez dependen de fuentes de datos reales (WhatsApp para aprobación, contabilidad real para P&L, nómina real para checador) no construidas todavía; cerrarlos ahora exigiría simular esas fuentes. |
 
 ## 3. Cerrados en este pase (ver commits, uno por REQ)
@@ -125,10 +125,17 @@ de la tarea y `docs/REQUISITOS.md` §5):
 8. **REQ-REV-013 (cron)** — planificador en proceso del night audit con lock por hotel
    (reutiliza `night_audit_claim`) e idempotencia, ejecutable también por CLI.
 9. **REQ-RES-016** — check-in online de un solo uso (formulario web; el WhatsApp Flow
-   cifrado queda documentado como bloqueado por credencial real de Meta), con OCR
-   simulado localmente (sin servicio externo), firma, ETA y RFC.
+   cifrado y el pago/garantía quedan documentados como bloqueados por credencial real
+   de Meta/pasarela, nunca simulados): token de un solo uso, MRZ validada por dígitos
+   de control real (NO se simula OCR de imagen→texto, ver límite documentado en
+   `packages/domain-hotel/src/mrz.ts`), identidad reutilizando REQ-REC-011, firma, ETA
+   y RFC. Incluye rechazo de intento de check-in por chat libre con redirección al
+   flujo estructurado (`tests/adversarial/checkin-chat-libre.spec.ts`).
 10. **REQ-UX-004 / REQ-UX-005** — pantallas del panel del dueño/gerente con fuente de
     datos real y estado vacío honesto donde la fuente aún no tiene datos.
+11. **REQ-UX-006** — aprobaciones ejecutables por botón de WhatsApp, verificado offline
+    contra `FakeWhatsappAdapter` (contract test), integración real con Meta pendiente
+    de credencial.
 
 Ver `docs/ACEPTACION.md` y `docs/PROGRESO.md` (líneas añadidas al final) para el
 detalle de evidencia de cada uno, y `docs/logs/p0-*.log` para las compuertas finales.
