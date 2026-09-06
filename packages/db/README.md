@@ -17,7 +17,18 @@ futuro, contra un proyecto Supabase real (mismo patrón de claims: `auth.uid()`,
 
 ```
 packages/db/
-├── migrations/           # 0001_....sql .. 0012_....sql, expand-only (REQ-GOB-010)
+├── migrations/           # 0001_....sql .. NNNN_....sql, expand-only (REQ-GOB-010) --
+│                         # auditoria-2/arquitectura [BAJO]: este README decía
+│                         # "0001..0012" (estado de H1); hoy son 42 archivos, hasta
+│                         # 0080_*.sql. Rangos por hito/agente (0001-0023 núcleo,
+│                         # 0024-0029 H8, 0030+ H5 folios/night-audit/CFDI, 0040+ H6b
+│                         # housekeeping/mantenimiento, 0050+ experiencias/identidad,
+│                         # 0080+ correcciones de auditoría) documentados en
+│                         # docs/PROGRESO.md y docs/runbooks/migraciones.md §1 -- no se
+│                         # repiten aquí para no tener dos fuentes de verdad que
+│                         # desincronizar; consulta esos dos documentos para el
+│                         # detalle vigente, `ls packages/db/migrations/` para el
+│                         # conteo real de hoy.
 ├── src/
 │   ├── types.ts          # contrato DbClient compartido por ambos motores
 │   ├── engines.ts        # openPglite() / openEmbeddedPostgres()
