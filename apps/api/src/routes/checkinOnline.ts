@@ -19,6 +19,15 @@ import type { AppDeps, HonoEnvBindings } from "../types.ts";
 const CHECKIN_LINK_TTL_HOURS = 72;
 const RFC_PATTERN = /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/i;
 
+// auditoria-2/legal [ALTO] "El check-in online captura el documento de identidad del
+// huésped sin registrar ningún consentimiento". Versión del aviso de privacidad vigente
+// al momento de este check-in -- se registra tal cual en `consent.aviso_version`
+// (packages/db/migrations/0068) para poder demostrar CUÁL versión del aviso aceptó cada
+// huésped si el texto cambia después. pendiente-decision: el fundador/equipo legal debe
+// confirmar el versionado real del aviso publicado en apps/web (hoy es un string fijo,
+// ver apps/web/src/pages/Privacidad.tsx).
+export const PRIVACY_NOTICE_VERSION = "2026-09-pendiente-confirmacion-legal";
+
 const completarSchema = z.object({
   nombreCompleto: z.string().trim().min(1).max(200),
   email: z.string().trim().toLowerCase().email().optional(),
@@ -31,6 +40,11 @@ const completarSchema = z.object({
   /** Recibida y DESCARTADA -- ver el mismo criterio que routes/identidad.ts: nunca se
    *  persiste, no existe columna alguna que pueda almacenarla. */
   documentImageBase64: z.string().optional(),
+  // auditoria-2/legal [ALTO]: aceptación EXPRESA y verificable del aviso de privacidad
+  // antes de capturar el documento de identidad -- sin esto, LFPDPPP exige consentimiento
+  // expreso para el dato más sensible que el sistema procesa y hoy no había ni checkbox
+  // ni registro. `z.literal(true)` -- no basta "ausente"/"false", debe llegar `true`.
+  consentimientoAvisoPrivacidad: z.literal(true, { message: "Debes aceptar el aviso de privacidad para completar el check-in." }),
 });
 
 interface LinkPublicRow {
@@ -58,6 +72,19 @@ export function checkinOnlineRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     const orgId = c.get("orgId");
     const hotelId = c.req.param("hotelId");
     const reservationId = c.req.param("reservationId");
+
+    // auditoria-2/seguridad+datos [CRITICO, D1/S1]: verifica que `reservationId`
+    // pertenezca REALMENTE a `hotelId` ANTES de emitir el enlace -- mismo patrón que sus
+    // rutas hermanas (reservas.ts: `where id = $2 and hotel_id = $3`). Defensa en
+    // profundidad: la FK compuesta `checkin_link_reservation_hotel_fk`
+    // (packages/db/migrations/0061) ya hace este INSERT estructuralmente imposible si
+    // hay discrepancia, pero sin este chequeo previo el INSERT fallaría con un error de
+    // FK genérico (500) en vez de un 404 claro.
+    const { rows: reservationRows } = await db.query<{ id: string }>(
+      "select id from public.reservation where id = $1 and hotel_id = $2;",
+      [reservationId, hotelId],
+    );
+    if (reservationRows.length === 0) throw Errors.notFound("Reserva no encontrada en este hotel.");
 
     // Invalida cualquier enlace pendiente anterior de esta reserva ANTES de emitir el
     // nuevo -- el índice único parcial (0054) exige que nunca haya dos "pendiente" a
@@ -114,7 +141,12 @@ export function checkinOnlineRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     const last4 = parsed.documentNumber.slice(-4).padStart(4, "0");
 
     try {
-      const { rows } = await deps.engine.admin.query<{ submission_id: string; reservation_id: string }>(
+      const { rows } = await deps.engine.admin.query<{
+        submission_id: string;
+        reservation_id: string;
+        hotel_id: string;
+        tenant_id: string;
+      }>(
         `select * from public.complete_checkin_public($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`,
         [
           token,
@@ -132,7 +164,23 @@ export function checkinOnlineRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
           encrypted.authTag,
         ],
       );
-      return c.json({ id: rows[0]!.submission_id, reservationId: rows[0]!.reservation_id }, 201);
+      const row = rows[0]!;
+
+      // auditoria-2/legal [ALTO]: registra el consentimiento (schema `consent`,
+      // migración 0068) con el hotel/org REALES de la reserva (nunca los del enlace,
+      // mismo criterio que la propia función) -- no bloquea la respuesta al huésped si
+      // este INSERT fallara por algo inesperado, pero SÍ queda logueado (nunca se traga
+      // el error en silencio).
+      try {
+        await deps.engine.admin.query(
+          "select public.record_consent($1, $2, $3, null, 'checkin_online', 'tratamiento_datos', $4, true);",
+          [row.tenant_id, row.hotel_id, row.reservation_id, PRIVACY_NOTICE_VERSION],
+        );
+      } catch (consentErr) {
+        deps.logger.error({ err: consentErr, reservationId: row.reservation_id }, "no se pudo registrar el consentimiento de check-in online");
+      }
+
+      return c.json({ id: row.submission_id, reservationId: row.reservation_id }, 201);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       if (/checkin_link_no_encontrado/.test(message)) throw Errors.notFound("Enlace de check-in no encontrado.");

@@ -75,6 +75,9 @@ describe("check-in online de un solo uso (REQ-RES-016)", () => {
       firmaDataUrl: "data:image/png;base64,AAAA",
       mrzLine1: mrz.line1,
       mrzLine2: mrz.line2,
+      // auditoria-2/legal [ALTO]: consentimiento expreso obligatorio desde
+      // checkinOnline.ts (packages/db/migrations/0068_consentimiento_y_arco.sql).
+      consentimientoAvisoPrivacidad: true as const,
     };
   }
 
