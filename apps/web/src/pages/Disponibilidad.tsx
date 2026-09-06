@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BedDouble, ChevronLeft, ChevronRight } from "lucide-react";
-import { Button, StatCard } from "@atiende/ui";
+import { Button, StatCard, formatMoney } from "@atiende/ui";
 import { PageHeader } from "../components/PageHeader";
 import { DataState } from "../components/DataState";
 import { useHotel } from "../hooks/useHotel";
@@ -127,7 +127,7 @@ export function Disponibilidad() {
                             {dia.disponibles ?? "—"}/{dia.total ?? "—"}
                           </div>
                           <div className="text-xs text-muted-foreground tabular-nums">
-                            {dia.tarifa != null ? `$${dia.tarifa.toFixed(0)}` : "—"}
+                            {dia.tarifa != null ? `$${formatMoney(dia.tarifa, 0)}` : "—"}
                           </div>
                           {restringido && (
                             <div className="mt-0.5 flex flex-wrap justify-center gap-1 text-[10px] text-muted-foreground">

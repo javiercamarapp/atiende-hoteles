@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Percent, Coins, TrendingUp, CalendarCheck, Sparkles } from "lucide-react";
-import { StatCard, EstadoError, Card, CardHeader, CardTitle, CardContent, Badge } from "@atiende/ui";
+import { StatCard, EstadoError, Card, CardHeader, CardTitle, CardContent, Badge, formatMoney } from "@atiende/ui";
 import { PageHeader } from "../components/PageHeader";
 import { useHotel } from "../hooks/useHotel";
 import { obtenerResumen, obtenerRoi } from "../lib/api";
@@ -58,13 +58,13 @@ export function Resumen() {
         <StatCard
           icon={Coins}
           label="ADR (tarifa promedio)"
-          value={data?.adr != null ? `$${data.adr.toFixed(0)} MXN` : "—"}
+          value={data?.adr != null ? `$${formatMoney(data.adr, 0)} MXN` : "—"}
           sinDato={data?.adr == null ? sinDato : undefined}
         />
         <StatCard
           icon={TrendingUp}
           label="RevPAR"
-          value={data?.revpar != null ? `$${data.revpar.toFixed(0)} MXN` : "—"}
+          value={data?.revpar != null ? `$${formatMoney(data.revpar, 0)} MXN` : "—"}
           sinDato={data?.revpar == null ? sinDato : undefined}
         />
         <StatCard
@@ -91,14 +91,14 @@ export function Resumen() {
           ) : (
             <div className="space-y-2">
               <p className="text-2xl font-semibold text-foreground">
-                ${roi.data.sumaEstimadoUsd.toFixed(2)} USD{" "}
+                ${formatMoney(roi.data.sumaEstimadoUsd)} USD{" "}
                 <Badge variant="secondary" className="align-middle ml-1">
                   estimado, supuestos {roi.data.supuestoVersion}
                 </Badge>
               </p>
               <p className="text-xs text-muted-foreground">
                 {roi.data.eventos.length} evento(s) registrado(s)
-                {roi.data.sumaVerificadoUsd > 0 ? ` · $${roi.data.sumaVerificadoUsd.toFixed(2)} USD ya verificado contra línea base` : ""}.
+                {roi.data.sumaVerificadoUsd > 0 ? ` · $${formatMoney(roi.data.sumaVerificadoUsd)} USD ya verificado contra línea base` : ""}.
                 Cifra sin línea base firmada todavía (REQ-REV-018): no habilita ningún cobro por resultado.
               </p>
               <Link to="/agentes" className="text-xs text-primary underline underline-offset-2">

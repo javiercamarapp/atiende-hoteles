@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Wrench, Plus, DollarSign } from "lucide-react";
-import { Badge, Button, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Label, StatCard } from "@atiende/ui";
+import { Badge, Button, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Label, StatCard, formatMoney } from "@atiende/ui";
 import { PageHeader } from "../components/PageHeader";
 import { DataState } from "../components/DataState";
 import { useHotel } from "../hooks/useHotel";
@@ -134,8 +134,8 @@ export function Mantenimiento() {
                         capturado (el formulario de "Reportar" es opcional) muestra
                         "Sin estimar" -- nunca "$0.00", que se leería como una medición
                         real (REQ-UX-002). */}
-                    Estimado: {t.costoEstimado != null ? `$${t.costoEstimado.toFixed(2)} MXN` : "Sin estimar"}
-                    {t.costoReal != null && <> · Real: ${t.costoReal.toFixed(2)} MXN</>}
+                    Estimado: {t.costoEstimado != null ? `$${formatMoney(t.costoEstimado)} MXN` : "Sin estimar"}
+                    {t.costoReal != null && <> · Real: ${formatMoney(t.costoReal)} MXN</>}
                   </p>
                   {esAdmin && t.estado !== "cerrado" && t.estado !== "cancelado" && !t.aprobacionId && (
                     <Button size="sm" variant="outline" onClick={() => setCerrando(t)}>

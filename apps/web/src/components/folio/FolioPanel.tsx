@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogTrigger,
+  formatMoney,
 } from "@atiende/ui";
 import { DataState } from "../DataState";
 import {
@@ -115,7 +116,7 @@ function FolioCard({ hotelId, folio, onCambio }: { hotelId: string; folio: Folio
           {folio.esPrincipal && <Badge variant="secondary">Principal</Badge>}
           <Badge variant={folio.estado === "abierto" ? "default" : "outline"}>{folio.estado}</Badge>
         </div>
-        <div className="text-sm tabular-nums font-semibold">Saldo: ${folio.saldo.toFixed(2)}</div>
+        <div className="text-sm tabular-nums font-semibold">Saldo: ${formatMoney(folio.saldo)}</div>
       </div>
 
       {error && (
@@ -150,8 +151,8 @@ function FolioCard({ hotelId, folio, onCambio }: { hotelId: string; folio: Folio
                 <TableCell>
                   {c.descripcion} {c.revertidoPor && <span className="text-xs">(reversado)</span>}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">${c.monto.toFixed(2)}</TableCell>
-                <TableCell className="text-right tabular-nums">${c.impuesto.toFixed(2)}</TableCell>
+                <TableCell className="text-right tabular-nums">${formatMoney(c.monto)}</TableCell>
+                <TableCell className="text-right tabular-nums">${formatMoney(c.impuesto)}</TableCell>
                 <TableCell className="text-right">
                   {!c.revertidoPor && c.concepto !== "reverso" && folio.estado === "abierto" && (
                     <ReversarCargoBoton
@@ -200,7 +201,7 @@ function FolioCard({ hotelId, folio, onCambio }: { hotelId: string; folio: Folio
                 <TableCell>
                   <Badge variant={p.estado === "capturado" ? "default" : "secondary"}>{p.estado}</Badge>
                 </TableCell>
-                <TableCell className="text-right tabular-nums">${p.monto.toFixed(2)}</TableCell>
+                <TableCell className="text-right tabular-nums">${formatMoney(p.monto)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -552,7 +553,7 @@ function CerrarFolioDialog({
           <DialogTitle>Cerrar folio</DialogTitle>
         </DialogHeader>
         <p className="text-sm">
-          Saldo actual: <strong className="tabular-nums">${saldo.toFixed(2)}</strong>
+          Saldo actual: <strong className="tabular-nums">${formatMoney(saldo)}</strong>
         </p>
         {!esSaldoCero && (
           <p className="text-sm text-amber-600">
