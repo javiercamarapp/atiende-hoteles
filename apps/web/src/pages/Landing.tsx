@@ -212,7 +212,11 @@ export function Landing() {
                   <p className="mt-2 text-muted-foreground">{seccion.descripcion}</p>
                 </div>
                 <div className="rounded-xl overflow-hidden border border-border shadow-lg">
-                  <img src={seccion.imagen} alt={seccion.alt} width={1280} height={800} loading="lazy" className="w-full h-auto" />
+                  {/* Sin `loading="lazy"`: son solo 5 capturas (~500KB total), la
+                      landing es corta y este payload es aceptable para que carguen de
+                      inmediato -- lazy-load aquí solo añadía fragilidad (carrera de
+                      IntersectionObserver en capturas E2E) sin beneficio real. */}
+                  <img src={seccion.imagen} alt={seccion.alt} width={1280} height={800} className="w-full h-auto" />
                 </div>
               </div>
             ))}

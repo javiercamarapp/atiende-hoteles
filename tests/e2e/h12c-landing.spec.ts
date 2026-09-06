@@ -23,12 +23,19 @@ test("landing pública (/): renderiza, sin scroll horizontal, capturas 1280/390 
   const desbordaHorizontal = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
   expect(desbordaHorizontal, "la landing no debe generar scroll horizontal").toBe(false);
 
-  // Las 5 capturas reales del producto deben cargar (no imagen rota).
+  // 6 imágenes con /landing/*: 5 secciones de producto + la del hero (que reutiliza a
+  // propósito la captura de back-office-cfdi.png como imagen principal del hero).
+  // `expect.poll` (en vez de una sola lectura de `naturalWidth`) tolera que el decode
+  // de un PNG de ~100KB no haya terminado en el instante exacto de `networkidle`.
   const imagenesProducto = page.locator('main img[src^="/landing/"]');
-  await expect(imagenesProducto).toHaveCount(5);
+  await expect(imagenesProducto).toHaveCount(6);
   for (const img of await imagenesProducto.all()) {
-    const naturalWidth = await img.evaluate((el: HTMLImageElement) => el.naturalWidth);
-    expect(naturalWidth, "la captura del producto debe cargar (naturalWidth > 0)").toBeGreaterThan(0);
+    await expect
+      .poll(async () => img.evaluate((el: HTMLImageElement) => el.naturalWidth), {
+        message: "la captura del producto debe cargar (naturalWidth > 0)",
+        timeout: 10_000,
+      })
+      .toBeGreaterThan(0);
   }
 
   const vp = testInfo.project.use.viewport;
@@ -39,8 +46,12 @@ test("landing pública (/): CTA a /registro y a /login presentes; footer con enl
   await page.goto("/");
   await expect(page.getByRole("link", { name: /iniciar sesión/i })).toHaveAttribute("href", "/login");
   await expect(page.getByRole("link", { name: /prueba gratis|prueba gratuita/i }).first()).toHaveAttribute("href", "/registro");
-  await expect(page.getByRole("link", { name: /aviso de privacidad/i })).toHaveAttribute("href", "/privacidad");
-  await expect(page.getByRole("link", { name: /términos y condiciones/i })).toHaveAttribute("href", "/terminos");
+  // Se acota al footer (getByRole("contentinfo")): el banner de cookies TAMBIÉN enlaza
+  // "aviso de privacidad" en su texto (a propósito, ver CookieConsentBanner.tsx), así
+  // que un locator sin acotar encuentra 2 coincidencias válidas -- no es un defecto.
+  const footer = page.getByRole("contentinfo");
+  await expect(footer.getByRole("link", { name: /aviso de privacidad/i })).toHaveAttribute("href", "/privacidad");
+  await expect(footer.getByRole("link", { name: /términos y condiciones/i })).toHaveAttribute("href", "/terminos");
 });
 
 test("banner de cookies: aparece sin decisión previa, desaparece tras aceptar, y persiste la decisión", async ({ page }) => {
