@@ -11,6 +11,7 @@ function fakeCtx(): ToolContext {
     hotelId: "hotel-1",
     actor: { type: "staff", id: "staff-1" },
     requestId: "req-1",
+    isFirstTurn: false,
     budget: {
       limits: {},
       snapshot: () => ({ tokensUsed: 0, elapsedMs: 0, usdSpent: 0 }),
