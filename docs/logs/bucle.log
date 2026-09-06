@@ -51,3 +51,5 @@
 2026-09-06 08:52:59 ciclo=24 evento=merge_H5_ok siguiente=merge_H6b(resolver #34 reanudado)
 2026-09-06 08:59:52 cron=4fe17d3a evento=disparo_cron bucle_dinamico=activo(09:14) agentes_en_curso=1(integrador H6b) accion=solo_latido
 2026-09-06 09:03:10 ciclo=25 evento=merge_H6b_ok despacho=H7(#35 main),cierreP0(#36 wt)
+2026-09-06 09:04:05 ciclo=25 evento=modelos_verificados #35,#36; nota: columna Estado de REQUISITOS.md desactualizada (84 P0 'pendiente' por texto) → reconciliación de trazabilidad al cierre
+2026-09-06 09:30:05 ciclo=26 evento=H7_completado espera=cierreP0(#36 wt)
