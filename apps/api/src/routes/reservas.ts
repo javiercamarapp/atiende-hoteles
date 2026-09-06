@@ -116,6 +116,7 @@ interface ReservaRow {
   total: string;
   codigoConfirmacion: string;
   canal: string;
+  folioId: string | null;
 }
 
 interface ReservationDetailRow {
@@ -158,10 +159,12 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
               r.status as estado,
               r.total_amount::text as total,
               r.confirmation_code as "codigoConfirmacion",
-              r.channel as canal
+              r.channel as canal,
+              f.id as "folioId"
        from public.reservation r
        join public.room_type rt on rt.id = r.room_type_id
        left join public.guest g on g.id = r.guest_id
+       left join public.folio f on f.reservation_id = r.id
        where r.hotel_id = $1
        order by r.check_in_date desc, r.created_at desc;`,
       [hotelId],
@@ -178,6 +181,7 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         estado: r.estado,
         total: Number(r.total),
         codigoConfirmacion: r.codigoConfirmacion,
+        folioId: r.folioId,
       })),
     );
   });
@@ -193,10 +197,12 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
               r.status as estado,
               r.total_amount::text as total,
               r.confirmation_code as "codigoConfirmacion",
-              r.channel as canal
+              r.channel as canal,
+              f.id as "folioId"
        from public.reservation r
        join public.room_type rt on rt.id = r.room_type_id
        left join public.guest g on g.id = r.guest_id
+       left join public.folio f on f.reservation_id = r.id
        where r.id = $1 and r.hotel_id = $2;`,
       [c.req.param("reservationId"), c.req.param("hotelId")],
     );
@@ -212,6 +218,7 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       estado: r.estado,
       total: Number(r.total),
       codigoConfirmacion: r.codigoConfirmacion,
+      folioId: r.folioId,
     });
   });
 
@@ -317,7 +324,39 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       [orgId, hotelId, reservationId, JSON.stringify({ toStatus: body.toStatus })],
     );
 
-    return c.json({ id: rows[0]!.id, estado: rows[0]!.status });
+    // auditoría-1/backend [ALTO]: hasta H4 no existía NINGÚN camino en la API para crear
+    // un `folio` -- los endpoints de cargo/pago (routes/folios.ts) eran alcanzables solo
+    // insertando el folio con el cliente admin (privilegio que ningún usuario real del
+    // producto tiene). Se crea aquí, al confirmar (primer estado "real" de la reserva,
+    // antes de check-in), para que exista un lugar donde cargar depósito/anticipos desde
+    // ese momento. `on conflict (reservation_id) do nothing` lo vuelve idempotente ante
+    // una re-confirmación o una transición posterior que vuelva a pasar por aquí.
+    let folioId: string | null = null;
+    if (body.toStatus === "confirmada") {
+      const { rows: folioRows } = await db.query<{ id: string }>(
+        `insert into public.folio (tenant_id, hotel_id, reservation_id)
+         values ($1, $2, $3)
+         on conflict (reservation_id) do nothing
+         returning id;`,
+        [orgId, hotelId, reservationId],
+      );
+      if (folioRows.length > 0) {
+        folioId = folioRows[0]!.id;
+        await db.query(
+          "select public.record_audit_log($1, $2, 'folio.created', 'folio', $3, $4);",
+          [orgId, hotelId, folioId, JSON.stringify({ reservationId })],
+        );
+      }
+    }
+    if (folioId == null) {
+      const { rows: existing } = await db.query<{ id: string }>(
+        "select id from public.folio where reservation_id = $1;",
+        [reservationId],
+      );
+      folioId = existing[0]?.id ?? null;
+    }
+
+    return c.json({ id: rows[0]!.id, estado: rows[0]!.status, folioId });
   });
 
   // H4 · PATCH modificar fechas/tipo de habitación: re-verifica disponibilidad bajo el
