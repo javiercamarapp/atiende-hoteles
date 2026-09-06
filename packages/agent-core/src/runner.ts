@@ -125,6 +125,7 @@ export class AgentRunner {
       if (ctx.budget.agotado()) {
         this.emit(ctx, runId, step, "budget_exceeded", {});
         return this.close(
+          ctx,
           runId,
           step,
           "presupuesto_agotado",
@@ -156,7 +157,7 @@ export class AgentRunner {
         }
         if (err instanceof ProviderUnavailableError) {
           this.emit(ctx, runId, step, "error", { message: redact(err.message) });
-          return this.close(runId, step, "no_configurado", null, pendingApprovalIds, err.message);
+          return this.close(ctx, runId, step, "no_configurado", null, pendingApprovalIds, err.message);
         }
         // aud-1 tool-calling.md MEDIO #6: `AgentRunResult.message` es "SIEMPRE cerrado
         // hacia el humano" (puede reenviarse tal cual a un huesped por WhatsApp/voz) --
@@ -168,6 +169,7 @@ export class AgentRunner {
         // generico y seguro.
         this.emit(ctx, runId, step, "error", { message: redact((err as Error).message) });
         return this.close(
+          ctx,
           runId,
           step,
           "error_proveedor",
@@ -198,6 +200,7 @@ export class AgentRunner {
       if (completion.truncated) {
         this.emit(ctx, runId, step, "error", { message: "respuesta truncada por limite de tokens" });
         return this.close(
+          ctx,
           runId,
           step,
           "truncado",
@@ -209,7 +212,7 @@ export class AgentRunner {
       }
 
       if (completion.toolCalls.length === 0) {
-        return this.close(runId, step + 1, "completado", completion.text, pendingApprovalIds, completion.text ?? "");
+        return this.close(ctx, runId, step + 1, "completado", completion.text, pendingApprovalIds, completion.text ?? "");
       }
 
       const hayTerminalDisponible = completion.toolCalls.some((call) => terminal.has(call.name));
@@ -218,6 +221,7 @@ export class AgentRunner {
         // calls -- no se paga una mutacion mas por un resultado que nadie va a leer.
         this.emit(ctx, runId, step, "loop_guard", { message: "ultima ronda sin tools terminales disponibles" });
         return this.close(
+          ctx,
           runId,
           step + 1,
           "agotado_pasos",
@@ -269,6 +273,7 @@ export class AgentRunner {
             message: `repeticion de la misma tool+input dentro de la ventana de ${loopGuardWindow} llamadas`,
           });
           return this.close(
+            ctx,
             runId,
             step + 1,
             "agotado_pasos",
@@ -331,6 +336,7 @@ export class AgentRunner {
               message: `solicitud ${approval.id} ya fue rechazada por un humano`,
             });
             return this.close(
+              ctx,
               runId,
               step + 1,
               "accion_rechazada",
@@ -364,6 +370,7 @@ export class AgentRunner {
 
       if (pendingApprovalIds.length > 0) {
         return this.close(
+          ctx,
           runId,
           step + 1,
           "esperando_aprobacion",
@@ -380,6 +387,7 @@ export class AgentRunner {
 
     this.emit(ctx, runId, step, "loop_guard", { message: "maximo de pasos alcanzado" });
     return this.close(
+      ctx,
       runId,
       step,
       "agotado_pasos",
@@ -391,6 +399,7 @@ export class AgentRunner {
   }
 
   private close(
+    ctx: ToolContext,
     runId: string,
     steps: number,
     status: AgentRunStatus,
@@ -398,6 +407,12 @@ export class AgentRunner {
     pendingApprovalIds: string[],
     message: string,
   ): AgentRunResult {
+    // aud-1 agentico.md ALTO: `run_finished` estaba DECLARADO en AgentTraceKind pero
+    // jamas se emitia -- si el proceso muere justo despues de que run() retorna (antes
+    // de que el llamador, fuera de este paquete, persista el AgentRunResult), no quedaba
+    // ningun rastro en `onTrace` de como termino la corrida. Se emite aqui, en el UNICO
+    // punto de salida de run(), para las 8 ramas de cierre sin excepcion.
+    this.emit(ctx, runId, steps, "run_finished", { message: redact(message) });
     return { status, runId, finalText, steps, pendingApprovalIds: [...pendingApprovalIds], message };
   }
 

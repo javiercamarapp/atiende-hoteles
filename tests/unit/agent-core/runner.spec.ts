@@ -470,4 +470,59 @@ describe("AgentRunner", () => {
     expect(result.status).toBe("no_configurado");
     expect(result.message).toMatch(/no configurado/);
   });
+
+  describe("run_finished (aud-1 agentico.md ALTO: el desenlace de la corrida debe quedar " +
+    "anclado en la misma traza que el resto de los pasos)", () => {
+    it("se emite exactamente una vez, al final, con el status y mensaje de cierre -- caso 'completado'", async () => {
+      const events: { kind: string }[] = [];
+      const runner = new AgentRunner(baseOptions({ onTrace: (e) => events.push(e) }));
+      const result = await runner.run(ctxFor(), "hola");
+      expect(result.status).toBe("completado");
+      const finished = events.filter((e) => e.kind === "run_finished");
+      expect(finished).toHaveLength(1);
+      expect(events.at(-1)?.kind).toBe("run_finished");
+    });
+
+    it("se emite tambien cuando la corrida cierra 'esperando_aprobacion'", async () => {
+      const tools = new ToolRegistry();
+      tools.register(
+        defineTool({
+          name: "cerrar_folio",
+          description: "cierra el folio",
+          inputSchema: z.object({}),
+          effect: "money",
+          needsApproval: true,
+          run: () => ({ ok: true, summary: "cerrado" }),
+        }),
+      );
+      const provider = new FakeProvider([{ kind: "tool_calls", calls: [{ name: "cerrar_folio", input: {} }] }]);
+      const events: { kind: string }[] = [];
+      const runner = new AgentRunner(baseOptions({ provider, tools, onTrace: (e) => events.push(e) }));
+      const result = await runner.run(ctxFor(), "cierra mi cuenta");
+      expect(result.status).toBe("esperando_aprobacion");
+      expect(events.filter((e) => e.kind === "run_finished")).toHaveLength(1);
+    });
+
+    it("se emite tambien cuando el presupuesto se agota ANTES de la primera llamada al proveedor", async () => {
+      const provider = { id: "fake", isAvailable: () => true, complete: async () => ({} as never) };
+      const ctx = buildToolContext(
+        { orgId: "org-1", hotelId: "hotel-1", actor: { type: "staff", id: "staff-1" }, requestId: "req-1" },
+        createRunBudget({ maxMs: 0 }),
+      );
+      const events: { kind: string }[] = [];
+      const runner = new AgentRunner(baseOptions({ provider, onTrace: (e) => events.push(e) }));
+      const result = await runner.run(ctx, "hola");
+      expect(result.status).toBe("presupuesto_agotado");
+      expect(events.filter((e) => e.kind === "run_finished")).toHaveLength(1);
+    });
+
+    it("se emite tambien sin credenciales ('no_configurado')", async () => {
+      const provider = new EnvProvider({ env: {} });
+      const events: { kind: string }[] = [];
+      const runner = new AgentRunner(baseOptions({ provider, onTrace: (e) => events.push(e) }));
+      const result = await runner.run(ctxFor(), "hola");
+      expect(result.status).toBe("no_configurado");
+      expect(events.filter((e) => e.kind === "run_finished")).toHaveLength(1);
+    });
+  });
 });
