@@ -58,7 +58,7 @@ describe("adversarial: Idempotency-Key idéntica en requests CONCURRENTES (audit
     expect(b.status).toBe(201);
 
     const [bodyA, bodyB] = (await Promise.all([a.json(), b.json()])) as { id: string }[];
-    expect(bodyA.id).toBe(bodyB.id); // ambas respuestas apuntan a LA MISMA reserva
+    expect(bodyA!.id).toBe(bodyB!.id); // ambas respuestas apuntan a LA MISMA reserva
 
     const { rows } = await fixture.engine.admin.query<{ count: string }>(
       "select count(*)::text as count from public.reservation where hotel_id = $1 and room_type_id = $2 and check_in_date = $3 and check_out_date = $4;",
@@ -108,7 +108,7 @@ describe("adversarial: Idempotency-Key idéntica en requests CONCURRENTES (audit
     expect(b.status).toBe(201);
 
     const [bodyA, bodyB] = (await Promise.all([a.json(), b.json()])) as { id: string }[];
-    expect(bodyA.id).toBe(bodyB.id);
+    expect(bodyA!.id).toBe(bodyB!.id);
 
     const { rows } = await fixture.engine.admin.query<{ count: string }>(
       "select count(*)::text as count from public.payment where folio_id = $1;",

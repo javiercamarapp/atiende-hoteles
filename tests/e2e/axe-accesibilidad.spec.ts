@@ -10,6 +10,10 @@ const RUTAS: Array<{ nombre: string; ruta: string; protegida: boolean }> = [
   { nombre: "login", ruta: "/login", protegida: false },
   { nombre: "resumen", ruta: "/resumen", protegida: true },
   { nombre: "reservas", ruta: "/reservas", protegida: true },
+  // H4: grid de disponibilidad y formularios de tarifas/impuestos/política de
+  // cancelación en Configuración.
+  { nombre: "disponibilidad", ruta: "/disponibilidad", protegida: true },
+  { nombre: "configuracion", ruta: "/configuracion", protegida: true },
 ];
 
 for (const { nombre, ruta, protegida } of RUTAS) {
