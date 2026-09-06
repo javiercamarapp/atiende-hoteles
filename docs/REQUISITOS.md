@@ -21,10 +21,10 @@ Convención de ID canónico: `REQ-<MOD>-nnn`, MOD ∈ {TEN, RES, HUE, REC, HK, A
 | INT | 15 | 7 | 5 | 2 | 1 |
 | SEG | 19 | 10 | 6 | 2 | 1 |
 | OBS | 11 | 7 | 1 | 3 | 0 |
-| UX | 6 | 2 | 3 | 1 | 0 |
+| UX | 6 | 3 | 2 | 1 | 0 |
 | QA | 10 | 7 | 2 | 1 | 0 |
 | GOB | 21 | 14 | 4 | 3 | 0 |
-| **Total** | **276** | **127** | **86** | **53** | **10** |
+| **Total** | **276** | **128** | **85** | **53** | **10** |
 
 Cobertura de IDs de origen (cuenta manual sobre las cuatro fuentes leídas completas):
 
@@ -359,7 +359,7 @@ Nota: el resto de los IDs de origen —incluidos los de mercado (H06, H17, H18, 
 |---|---|---|---|---|---|---|---|
 | REQ-UX-001 | El frontend de Atiende Hoteles debe reproducir la identidad visual (logo, tipografía, colores, componentes, sidebar, estructura y estilo) del frontend de referencia de Atiende Restaurantes, adaptando navegación y funciones al dominio hotelero. | Encargo-criterios (paridad visual con Restaurantes) | P0 | F | ninguna | pendiente | |
 | REQ-UX-002 | Toda pantalla debe implementar estados vacíos honestos (sin datos simulados) y mensajes de error claros y accionables cuando una integración no responda o esté bloqueada por falta de credenciales. | Encargo-criterios (errores y estados vacíos honestos) | P0 | F | ninguna | pendiente | |
-| REQ-UX-003 | El sistema debe cumplir accesibilidad básica (navegación por teclado, contraste, etiquetas ARIA) y ofrecer experiencia funcional en móvil para las pantallas operativas usadas por el personal (`hotel-staff-pwa`). | Encargo-criterios (accesibilidad y móvil), BP-109 | P1 | F | ninguna | pendiente | |
+| REQ-UX-003 | El sistema debe cumplir accesibilidad básica (navegación por teclado, contraste, etiquetas ARIA) y ofrecer experiencia funcional en móvil para las pantallas operativas usadas por el personal (`hotel-staff-pwa`). | Encargo-criterios (accesibilidad y móvil), BP-109 | P0 | F | ninguna | pendiente | |
 | REQ-UX-004 | El panel del dueño/gerente debe mostrar, junto a cada línea de cobro variable, un enlace al reporte de ahorro/valor que la sustenta ("la factura nunca llega sin su justificación"). | H18-005, H01-016, H02-018 | P1 | F | ninguna | pendiente | |
 | REQ-UX-005 | El "panel del gerente" debe permitir actualizar en <30 s el conocimiento local cambiante (sargazo, clima, cierres de playa, horarios de ferry, eventos) consultado por los agentes conversacionales. | H08-024 | P2 | F | ninguna | pendiente | |
 | REQ-UX-006 | Las aprobaciones operativas del gerente (reembolso sobre umbral, upgrade gratuito, compra urgente, respuesta a reseña negativa) deben poder ejecutarse mediante botón directamente en el mensaje de WhatsApp, sin requerir acceso al panel web. | H09-026, BP-010 | P1 | F | WhatsApp | pendiente | |
