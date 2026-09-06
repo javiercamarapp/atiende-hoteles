@@ -49,6 +49,50 @@ function onlyDigits(value: string): string {
   return value.replace(/[^\d]/g, "");
 }
 
+// T1 (auditoria-2 tool-calling): campos cuyo NOMBRE indica que es el telefono
+// destinatario de un mensaje -- el unico dato que el aprobador humano necesita poder
+// verificar para detectar un destinatario equivocado (CRITICO: `redact()` a ciegas lo
+// convertia en "[TARJETA]"/"[TEL]", dejando al aprobador sin forma de detectar un
+// numero incorrecto). Nombres de campo reales usados por las tools de dominio
+// (`guestPhone` en messagingTools.ts) mas variantes razonables.
+const PHONE_FIELD_NAME_RE = /phone|telefono|whatsapp/i;
+
+/** Enmascara un telefono dejando SOLO los ultimos 4 digitos visibles -- suficiente
+ *  para que un humano detecte "este no es el numero de mi huesped" sin exponer el
+ *  numero completo en el texto que ve el aprobador. Los caracteres no-digito
+ *  (`+`, espacios, guiones) se conservan para legibilidad; el resultado nunca calza
+ *  con `CARD_RE`/`PHONE_MX_RE` (los caracteres `•` rompen la corrida de digitos), asi
+ *  que un `redact()` posterior sobre el mismo texto no lo vuelve a tocar. */
+export function maskPhoneKeepLast4(value: string): string {
+  const totalDigits = (value.match(/\d/g) ?? []).length;
+  if (totalDigits < 4) return "•".repeat(value.length);
+  let seen = 0;
+  return value.replace(/\d/g, (digit) => {
+    seen += 1;
+    return seen > totalDigits - 4 ? digit : "•";
+  });
+}
+
+/** T1: recorre (solo el primer nivel, que es la forma real de las tools de dominio
+ *  actuales -- `guestPhone`/`templateName`/`languageCode`/`parameters`) un objeto de
+ *  input y enmascara PARCIALMENTE (no oculta del todo) cualquier campo cuyo nombre
+ *  indique que es un telefono destinatario, antes de que el resto del texto se
+ *  redacte a ciegas para el aprobador. Nunca se usa para lo que se persiste en
+ *  `audit_log`/trazas (eso sigue usando `redact()` sin este paso, ver `runner.ts`
+ *  `emit()`) -- es exclusivo del texto que ve el humano para decidir. */
+export function maskPhoneFieldsForApproval(input: unknown): unknown {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return input;
+  const record = input as Record<string, unknown>;
+  return Object.fromEntries(
+    Object.entries(record).map(([key, val]) => {
+      if (typeof val === "string" && PHONE_FIELD_NAME_RE.test(key)) {
+        return [key, maskPhoneKeepLast4(val)];
+      }
+      return [key, val];
+    }),
+  );
+}
+
 export function redact(text: string): string {
   if (!text) return text;
 

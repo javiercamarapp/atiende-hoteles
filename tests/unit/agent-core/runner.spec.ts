@@ -150,6 +150,58 @@ describe("AgentRunner", () => {
     expect(approval?.inputSummary).toContain("12340.5");
   });
 
+  it("T1 (auditoria-2 tool-calling CRÍTICO): el teléfono destinatario queda PARCIALMENTE visible (últimos 4 dígitos) para que el aprobador detecte un destinatario equivocado, no oculto por completo como '[TARJETA]'/'[TEL]'", async () => {
+    const runSpy = vi.fn(() => ({ ok: true, summary: "enviado" }));
+    const tools = new ToolRegistry();
+    tools.register(
+      defineTool({
+        name: "enviar_mensaje_whatsapp_plantilla",
+        description: "envia una plantilla al huesped",
+        inputSchema: z.object({
+          guestPhone: z.string(),
+          templateName: z.string(),
+          languageCode: z.string(),
+          parameters: z.array(z.string()),
+        }),
+        effect: "external",
+        needsApproval: true,
+        run: runSpy,
+      }),
+    );
+    const approvalQueue = new InMemoryApprovalQueue();
+    const provider = new FakeProvider([
+      {
+        kind: "tool_calls",
+        calls: [
+          {
+            name: "enviar_mensaje_whatsapp_plantilla",
+            input: {
+              guestPhone: "+5215599998888",
+              templateName: "confirmacion_pago",
+              languageCode: "es",
+              parameters: ["Maria Lopez", "$8,750.00 MXN pagado, folio F-900"],
+            },
+          },
+        ],
+      },
+    ]);
+    const runner = new AgentRunner(baseOptions({ provider, tools, approvalQueue, gate: "propone" }));
+    const result = await runner.run(ctxFor(), "confirma el pago de Maria");
+    expect(result.status).toBe("esperando_aprobacion");
+    const approval = await approvalQueue.get(result.pendingApprovalIds[0]!);
+
+    // NUNCA "[TARJETA]"/"[TEL]" (ciego, inútil para verificar) -- el aprobador debe
+    // poder ver que el número termina en 8888.
+    expect(approval?.inputSummary).not.toMatch(/\[TARJETA\]|\[TEL\]/);
+    expect(approval?.inputSummary).toContain("8888");
+    // Tampoco el número COMPLETO en claro -- enmascarado, no expuesto sin más.
+    expect(approval?.inputSummary).not.toContain("+5215599998888");
+    // El nombre del huésped (para cruzar "es Maria, ¿por qué manda a este número?")
+    // sigue visible, junto con el resto del contexto de negocio.
+    expect(approval?.inputSummary).toContain("Maria Lopez");
+    expect(approval?.inputSummary).toContain("F-900");
+  });
+
   it("una tool con needsApproval=true y alwaysApprove=true se ejecuta SIN pasar por la " +
     "ApprovalQueue (aud-1 agentico.md BAJO #8: alwaysApprove dejaba de ser una funcion " +
     "fantasma)", async () => {

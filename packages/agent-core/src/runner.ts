@@ -19,7 +19,7 @@ import { ProviderUnavailableError } from "./errors.ts";
 import type { AgentGate } from "./roles.ts";
 import type { AgentTraceEvent, CostLedger } from "./trace.ts";
 import { estimateCostUsd, type PricingTable } from "./pricing.ts";
-import { redact } from "./redact.ts";
+import { maskPhoneFieldsForApproval, redact } from "./redact.ts";
 
 export interface AgentRunnerOptions {
   readonly agentName: string;
@@ -95,7 +95,14 @@ function sortKeysForDisplay(value: unknown): unknown {
 /** Resumen legible del input REAL validado por Zod que recibio la tool, para que el
  * aprobador humano (GOB-026) sepa exactamente que esta autorizando -- monto, folio,
  * cualquier dato de negocio que traiga `parsed.data` -- nunca solo el nombre de la tool.
- * Redactado (nunca PII cruda en lo que se persiste como `textoExacto`/`audit_log`). */
+ * Redactado (nunca PII cruda en lo que se persiste como `textoExacto`/`audit_log`) --
+ * EXCEPTO el telefono destinatario (T1, auditoria-2 tool-calling CRITICO): `redact()`
+ * a ciegas sobre el JSON completo convertia `guestPhone` en "[TARJETA]"/"[TEL]",
+ * dejando al aprobador SIN forma de detectar un destinatario equivocado -- el propio
+ * dato que este mecanismo existe para que el humano pueda verificar. Un campo cuyo
+ * NOMBRE indica que es un telefono destinatario (`guestPhone` y variantes,
+ * `maskPhoneFieldsForApproval`) se enmascara PARCIALMENTE (ultimos 4 digitos
+ * visibles) ANTES de la redaccion ciega, en vez de ocultarse por completo. */
 function describeApprovalInput(input: unknown): string {
   if (input === null || input === undefined) {
     return "(sin datos adicionales del modelo)";
@@ -105,7 +112,7 @@ function describeApprovalInput(input: unknown): string {
     // identificadores reales vienen del ToolContext de la conversacion en curso.
     return "(sin datos en el input; los identificadores vienen del contexto de la conversacion en curso)";
   }
-  return redact(JSON.stringify(sortKeysForDisplay(input)));
+  return redact(JSON.stringify(sortKeysForDisplay(maskPhoneFieldsForApproval(input))));
 }
 
 export class AgentRunner {
