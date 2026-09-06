@@ -73,11 +73,26 @@ hito. Esta pensada para que una implementacion futura respaldada por una tabla
 humano via API/WhatsApp/web -- ver ADR-006) implemente el mismo contrato sin tocar el
 `AgentRunner` ni las tools:
 
-- **Idempotencia**: `request()` deduplica por `(toolName, hash(input), hotelId)`. Una
-  segunda solicitud identica reusa la vigente (pendiente, aprobada o rechazada) en vez
-  de abrir una decision paralela; solo una solicitud vencida permite una nueva.
+- **Idempotencia**: `request()` deduplica por `(toolName, hash(input), hotelId,
+  requestedBy)` -- `requestedBy` es el ambito de conversacion/actor (p.ej.
+  `agent:<agentName>:<actor.id>`), asi que dos conversaciones distintas (dos
+  huespedes/folios) que llaman la misma tool con el mismo input (tipico del patron
+  Likida `properties: {}`, donde el input real siempre es `{}`) NUNCA comparten la
+  misma solicitud (corregido en aud-1, ver `docs/auditoria-1/correccion-agent-core.md`,
+  tool-calling CRITICO #1). Una segunda solicitud identica dentro del mismo ambito reusa
+  la vigente (pendiente, aprobada o rechazada -- es la MISMA decision humana, no se
+  reabre en silencio con un simple reintento); solo una solicitud vencida (expirada)
+  permite crear una nueva. `AgentRunner.run()` reporta explicitamente el estado
+  `"accion_rechazada"` (terminal, nunca "esperando_aprobacion") cuando la tool que pidio
+  ejecutar ya fue rechazada -- nunca dice "pendiente" de algo que un humano ya cerro
+  (tool-calling ALTO #4).
+- **Resumen legible del input real** (`inputSummary`, GOB-026): el aprobador no firma a
+  ciegas -- `ApprovalRequest.inputSummary` expone el input real (redactado) que recibio
+  la tool, no solo `inputHash` (tool-calling CRITICO #2).
 - **Doble confirmacion para dinero** (GOB-026): `isMoney: true` exige 2 confirmaciones
-  de actores DISTINTOS; el mismo actor no puede confirmar dos veces.
+  de actores DISTINTOS **y de ROLES distintos** (`role` es obligatorio al aprobar dinero);
+  el mismo actor, o el mismo rol bajo un alias/actor distinto, no puede confirmar dos
+  veces (agentico MEDIO #6).
 - **Expiracion**: cada solicitud tiene `expiresAt` (TTL configurable); `expirePending()`
   barre las vencidas a `"expirada"`.
 - Cada decision guarda `textoExacto` (el texto que vio el aprobador), listo para el hash

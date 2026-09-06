@@ -115,6 +115,103 @@ describe("AgentRunner", () => {
     expect(runSpy).not.toHaveBeenCalled();
   });
 
+  it("la solicitud de aprobacion expone el input REAL (monto) al aprobador, no solo el " +
+    "nombre de la tool (aud-1 tool-calling.md CRITICO #2)", async () => {
+    const runSpy = vi.fn(() => ({ ok: true, summary: "cobrado" }));
+    const tools = new ToolRegistry();
+    tools.register(
+      defineTool({
+        name: "cobrar_folio",
+        description: "cobra el folio",
+        inputSchema: z.object({ montoMxn: z.number() }),
+        effect: "money",
+        needsApproval: true,
+        run: runSpy,
+      }),
+    );
+    const approvalQueue = new InMemoryApprovalQueue();
+    const provider = new FakeProvider([
+      { kind: "tool_calls", calls: [{ name: "cobrar_folio", input: { montoMxn: 12340.5 } }] },
+    ]);
+    const runner = new AgentRunner(baseOptions({ provider, tools, approvalQueue, gate: "propone" }));
+    const result = await runner.run(ctxFor(), "cobra mi cuenta");
+    expect(result.status).toBe("esperando_aprobacion");
+    const approval = await approvalQueue.get(result.pendingApprovalIds[0]!);
+    // Ni textoMostrado ni inputSummary pueden limitarse al nombre de la tool/hotel: el
+    // aprobador debe poder VER el monto real que esta autorizando.
+    expect(approval?.textoMostrado).toContain("12340.5");
+    expect(approval?.inputSummary).toContain("12340.5");
+  });
+
+  it("una tool con needsApproval=true y alwaysApprove=true se ejecuta SIN pasar por la " +
+    "ApprovalQueue (aud-1 agentico.md BAJO #8: alwaysApprove dejaba de ser una funcion " +
+    "fantasma)", async () => {
+    const runSpy = vi.fn(() => ({ ok: true, summary: "marcada" }));
+    const tools = new ToolRegistry();
+    tools.register(
+      defineTool({
+        name: "marcar_leida",
+        description: "marca una notificacion como leida",
+        inputSchema: z.object({}),
+        effect: "write",
+        needsApproval: true,
+        alwaysApprove: true,
+        run: runSpy,
+      }),
+    );
+    const approvalQueue = new InMemoryApprovalQueue();
+    const requestSpy = vi.spyOn(approvalQueue, "request");
+    const provider = new FakeProvider([
+      { kind: "tool_calls", calls: [{ name: "marcar_leida", input: {} }] },
+      { kind: "final", text: "leida" },
+    ]);
+    const runner = new AgentRunner(baseOptions({ provider, tools, approvalQueue, gate: "propone" }));
+    const result = await runner.run(ctxFor(), "marca como leida");
+    expect(result.status).toBe("completado");
+    expect(runSpy).toHaveBeenCalledTimes(1);
+    expect(requestSpy).not.toHaveBeenCalled();
+  });
+
+  it("una tool con needsApproval ya RECHAZADA se reporta como 'accion_rechazada' " +
+    "(terminal), nunca como 'esperando_aprobacion' (aud-1 tool-calling.md ALTO #4)", async () => {
+    const runSpy = vi.fn(() => ({ ok: true, summary: "cerrado" }));
+    const tools = new ToolRegistry();
+    tools.register(
+      defineTool({
+        name: "cerrar_folio",
+        description: "cierra el folio",
+        inputSchema: z.object({}),
+        effect: "money",
+        needsApproval: true,
+        run: runSpy,
+      }),
+    );
+    const approvalQueue = new InMemoryApprovalQueue();
+    const pre = await approvalQueue.request({
+      toolName: "cerrar_folio",
+      input: {},
+      orgId: "org-1",
+      hotelId: "hotel-1",
+      requestedBy: "agent:recepcionista:staff-1",
+      isMoney: true,
+      textoMostrado: "cerrar folio",
+    });
+    await approvalQueue.decide({
+      approvalId: pre.id,
+      actor: "gerente-1",
+      decision: "rechazar",
+      textoExacto: "cerrar folio",
+    });
+
+    const provider = new FakeProvider([{ kind: "tool_calls", calls: [{ name: "cerrar_folio", input: {} }] }]);
+    const runner = new AgentRunner(baseOptions({ provider, tools, approvalQueue, gate: "propone" }));
+    const result = await runner.run(ctxFor(), "cierra mi cuenta otra vez");
+    expect(result.status).toBe("accion_rechazada");
+    expect(result.pendingApprovalIds).toHaveLength(0);
+    expect(result.message).toMatch(/rechaz/);
+    expect(runSpy).not.toHaveBeenCalled();
+  });
+
   it("una tool con needsApproval YA aprobada (idempotencia) SI se ejecuta", async () => {
     const runSpy = vi.fn(() => ({ ok: true, summary: "ajustado" }));
     const tools = new ToolRegistry();
@@ -134,7 +231,10 @@ describe("AgentRunner", () => {
       input: {},
       orgId: "org-1",
       hotelId: "hotel-1",
-      requestedBy: "humano-preaprobado",
+      // Debe coincidir con el ambito de conversacion/actor que el AgentRunner usara al
+      // pedir la aprobacion (`agent:${agentName}:${ctx.actor.id}`, ver runner.ts) -- la
+      // llave de idempotencia ahora incluye ese ambito (aud-1 tool-calling.md CRITICO #1).
+      requestedBy: "agent:recepcionista:staff-1",
       isMoney: false,
       textoMostrado: "aprobar ajuste",
     });

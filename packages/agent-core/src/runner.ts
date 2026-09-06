@@ -45,10 +45,17 @@ export interface AgentRunnerOptions {
 export type AgentRunStatus =
   | "completado"
   | "esperando_aprobacion"
+  /** Una tool con needsApproval fue RECHAZADA por un humano: estado terminal explicito,
+   * nunca se reporta como "esperando_aprobacion" (aud-1 tool-calling.md ALTO #4). */
+  | "accion_rechazada"
   | "agotado_pasos"
   | "presupuesto_agotado"
   | "no_configurado"
   | "error_proveedor"
+  /** El modelo propuso mas de una tool effect="money" en la misma ronda: REQ-AGT-004
+   * exige que el core nunca permita decidir dos acciones de dinero a la vez (aud-1
+   * agentico.md ALTO #4). */
+  | "paralelismo_dinero_bloqueado"
   | "truncado";
 
 export interface AgentRunResult {
@@ -59,6 +66,35 @@ export interface AgentRunResult {
   readonly pendingApprovalIds: string[];
   /** Mensaje SIEMPRE cerrado hacia el humano: nunca "se trabo" en silencio. */
   readonly message: string;
+}
+
+function sortKeysForDisplay(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortKeysForDisplay);
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.keys(record)
+        .sort()
+        .map((key) => [key, sortKeysForDisplay(record[key])]),
+    );
+  }
+  return value;
+}
+
+/** Resumen legible del input REAL validado por Zod que recibio la tool, para que el
+ * aprobador humano (GOB-026) sepa exactamente que esta autorizando -- monto, folio,
+ * cualquier dato de negocio que traiga `parsed.data` -- nunca solo el nombre de la tool.
+ * Redactado (nunca PII cruda en lo que se persiste como `textoExacto`/`audit_log`). */
+function describeApprovalInput(input: unknown): string {
+  if (input === null || input === undefined) {
+    return "(sin datos adicionales del modelo)";
+  }
+  if (typeof input === "object" && Object.keys(input as object).length === 0) {
+    // Patron Likida properties:{} (ADR-006): el input esta vacio a proposito, los
+    // identificadores reales vienen del ToolContext de la conversacion en curso.
+    return "(sin datos en el input; los identificadores vienen del contexto de la conversacion en curso)";
+  }
+  return redact(JSON.stringify(sortKeysForDisplay(input)));
 }
 
 export class AgentRunner {
@@ -235,7 +271,11 @@ export class AgentRunner {
           continue;
         }
 
-        if (tool.needsApproval) {
+        if (tool.needsApproval && !tool.alwaysApprove) {
+          // aud-1 tool-calling.md CRITICO #2: el aprobador no puede firmar a ciegas --
+          // textoMostrado/inputSummary DEBEN incluir el input real (monto, folio, lo que
+          // traiga `parsed.data`), redactado, no solo el nombre de la tool y el hotel.
+          const inputSummary = describeApprovalInput(parsed.data);
           const approval = await opts.approvalQueue.request({
             toolName: tool.name,
             input: parsed.data,
@@ -243,13 +283,36 @@ export class AgentRunner {
             hotelId: ctx.hotelId,
             requestedBy: `agent:${opts.agentName}:${ctx.actor.id}`,
             isMoney: tool.effect === "money",
-            textoMostrado: `${opts.agentName} solicita ejecutar "${tool.name}" en hotel ${ctx.hotelId}`,
+            textoMostrado:
+              `${opts.agentName} solicita ejecutar "${tool.name}" en hotel ${ctx.hotelId} ` +
+              `con datos: ${inputSummary}`,
+            inputSummary,
           });
           this.emit(ctx, runId, step, "approval_requested", {
             toolName: tool.name,
             effect: tool.effect,
             message: approval.id,
           });
+          if (approval.status === "rechazada") {
+            // aud-1 tool-calling.md ALTO #4: una solicitud RECHAZADA es un estado
+            // TERMINAL, nunca se reporta como "pendiente"/"esperando_aprobacion" -- el
+            // humano/huesped recibe el cierre explicito que ADR-006 promete, en vez de
+            // quedar atrapado creyendo que todavia se esta esperando una decision que ya
+            // se tomo.
+            this.emit(ctx, runId, step, "loop_guard", {
+              toolName: tool.name,
+              message: `solicitud ${approval.id} ya fue rechazada por un humano`,
+            });
+            return this.close(
+              runId,
+              step + 1,
+              "accion_rechazada",
+              null,
+              pendingApprovalIds,
+              `La accion "${tool.name}" fue rechazada por un humano (solicitud ${approval.id}); ` +
+                "no se ejecuta ni se reporta como pendiente.",
+            );
+          }
           if (approval.status !== "aprobada") {
             pendingApprovalIds.push(approval.id);
             toolResultMessages.push({

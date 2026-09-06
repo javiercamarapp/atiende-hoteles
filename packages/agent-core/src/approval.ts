@@ -13,6 +13,9 @@ export type ApprovalDecision = "aprobar" | "rechazar";
 
 export interface ApprovalConfirmation {
   readonly actor: string;
+  /** Rol declarado del aprobador (p.ej. "gerente", "director"). GOB-026 exige DOS ROLES
+   * distintos para dinero, no solo dos strings de actor distintos (ver `decide()`). */
+  readonly role?: string;
   readonly decidedAt: string;
   readonly decision: ApprovalDecision;
   /** GOB-026: texto exacto que vio el aprobador, para el hash encadenado de audit_log. */
@@ -32,6 +35,10 @@ export interface ApprovalRequest {
   /** 1 normalmente; 2 para dinero (doble confirmacion, GOB-026). */
   readonly requiredConfirmations: number;
   readonly textoMostrado: string;
+  /** Resumen legible del input REAL que recibio la tool (monto/folio/lo que traiga
+   * `parsed.data`, redactado) -- para que el aprobador no firme a ciegas (GOB-026).
+   * Ver aud-1 tool-calling.md CRITICO #2. */
+  readonly inputSummary: string;
   status: ApprovalStatus;
   confirmations: ApprovalConfirmation[];
 }
@@ -44,12 +51,18 @@ export interface RequestApprovalParams {
   readonly requestedBy: string;
   readonly isMoney: boolean;
   readonly textoMostrado: string;
+  /** Resumen legible del input real (ver `ApprovalRequest.inputSummary`). Si se omite,
+   * se usa `textoMostrado` como respaldo. */
+  readonly inputSummary?: string;
   readonly ttlMs?: number;
 }
 
 export interface DecideApprovalParams {
   readonly approvalId: string;
   readonly actor: string;
+  /** Rol declarado del aprobador. Obligatorio para decidir "aprobar" sobre una solicitud
+   * de dinero (GOB-026: dos ROLES distintos, no dos alias del mismo actor). */
+  readonly role?: string;
   readonly decision: ApprovalDecision;
   readonly textoExacto: string;
   readonly now?: Date;
@@ -84,8 +97,14 @@ export function hashApprovalInput(input: unknown): string {
   return createHash("sha256").update(canonical).digest("hex");
 }
 
-function idempotencyKey(toolName: string, inputHash: string, hotelId: string): string {
-  return `${hotelId}::${toolName}::${inputHash}`;
+// aud-1 tool-calling.md CRITICO #1: la llave de idempotencia DEBE incluir el ambito de
+// conversacion/actor (`requestedBy`) ademas de hotel+tool+hash(input). Sin esto, dos
+// conversaciones distintas (dos huespedes/folios) que llaman la misma tool con el mismo
+// input (tipico en el patron Likida `properties: {}`, donde el input real siempre es
+// `{}`) comparten la MISMA solicitud de aprobacion -- aprobar la de un huesped aprueba,
+// sin que nadie lo note, la del otro.
+function idempotencyKey(toolName: string, inputHash: string, hotelId: string, requestedBy: string): string {
+  return `${hotelId}::${toolName}::${inputHash}::${requestedBy}`;
 }
 
 export interface InMemoryApprovalQueueOptions {
@@ -113,10 +132,14 @@ export class InMemoryApprovalQueue implements ApprovalQueue {
 
   async request(params: RequestApprovalParams): Promise<ApprovalRequest> {
     const inputHash = hashApprovalInput(params.input);
-    const idemKey = idempotencyKey(params.toolName, inputHash, params.hotelId);
-    // Idempotencia por (tool, hash(input), hotel): si YA existe una solicitud vigente
-    // (pendiente, aprobada o rechazada) para exactamente el mismo (tool,input,hotel), se
-    // reusa en vez de abrir una segunda decision en paralelo. Solo una solicitud vencida
+    const idemKey = idempotencyKey(params.toolName, inputHash, params.hotelId, params.requestedBy);
+    // Idempotencia por (tool, hash(input), hotel, requestedBy=ambito de conversacion/actor):
+    // si YA existe una solicitud vigente (pendiente, aprobada o rechazada) para exactamente
+    // el mismo (tool,input,hotel,requestedBy), se reusa en vez de abrir una segunda decision
+    // en paralelo -- incluida una ya rechazada: es la MISMA decision humana, no debe borrarse
+    // ni reabrirse en silencio con un simple reintento identico del modelo. `AgentRunner`
+    // (runner.ts) es responsable de reportar un "rechazada" como estado TERMINAL explicito,
+    // nunca como "pendiente" (aud-1 tool-calling.md ALTO #4). Solo una solicitud vencida
     // (expirada) permite crear una nueva.
     const existingId = this.pendingIndex.get(idemKey);
     if (existingId) {
@@ -139,6 +162,7 @@ export class InMemoryApprovalQueue implements ApprovalQueue {
       isMoney: params.isMoney,
       requiredConfirmations: params.isMoney ? this.moneyRequiredConfirmations : 1,
       textoMostrado: params.textoMostrado,
+      inputSummary: params.inputSummary ?? params.textoMostrado,
       status: "pendiente",
       confirmations: [],
     };
@@ -166,6 +190,7 @@ export class InMemoryApprovalQueue implements ApprovalQueue {
       request.status = "rechazada";
       request.confirmations.push({
         actor: params.actor,
+        role: params.role,
         decidedAt: now.toISOString(),
         decision: "rechazar",
         textoExacto: params.textoExacto,
@@ -173,18 +198,35 @@ export class InMemoryApprovalQueue implements ApprovalQueue {
       return request;
     }
 
+    // aud-1 agentico.md MEDIO #6: GOB-026 exige DOS ROLES distintos ("1/2 licitador, 2/2
+    // director"), no solo dos strings de actor distintos -- dos alias/sesiones del MISMO
+    // humano (mismo rol) no deben poder satisfacer la doble confirmacion de dinero. El rol
+    // es obligatorio al aprobar una solicitud de dinero.
+    if (request.isMoney && !params.role) {
+      throw new ApprovalError(
+        `aprobar la solicitud de dinero "${params.approvalId}" requiere declarar el rol del ` +
+          `aprobador (GOB-026: se exigen dos ROLES distintos, no solo dos actores)`,
+      );
+    }
+
     const yaConfirmoEsteActor = request.confirmations.some(
       (c) => c.actor === params.actor && c.decision === "aprobar",
     );
-    if (yaConfirmoEsteActor) {
+    const yaConfirmoEsteRol =
+      request.isMoney &&
+      params.role !== undefined &&
+      request.confirmations.some((c) => c.decision === "aprobar" && c.role === params.role);
+    if (yaConfirmoEsteActor || yaConfirmoEsteRol) {
       throw new ApprovalError(
-        `el actor "${params.actor}" ya confirmo esta aprobacion; se requiere un segundo actor ` +
-          `distinto para la doble confirmacion de dinero (GOB-026)`,
+        `el actor "${params.actor}"${params.role ? ` (rol "${params.role}")` : ""} ya confirmo esta ` +
+          `aprobacion; se requiere un segundo actor con un ROL distinto para la doble confirmacion de ` +
+          `dinero (GOB-026)`,
       );
     }
 
     request.confirmations.push({
       actor: params.actor,
+      role: params.role,
       decidedAt: now.toISOString(),
       decision: "aprobar",
       textoExacto: params.textoExacto,
