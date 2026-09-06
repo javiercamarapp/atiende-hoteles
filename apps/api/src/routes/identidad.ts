@@ -13,7 +13,7 @@ import { parsePassportMrz, InvalidMrzError } from "@atiende-hoteles/domain-hotel
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
-import { ADMIN_ROLES, MANAGE_RESERVATIONS_ROLES } from "../domain/roles.ts";
+import { ADMIN_ROLES, MANAGE_RESERVATIONS_ROLES, type HotelRole } from "../domain/roles.ts";
 import { decryptIdentityField, encryptIdentityField, loadIdentityVaultEncryptionKey } from "../lib/identityEncryption.ts";
 import type { AppDeps, HonoEnvBindings } from "../types.ts";
 
@@ -26,6 +26,10 @@ const registrarSchema = z.object({
    *  request, solo campos explícitos). */
   documentImageBase64: z.string().optional(),
   retencionDias: z.number().int().min(1).max(365).optional(),
+  // auditoria-2/legal [ALTO]: obligatorio cuando `retencionDias` supera el default
+  // legal (30 dias, REQ-SEG-004) -- validado tambien en la base
+  // (register_identity_document, migracion 0067) como defensa en profundidad.
+  motivoRetencionExtendida: z.string().trim().min(3).max(500).optional(),
 });
 
 const revelarSchema = z.object({
@@ -88,13 +92,24 @@ export function identidadRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       throw err;
     }
 
+    const retencionDias = body.retencionDias ?? 30;
+    if (retencionDias > 30) {
+      // Extender mas alla del default legal exige rol owner/gm (nunca frontdesk/
+      // reservations, aunque ese sea el minimo para registrar identidad) Y un motivo
+      // explicito -- ambos re-validados en la base (register_identity_document).
+      assertRole(c, ADMIN_ROLES as HotelRole[]);
+      if (!body.motivoRetencionExtendida) {
+        throw Errors.validation("Una retención mayor a 30 días requiere justificar el motivo (motivoRetencionExtendida).");
+      }
+    }
+
     const key = loadIdentityVaultEncryptionKey();
     const encrypted = encryptIdentityField(parsed.documentNumber, key);
     const last4 = parsed.documentNumber.slice(-4).padStart(4, "0");
 
     const { rows } = await db.query<IdentityRefRow>(
       `select id, full_name, nationality, document_type, document_last4
-       from public.register_identity_document($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`,
+       from public.register_identity_document($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`,
       [
         orgId,
         hotelId,
@@ -106,7 +121,8 @@ export function identidadRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         encrypted.ciphertext,
         encrypted.iv,
         encrypted.authTag,
-        body.retencionDias ?? 30,
+        retencionDias,
+        body.motivoRetencionExtendida ?? null,
       ],
     );
 
