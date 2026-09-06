@@ -4,7 +4,7 @@
 // calcula un monto/impuesto por su cuenta.
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ReceiptText, CreditCard, Undo2, Lock, FileCheck2 } from "lucide-react";
+import { ReceiptText, CreditCard, Undo2, Lock, FileCheck2, MoveHorizontal } from "lucide-react";
 import {
   Table,
   TableHeader,
@@ -42,6 +42,25 @@ function mensajeError(err: unknown): string {
   if (err instanceof ApiUnavailableError) return err.message;
   if (err instanceof Error) return err.message;
   return "Ocurrió un error inesperado.";
+}
+
+/**
+ * auditoria-2/frontend [MEDIO]: las tablas de cargos/pagos de este panel son más
+ * anchas que un viewport de 390px y quedan en un `overflow-x-auto` propio sin ninguna
+ * sombra/flecha/indicio de que hay contenido a la derecha (a diferencia de la página
+ * completa, que sí respeta `overflow-x: clip`) -- el recepcionista puede no notar que
+ * existe el botón "Reversar cargo" o el monto completo del pago sin deslizar
+ * deliberadamente. Este aviso solo se muestra por debajo de `sm` (donde el desborde es
+ * real, verificado en las capturas de 390×844) y desaparece en desktop, donde la tabla
+ * ya cabe completa.
+ */
+function AvisoScrollHorizontal() {
+  return (
+    <p className="sm:hidden flex items-center gap-1 px-3 pt-2 text-xs text-muted-foreground">
+      <MoveHorizontal className="size-3.5 shrink-0" aria-hidden="true" />
+      Desliza hacia la derecha para ver todas las columnas
+    </p>
+  );
 }
 
 const CONCEPTOS: { value: ConceptoCargo; label: string }[] = [
@@ -105,6 +124,7 @@ function FolioCard({ hotelId, folio, onCambio }: { hotelId: string; folio: Folio
         </p>
       )}
 
+      <AvisoScrollHorizontal />
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -152,7 +172,10 @@ function FolioCard({ hotelId, folio, onCambio }: { hotelId: string; folio: Folio
         </Table>
       </div>
 
-      <div className="overflow-x-auto border-t border-border">
+      <div className="border-t border-border">
+        <AvisoScrollHorizontal />
+      </div>
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
