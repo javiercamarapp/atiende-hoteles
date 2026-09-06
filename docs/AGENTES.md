@@ -30,7 +30,7 @@ Orquestador de esta sesión: claude-fable-5-1 (verificado por el entorno). Ning�
 | 20 | 2026-09-06 05:02 | H6a: packages/agent-core (tool registry sin datos del modelo, needs_approval, loop-guard, presupuesto, fallback, cola de aprobación) + unit tests (worktree) | sonnet | ver grep al arrancar → claude-sonnet-5 (4/4) | COMPLETADO en rama worktree-agent-a8c095c0f7cfec9a5 (0d8528f): 73 unit nuevas, suite 108/108, lint 0; pendiente merge tras H2 |
 | 21 | 2026-09-06 05:52 | H4: módulo reservas/disponibilidad/tarifas (dominio, API, web, concurrencia, E2E) — main | sonnet | ver grep | en curso |
 | 22 | 2026-09-06 05:52 | H9+H11: packages/mcp-servers puertos/adaptadores honestos/contratos (pms, whatsapp, payments, cfdi, energy, locks) — worktree | sonnet | ver grep | en curso |
-| 23 | 2026-09-06 05:52 | Auditoría-1 seguridad multi-tenant (snapshot 0c7589c) → docs/auditoria-1/seguridad.md | sonnet | ver grep | en curso |
+| 23 | 2026-09-06 05:52 | Auditoría-1 seguridad multi-tenant (snapshot 0c7589c) → docs/auditoria-1/seguridad.md | sonnet | ver grep → claude-sonnet-5 | COMPLETADO: nota 3/10; 2 CRÍT (audit_log falsificable cross-org vía SECURITY DEFINER; outbox/idempotency_key sin aislamiento por hotel) reproducidos en PGlite; 1 MED, 1 BAJO |
 | 24 | 2026-09-06 05:52 | Auditoría-1 backend y API → docs/auditoria-1/backend.md | sonnet | ver grep | en curso |
 | 25 | 2026-09-06 05:52 | Auditoría-1 modelo de datos → docs/auditoria-1/datos.md | sonnet | ver grep | en curso |
 | 26 | 2026-09-06 05:52 | Auditoría-1 sistema agéntico → docs/auditoria-1/agentico.md | sonnet | ver grep | en curso |
