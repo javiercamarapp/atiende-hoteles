@@ -251,7 +251,7 @@ describe("AgentRunner", () => {
       input: {},
       orgId: "org-1",
       hotelId: "hotel-1",
-      requestedBy: "agent:recepcionista:staff-1",
+      requestedBy: "agent:recepcionista:staff:staff-1",
       isMoney: true,
       textoMostrado: "cerrar folio",
     });
@@ -293,7 +293,7 @@ describe("AgentRunner", () => {
       // Debe coincidir con el ambito de conversacion/actor que el AgentRunner usara al
       // pedir la aprobacion (`agent:${agentName}:${ctx.actor.id}`, ver runner.ts) -- la
       // llave de idempotencia ahora incluye ese ambito (aud-1 tool-calling.md CRITICO #1).
-      requestedBy: "agent:recepcionista:staff-1",
+      requestedBy: "agent:recepcionista:staff:staff-1",
       isMoney: false,
       textoMostrado: "aprobar ajuste",
     });
@@ -333,7 +333,7 @@ describe("AgentRunner", () => {
       input: {},
       orgId: "org-1",
       hotelId: "hotel-1",
-      requestedBy: "agent:recepcionista:staff-1",
+      requestedBy: "agent:recepcionista:staff:staff-1",
       isMoney: false,
       textoMostrado: "enviar plantilla",
     });

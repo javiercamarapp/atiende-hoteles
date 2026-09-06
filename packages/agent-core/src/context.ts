@@ -41,6 +41,16 @@ export interface ServerSession {
    * disclosure de IA obligatorio (REQ-HUE-006/GOB-034, ver AgentRunnerOptions.disclosureMessage
    * en runner.ts) -- default `false` si se omite. */
   readonly isFirstTurn?: boolean;
+  /** T2 (auditoria-2 tool-calling CRÍTICO): teléfono del huésped al que pertenece
+   * ESTA conversación/operación (resuelto por la capa de sesión desde la reserva/
+   * conversación real -- p.ej. `conversation.guest_phone`, o el huésped que se está
+   * atendiendo en un check-in -- NUNCA del input que proponga el modelo). Distinto de
+   * `actor.id` cuando quien dispara la corrida es un staff atendiendo a un huésped
+   * (no el propio huésped chateando). `undefined` cuando la corrida no tiene un
+   * huésped vinculado (p.ej. una prueba operativa libre) -- en ese caso ninguna
+   * plantilla "transaccional" se auto-aprueba sin importar el destinatario que el
+   * modelo proponga. */
+  readonly guestPhone?: string;
 }
 
 /**
@@ -56,6 +66,8 @@ export interface ToolContext {
   readonly budget: RunBudget;
   /** Ver `ServerSession.isFirstTurn`. Siempre `false` si la sesion no lo declaro. */
   readonly isFirstTurn: boolean;
+  /** Ver `ServerSession.guestPhone`. */
+  readonly guestPhone?: string;
 }
 
 export function buildToolContext(session: ServerSession, budget: RunBudget): ToolContext {
@@ -71,6 +83,7 @@ export function buildToolContext(session: ServerSession, budget: RunBudget): Too
     requestId: session.requestId,
     budget,
     isFirstTurn: session.isFirstTurn ?? false,
+    guestPhone: session.guestPhone,
   };
 }
 

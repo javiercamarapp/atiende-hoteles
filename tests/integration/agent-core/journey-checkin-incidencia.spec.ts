@@ -99,13 +99,19 @@ function buildRunner(gate: AgentGate, script: readonly FakeStep[]) {
   return { runner, approvalQueue };
 }
 
-function buildCtx(requestId: string) {
+function buildCtx(requestId: string, guestPhone?: string) {
   return buildToolContext(
     {
       orgId: seed.orgId,
       hotelId,
       actor: { type: "staff" as const, id: seed.hotels[0]!.staff.find((s) => s.role === "frontdesk")!.id },
       requestId,
+      // T2 (auditoria-2 tool-calling CRÍTICO): el huésped al que en verdad pertenece
+      // esta operación de check-in -- lo resuelve la capa de sesión (aquí, el propio
+      // test, que sabe qué huésped se está atendiendo), nunca el modelo. Sin esto,
+      // `enviar_mensaje_whatsapp_plantilla` con una plantilla transaccional NUNCA se
+      // auto-aprueba para una corrida de agente (ver messagingTools.ts).
+      guestPhone,
     },
     createRunBudget({}),
   );
@@ -163,7 +169,10 @@ describe("Journey check-in/incidencia · AgentRunner + FakeProvider (shadow/prop
         { kind: "final", text: "Registrado y confirmado con el huésped." },
       ]);
 
-      const ctx = buildCtx("req-journey-1");
+      // Mismo teléfono que el script usa en `enviar_mensaje_whatsapp_plantilla` --
+      // el huésped real de este check-in (T2: sin este vínculo, la plantilla
+      // transaccional nunca se auto-aprobaría para una corrida de agente).
+      const ctx = buildCtx("req-journey-1", "+5215500000000");
       const result = await runner.run(ctx, "Huésped reporta AC descompuesto en su habitación al hacer check-in.");
       expect(result.status).toBe("completado");
 
@@ -209,6 +218,54 @@ describe("Journey check-in/incidencia · AgentRunner + FakeProvider (shadow/prop
       expect(ticketAfterRequest[0]!.actual_cost).toBeNull();
     });
   }
+
+  it("T2/CRÍTICO: si el modelo pone un destinatario DISTINTO al huésped de la conversación en curso, la plantilla transaccional NO se auto-aprueba (cae a espera humana)", async () => {
+    const { runner } = buildRunner("autopilot", [
+      {
+        kind: "tool_calls",
+        calls: [
+          {
+            // El modelo (por error, alucinación, o inyección de instrucciones vía un
+            // mensaje del huésped) propone un número DISTINTO al del huésped real de
+            // esta conversación ("+5215500000000").
+            name: "enviar_mensaje_whatsapp_plantilla",
+            input: { guestPhone: "+5215599990000", templateName: "checkin_confirmado", parameters: ["Otra persona"] },
+          },
+        ],
+      },
+      { kind: "final", text: "Confirmado." },
+    ]);
+    const ctx = buildCtx("req-journey-t2", "+5215500000000");
+    const result = await runner.run(ctx, "Confirma mi check-in");
+
+    // NUNCA se envía sin control humano cuando el destinatario no coincide con el
+    // huésped vinculado -- cae al flujo normal de aprobación, aunque la plantilla SÍ
+    // esté en la lista de transaccionales del hotel.
+    expect(result.status).toBe("esperando_aprobacion");
+    expect(result.pendingApprovalIds).toHaveLength(1);
+
+    const { rows: messages } = await engine.admin.query<{ id: string }>(
+      "select id from public.message where hotel_id = $1;",
+      [hotelId],
+    );
+    expect(messages).toHaveLength(0); // nada se envió de verdad
+  });
+
+  it("T2/CRÍTICO: un agente SIN huésped vinculado (p.ej. prueba operativa de staff) nunca auto-aprueba una plantilla transaccional, sin importar el destinatario", async () => {
+    const { runner } = buildRunner("autopilot", [
+      {
+        kind: "tool_calls",
+        calls: [
+          { name: "enviar_mensaje_whatsapp_plantilla", input: { guestPhone: "+5215500000000", templateName: "checkin_confirmado", parameters: ["Juan Pérez"] } },
+        ],
+      },
+      { kind: "final", text: "Confirmado." },
+    ]);
+    const ctx = buildCtx("req-journey-t2-sin-huesped"); // sin guestPhone vinculado
+    const result = await runner.run(ctx, "Envía la confirmación");
+    expect(result.status).toBe("esperando_aprobacion");
+    expect(result.pendingApprovalIds).toHaveLength(1);
+  });
 
   it("doble confirmación por DOS actores/roles distintos ejecuta la autorización y cierra el ticket (fuera de la corrida del agente)", async () => {
     const { runner } = buildRunner("propone", [

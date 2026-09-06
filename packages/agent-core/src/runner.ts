@@ -387,7 +387,18 @@ export class AgentRunner {
             input: parsed.data,
             orgId: ctx.orgId,
             hotelId: ctx.hotelId,
-            requestedBy: `agent:${opts.agentName}:${ctx.actor.id}`,
+            // T2 (auditoria-2 tool-calling CRÍTICO): cuando la corrida tiene un
+            // huésped vinculado (`ctx.guestPhone`, resuelto por la capa de sesión
+            // desde la reserva/conversación real -- NUNCA del modelo), se codifica
+            // aquí para que `createTransactionalTemplateApprovalQueue`
+            // (messagingTools.ts) pueda verificar que, cuando la plantilla es
+            // "transaccional", el destinatario que el modelo puso en el input sea
+            // EXACTAMENTE ese huésped -- nunca uno que el modelo haya elegido por su
+            // cuenta. Sin huésped vinculado, se usa actor+tipo como antes (sin
+            // afectar la idempotencia por requestedBy, solo el prefijo cambia).
+            requestedBy: ctx.guestPhone
+              ? `agent:${opts.agentName}:guest:${ctx.guestPhone}`
+              : `agent:${opts.agentName}:${ctx.actor.type}:${ctx.actor.id}`,
             isMoney: tool.effect === "money",
             textoMostrado:
               `${opts.agentName} solicita ejecutar "${tool.name}" en hotel ${ctx.hotelId} ` +
