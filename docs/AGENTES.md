@@ -15,7 +15,7 @@ Regla: Fable (claude-fable-5-1) solo orquesta. Todo despacho usa `Agent(model="s
 Orquestador de esta sesión: claude-fable-5-1 (verificado por el entorno). Ningún subagente Fable creado.
 
 **Verificación de herencia (2026-09-05):** grep del campo `model` en los 12 transcripts de agentes de la sesión (7 principales + sub-agentes anidados que lanzó el #2 y el #3): todos `claude-sonnet-5`; `grep -l claude-fable` → ninguno.
-| 8 | 2026-09-05 18:52 | consolidar docs/REQUISITOS.md (matriz canónica) | sonnet | verificación en curso (grep model al arrancar) | en curso |
+| 8 | 2026-09-05 18:52 | consolidar docs/REQUISITOS.md (matriz canónica) | sonnet | verificación en curso (grep model al arrancar) → claude-sonnet-5 (15/15) | COMPLETADO: 270 REQ canónicos, 16 módulos, P0 127/P1 84/P2 52/P3 7; 20 IDs excluidos con razón |
 | 9 | 2026-09-05 18:52 | decidir docs/ARQUITECTURA.md (ADR-001..010) | sonnet | verificación en curso → claude-sonnet-5 (6/6) | COMPLETADO: ADR-001..010, 323 líneas, 8 desvíos vs H20 justificados |
 | 10 | 2026-09-05 18:58 | docs/auditoria/RUBROS.md + AUDITOR-PROMPT.md (protocolo hotelero) | sonnet | ver grep al arrancar → claude-sonnet-5 | COMPLETADO: 12 rubros hoteleros + prompt de auditor + condición de ronda |
 | 11 | 2026-09-05 18:58 | evidencia ampliada B-001 (wiki/memoria/historial) | sonnet | ver grep al arrancar → claude-sonnet-5 | COMPLETADO: sin mención local en wiki/memoria/historial/Drive |
