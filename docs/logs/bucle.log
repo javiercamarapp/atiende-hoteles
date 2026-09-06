@@ -57,3 +57,4 @@
 2026-09-06 10:22:14 ciclo=28 evento=latido_dinamico en_curso=cierreP0
 2026-09-06 10:28:53 ciclo=29 evento=merge_P0_ok verde(416u/164i/113a) snapshot_auditoria2=488a22a
 2026-09-06 10:31:39 ciclo=29 evento=despacho auditoria-2 12 rubros + trazabilidad (13 sonnet)
+2026-09-06 10:40:05 ciclo=30 evento=aud-2 frontend=6/10(0C/2A) faltan=11
