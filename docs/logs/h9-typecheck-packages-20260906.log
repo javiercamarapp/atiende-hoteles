@@ -1,0 +1,28 @@
+
+> @atiende-hoteles/mcp-shared@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+
+
+> @atiende-hoteles/mcp-pms@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+
+
+> @atiende-hoteles/mcp-whatsapp@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+
+
+> @atiende-hoteles/mcp-payments@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+
+
+> @atiende-hoteles/mcp-cfdi@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+
+
+> @atiende-hoteles/mcp-energy@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+
+
+> @atiende-hoteles/mcp-locks@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+

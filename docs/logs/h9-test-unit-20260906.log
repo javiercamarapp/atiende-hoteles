@@ -1,0 +1,77 @@
+
+> atiende-hoteles@0.0.0 test:unit
+> vitest run --config vitest.config.ts tests/unit
+
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/.claude/worktrees/agent-a0e819270034c46c5
+
+ ✓ tests/unit/agent-core/approval.spec.ts (11 tests) 4ms
+ ✓ tests/unit/agent-core/runner.spec.ts (12 tests) 8ms
+ ✓ tests/unit/mcp-servers/locks/contract.spec.ts (11 tests) 3ms
+ ✓ tests/unit/mcp-servers/pms/contract.spec.ts (14 tests | 1 skipped) 7ms
+ ✓ tests/unit/mcp-servers/energy/contract.spec.ts (15 tests) 4ms
+ ✓ tests/unit/mcp-servers/payments/adapter-swap.spec.ts (16 tests) 8ms
+ ✓ tests/unit/mcp-servers/cfdi/pac-doble.spec.ts (13 tests) 11ms
+ ✓ tests/unit/agent-core/tool.spec.ts (10 tests) 9ms
+ ✓ tests/unit/mcp-servers/whatsapp/contract.spec.ts (10 tests) 4ms
+ ✓ tests/unit/mcp-servers/architecture/lock-isolation.spec.ts (7 tests) 8ms
+ ✓ tests/unit/agent-core/provider.spec.ts (8 tests) 3ms
+ ✓ tests/unit/mcp-servers/shared/backoff.spec.ts (7 tests) 12ms
+ ✓ tests/unit/mcp-servers/shared/hmac.spec.ts (10 tests) 4ms
+ ✓ tests/unit/agent-core/context.spec.ts (6 tests) 6ms
+ ✓ tests/unit/agent-core/roles.spec.ts (9 tests) 4ms
+ ✓ tests/unit/schema/dinero-numeric.spec.ts (6 tests) 3535ms
+ ✓ tests/unit/agent-core/redact.spec.ts (10 tests) 5ms
+ ✓ tests/unit/api/rate-limiter.spec.ts (4 tests) 5ms
+ ✓ tests/unit/mcp-servers/shared/rate-limiter.spec.ts (3 tests) 2ms
+ ✓ tests/unit/mcp-servers/shared/idempotency.spec.ts (3 tests) 4ms
+ ✓ tests/unit/mcp-servers/shared/credentials.spec.ts (3 tests) 1ms
+ ✓ tests/unit/agent-core/pricing.spec.ts (4 tests) 4ms
+ ✓ tests/unit/agent-core/trace.spec.ts (3 tests) 13ms
+ ✓ tests/unit/idempotency-key.spec.ts (3 tests) 11432ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > un INSERT plano con la misma clave dos veces es rechazado por el constraint UNIQUE  3790ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > INSERT ... ON CONFLICT DO NOTHING con la misma clave no duplica la fila (patron real de la app)  3092ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > la misma clave en dos tenants distintos NO colisiona (unicidad es por tenant)  4549ms
+ ✓ tests/unit/api/outbox-worker.spec.ts (5 tests) 13541ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un handler exitoso marca el evento 'enviado' y no lo vuelve a drenar  3555ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un handler que falla incrementa attempts y pospone available_at con backoff exponencial  3268ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > tras maxAttempts fallos consecutivos, el evento se marca 'fallido' (dead-letter) y deja de reintentarse  4097ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un event_type sin handler registrado se trata como fallo (nunca se marca 'enviado' silenciosamente)  2619ms
+ ✓ tests/unit/rls/money-role.spec.ts (4 tests) 13592ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer folio  3971ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer charge ni payment  3133ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede insertar un payment  4555ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > gm (rol con acceso a dinero) si puede leer folio/charge/payment de su hotel  1932ms
+ ✓ tests/unit/rls/tenant-isolation.spec.ts (4 tests) 13624ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > SELECT: solo devuelve filas del hotel del usuario  3939ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > INSERT: rechazado con violacion de politica al escribir en el hotel ajeno  3315ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > UPDATE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  4764ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > DELETE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  1604ms
+ ✓ tests/unit/rls/org-isolation.spec.ts (4 tests) 13781ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org compartido del fixture no ve nada del org independiente  3883ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org independiente tampoco ve el org compartido del fixture  3472ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > current_tenant_ids() del usuario del org independiente NO incluye el org del fixture  5092ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > INSERT: rechazado al intentar escribir en el hotel de otro org  1332ms
+ ✓ tests/unit/migrations.spec.ts (4 tests) 11748ms
+   ✓ runner de migraciones (PGlite) > aplica todas las migraciones desde una base vacia  3465ms
+   ✓ runner de migraciones (PGlite) > es idempotente: correrlo dos veces no reaplica nada la segunda vez  3497ms
+   ✓ runner de migraciones (PGlite) > rechaza continuar si una migracion ya aplicada fue editada (expand-only)  3770ms
+   ✓ runner de migraciones (PGlite) > db:reset (dropAllMigratedObjects) deja la base lista para re-aplicar desde cero  1015ms
+ ✓ tests/unit/audit-log.spec.ts (5 tests) 14558ms
+   ✓ audit_log: append-only + cadena de hash > cada fila referencia el hash de la fila anterior del mismo tenant y el primero no tiene prev_hash  3531ms
+   ✓ audit_log: append-only + cadena de hash > el hash almacenado es verificable de forma independiente (recalculado desde las columnas persistidas coincide)  3209ms
+   ✓ audit_log: append-only + cadena de hash > una alteracion manual del payload rompe la verificacion del hash (detectada, no silenciosa)  4181ms
+   ✓ audit_log: append-only + cadena de hash > rechaza UPDATE incluso ejecutado con el rol admin/propietario  2785ms
+   ✓ audit_log: append-only + cadena de hash > rechaza DELETE incluso ejecutado con el rol admin/propietario  852ms
+ ✓ tests/unit/reservation-state-machine.spec.ts (5 tests) 14334ms
+   ✓ maquina de estados de reservation > una reserva nueva arranca en 'cotizada' y queda registrada en el evento inicial  3833ms
+   ✓ maquina de estados de reservation > permite la cadena de transiciones valida completa  3324ms
+   ✓ maquina de estados de reservation > rechaza un salto invalido (cotizada -> en_estancia, saltandose confirmada/check_in)  4651ms
+   ✓ maquina de estados de reservation > rechaza reabrir una reserva cerrada (estado terminal)  1831ms
+   ✓ maquina de estados de reservation > rechaza confirmar una reserva ya cancelada  694ms
+
+ Test Files  31 passed (31)
+      Tests  228 passed | 1 skipped (229)
+   Start at  06:13:32
+   Duration  15.17s (transform 827ms, setup 0ms, collect 4.59s, tests 110.27s, environment 3ms, prepare 2.86s)
+

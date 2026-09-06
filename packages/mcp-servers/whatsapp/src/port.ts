@@ -1,0 +1,123 @@
+/**
+ * `MessagingPort` -- contrato de integración con WhatsApp Cloud API (Meta, H15-012).
+ * Ver docs/ARQUITECTURA.md ADR-007, docs/referencia/02-investigacion-H01-H11.md H09
+ * (WhatsApp como canal principal) y docs/referencia/03-investigacion-H12-H21.md §5.
+ *
+ * Cubre REQ-INT-003 (P0): REST+webhooks+Flows+Calling, un solo portafolio de Meta por
+ * hotel (Tech Provider, Embedded Signup), respetando el límite de mensajería del tier.
+ */
+import { z } from "zod";
+import type { AdapterStatus } from "@atiende-hoteles/mcp-shared";
+
+// ---------------------------------------------------------------------------
+// Estados de dominio de un mensaje saliente. Meta reporta el estado nativo vía webhook
+// de `statuses` con los valores `sent|delivered|read|failed` -- se mapean 1:1 porque ya
+// son el vocabulario que el resto del sistema necesita (a diferencia de PMS, aquí no hay
+// ambigüedad de proveedor: es el único canal, REQ-INT-003).
+// ---------------------------------------------------------------------------
+export const domainMessageStatuses = ["enviado", "entregado", "leido", "fallido"] as const;
+export const DomainMessageStatus = z.enum(domainMessageStatuses);
+export type DomainMessageStatus = z.infer<typeof DomainMessageStatus>;
+
+export const metaMessageStatuses = ["sent", "delivered", "read", "failed"] as const;
+export const MetaMessageStatus = z.enum(metaMessageStatuses);
+export type MetaMessageStatus = z.infer<typeof MetaMessageStatus>;
+
+export function mapMetaStatusToDomain(status: MetaMessageStatus): DomainMessageStatus {
+  const map: Record<MetaMessageStatus, DomainMessageStatus> = {
+    sent: "enviado",
+    delivered: "entregado",
+    read: "leido",
+    failed: "fallido",
+  };
+  return map[status];
+}
+
+/**
+ * Tiers de mensajería de negocio de Meta (límite de conversaciones iniciadas por el
+ * hotel en una ventana de 24h). `unlimited` existe para negocios verificados de alto
+ * volumen -- ver H09/H15-012.
+ */
+export const messagingTiers = ["tier_1k", "tier_10k", "tier_100k", "unlimited"] as const;
+export const MessagingTier = z.enum(messagingTiers);
+export type MessagingTier = z.infer<typeof MessagingTier>;
+
+export const MESSAGING_TIER_LIMITS: Record<MessagingTier, number> = {
+  tier_1k: 1_000,
+  tier_10k: 10_000,
+  tier_100k: 100_000,
+  unlimited: Number.POSITIVE_INFINITY,
+};
+
+// ---------------------------------------------------------------------------
+// Esquemas Zod de entrada/salida
+// ---------------------------------------------------------------------------
+
+export const SendTemplateMessageInput = z.object({
+  to: z.string().min(8), // E.164
+  templateName: z.string().min(1),
+  languageCode: z.string().min(2),
+  parameters: z.array(z.string()).default([]),
+  /** Clave de idempotencia del llamador -- una plantilla de check-in no se reenvía dos veces por reintento. */
+  clientMessageId: z.string().min(1),
+});
+export type SendTemplateMessageInput = z.infer<typeof SendTemplateMessageInput>;
+
+export const SendTextMessageInput = z.object({
+  to: z.string().min(8),
+  body: z.string().min(1).max(4096),
+  clientMessageId: z.string().min(1),
+});
+export type SendTextMessageInput = z.infer<typeof SendTextMessageInput>;
+
+export const SentMessage = z.object({
+  externalMessageId: z.string().min(1),
+  to: z.string().min(8),
+  clientMessageId: z.string().min(1),
+  status: DomainMessageStatus,
+});
+export type SentMessage = z.infer<typeof SentMessage>;
+
+/** Evento normalizado de un webhook entrante (mensaje del huésped o actualización de estado). */
+export const WhatsappWebhookEvent = z.object({
+  eventId: z.string().min(1),
+  type: z.enum(["message.received", "message.status_updated", "flow.completed"]),
+  from: z.string().optional(),
+  externalMessageId: z.string().optional(),
+  status: DomainMessageStatus.optional(),
+  textBody: z.string().optional(),
+  occurredAt: z.string().datetime(),
+  raw: z.record(z.string(), z.unknown()),
+});
+export type WhatsappWebhookEvent = z.infer<typeof WhatsappWebhookEvent>;
+
+// ---------------------------------------------------------------------------
+// Puerto
+// ---------------------------------------------------------------------------
+
+/** Se lanza cuando el hotel ya agotó su cupo de conversaciones iniciadas por negocio en la ventana de 24h. */
+export class MessagingTierLimitError extends Error {
+  readonly code = "messaging_tier_limit_exceeded";
+  constructor(
+    readonly tier: MessagingTier,
+    readonly limit: number,
+  ) {
+    super(`límite del tier de mensajería '${tier}' (${limit}) excedido en la ventana de 24h`);
+    this.name = "MessagingTierLimitError";
+  }
+}
+
+export interface MessagingPort {
+  status(): AdapterStatus;
+
+  /** Requerido fuera de la ventana de 24h de servicio al cliente (Meta exige plantilla aprobada). */
+  sendTemplateMessage(input: SendTemplateMessageInput): Promise<SentMessage>;
+
+  /** Solo válido dentro de la ventana de 24h de conversación abierta por el huésped. */
+  sendTextMessage(input: SendTextMessageInput): Promise<SentMessage>;
+
+  verifyAndNormalizeWebhook(
+    rawBody: string,
+    signatureHeader: string | undefined,
+  ): Promise<WhatsappWebhookEvent>;
+}
