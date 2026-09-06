@@ -1,0 +1,77 @@
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { TooltipProvider, Toaster } from "@atiende/ui";
+import { AuthProvider } from "./hooks/useAuth";
+import { HotelProvider } from "./hooks/useHotel";
+import { RutaProtegida } from "./hooks/useAuth";
+import { AppShell } from "./layouts/AppShell";
+import { Login } from "./pages/Login";
+import { NotFound } from "./pages/NotFound";
+import { Privacidad } from "./pages/Privacidad";
+import { Terminos } from "./pages/Terminos";
+import { Resumen } from "./pages/Resumen";
+import { Reservas } from "./pages/Reservas";
+import { Disponibilidad } from "./pages/Disponibilidad";
+import { Huespedes } from "./pages/Huespedes";
+import { Recepcion } from "./pages/Recepcion";
+import { Housekeeping } from "./pages/Housekeeping";
+import { Mantenimiento } from "./pages/Mantenimiento";
+import { AlimentosBebidas } from "./pages/AlimentosBebidas";
+import { Mensajeria } from "./pages/Mensajeria";
+import { Reputacion } from "./pages/Reputacion";
+import { BackOffice } from "./pages/BackOffice";
+import { Configuracion } from "./pages/Configuracion";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+export function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <HotelProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Navigate to="/resumen" replace />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/terminos" element={<Terminos />} />
+                <Route path="/privacidad" element={<Privacidad />} />
+
+                <Route
+                  element={
+                    <RutaProtegida>
+                      <AppShell />
+                    </RutaProtegida>
+                  }
+                >
+                  <Route path="/resumen" element={<Resumen />} />
+                  <Route path="/reservas" element={<Reservas />} />
+                  <Route path="/disponibilidad" element={<Disponibilidad />} />
+                  <Route path="/huespedes" element={<Huespedes />} />
+                  <Route path="/recepcion" element={<Recepcion />} />
+                  <Route path="/housekeeping" element={<Housekeeping />} />
+                  <Route path="/mantenimiento" element={<Mantenimiento />} />
+                  <Route path="/alimentos-bebidas" element={<AlimentosBebidas />} />
+                  <Route path="/mensajeria" element={<Mensajeria />} />
+                  <Route path="/reputacion" element={<Reputacion />} />
+                  <Route path="/back-office" element={<BackOffice />} />
+                  <Route path="/configuracion" element={<Configuracion />} />
+                </Route>
+
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+            <Toaster />
+          </HotelProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}

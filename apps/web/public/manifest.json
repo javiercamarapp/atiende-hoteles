@@ -1,0 +1,19 @@
+{
+  "name": "Atiende Hoteles — Panel de personal",
+  "short_name": "Atiende Hoteles",
+  "description": "hotel-staff-pwa: panel operativo para recepción, housekeeping y mantenimiento (ADR-002).",
+  "start_url": "/housekeeping",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F7F9FC",
+  "theme_color": "#1D4ED8",
+  "lang": "es-MX",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

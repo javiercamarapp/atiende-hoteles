@@ -13,3 +13,4 @@ coverage/
 packages/db/.pgdata/
 tests/**/screenshots/*.tmp.png
 *.tsbuildinfo
+.claude/
