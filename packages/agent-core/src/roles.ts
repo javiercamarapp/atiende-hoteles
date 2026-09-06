@@ -47,6 +47,27 @@ export const ROLE_PARAMS: Readonly<Record<ModelRole, RoleParams>> = {
   batch_nocturno: { temperature: 0, effort: "high" },
 };
 
+/** Canal conversacional del turno en curso. Solo distingue voz de todo lo demas porque
+ * REQ-AGT-005/REQ-AGT-016 (TTFT <600ms p50) es especificamente un requisito de VOZ. */
+export type Channel = "voz" | "texto";
+
+/**
+ * aud-1 agentico.md MEDIO: `ROLE_PARAMS.canal.effort` era un unico valor fijo
+ * ("medium") para TODO el canal conversacional, sin distinguir voz de texto/WhatsApp --
+ * contradecia REQ-AGT-005 ("effort bajo en canales de voz y WhatsApp") y el propio
+ * comentario de ADR-006 citado arriba ("effort low en voz, medium en texto"). Esta
+ * funcion agrega la dimension de canal que falta SIN romper el default existente:
+ * sin `channel` (o para enrutador/batch_nocturno, que no varian por canal) devuelve
+ * `ROLE_PARAMS[role]` tal cual; para `canal` + `channel: "voz"` baja el effort a "low".
+ */
+export function roleParamsForChannel(role: ModelRole, channel?: Channel): RoleParams {
+  const base = ROLE_PARAMS[role];
+  if (role === "canal" && channel === "voz") {
+    return { ...base, effort: "low" };
+  }
+  return base;
+}
+
 /** Modo copiloto -> autopilot por (hotel, agente): BP-016/BP-053/BP-054/GOB-036. */
 export type AgentGate = "shadow" | "propone" | "autopilot";
 

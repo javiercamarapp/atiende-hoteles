@@ -1,7 +1,13 @@
 // DECISIONLLM (docs/referencia/01-blueprint-y-decision-llm.md §3): runtime por rol
 // configurable por env, y gates shadow/propone/autopilot por (hotel, agente).
 import { describe, expect, it } from "vitest";
-import { DEFAULT_MODEL_BY_ROLE, ROLE_PARAMS, StaticGateResolver, resolveModelForRole } from "@atiende-hoteles/agent-core";
+import {
+  DEFAULT_MODEL_BY_ROLE,
+  ROLE_PARAMS,
+  StaticGateResolver,
+  resolveModelForRole,
+  roleParamsForChannel,
+} from "@atiende-hoteles/agent-core";
 
 describe("resolveModelForRole", () => {
   it("usa Sonnet 5 por defecto para el canal", () => {
@@ -33,6 +39,26 @@ describe("ROLE_PARAMS", () => {
     expect(ROLE_PARAMS.canal.temperature).toBe(0);
     expect(ROLE_PARAMS.enrutador.temperature).toBe(0);
     expect(ROLE_PARAMS.batch_nocturno.temperature).toBe(0);
+  });
+});
+
+describe("roleParamsForChannel (aud-1 agentico.md MEDIO: REQ-AGT-005 exige effort bajo " +
+  "en voz/WhatsApp, no un unico effort fijo para todo el canal)", () => {
+  it("baja el effort del rol 'canal' a 'low' cuando el canal es voz", () => {
+    expect(roleParamsForChannel("canal", "voz")).toEqual({ temperature: 0, effort: "low" });
+  });
+
+  it("mantiene el effort 'medium' del rol 'canal' en texto/WhatsApp escrito/web", () => {
+    expect(roleParamsForChannel("canal", "texto")).toEqual({ temperature: 0, effort: "medium" });
+  });
+
+  it("sin canal explicito, usa el default documentado del rol (compatibilidad)", () => {
+    expect(roleParamsForChannel("canal")).toEqual(ROLE_PARAMS.canal);
+  });
+
+  it("el canal NO afecta a enrutador/batch_nocturno (ya tienen su propio effort fijo)", () => {
+    expect(roleParamsForChannel("enrutador", "voz")).toEqual(ROLE_PARAMS.enrutador);
+    expect(roleParamsForChannel("batch_nocturno", "voz")).toEqual(ROLE_PARAMS.batch_nocturno);
   });
 });
 
