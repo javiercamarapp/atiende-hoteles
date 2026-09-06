@@ -216,6 +216,34 @@ describe("H8: observabilidad + seguridad de transporte (integración real)", () 
       expect(alerta.request_id).toBeTruthy();
     });
 
+    // auditoria-2/operabilidad [MEDIO]: "la alerta no lleva reservation_id/folio_id/
+    // charge_id" -- corregido: un 5xx sobre una ruta con un UUID real en el path ahora
+    // trae el identificador de negocio correspondiente.
+    it("un 5xx sobre un folio con UUID real en el path: la alerta trae folio_id (auditoria-2/operabilidad MEDIO)", async () => {
+      const local = capturingLogger();
+      const folioIdReal = randomUUID();
+      // Motor roto en withAppSession (dbSession corre ANTES de tocar el folio real) --
+      // fuerza un 500 real dentro del pipeline de la ruta, sin necesitar un folio
+      // existente de verdad; el path crudo SÍ trae el UUID real igual.
+      const brokenEngine = {
+        admin: deps.engine.admin,
+        withAppSession: () => {
+          throw new Error("conexión caída (simulada)");
+        },
+      } as unknown as EmbeddedPostgresEngine;
+      const localDeps: AppDeps = { ...deps, logger: local.logger, engine: brokenEngine, metrics: new MetricsRegistry() };
+      const localApp = createApp(localDeps);
+
+      const res = await localApp.request(`/hoteles/${hotelId}/folios/${folioIdReal}`, {
+        headers: { authorization: `Bearer ${gmToken}` },
+      });
+      expect(res.status).toBe(500);
+
+      const alertas = local.parsed().filter((l) => l.nivel === "alerta" && l.tipo === "error_camino_dinero");
+      expect(alertas.length).toBeGreaterThanOrEqual(1);
+      expect(alertas[0]!.folio_id).toBe(folioIdReal);
+    });
+
     it("un 4xx normal (no 5xx) en una ruta de dinero NO dispara la alerta (solo errores reales del sistema)", async () => {
       const local = capturingLogger();
       const localDeps: AppDeps = { ...deps, logger: local.logger, metrics: new MetricsRegistry() };

@@ -149,8 +149,13 @@ otra línea `nivel: "alerta"` (`tipo: "alerta_camino_dinero_sin_destinatario"`) 
 de asumir que "alguien ya se habría enterado" de una alerta anterior.
 
 ### 3.2 Diagnóstico
-1. Con el `request_id` de la alerta, buscar la línea `request` correspondiente (mismo
-   `request_id`) para ver el `path`/`method`/`duration_ms` completos.
+1. **auditoria-2/operabilidad [MEDIO], corregido**: la alerta ya trae
+   `reservation_id`/`folio_id`/`charge_id`/`payment_id` cuando el path de la request los
+   incluye (`apps/api/src/lib/moneyAlert.ts::extractMoneyIdsFromPath`) -- ya NO hace
+   falta ir a buscar la línea `request` aparte solo para saber a qué folio/reserva
+   corresponde el error. Esa línea sigue siendo útil para el `path`/`method`/
+   `duration_ms` completos si se necesita más contexto: con el `request_id` de la
+   alerta, buscar la línea `request` correspondiente (mismo `request_id`).
 2. Con `org_id`/`hotel_id`, revisar `audit_log` de esa ventana para ver si la
    operación (cargo/pago/reserva) quedó a medias:
    ```sql

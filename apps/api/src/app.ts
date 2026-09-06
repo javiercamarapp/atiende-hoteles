@@ -141,6 +141,11 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
         hotelId: c.get("hotelIds")?.[0],
         userId: c.get("userId"),
         errorMessage: c.error?.message,
+        // auditoria-2/operabilidad [MEDIO]: path crudo (con IDs reales), SOLO para que
+        // buildMoneyAlertLog extraiga reservation_id/folio_id/charge_id/payment_id --
+        // `route` sigue siendo el patrón sin resolver (agregación por Prometheus/grep
+        // sin explosión de cardinalidad).
+        rawPath: c.req.path,
       });
       deps.logger.error(alerta, "alerta_camino_dinero");
       // auditoria-2/operabilidad [ALTO]: entrega real al destino configurado (si hay

@@ -19,6 +19,47 @@ export interface MoneyAlertContext {
   hotelId?: string;
   userId?: string;
   errorMessage?: string;
+  /** auditoria-2/operabilidad [MEDIO]: path CRUDO de la request (`c.req.path`, con IDs
+   *  reales), usado SOLO para extraer `reservation_id`/`folio_id`/`charge_id`/
+   *  `payment_id` -- nunca se guarda tal cual en el log de alerta (eso seguiría siendo
+   *  responsabilidad de la línea "request" genérica). Opcional para no romper ningún
+   *  llamador existente que todavía no lo pase. */
+  rawPath?: string;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Segmento de path -> nombre del campo de negocio que identifica (si el segmento
+ *  SIGUIENTE es un UUID). Genérico y basado en el PATH CRUDO, no importa nada de
+ *  `routes/*.ts` -- mantiene la misma disciplina de desacople que `isMoneyPath`
+ *  (detecta por convención de URL, nunca importando el código de la ruta). */
+const ID_SEGMENT_FIELDS: Record<string, string> = {
+  reservas: "reservation_id",
+  folios: "folio_id",
+  cargos: "charge_id",
+  pagos: "payment_id",
+};
+
+/**
+ * auditoria-2/operabilidad [MEDIO]: la alerta original solo traía la ruta PATRÓN
+ * (`/hoteles/:hotelId/folios/:folioId`, literal, sin resolver) -- el único identificador
+ * real (folio/reserva/cargo) vivía en el `path` crudo de OTRA línea de log (la línea
+ * "request"), obligando a correlacionar dos líneas JSON con esquemas distintos por
+ * `request_id` a mano (`docs/runbooks/incidentes.md §3.2.1`) antes de poder actuar. Esta
+ * función extrae esos IDs del path crudo por convención de URL (`.../reservas/<uuid>`,
+ * `.../folios/<uuid>`, etc.), sin acoplarse al código de ninguna ruta concreta.
+ */
+export function extractMoneyIdsFromPath(rawPath: string): Record<string, string> {
+  const segments = rawPath.split("/").filter(Boolean);
+  const ids: Record<string, string> = {};
+  for (let i = 0; i < segments.length - 1; i++) {
+    const field = ID_SEGMENT_FIELDS[segments[i]!];
+    const candidate = segments[i + 1]!;
+    if (field && UUID_RE.test(candidate)) {
+      ids[field] = candidate;
+    }
+  }
+  return ids;
 }
 
 /** Forma exacta del log de alerta del camino del dinero: `nivel: "alerta"` explícito
@@ -37,6 +78,10 @@ export function buildMoneyAlertLog(ctx: MoneyAlertContext): Record<string, unkno
     hotel_id: ctx.hotelId,
     user_id: ctx.userId,
     error: ctx.errorMessage,
+    // auditoria-2/operabilidad [MEDIO]: identificadores reales de negocio (si el path
+    // crudo los trae) -- ya no hace falta ir a buscar la línea "request" aparte para
+    // saber a qué folio/reserva/cargo/pago corresponde el error.
+    ...(ctx.rawPath ? extractMoneyIdsFromPath(ctx.rawPath) : {}),
   };
 }
 
