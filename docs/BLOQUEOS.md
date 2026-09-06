@@ -10,7 +10,8 @@
 - **Candidatas observadas (NO confirmadas, decisión del usuario):** `~/Documents/Codex` (donde vive `atiende-restaurantes`), `~/Desktop/INTENTO DE STARTUPS`, `~/Desktop/GitHub`.
 - **Acción tomada:** trabajo de requisitos/investigación en `~/Documents/Codex/atiende-hoteles-staging` (provisional, documentado en README). No se creó ninguna carpeta llamada "empresas agénticas".
 - **Qué necesita el usuario responder:** ruta exacta de la carpeta (o autorizar una candidata).
-- **Intentos:** 1 (barrido local completo). No se repetirá el barrido; se espera respuesta.
+- **Intento 2 (2026-09-05, Sonnet #11):** grep en wiki 'mi memoria claude', wiki-sync-inbox, memoria de Claude, ~/.codex ~/.grok ~/.gemini ~/.antigravity ~/.openclaw, ~/.zsh_history, y listados de Desktop/GitHub, INTENTO DE STARTUPS, Escritorio/Documentos Mac mini y Google Drive 'Mi unidad' → **ninguna mención**. Detalle: docs/evidencia-B-001-busqueda-ampliada.md.
+- **Intentos:** 2 sin progreso. Búsqueda local agotada; solo el usuario puede resolverlo.
 
 ## B-002 — Toolchain local sin Docker/Supabase CLI/Postgres (ABIERTO, con trabajo independiente)
 - `docker`, `supabase`, `deno`, `psql`, `pg_ctl` no están instalados. Restaurantes depende de Supabase+Deno.
