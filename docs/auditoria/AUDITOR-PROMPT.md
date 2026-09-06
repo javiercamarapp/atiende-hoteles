@@ -34,7 +34,7 @@ bien.
 ## Producto
 Atiende Hoteles automatiza recepción, reservas, folio, housekeeping,
 mantenimiento y mensajería (WhatsApp/voz) para hoteles en México, sobre un
-monorepo multi-tenant donde `tenant = hotel` y varios hoteles pueden compartir
+monorepo multi-tenant donde `tenant = org` (grupo hotelero; ver `REQ-TEN-002`/H20) y varios hoteles (`location.kind='hotel'`) pueden compartir
 el mismo despliegue bajo una `org`. El comprador es el gerente/GM del hotel;
 el usuario final del chat es el huésped. Un error que el huésped vea en su
 folio, o que cruce datos de un hotel a otro, cuesta el contrato.
