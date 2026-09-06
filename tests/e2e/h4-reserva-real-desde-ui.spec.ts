@@ -91,6 +91,11 @@ test("crear una reserva real desde /reservas (seeds reales) y verla en la tabla 
         DB_PORT: String(dbPort),
         DB_DATA_DIR: dataDir,
         JWT_SECRET: "e2e-test-jwt-secret-no-usar-en-produccion",
+        // H8: CORS ahora exige una lista blanca explícita (auditoria-1/seguridad.md
+        // [MEDIO]) -- este apps/web de prueba corre en un puerto dinámico, así que hay
+        // que declararlo aquí (mismo principio que un despliegue real: el backend debe
+        // conocer el origen exacto del frontend).
+        CORS_ALLOWED_ORIGINS: `http://localhost:${webPort}`,
         NODE_ENV: "test",
       },
     });

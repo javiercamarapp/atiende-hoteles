@@ -1,0 +1,52 @@
+{
+  "_procedencia": {
+    "cssVars": "Copiado literal de /Users/javiercamaraportepetit/Documents/Codex/atiende-restaurantes/src/index.css (bloque `:root`, líneas 19-75), citado también en docs/referencia/05-frontend-restaurantes.md §1.3.",
+    "fuentes": "docs/referencia/05-frontend-restaurantes.md §1.2 (trío Inter/Inter Tight/IBM Plex Mono) y src/pages/login.css de atiende-restaurantes líneas 8-9 (`--serif-marca`/`--sans-marca`). Nota verificada con render real (Chrome headless, 2026-09-06): `--sans-marca: 'Instrument Sans', var(--font-body)` referencia una variable `--font-body` que NUNCA se define en ningún archivo de ninguno de los dos repos (`grep -rn -- '--font-body'` solo encuentra esta misma línea en login.css de ambos) — un `var()` de segundo nivel inválido hace inválida toda la declaración de `font-family`, que revierte al valor heredado del `body` (`font-body` de Tailwind = Inter). Por eso `loginSans` abajo registra el valor REAL computado (Inter), no el nombre de fuente que el autor del CSS pretendía (Instrument Sans) — mismo bug, presente idéntico en ambos repos, por eso la paridad real sigue siendo válida.",
+    "logoGeometria": "Extraído programáticamente (regex sobre las etiquetas <rect>/<circle>/<path>) de src/components/AtiendeLogo.tsx de atiende-restaurantes, leído en solo lectura el 2026-09-06.",
+    "boton": "docs/referencia/05-frontend-restaurantes.md §1.5 (radio 999px = píldora) y src/pages/login.css de atiende-restaurantes (`.login-btn { border-radius: 999px }`).",
+    "capturadoEl": "2026-09-06",
+    "metodo": "Lectura estática de docs/ y del código fuente de atiende-restaurantes (solo lectura, sin modificar nada de ese repo) — usado como piso determinista para CI, donde el repo hermano puede no existir. tests/e2e/paridad-visual.spec.ts intenta ADEMÁS un render real levantando `npm run dev` de atiende-restaurantes (mismo patrón que paridad-restaurantes-login.spec.ts) y compara ese render en vivo contra este mismo fixture; si el servidor no arranca, lo documenta en docs/logs/ y no hace fallar la corrida por eso, pero el spec principal (fixture vs Atiende Hoteles) SIEMPRE corre y SÍ falla si difiere."
+  },
+  "cssVars": {
+    "--background": "210 40% 98%",
+    "--foreground": "216 50% 12%",
+    "--primary": "224 76% 48%",
+    "--primary-foreground": "0 0% 100%",
+    "--radius": "0.75rem",
+    "--sidebar-background": "0 0% 100%",
+    "--sidebar-foreground": "216 50% 12%",
+    "--sidebar-primary": "224 76% 48%",
+    "--sidebar-primary-foreground": "0 0% 100%",
+    "--sidebar-accent": "210 30% 95%",
+    "--sidebar-accent-foreground": "224 76% 48%",
+    "--sidebar-border": "214 32% 91%",
+    "--sidebar-ring": "199 89% 48%"
+  },
+  "fuentesTipograficas": {
+    "loginSerif": "Fraunces",
+    "loginSans": "Inter",
+    "display": "Inter Tight",
+    "body": "Inter",
+    "mono": "IBM Plex Mono"
+  },
+  "boton": {
+    "loginBtnBorderRadius": "999px"
+  },
+  "logoGeometria": [
+    { "tag": "rect", "attrs": { "x": "0", "y": "4", "width": "13", "height": "4", "rx": "2", "fill": "#7DD3FC" } },
+    { "tag": "rect", "attrs": { "x": "4", "y": "12", "width": "13", "height": "4", "rx": "2", "fill": "#7DD3FC" } },
+    { "tag": "rect", "attrs": { "x": "0", "y": "20", "width": "13", "height": "4", "rx": "2", "fill": "#7DD3FC" } },
+    { "tag": "circle", "attrs": { "cx": "26", "cy": "6", "r": "5", "fill": "#38BDF8" } },
+    {
+      "tag": "path",
+      "attrs": {
+        "d": "M14 32 L20 20 Q22 16 27 16 L31 16 Q34 16 36 13 L38 10",
+        "stroke": "#1D4ED8",
+        "strokeWidth": "7",
+        "strokeLinecap": "round",
+        "strokeLinejoin": "round",
+        "fill": "none"
+      }
+    }
+  ]
+}

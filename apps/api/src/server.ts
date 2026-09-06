@@ -8,6 +8,7 @@ import { bootstrapDevEngine } from "./db.ts";
 import { loadEnv } from "./env.ts";
 import { rootLogger } from "./logger.ts";
 import { RateLimiter } from "./lib/rateLimit.ts";
+import { MetricsRegistry } from "./metrics.ts";
 import type { AppDeps } from "./types.ts";
 
 async function main() {
@@ -24,6 +25,7 @@ async function main() {
     logger,
     ipLimiter: new RateLimiter({ limit: env.rateLimitPerIpPerMinute, windowMs: 60_000 }),
     userLimiter: new RateLimiter({ limit: env.rateLimitPerUserPerMinute, windowMs: 60_000 }),
+    metrics: new MetricsRegistry(),
   };
 
   const app = createApp(deps);

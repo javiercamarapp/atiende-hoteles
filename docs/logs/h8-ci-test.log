@@ -1,0 +1,151 @@
+
+> atiende-hoteles@0.0.0 test
+> npm run test:unit && npm run test:integration && npm run test:adversarial
+
+
+> atiende-hoteles@0.0.0 test:unit
+> vitest run --config vitest.config.ts tests/unit
+
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging
+
+ ✓ tests/unit/schema/hotel-timezone.spec.ts (4 tests) 7574ms
+ ✓ tests/unit/schema/dinero-numeric.spec.ts (6 tests) 6977ms
+ ✓ tests/unit/agent-core/tool.spec.ts (17 tests) 30ms
+ ✓ tests/unit/agent-core/approval.spec.ts (15 tests) 7ms
+ ✓ tests/unit/agent-core/runner.spec.ts (30 tests) 101ms
+ ✓ tests/unit/idempotency-key.spec.ts (3 tests) 19367ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > un INSERT plano con la misma clave dos veces es rechazado por el constraint UNIQUE  8949ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > INSERT ... ON CONFLICT DO NOTHING con la misma clave no duplica la fila (patron real de la app)  5715ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > la misma clave en dos tenants distintos NO colisiona (unicidad es por tenant)  4703ms
+ ✓ tests/unit/mcp-servers/cfdi/pac-doble.spec.ts (13 tests) 13ms
+ ✓ tests/unit/check-migraciones.spec.ts (9 tests) 23ms
+ ✓ tests/unit/domain-hotel/pricing-source.spec.ts (3 tests) 7ms
+ ✓ tests/unit/mcp-servers/pms/contract.spec.ts (14 tests | 1 skipped) 10ms
+ ✓ tests/unit/mcp-servers/shared/backoff.spec.ts (7 tests) 7ms
+ ✓ tests/unit/mcp-servers/energy/contract.spec.ts (15 tests) 7ms
+ ✓ tests/unit/migrations.spec.ts (4 tests) 21820ms
+   ✓ runner de migraciones (PGlite) > aplica todas las migraciones desde una base vacia  7873ms
+   ✓ runner de migraciones (PGlite) > es idempotente: correrlo dos veces no reaplica nada la segunda vez  4788ms
+   ✓ runner de migraciones (PGlite) > rechaza continuar si una migracion ya aplicada fue editada (expand-only)  4699ms
+   ✓ runner de migraciones (PGlite) > db:reset (dropAllMigratedObjects) deja la base lista para re-aplicar desde cero  4458ms
+ ✓ tests/unit/domain-hotel/motor-precio-total.spec.ts (7 tests) 4ms
+ ✓ tests/unit/mcp-servers/whatsapp/contract.spec.ts (10 tests) 8ms
+ ✓ tests/unit/rls/tenant-isolation.spec.ts (4 tests) 21920ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > SELECT: solo devuelve filas del hotel del usuario  7458ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > INSERT: rechazado con violacion de politica al escribir en el hotel ajeno  5259ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > UPDATE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  5260ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > DELETE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  3943ms
+ ✓ tests/unit/agent-core/context.spec.ts (7 tests) 5ms
+ ✓ tests/unit/rls/org-isolation.spec.ts (4 tests) 22330ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org compartido del fixture no ve nada del org independiente  8359ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org independiente tampoco ve el org compartido del fixture  5617ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > current_tenant_ids() del usuario del org independiente NO incluye el org del fixture  4878ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > INSERT: rechazado al intentar escribir en el hotel de otro org  3470ms
+ ✓ tests/unit/mcp-servers/shared/idempotency.spec.ts (3 tests) 3ms
+ ✓ tests/unit/agent-core/provider.spec.ts (8 tests) 5ms
+ ✓ tests/unit/agent-core/redact.spec.ts (16 tests) 6ms
+ ✓ tests/unit/rls/money-role.spec.ts (4 tests) 22721ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer folio  8488ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer charge ni payment  5711ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede insertar un payment  5393ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > gm (rol con acceso a dinero) si puede leer folio/charge/payment de su hotel  3128ms
+ ✓ tests/unit/mcp-servers/architecture/lock-isolation.spec.ts (7 tests) 13ms
+ ✓ tests/unit/agent-core/roles.spec.ts (13 tests) 4ms
+ ✓ tests/unit/domain-hotel/cancelacion-policy.spec.ts (6 tests) 3ms
+ ✓ tests/unit/mcp-servers/shared/hmac.spec.ts (10 tests) 4ms
+ ✓ tests/unit/api/logger-redact.spec.ts (4 tests) 3ms
+ ✓ tests/unit/mcp-servers/shared/credentials.spec.ts (3 tests) 3ms
+ ✓ tests/unit/domain-hotel/estado-maquina.spec.ts (9 tests) 4ms
+ ✓ tests/unit/domain-hotel/restricciones-estadia.spec.ts (6 tests) 2ms
+ ✓ tests/unit/mcp-servers/locks/contract.spec.ts (11 tests) 6ms
+ ✓ tests/unit/mcp-servers/payments/adapter-swap.spec.ts (16 tests) 9ms
+ ✓ tests/unit/mcp-servers/shared/rate-limiter.spec.ts (3 tests) 3ms
+ ✓ tests/unit/agent-core/pricing.spec.ts (4 tests) 6ms
+ ✓ tests/unit/domain-hotel/overbooking.spec.ts (4 tests) 33ms
+ ✓ tests/unit/agent-core/trace.spec.ts (3 tests) 3ms
+ ✓ tests/unit/api/rate-limiter.spec.ts (4 tests) 4ms
+ ✓ tests/unit/audit-log.spec.ts (5 tests) 24529ms
+   ✓ audit_log: append-only + cadena de hash > cada fila referencia el hash de la fila anterior del mismo tenant y el primero no tiene prev_hash  7828ms
+   ✓ audit_log: append-only + cadena de hash > el hash almacenado es verificable de forma independiente (recalculado desde las columnas persistidas coincide)  4898ms
+   ✓ audit_log: append-only + cadena de hash > una alteracion manual del payload rompe la verificacion del hash (detectada, no silenciosa)  5275ms
+   ✓ audit_log: append-only + cadena de hash > rechaza UPDATE incluso ejecutado con el rol admin/propietario  4032ms
+   ✓ audit_log: append-only + cadena de hash > rechaza DELETE incluso ejecutado con el rol admin/propietario  2495ms
+ ✓ tests/unit/reservation-state-machine.spec.ts (5 tests) 25211ms
+   ✓ maquina de estados de reservation > una reserva nueva arranca en 'cotizada' y queda registrada en el evento inicial  8504ms
+   ✓ maquina de estados de reservation > permite la cadena de transiciones valida completa  6568ms
+   ✓ maquina de estados de reservation > rechaza un salto invalido (cotizada -> en_estancia, saltandose confirmada/check_in)  5358ms
+   ✓ maquina de estados de reservation > rechaza reabrir una reserva cerrada (estado terminal)  3218ms
+   ✓ maquina de estados de reservation > rechaza confirmar una reserva ya cancelada  1563ms
+ ✓ tests/unit/api/outbox-worker.spec.ts (8 tests) 26566ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un handler exitoso marca el evento 'enviado' y no lo vuelve a drenar  7890ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un handler que falla incrementa attempts y pospone available_at con backoff exponencial  5213ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > tras maxAttempts fallos consecutivos, el evento se marca 'fallido' (dead-letter) y deja de reintentarse  5480ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > auditoria-1/backend [ALTO]: la causa real del error queda persistida en outbox.last_error, no descartada por un catch{} mudo  3351ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > auditoria-1/backend [ALTO]: el dead-letter final también conserva la causa real del último intento  2072ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > auditoria-1/backend [ALTO]: un handler colgado (nunca resuelve) se trata como fallo por timeout sin bloquear el resto del batch  1268ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un event_type sin handler registrado se trata como fallo (nunca se marca 'enviado' silenciosamente)  1289ms
+
+ Test Files  40 passed (40)
+      Tests  323 passed | 1 skipped (324)
+   Start at  08:34:58
+   Duration  28.17s (transform 1.27s, setup 0ms, collect 6.28s, tests 199.35s, environment 5ms, prepare 4.92s)
+
+
+> atiende-hoteles@0.0.0 test:integration
+> vitest run --config vitest.config.ts tests/integration --pool=forks --poolOptions.forks.singleFork
+
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging
+
+ ✓ tests/integration/audit-log-concurrencia.spec.ts (4 tests) 5094ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > SIN el arreglo: dos record_audit_log() concurrentes del mismo tenant producen dos filas con prev_hash null (cadena bifurcada)  1511ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > CON el arreglo (packages/db/migrations/0015, audit_log_chain_head + SELECT FOR UPDATE): dos escrituras concurrentes SIEMPRE forman una cadena de un solo enlace  1128ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > CON el arreglo, 20 escrituras concurrentes reales (sin ningún pg_sleep inyectado) nunca bifurcan la cadena, repetido 8 veces para descartar suerte de scheduling  1320ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > dos tenants distintos escribiendo concurrentemente no se bloquean entre sí (el lock de la cabeza de cadena es por tenant, no global)  1135ms
+ ✓ tests/integration/pool-sin-fuga-de-claims.spec.ts (2 tests) 2422ms
+   ✓ pool de conexiones: set_config por transacción no filtra claims entre requests reciclados (auditoria-1/backend MEDIO) > con poolMax=1 (misma conexión física forzada), el claim de la sesión A nunca es visible en la sesión B  930ms
+   ✓ pool de conexiones: set_config por transacción no filtra claims entre requests reciclados (auditoria-1/backend MEDIO) > una sesión sin userId (claim vacío) tras una sesión CON userId, en la misma conexión reciclada, queda anónima (auth.uid() null) — nunca hereda al actor anterior  1492ms
+ ✓ tests/integration/reservas/overbooking-controlado.spec.ts (2 tests) 1459ms
+ ✓ tests/integration/reservas/cancelacion-libera-inventario.spec.ts (3 tests) 1645ms
+ ✓ tests/integration/api/auth-y-resumen.spec.ts (8 tests) 1484ms
+ ✓ tests/integration/reservas/monto-exacto-multi-noche.spec.ts (2 tests) 1353ms
+ ✓ tests/integration/api/reservas-y-folios.spec.ts (8 tests) 1681ms
+ ✓ tests/integration/idempotency-ttl.spec.ts (3 tests) 1478ms
+ ✓ tests/integration/reservas/no-show-idempotente.spec.ts (3 tests) 1289ms
+ ✓ tests/integration/outbox-worker-indice.spec.ts (1 test) 1360ms
+ ✓ tests/integration/reservas/folio-al-confirmar.spec.ts (2 tests) 1409ms
+ ✓ tests/integration/reservas/modificacion-concurrencia.spec.ts (1 test) 1225ms
+ ✓ tests/integration/api/observabilidad.spec.ts (15 tests) 1189ms
+ ✓ tests/integration/reservas/disponibilidad-grid.spec.ts (2 tests) 1077ms
+ ✓ tests/integration/outbox-atomicity.spec.ts (2 tests) 1109ms
+ ✓ tests/integration/availability-concurrency.spec.ts (1 test) 1027ms
+
+ Test Files  16 passed (16)
+      Tests  59 passed (59)
+   Start at  08:35:27
+   Duration  27.87s (transform 314ms, setup 0ms, collect 1.22s, tests 26.30s, environment 0ms, prepare 67ms)
+
+
+> atiende-hoteles@0.0.0 test:adversarial
+> vitest run --config vitest.config.ts tests/adversarial --pool=forks --poolOptions.forks.singleFork
+
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging
+
+ ✓ tests/adversarial/reserva-concurrencia-y-limites.spec.ts (5 tests) 3385ms
+ ✓ tests/adversarial/roles.spec.ts (20 tests) 1862ms
+ ✓ tests/adversarial/tarifas-roles.spec.ts (10 tests) 1602ms
+ ✓ tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts (4 tests) 1503ms
+ ✓ tests/adversarial/reservas-aislamiento.spec.ts (4 tests) 1273ms
+ ✓ tests/adversarial/auditoria-1-bd-criticos.spec.ts (9 tests) 1197ms
+ ✓ tests/adversarial/aislamiento-tenant-hotel.spec.ts (3 tests) 1290ms
+ ✓ tests/adversarial/idempotencia-concurrente.spec.ts (2 tests) 1223ms
+ ✓ tests/adversarial/cancelacion-identidad.spec.ts (4 tests) 1097ms
+ ✓ tests/adversarial/benchmark-k-minimo.spec.ts (5 tests) 1ms
+
+ Test Files  10 passed (10)
+      Tests  66 passed (66)
+   Start at  08:35:56
+   Duration  15.78s (transform 318ms, setup 0ms, collect 1.06s, tests 14.43s, environment 0ms, prepare 48ms)
+

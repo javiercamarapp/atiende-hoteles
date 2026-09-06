@@ -3,7 +3,7 @@
 // app Hono real de apps/api encima, sin abrir un socket HTTP (Hono `app.request()`
 // corre el mismo pipeline de middlewares/handlers en proceso). Cada test file abre y
 // cierra su propia instancia.
-import { createApp, loadEnv, RateLimiter, type AppDeps } from "@atiende-hoteles/api";
+import { createApp, loadEnv, MetricsRegistry, RateLimiter, type AppDeps } from "@atiende-hoteles/api";
 import pino from "pino";
 import { openEmbeddedPostgres, applyMigrations, seedDev, DEV_SEED_PASSWORD, type EmbeddedPostgresEngine, type SeedResult } from "@atiende-hoteles/db";
 import type { Hono } from "hono";
@@ -28,6 +28,7 @@ export async function createApiFixture(): Promise<ApiFixture> {
     logger: pino({ level: "silent" }),
     ipLimiter: new RateLimiter({ limit: 1000, windowMs: 60_000 }),
     userLimiter: new RateLimiter({ limit: 1000, windowMs: 60_000 }),
+    metrics: new MetricsRegistry(),
   };
 
   const app = createApp(deps);

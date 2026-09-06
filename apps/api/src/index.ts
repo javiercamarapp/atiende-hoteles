@@ -1,8 +1,9 @@
 export { createApp } from "./app.ts";
 export { bootstrapDevEngine } from "./db.ts";
 export { loadEnv, type AppEnv } from "./env.ts";
-export { rootLogger, type Logger } from "./logger.ts";
+export { rootLogger, createLogger, REDACT_PATHS, type Logger } from "./logger.ts";
 export { RateLimiter, MemoryRateLimitStore, type RateLimitStore } from "./lib/rateLimit.ts";
+export { MetricsRegistry } from "./metrics.ts";
 export { drainOutboxOnce, computeBackoffMs, type OutboxHandler, type OutboxRow } from "./outbox/worker.ts";
 export type { AppDeps, Variables, HonoEnvBindings } from "./types.ts";
 export {

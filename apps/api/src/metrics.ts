@@ -1,0 +1,193 @@
+// H8 · ADR-008: métricas en formato de exposición de Prometheus, sin dependencias
+// nuevas (registro hecho a mano — suficiente para los pocos tipos de métrica que pide
+// el encargo, evita ampliar la superficie de auditoría de `npm audit` con un cliente
+// completo tipo `prom-client`).
+//
+// Qué se mide (REQ-OBS-*, ADR-008 "Métricas mínimas"):
+//  - `http_request_duration_ms` (histograma): latencia por ruta+método+status.
+//  - `http_requests_total` / `http_errors_total`: conteo de requests y de errores 5xx
+//    por ruta+método.
+//  - `reservations_created_total`: contador de reservas creadas con éxito.
+//  - `outbox_pending` / `outbox_dead_letter` (gauges, consultados en vivo a la BD).
+//  - `approvals_pending` (gauge): 0 si la tabla de aprobaciones (H6b) todavía no existe
+//    en este esquema -- se detecta en runtime, nunca se inventa un número.
+import type { DbClient } from "@atiende-hoteles/db";
+
+const HISTOGRAM_BUCKETS_MS = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
+
+interface HistogramState {
+  buckets: number[]; // conteo acumulado por buckets (mismo orden que HISTOGRAM_BUCKETS_MS) + 1 para +Inf
+  sum: number;
+  count: number;
+}
+
+function labelKey(labels: Record<string, string>): string {
+  return Object.entries(labels)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}="${escapeLabel(v)}"`)
+    .join(",");
+}
+
+function escapeLabel(v: string): string {
+  return v.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
+}
+
+export class MetricsRegistry {
+  private histograms = new Map<string, HistogramState>();
+  private counters = new Map<string, number>();
+
+  private getHistogram(key: string): HistogramState {
+    let h = this.histograms.get(key);
+    if (!h) {
+      h = { buckets: new Array(HISTOGRAM_BUCKETS_MS.length + 1).fill(0), sum: 0, count: 0 };
+      this.histograms.set(key, h);
+    }
+    return h;
+  }
+
+  /** Registra una observación de latencia (ms) para una ruta+método+status. Etiqueta
+   *  `route` debe ser el PATRÓN de ruta (ej. `/hoteles/:hotelId/reservas`), nunca el
+   *  path crudo con IDs -- evita explosión de cardinalidad en el registro. */
+  recordRequest(route: string, method: string, status: number, durationMs: number): void {
+    const labels = { route, method, status: String(status) };
+    const key = labelKey(labels);
+    const h = this.getHistogram(key);
+    h.sum += durationMs;
+    h.count += 1;
+    let placed = false;
+    for (let i = 0; i < HISTOGRAM_BUCKETS_MS.length; i++) {
+      if (durationMs <= HISTOGRAM_BUCKETS_MS[i]!) {
+        h.buckets[i]! += 1;
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) h.buckets[HISTOGRAM_BUCKETS_MS.length]! += 1; // +Inf
+
+    const totalKey = labelKey({ route, method, status: String(status) });
+    this.counters.set(`http_requests_total|${totalKey}`, (this.counters.get(`http_requests_total|${totalKey}`) ?? 0) + 1);
+    if (status >= 500) {
+      const errKey = labelKey({ route, method });
+      this.counters.set(`http_errors_total|${errKey}`, (this.counters.get(`http_errors_total|${errKey}`) ?? 0) + 1);
+    }
+  }
+
+  incrementReservationsCreated(): void {
+    this.counters.set("reservations_created_total", (this.counters.get("reservations_created_total") ?? 0) + 1);
+  }
+
+  /** Solo para pruebas: limpia todo el estado acumulado. */
+  reset(): void {
+    this.histograms.clear();
+    this.counters.clear();
+  }
+
+  private renderHistograms(): string {
+    if (this.histograms.size === 0) return "";
+    const lines: string[] = [
+      "# HELP http_request_duration_ms Duración de la solicitud HTTP en milisegundos, por ruta/método/status.",
+      "# TYPE http_request_duration_ms histogram",
+    ];
+    for (const [key, h] of this.histograms) {
+      let cumulative = 0;
+      for (let i = 0; i < HISTOGRAM_BUCKETS_MS.length; i++) {
+        cumulative += h.buckets[i]!;
+        lines.push(`http_request_duration_ms_bucket{${key},le="${HISTOGRAM_BUCKETS_MS[i]}"} ${cumulative}`);
+      }
+      cumulative += h.buckets[HISTOGRAM_BUCKETS_MS.length]!;
+      lines.push(`http_request_duration_ms_bucket{${key},le="+Inf"} ${cumulative}`);
+      lines.push(`http_request_duration_ms_sum{${key}} ${h.sum}`);
+      lines.push(`http_request_duration_ms_count{${key}} ${h.count}`);
+    }
+    return lines.join("\n") + "\n";
+  }
+
+  private renderCounters(): string {
+    const requestsLines: string[] = [];
+    const errorsLines: string[] = [];
+    for (const [key, value] of this.counters) {
+      if (key.startsWith("http_requests_total|")) {
+        requestsLines.push(`http_requests_total{${key.slice("http_requests_total|".length)}} ${value}`);
+      } else if (key.startsWith("http_errors_total|")) {
+        errorsLines.push(`http_errors_total{${key.slice("http_errors_total|".length)}} ${value}`);
+      }
+    }
+    const out: string[] = [];
+    if (requestsLines.length) {
+      out.push("# HELP http_requests_total Total de solicitudes HTTP procesadas, por ruta/método/status.");
+      out.push("# TYPE http_requests_total counter");
+      out.push(...requestsLines);
+    }
+    out.push("# HELP http_errors_total Total de respuestas 5xx (error del servidor), por ruta/método.");
+    out.push("# TYPE http_errors_total counter");
+    out.push(...errorsLines);
+    out.push("# HELP reservations_created_total Total de reservas creadas con éxito desde que el proceso arrancó.");
+    out.push("# TYPE reservations_created_total counter");
+    out.push(`reservations_created_total ${this.counters.get("reservations_created_total") ?? 0}`);
+    return out.join("\n") + (out.length ? "\n" : "");
+  }
+
+  /** Combina las métricas en memoria (latencia/errores/reservas) con los gauges que
+   *  requieren una consulta en vivo a la BD (outbox pendiente/dead-letter, aprobaciones
+   *  pendientes). Nunca lanza: si una consulta falla, reporta el gauge como
+   *  indisponible en un comentario en vez de tumbar todo `/metrics`. */
+  async render(admin: DbClient): Promise<string> {
+    const parts: string[] = [this.renderHistograms(), this.renderCounters()];
+
+    parts.push(await this.renderOutboxGauges(admin));
+    parts.push(await this.renderApprovalsGauge(admin));
+
+    return parts.filter(Boolean).join("\n");
+  }
+
+  private async renderOutboxGauges(admin: DbClient): Promise<string> {
+    try {
+      const { rows } = await admin.query<{ status: string; count: string }>(
+        "select status, count(*)::text as count from public.outbox group by status;",
+      );
+      const byStatus = new Map(rows.map((r) => [r.status, Number(r.count)]));
+      const pending = byStatus.get("pendiente") ?? 0;
+      const deadLetter = byStatus.get("fallido") ?? 0;
+      return [
+        "# HELP outbox_pending Eventos del outbox en estado pendiente (aún no entregados).",
+        "# TYPE outbox_pending gauge",
+        `outbox_pending ${pending}`,
+        "# HELP outbox_dead_letter Eventos del outbox agotaron sus reintentos (dead-letter).",
+        "# TYPE outbox_dead_letter gauge",
+        `outbox_dead_letter ${deadLetter}`,
+      ].join("\n");
+    } catch {
+      // Tabla outbox no disponible todavía (ej. BD sin migrar en un entorno de prueba
+      // mínimo) -- se documenta como no disponible en vez de fallar /metrics entero.
+      return "# outbox_pending/outbox_dead_letter no disponibles (tabla public.outbox inaccesible)";
+    }
+  }
+
+  private async renderApprovalsGauge(admin: DbClient): Promise<string> {
+    try {
+      const { rows: exists } = await admin.query<{ exists: boolean }>(
+        `select exists (
+           select 1 from information_schema.tables
+           where table_schema = 'public' and table_name = 'approval'
+         ) as exists;`,
+      );
+      if (!exists[0]?.exists) {
+        return [
+          "# HELP approvals_pending Aprobaciones humanas pendientes (needs_approval).",
+          "# TYPE approvals_pending gauge",
+          "# approvals_pending no disponible todavía: la tabla public.approval no existe en este esquema (H6b).",
+        ].join("\n");
+      }
+      const { rows } = await admin.query<{ count: string }>(
+        "select count(*)::text as count from public.approval where status = 'pendiente';",
+      );
+      return [
+        "# HELP approvals_pending Aprobaciones humanas pendientes (needs_approval).",
+        "# TYPE approvals_pending gauge",
+        `approvals_pending ${Number(rows[0]?.count ?? "0")}`,
+      ].join("\n");
+    } catch {
+      return "# approvals_pending no disponible (error consultando public.approval)";
+    }
+  }
+}

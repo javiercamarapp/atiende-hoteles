@@ -5,7 +5,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiFixture, destroyApiFixture, loginAs, type ApiFixture } from "../support/api-fixture.ts";
-import { createApp, loadEnv, RateLimiter, type AppDeps } from "@atiende-hoteles/api";
+import { createApp, loadEnv, MetricsRegistry, RateLimiter, type AppDeps } from "@atiende-hoteles/api";
 import pino from "pino";
 
 describe("adversarial: concurrencia real de reservas (última habitación) vía HTTP", () => {
@@ -135,6 +135,7 @@ describe("adversarial: límite de tasa por IP y por usuario", () => {
       logger: pino({ level: "silent" }),
       ipLimiter: new RateLimiter({ limit: 3, windowMs: 60_000 }),
       userLimiter: new RateLimiter({ limit: 1000, windowMs: 60_000 }),
+      metrics: new MetricsRegistry(),
     };
     limitedApp = createApp(deps);
   });
@@ -157,6 +158,12 @@ describe("adversarial: límite de tasa por IP y por usuario", () => {
     const body = (await last.json()) as { code: string; request_id: string };
     expect(body.code).toBe("rate_limited");
     expect(body.request_id).toBeTruthy();
+    // H8/ADR-008: cabecera Retry-After en segundos, para que el cliente sepa cuándo
+    // reintentar sin adivinar (auditoria-1/seguridad.md [BAJO]).
+    const retryAfter = Number(last.headers.get("retry-after"));
+    expect(Number.isFinite(retryAfter)).toBe(true);
+    expect(retryAfter).toBeGreaterThan(0);
+    expect(retryAfter).toBeLessThanOrEqual(60);
   });
 
   it("una IP distinta no se ve afectada por el límite de la primera", async () => {

@@ -6,12 +6,16 @@
 export class ApiError extends Error {
   status: number;
   code: string;
+  /** Cabeceras adicionales que `app.onError` debe copiar a la respuesta (ej.
+   *  `Retry-After` en 429, ADR-008/REQ-SEG rate limit). */
+  headers?: Record<string, string>;
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, headers?: Record<string, string>) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.headers = headers;
   }
 }
 
@@ -27,8 +31,8 @@ export const Errors = {
     new ApiError(422, "idempotency_key_conflict", message),
   idempotencyRequired: () =>
     new ApiError(400, "idempotency_key_required", "El header Idempotency-Key es obligatorio para esta operación."),
-  rateLimited: (message = "Límite de solicitudes excedido. Intenta de nuevo en unos segundos.") =>
-    new ApiError(429, "rate_limited", message),
+  rateLimited: (retryAfterSeconds: number, message = "Límite de solicitudes excedido. Intenta de nuevo en unos segundos.") =>
+    new ApiError(429, "rate_limited", message, { "Retry-After": String(Math.max(0, Math.ceil(retryAfterSeconds))) }),
   internal: (message = "Ocurrió un error interno.") => new ApiError(500, "internal_error", message),
 };
 

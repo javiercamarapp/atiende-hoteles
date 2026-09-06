@@ -12,9 +12,12 @@
     "test:unit": "vitest run --config vitest.config.ts tests/unit",
     "test:integration": "vitest run --config vitest.config.ts tests/integration --pool=forks --poolOptions.forks.singleFork",
     "test:adversarial": "vitest run --config vitest.config.ts tests/adversarial --pool=forks --poolOptions.forks.singleFork",
+    "test:e2e": "npm run e2e --workspace=apps/web",
     "build": "npm run build --workspaces --if-present",
     "db:migrate": "node packages/db/src/cli.ts migrate",
-    "db:reset": "node packages/db/src/cli.ts reset"
+    "db:reset": "node packages/db/src/cli.ts reset",
+    "check:migraciones": "node --experimental-strip-types scripts/check-migraciones.ts",
+    "audit:deps": "npm audit --audit-level=high"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

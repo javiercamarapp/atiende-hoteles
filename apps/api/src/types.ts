@@ -1,6 +1,7 @@
 import type { DbClient, EmbeddedPostgresEngine } from "@atiende-hoteles/db";
 import type { AppEnv } from "./env.ts";
 import type { Logger } from "./logger.ts";
+import type { MetricsRegistry } from "./metrics.ts";
 import type { RateLimiter } from "./lib/rateLimit.ts";
 
 export interface AppDeps {
@@ -9,6 +10,7 @@ export interface AppDeps {
   logger: Logger;
   ipLimiter: RateLimiter;
   userLimiter: RateLimiter;
+  metrics: MetricsRegistry;
 }
 
 export type Variables = {

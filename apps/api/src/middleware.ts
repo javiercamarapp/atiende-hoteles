@@ -35,7 +35,7 @@ export function ipRateLimit(deps: Pick<AppDeps, "ipLimiter">): MiddlewareHandler
   return async (c: Ctx, next: Next) => {
     const ip = clientIp(c);
     const result = deps.ipLimiter.check(`ip:${ip}`);
-    if (!result.allowed) throw Errors.rateLimited();
+    if (!result.allowed) throw Errors.rateLimited((result.resetAt - Date.now()) / 1000);
     await next();
   };
 }
@@ -45,7 +45,7 @@ export function userRateLimit(deps: Pick<AppDeps, "userLimiter">): MiddlewareHan
     const userId = c.get("userId");
     if (userId) {
       const result = deps.userLimiter.check(`user:${userId}`);
-      if (!result.allowed) throw Errors.rateLimited();
+      if (!result.allowed) throw Errors.rateLimited((result.resetAt - Date.now()) / 1000);
     }
     await next();
   };

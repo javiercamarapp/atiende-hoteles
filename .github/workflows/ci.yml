@@ -1,0 +1,140 @@
+name: CI
+
+# H8 · ADR-009 "orden de puertas que falla rápido". No hace deploy — ver
+# docs/runbooks/despliegue.md (el usuario decide cuándo publicar/desplegar).
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# Cancela una corrida anterior en el mismo PR/rama si llega un push nuevo -- no gasta
+# minutos de CI en un commit ya superado.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+      - run: npm ci
+      - run: npm run lint
+
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+      - run: npm ci
+      - run: npm run typecheck
+
+  test:
+    name: test (unit + integración + adversarial, embedded-postgres real)
+    runs-on: ubuntu-latest
+    needs: typecheck
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+      - run: npm ci
+      # ADR-003: embedded-postgres descarga un binario real de Postgres para
+      # linux-x64 vía optionalDependencies -- npm ci ya lo resuelve, sin Docker ni un
+      # `services: postgres:` de GitHub Actions (cada archivo de prueba abre su propio
+      # cluster efímero, igual que en desarrollo local).
+      - run: node --experimental-strip-types scripts/check-migraciones.ts
+      - run: npm test
+      - name: Guardar logs de prueba como artifact (si algo falló)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: docs/logs/**
+          if-no-files-found: ignore
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist/**
+          retention-days: 7
+
+  e2e:
+    name: e2e (Playwright, Chrome del runner)
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build
+      # Instala el canal "chrome" real (no solo Chromium genérico) -- mismo canal que
+      # tests/e2e usa en desarrollo (`channel: 'chrome'`, docs/runbooks/despliegue.md
+      # §3), para que CI y desarrollo corran contra el mismo navegador.
+      - run: npx --prefix apps/web playwright install --with-deps chrome
+      - name: Playwright E2E
+        run: npm run test:e2e
+        env:
+          CI: "true"
+      - name: Subir capturas de paridad visual como artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: tests/e2e/screenshots/**
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Subir trazas de Playwright (solo si algo falló) como artifact
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: tests/e2e/.playwright-results/**
+          if-no-files-found: ignore
+          retention-days: 14
+
+  npm-audit:
+    name: npm audit (bloqueante en high/critical de runtime)
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+      - run: npm ci
+      # ADR-009: bloqueante solo para dependencias de runtime, no de tooling --
+      # `npm audit --audit-level=high` ya reporta el árbol completo; las excepciones
+      # documentadas (CVE/paquete/alcance/decisión) viven en
+      # docs/auditoria-1/dependencias.md, nunca silenciadas sin registro.
+      - run: npm audit --audit-level=high

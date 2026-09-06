@@ -11,6 +11,7 @@ coverage/
 .DS_Store
 .lab/
 packages/db/.pgdata/
+/backups/
 tests/**/screenshots/*.tmp.png
 *.tsbuildinfo
 .claude/

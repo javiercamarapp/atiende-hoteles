@@ -1,0 +1,34 @@
+=== scripts/backup.sh (real) — 2026-09-06T14:24:33Z ===
+Backup escrito en: backups/atiende-hoteles-postgres-2026-09-06T14-24-20-081Z.dump
+Tamaño: 144.0 KiB
+Servidor embedded-postgres arrancado por este script (y detenido al terminar): true
+
+=== scripts/restore.sh (real, verificación de conteo) — 2026-09-06T14:24:33Z ===
+CREATE DATABASE
+Base restaurada: restore_check_1788704666382
+Conteo de filas por tabla (origen vs. restaurado):
+  OK   audit_log: origen=0 restaurado=0
+  OK   audit_log_chain_head: origen=0 restaurado=0
+  OK   availability: origen=120 restaurado=120
+  OK   charge: origen=0 restaurado=0
+  OK   folio: origen=0 restaurado=0
+  OK   guest: origen=0 restaurado=0
+  OK   hotel: origen=2 restaurado=2
+  OK   hotel_cancellation_policy: origen=2 restaurado=2
+  OK   hotel_staff: origen=16 restaurado=16
+  OK   hotel_tax_config: origen=2 restaurado=2
+  OK   idempotency_key: origen=0 restaurado=0
+  OK   location: origen=2 restaurado=2
+  OK   org: origen=1 restaurado=1
+  OK   outbox: origen=0 restaurado=0
+  OK   payment: origen=0 restaurado=0
+  OK   rate_plan: origen=120 restaurado=120
+  OK   reservation: origen=0 restaurado=0
+  OK   reservation_status_event: origen=0 restaurado=0
+  OK   reservation_status_transition: origen=8 restaurado=8
+  OK   room: origen=20 restaurado=20
+  OK   room_type: origen=4 restaurado=4
+  OK   schema_migrations: origen=23 restaurado=23
+  OK   staff_user: origen=16 restaurado=16
+Total origen=336 restaurado=336
+VERIFICACIÓN: conteo igual en todas las tablas.
