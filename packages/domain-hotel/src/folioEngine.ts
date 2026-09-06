@@ -22,6 +22,13 @@ export type ChargeConcept = (typeof CHARGE_CONCEPTS)[number];
  *  contraprestación del hotel; REQ-BO-001 exige "propina excluida del CFDI"). */
 const UNTAXED_CONCEPTS: ReadonlySet<ChargeConcept> = new Set(["propina", "descuento", "reverso"]);
 
+/** H16-010: el ISH de Quintana Roo grava SOLO la contraprestación por hospedaje --
+ *  "excluye alimentos y otros servicios si se desglosan" (docs/referencia/03, PDF H16
+ *  p.16). A&B/extras/ajuste/otro sí llevan IVA (son contraprestación gravada), pero
+ *  NUNCA ISH -- un concepto fuera de este set usa una tasa de ISH efectiva de 0%,
+ *  sin importar lo que diga `taxConfig.ishRate` del hotel. */
+const ISH_APPLICABLE_CONCEPTS: ReadonlySet<ChargeConcept> = new Set(["hospedaje"]);
+
 export interface ChargeCalcInput {
   concept: ChargeConcept;
   /** Monto neto (antes de impuestos) del concepto. */
@@ -45,7 +52,10 @@ export function computeChargeAmounts(input: ChargeCalcInput): ChargeCalcResult {
     const net = roundCurrency(input.netAmount);
     return { netAmount: net, taxAmount: 0, totalAmount: net };
   }
-  const breakdown = applyTaxes(input.netAmount, input.taxConfig);
+  const effectiveTaxConfig = ISH_APPLICABLE_CONCEPTS.has(input.concept)
+    ? input.taxConfig
+    : { ivaRate: input.taxConfig.ivaRate, ishRate: 0 };
+  const breakdown = applyTaxes(input.netAmount, effectiveTaxConfig);
   return {
     netAmount: breakdown.netAmount,
     taxAmount: roundCurrency(breakdown.ivaAmount + breakdown.ishAmount),
