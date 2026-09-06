@@ -1,0 +1,33 @@
+[WebServer] (node:2487) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [vite:react-swc] We recommend switching to `@vitejs/plugin-react` for improved performance as no swc plugins are used. More information at https://vite.dev/rolldown
+
+Running 14 tests using 5 workers
+
+(node:2496) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2498) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2494) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2497) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2495) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:16:3 › Paridad visual — capturas hoteles › login (1.2s)
+  -   3 [mobile] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura)
+  ✓   6 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:23:3 › Paridad visual — capturas hoteles › resumen (589ms)
+  ✓   5 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: login sin violaciones serias/críticas (2.2s)
+  ✓   4 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: login sin violaciones serias/críticas (2.7s)
+  ✓   7 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:16:3 › Paridad visual — capturas hoteles › login (1.4s)
+  ✓   8 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:31:3 › Paridad visual — capturas hoteles › reservas (1.2s)
+  ✓  11 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:23:3 › Paridad visual — capturas hoteles › resumen (633ms)
+  ✓  12 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:31:3 › Paridad visual — capturas hoteles › reservas (592ms)
+  ✓   9 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: resumen sin violaciones serias/críticas (1.9s)
+  ✓  10 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: resumen sin violaciones serias/críticas (1.6s)
+  ✓   2 [desktop] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura) (4.8s)
+  ✓  13 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: reservas sin violaciones serias/críticas (1.4s)
+  ✓  14 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:16:3 › axe: reservas sin violaciones serias/críticas (1.3s)
+
+  1 skipped
+  13 passed (7.2s)
