@@ -1,0 +1,23 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/.claude/worktrees/agent-aaf2f0432a5117a2a
+
+ ✓ tests/integration/api/agentes.spec.ts (10 tests) 2030ms
+ ✓ tests/integration/api/mensajeria.spec.ts (9 tests) 1468ms
+ ✓ tests/integration/reservas/no-show-idempotente.spec.ts (4 tests) 1677ms
+ ✓ tests/integration/revenue/night-audit.spec.ts (6 tests) 2286ms
+ ✓ tests/integration/contracts/cfdi/hospedaje.spec.ts (7 tests) 2643ms
+   ✓ REQ-BO-001 · contrato de CFDI de hospedaje (7 casos) > 1) huésped extranjero: RFC genérico XEXX010101000 y uso CFDI S01, sin importar lo que el body pida  301ms
+ ✓ tests/integration/contracts/whatsapp/aprobaciones-boton.spec.ts (9 tests) 1907ms
+ ✓ tests/integration/api/reservas-carga-concurrente.spec.ts (3 tests) 1979ms
+ ✓ tests/integration/agent-core/journey-checkin-incidencia.spec.ts (6 tests) 1642ms
+ ✓ tests/integration/revenue/night-audit-scheduler.spec.ts (9 tests) 2080ms
+ ✓ tests/integration/folio/split-transferencia-cierre.spec.ts (5 tests) 2022ms
+ ✓ tests/integration/api/housekeeping-mantenimiento.spec.ts (10 tests) 2464ms
+ ✓ tests/integration/folio/cargos-descuentos-reverso.spec.ts (9 tests) 1899ms
+
+ Test Files  12 passed (12)
+      Tests  87 passed (87)
+   Start at  16:35:20
+   Duration  28.00s (transform 1.03s, setup 0ms, collect 3.55s, tests 24.10s, environment 0ms, prepare 43ms)
+
+EXIT=0

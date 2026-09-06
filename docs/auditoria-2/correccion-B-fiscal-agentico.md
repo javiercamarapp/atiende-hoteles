@@ -39,9 +39,10 @@ Nota de entorno: la máquina de este worktree corre en paralelo con procesos de 
 
 - `npm run lint`: **0 errores** (1 warning preexistente ajeno en `tests/e2e/paridad-restaurantes-login.spec.ts`, no tocado en este lote) — `docs/logs/aud2-B-lint.log`.
 - `npm run typecheck`: **0 errores** — `docs/logs/aud2-B-typecheck.log`.
-- `npm run test:unit`: ver `docs/logs/aud2-B-test-unit.log`.
-- `npm run test:integration`: ver `docs/logs/aud2-B-test-integration.log`.
-- `npm run test:adversarial`: ver `docs/logs/aud2-B-test-adversarial.log`.
-- `npm run build`: ver `docs/logs/aud2-B-build.log`.
+- `npm run test:unit`: **438 passed | 1 skipped (439)** — `docs/logs/aud2-B-test-unit.log`.
+- `npm run test:integration`: 6 archivos fallaron en la corrida completa por `shmget: No space left on device` (agotamiento de memoria compartida por procesos AJENOS a este proyecto corriendo en la misma máquina, ver nota de entorno arriba) — `docs/logs/aud2-B-test-integration.log`. Se re-corrieron de forma aislada (`--pool=forks --poolOptions.forks.singleFork`) los 12 archivos de este lote (F1–F3, B1, B2, rendimiento, A1–A6, T1–T2, L-tarjeta): **12 archivos, 87/87 pruebas verdes** — `docs/logs/aud2-B-test-integration-retest.log`. Ninguna falla de la corrida completa correspondió a un archivo de este lote.
+- `npm run test:adversarial`: **58 passed | 55 skipped (113)**, con 10 archivos fallando por la misma causa de memoria compartida (ninguno de este lote) — `docs/logs/aud2-B-test-adversarial.log`.
+- `npm run build`: **OK** (api + web) — `docs/logs/aud2-B-build.log`.
+- `npm run test:e2e`: 3 fallas en la corrida paralela (h4/h6/h7, proyecto `desktop` únicamente, `mobile` pasó las 3) por contención de recursos (mismo entorno compartido, ver nota) — `docs/logs/aud2-B-test-e2e.log`. Re-corridas con `--workers=1`: **3/3 verdes** — `docs/logs/aud2-B-test-e2e-retest.log`. Ninguna falla relacionada con `Agentes.tsx` (el único archivo de UI tocado en este lote, solo agrega el badge de `gate`).
 - Cada hallazgo cerrado se verificó individualmente revirtiendo el fix (`git diff`/`git checkout`) y confirmando que la prueba nueva falla en rojo con el defecto original, luego se restauró el fix y se confirmó verde — documentado en el cuerpo de cada commit.
 - No se tocó `packages/db` fuera de las migraciones `0070`–`0075`, ni `server.ts`, ni rutas de privacidad/públicas reservadas al otro corrector.
