@@ -12,10 +12,12 @@ import {
   Star,
   Building2,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 import { Sidebar, BottomNav, MobileHeader, AtiendeWordmark, type SidebarSection, type BottomNavItem } from "@atiende/ui";
 import { useAuth } from "../hooks/useAuth";
 import { SelectorHotel } from "../components/SelectorHotel";
+import { AprobacionesBadge } from "../components/AprobacionesBadge";
 
 // Mapa de navegación hotelero (docs/referencia/05-frontend-restaurantes.md
 // §5) — misma anatomía de acordeón/colapso que AdminSidebar de Restaurantes,
@@ -53,6 +55,7 @@ const sections: SidebarSection[] = [
   {
     title: "ADMINISTRAR",
     items: [
+      { to: "/aprobaciones", label: "Aprobaciones", icon: ShieldCheck },
       { to: "/back-office", label: "Back office", icon: Building2 },
       { to: "/configuracion", label: "Configuración", icon: Settings },
     ],
@@ -94,11 +97,17 @@ export function AppShell() {
 
       <MobileHeader
         title={<AtiendeWordmark className="scale-90 origin-left" />}
-        action={<SelectorHotel />}
+        action={
+          <div className="flex items-center gap-2">
+            <AprobacionesBadge />
+            <SelectorHotel />
+          </div>
+        }
       />
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="hidden md:flex items-center justify-end gap-3 px-6 py-3">
+          <AprobacionesBadge />
           <span className="text-sm text-muted-foreground">{sesion?.email}</span>
         </header>
         <main id="contenido-principal" tabIndex={-1} className="flex-1 px-4 py-4 pt-20 pb-24 md:pt-2 md:pb-8 md:px-6">

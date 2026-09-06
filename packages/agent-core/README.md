@@ -195,3 +195,37 @@ paquete (session/API) y queda **pendiente** -- ver
   costo/tokens DESPUES de cada llamada exitosa, lo cual ya garantiza atribucion correcta
   por modelo pero no cubre el caso "el proveedor cobro pese a que la llamada broto un
   error de red" -- documentado aqui para no fingir paridad completa con Likida.
+
+## H6b: `PostgresApprovalQueue` + 4 tools de dominio reales
+
+- `PostgresApprovalQueue` (`src/postgresApproval.ts`) implementa `ApprovalQueue` sobre
+  `agent_approval`/`agent_approval_confirmation`
+  (`packages/db/migrations/0042_agent_approval.sql`+`0045_agent_approval_input_json.sql`):
+  MISMA suite de contrato que `InMemoryApprovalQueue`
+  (`tests/support/approvalQueueContract.ts`, corrida contra ambas en
+  `tests/unit/agent-core/approval.spec.ts` y
+  `tests/integration/agent-core/postgres-approval-queue.spec.ts`), mas la persistencia
+  real que la version en memoria no puede dar (sobrevive un reinicio del proceso, ver esa
+  misma prueba de integracion). `getStoredInput()` es una extension MAS ALLA del
+  contrato -- guarda el input real ya validado para que `apps/api` pueda ejecutar la tool
+  correspondiente cuando una aprobacion se completa fuera de una corrida de
+  `AgentRunner` (dos peticiones HTTP de dos aprobadores distintos).
+- 4 tools reales (`src/tools/`), inyectadas por dependencia (`SqlClient`/
+  `WhatsappSenderLike`, nunca importan un motor de BD ni un paquete de WhatsApp
+  concretos): `crear_tarea_housekeeping` (write), `crear_ticket_mantenimiento` (write,
+  con dedupe 24h), `autorizar_gasto_mantenimiento` (money, needsApproval), y
+  `enviar_mensaje_whatsapp_plantilla` (external, needsApproval SIEMPRE por GOB-026 --
+  `createTransactionalTemplateApprovalQueue()` es el mecanismo, fuera de la tool, que
+  auto-aprueba las plantillas transaccionales configuradas por hotel sin violar esa
+  regla). Las 4 se reutilizan tal cual desde `apps/api` (rutas de staff) y desde el
+  journey de `AgentRunner`+`FakeProvider` en
+  `tests/integration/agent-core/journey-checkin-incidencia.spec.ts` (shadow/propone/
+  autopilot de punta a punta).
+- **Nota de compatibilidad de runtime:** ningun archivo de este paquete usa el azucar de
+  TypeScript "parameter properties" (`constructor(private readonly x: T)`) -- ese azucar
+  no esta soportado por `node --experimental-strip-types` (el runtime real de
+  `apps/api`, ver su README); usarlo revienta la carga del modulo completo con
+  `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` en cuanto algo de `apps/api` importa CUALQUIER cosa
+  de `@atiende-hoteles/agent-core`. Se corrigio tambien en `packages/mcp-servers/shared`
+  y `packages/mcp-servers/whatsapp` por la misma razon (H6b es quien primero conecta
+  agent-core y un adaptador de mcp-servers a un proceso que arranca con ese runtime).

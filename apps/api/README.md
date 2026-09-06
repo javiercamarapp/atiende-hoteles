@@ -211,6 +211,20 @@ stack trace. Ver `src/lib/errors.ts` (`ApiError` + mapeo de errores de dominio d
 | GET, PUT | `/hoteles/:hotelId/impuestos` | H4: IVA/ISH por hotel, roles `owner`/`gm`. |
 | GET, PUT | `/hoteles/:hotelId/politica-cancelacion` | H4: política en 4 puntos (free_until/penalty/no_show/deposit). |
 | GET | `/hoteles/:hotelId/disponibilidad/grid?desde&hasta` | H4: desglose POR DÍA (a diferencia de `/disponibilidad`, que agrega el rango) para la grilla del frontend. |
+| GET | `/hoteles/:hotelId/housekeeping/tablero` | H6b: estado de limpieza por habitación + tarea abierta (RLS: housekeeping solo ve las suyas). |
+| POST | `/hoteles/:hotelId/housekeeping/tareas` | H6b: reusa la tool `crear_tarea_housekeeping` de `@atiende-hoteles/agent-core`. |
+| PATCH, POST | `/hoteles/:hotelId/housekeeping/tareas/:id/{asignar,iniciar,terminar,inspeccionar}` | H6b: ciclo de vida de la tarea; inspeccionar reservado a owner/gm/frontdesk. |
+| POST | `/hoteles/:hotelId/housekeeping/habitaciones/:id/fuera-de-servicio` | H6b: solo owner/gm. |
+| GET, POST | `/hoteles/:hotelId/mantenimiento` | H6b: reusa la tool `crear_ticket_mantenimiento` (dedupe 24h, marca OOO si severidad alta). |
+| PATCH | `/hoteles/:hotelId/mantenimiento/:id/{asignar,estado}` | H6b: solo owner/gm. |
+| POST | `/hoteles/:hotelId/mantenimiento/:id/cerrar-con-costo` | H6b: SIEMPRE abre/reusa una solicitud en `agent_approval` (dinero, doble confirmación) — nunca cierra directo. |
+| GET | `/hoteles/:hotelId/aprobaciones`, `/hoteles/:hotelId/aprobaciones/:id` | H6b: bandeja de `agent_approval`, visible a todo el staff del hotel. |
+| POST | `/hoteles/:hotelId/aprobaciones/:id/decidir` | H6b: solo owner/gm (RLS + `assertRole`); al completar la(s) confirmación(es) ejecuta la tool de dominio correspondiente. |
+| GET | `/hoteles/:hotelId/mensajeria` | H6b: conversaciones por huésped. |
+| GET | `/hoteles/:hotelId/mensajeria/:conversationId/mensajes` | H6b: hilo de mensajes, incluye `simulado`/`estadoEntrega`. |
+| GET, PATCH | `/hoteles/:hotelId/mensajeria/config` | H6b: plantillas transaccionales del hotel (auto-aprobación), solo owner/gm. |
+| POST | `/hoteles/:hotelId/mensajeria/mensajes` | H6b: reusa la tool `enviar_mensaje_whatsapp_plantilla`; plantilla transaccional → envío inmediato, cualquier otra → `agent_approval`. |
+| POST | `/hoteles/:hotelId/mensajeria/webhook` | H6b: **PÚBLICO** (sin Bearer de staff) — HMAC contra `hotel_messaging_config.webhook_secret` + idempotencia por `event_id` (`idempotency_key`, scope `whatsapp.webhook`). Firma inválida → 401; replay → 200 `{estado:"duplicado"}` sin reprocesar. |
 
 ## Qué falta (declarado explícitamente, no simulado)
 
@@ -227,3 +241,22 @@ stack trace. Ver `src/lib/errors.ts` (`ApiError` + mapeo de errores de dominio d
 - Sin *connection pooling*: cada request abre una conexión Postgres nueva
   (`withAppSession`, mismo mecanismo que `packages/db`) — aceptable para esta fase de
   desarrollo/pruebas, no para producción con tráfico real.
+- **PENDIENTE DE CREDENCIALES (Meta/WhatsApp Cloud API, H6b):** `routes/mensajeria.ts` y
+  las tools de agent-core usan SIEMPRE `FakeWhatsappAdapter`
+  (`packages/mcp-servers/whatsapp`) — ninguna llamada real a Meta. `message.simulated`
+  queda `true` en cada fila y el frontend lo muestra explícitamente. Cuando existan
+  credenciales reales de Meta (Tech Provider/Embedded Signup, ADR-007), sustituir el
+  adaptador inyectado en `apps/api/src/lib/messaging.ts`
+  (`sharedWhatsappAdapter`) por `MetaWhatsappAdapter` real — ninguna otra pieza del
+  sistema (tools, rutas, RLS, aprobaciones) necesita cambiar, es exactamente el punto de
+  extensión que `MessagingPort` fue diseñado para dar.
+- H6b: `POST /hoteles/:hotelId/mantenimiento/:id/cerrar-con-costo` y
+  `POST /hoteles/:hotelId/mensajeria/mensajes` reutilizan las tools de dominio de
+  `@atiende-hoteles/agent-core` (misma lógica que usaría el agente conversacional) pero
+  se invocan hoy solo desde la UI de staff — el agente conversacional real (LLM en vivo)
+  sigue pendiente de credenciales (`EnvProvider`, ver README de `packages/agent-core`);
+  el journey completo está demostrado end-to-end con `FakeProvider` en
+  `tests/integration/agent-core/journey-checkin-incidencia.spec.ts`.
+- `housekeeping_task`/`maintenance_ticket` no tienen columna de "piso": el tablero de
+  `/housekeeping` ordena por código de habitación, no agrupa por piso (el esquema de
+  `room`, H1, no modela ese dato) — documentado, no fabricado en el frontend.

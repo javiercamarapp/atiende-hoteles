@@ -14,6 +14,12 @@ const RUTAS: Array<{ nombre: string; ruta: string; protegida: boolean }> = [
   // cancelación en Configuración.
   { nombre: "disponibilidad", ruta: "/disponibilidad", protegida: true },
   { nombre: "configuracion", ruta: "/configuracion", protegida: true },
+  // H6b: tablero de housekeeping, tickets de mantenimiento, mensajería y bandeja de
+  // aprobaciones (móvil real para camaristas/mantenimiento, REQ-UX-001/003).
+  { nombre: "housekeeping", ruta: "/housekeeping", protegida: true },
+  { nombre: "mantenimiento", ruta: "/mantenimiento", protegida: true },
+  { nombre: "mensajeria", ruta: "/mensajeria", protegida: true },
+  { nombre: "aprobaciones", ruta: "/aprobaciones", protegida: true },
 ];
 
 for (const { nombre, ruta, protegida } of RUTAS) {

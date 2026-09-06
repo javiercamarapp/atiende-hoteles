@@ -33,18 +33,28 @@ export class FakeWhatsappAdapter implements MessagingPort {
   private readonly replayGuard = new InMemoryReplayGuard();
   private readonly sentTimestamps: number[] = [];
   private sequence = 0;
+  // H6b: campos explicitos, no "parameter properties" (incompatibles con
+  // `node --experimental-strip-types`, el runtime real de apps/api -- ver el mismo
+  // comentario en packages/mcp-servers/shared/src/errors.ts).
+  private readonly tier: MessagingTier;
+  private readonly now: () => number;
+  private readonly appSecret: string;
+  /** Solo para pruebas: sustituye el límite real del tier (`MESSAGING_TIER_LIMITS`,
+   * hasta 1000+) por uno pequeño para poder probar "envío N+1 -> bloqueado" sin enviar
+   * miles de mensajes. `undefined` (default) usa el límite real del tier. */
+  private readonly limitOverride?: number;
 
   constructor(
-    private readonly tier: MessagingTier = "tier_1k",
-    private readonly now: () => number = Date.now,
-    private readonly appSecret: string = FAKE_WHATSAPP_APP_SECRET,
-    /**
-     * Solo para pruebas: sustituye el límite real del tier (`MESSAGING_TIER_LIMITS`,
-     * hasta 1000+) por uno pequeño para poder probar "envío N+1 -> bloqueado" sin enviar
-     * miles de mensajes. `undefined` (default) usa el límite real del tier.
-     */
-    private readonly limitOverride?: number,
-  ) {}
+    tier: MessagingTier = "tier_1k",
+    now: () => number = Date.now,
+    appSecret: string = FAKE_WHATSAPP_APP_SECRET,
+    limitOverride?: number,
+  ) {
+    this.tier = tier;
+    this.now = now;
+    this.appSecret = appSecret;
+    this.limitOverride = limitOverride;
+  }
 
   status(): AdapterStatus {
     return { provider: "meta-whatsapp", available: true, simulated: true };

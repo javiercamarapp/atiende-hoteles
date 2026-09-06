@@ -15,7 +15,10 @@
     "build": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@atiende-hoteles/agent-core": "*",
     "@atiende-hoteles/db": "*",
+    "@atiende-hoteles/mcp-shared": "*",
+    "@atiende-hoteles/mcp-whatsapp": "*",
     "@hono/node-server": "2.1.1",
     "hono": "4.13.7",
     "jose": "6.2.12",

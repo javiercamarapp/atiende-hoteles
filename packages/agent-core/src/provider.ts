@@ -81,11 +81,16 @@ export type FakeStep =
 export class FakeProvider implements LlmProvider {
   readonly id = "fake";
   private cursor = 0;
+  // H6b: campos explicitos, no "parameter properties" (ver mismo comentario en
+  // runner.ts) -- incompatibles con `node --experimental-strip-types`, el runtime real
+  // de apps/api.
+  private readonly script: readonly FakeStep[];
+  private readonly modelSlugOverride?: string;
 
-  constructor(
-    private readonly script: readonly FakeStep[],
-    private readonly modelSlugOverride?: string,
-  ) {}
+  constructor(script: readonly FakeStep[], modelSlugOverride?: string) {
+    this.script = script;
+    this.modelSlugOverride = modelSlugOverride;
+  }
 
   isAvailable(): boolean {
     return true;

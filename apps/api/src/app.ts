@@ -16,6 +16,10 @@ import { foliosRoutes } from "./routes/folios.ts";
 import { quotesRoutes } from "./routes/quotes.ts";
 import { tarifasRoutes } from "./routes/tarifas.ts";
 import { cancelacionPublicaRoutes } from "./routes/cancelacionPublica.ts";
+import { housekeepingRoutes } from "./routes/housekeeping.ts";
+import { mantenimientoRoutes } from "./routes/mantenimiento.ts";
+import { aprobacionesRoutes } from "./routes/aprobaciones.ts";
+import { mensajeriaRoutes } from "./routes/mensajeria.ts";
 import { toErrorBody } from "./lib/errors.ts";
 import { ipRateLimit, requestId, userRateLimit } from "./middleware.ts";
 import type { AppDeps, HonoEnvBindings } from "./types.ts";
@@ -66,6 +70,10 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", quotesRoutes(deps));
   app.route("/", tarifasRoutes(deps));
   app.route("/", cancelacionPublicaRoutes(deps));
+  app.route("/", housekeepingRoutes(deps));
+  app.route("/", mantenimientoRoutes(deps));
+  app.route("/", aprobacionesRoutes(deps));
+  app.route("/", mensajeriaRoutes(deps));
 
   return app;
 }
