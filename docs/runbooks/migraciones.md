@@ -20,6 +20,18 @@ Antes de crear una migración nueva: confirmar el rango del frente actual y el n
 más alto YA EXISTENTE en el árbol (`ls packages/db/migrations/`) — el siguiente
 consecutivo dentro del rango asignado, nunca reutilizar un número.
 
+**auditoria-2/arquitectura [MEDIO], corregido en parte**: la asignación de rangos de
+arriba sigue siendo una convención de PROCESO (esta tabla), no verificable por máquina
+por sí sola -- pero `node --experimental-strip-types scripts/check-migraciones.ts`
+(`npm run check:migraciones`, corre en CI antes de `npm test`) ahora SÍ falla si dos
+archivos distintos terminan reclamando el mismo prefijo numérico (ej.
+`0027_add_x.sql` y `0027_add_y.sql` conviviendo tras fusionar dos ramas) -- el
+escenario exacto que puede pasar si dos líneas de trabajo en paralelo no se coordinan
+sobre el contenido exacto de su rango antes de fusionar a `main`. Esto detecta la
+colisión de NÚMEROS; sigue sin detectar dos migraciones con números distintos que se
+pisen semánticamente (ej. ambas asumen que cierta columna todavía no existe) -- eso
+sigue exigiendo revisión humana al reconciliar.
+
 ## 2. Cómo crear una migración nueva
 
 1. Archivo: `packages/db/migrations/NNNN_descripcion-corta.sql` (4 dígitos,

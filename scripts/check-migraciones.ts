@@ -6,7 +6,17 @@
 //   (b) CUALQUIER migración (mergeada o nueva) contiene un `DROP COLUMN`/`DROP TABLE`/
 //       `TRUNCATE`/`ALTER COLUMN ... TYPE` sin un marcador explícito
 //       `-- CONTRACT-APPROVED: <justificación>` en el mismo archivo (fase "contract"
-//       de expand→migrate→contract, aprobada a mano por quien la escribe).
+//       de expand→migrate→contract, aprobada a mano por quien la escribe), o
+//   (c) auditoria-2/arquitectura [MEDIO]: DOS archivos distintos reclaman el MISMO
+//       prefijo numérico (ej. "0027_add_x.sql" y "0027_add_y.sql") -- la asignación de
+//       rangos por agente/hito (docs/PROGRESO.md) es una convención de PROCESO, no una
+//       regla verificable por máquina: si dos líneas de trabajo en paralelo (worktrees
+//       distintos, como esta misma ronda de corrección con lotes A/B/C) reclaman
+//       rangos que terminan solapando un mismo número al fusionar a `main`,
+//       `packages/db/src/runner.ts` los aplicaría igual, en el orden alfabético
+//       COMPLETO del nombre de archivo (no en el orden que cada línea de trabajo
+//       asumió), pudiendo referenciar una columna/función que la migración "hermana"
+//       del mismo número todavía no creó.
 //
 // Complementa (no reemplaza) la protección en runtime que ya existe en
 // `packages/db/src/runner.ts` (`applyMigrations` lanza `migracion_modificada` si el
@@ -68,6 +78,27 @@ export function findDestructiveStatements(sql: string): string[] {
   return DESTRUCTIVE_PATTERNS.filter((p) => p.re.test(sql)).map((p) => p.name);
 }
 
+const NUMBER_PREFIX_RE = /^(\d+)_/;
+
+/** auditoria-2/arquitectura [MEDIO]: agrupa nombres de archivo por su prefijo numérico
+ *  (`"0027_x.sql"` -> `"0027"`) y devuelve los grupos con MÁS de un archivo -- dos
+ *  migraciones distintas reclamando el mismo número, el escenario exacto que el
+ *  hallazgo describe (dos líneas de trabajo en paralelo, mismo rango). Archivos sin
+ *  prefijo numérico reconocible se ignoran aquí (no es este check el que decide el
+ *  formato de nombre válido). */
+export function findDuplicateNumberPrefixes(filenames: string[]): string[][] {
+  const byPrefix = new Map<string, string[]>();
+  for (const filename of filenames) {
+    const match = NUMBER_PREFIX_RE.exec(filename);
+    if (!match) continue;
+    const prefix = match[1]!;
+    const group = byPrefix.get(prefix) ?? [];
+    group.push(filename);
+    byPrefix.set(prefix, group);
+  }
+  return [...byPrefix.values()].filter((group) => group.length > 1).map((group) => group.sort());
+}
+
 export function checkMigrations(migrationsDir: string, baselinePath: string): CheckResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -99,6 +130,15 @@ export function checkMigrations(migrationsDir: string, baselinePath: string): Ch
       if (esNueva) errors.push(mensaje);
       else warnings.push(`(migración ya mergeada) ${mensaje}`);
     }
+  }
+
+  const duplicados = findDuplicateNumberPrefixes([...current.keys()]);
+  for (const grupo of duplicados) {
+    errors.push(
+      `${grupo.length} migraciones distintas reclaman el mismo prefijo numérico: ${grupo.join(", ")} -- ` +
+        "dos líneas de trabajo en paralelo asignaron el mismo número; renumera una de las dos antes de fusionar a main " +
+        "(packages/db/src/runner.ts las aplicaría en orden alfabético completo del nombre, no en el orden que cada línea asumió).",
+    );
   }
 
   return { ok: errors.length === 0, errors, warnings };
