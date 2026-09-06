@@ -11,8 +11,23 @@
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import net from "node:net";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-export const DEFAULT_DB_DATA_DIR = "packages/db/.pgdata";
+// auditoria-2/operabilidad [ALTO]: este default ERA la cadena relativa
+// "packages/db/.pgdata", resuelta por `embedded-postgres` contra `process.cwd()` en vez
+// del archivo. `backup.sh`/`restore.sh` fijan el cwd a la raíz del repo (`cd
+// "$(dirname "$0")/.."`) así que funcionaban por accidente al invocarse como wrapper,
+// pero cualquier otra forma de invocar `scripts/backup.ts`/`scripts/restore.ts`
+// (directamente, desde otro cwd, o desde un job de CI con distinto directorio de
+// trabajo) resolvía una carpeta DISTINTA a la que usa el Postgres embebido real de
+// `apps/api`/`packages/db/src/cli.ts` -- backup silencioso de un cluster vacío. Se
+// ancla al archivo fuente (mismo patrón que `packages/db/src/cli.ts`), nunca a
+// `process.cwd()`, para que las tres ubicaciones (aquí, `apps/api/src/env.ts`,
+// `packages/db/src/cli.ts`) sean siempre la MISMA carpeta física sin importar desde
+// dónde se invoque el proceso.
+const here = dirname(fileURLToPath(import.meta.url));
+export const DEFAULT_DB_DATA_DIR = join(here, "..", "..", "packages", "db", ".pgdata");
 export const DEFAULT_DB_PORT = Number(process.env.DB_PORT ?? 54329);
 export const DB_USER = "postgres";
 export const DB_PASSWORD = "postgres_dev_only_local";
