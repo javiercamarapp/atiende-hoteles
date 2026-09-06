@@ -452,6 +452,17 @@ describe("AgentRunner", () => {
     expect(result.status).toBe("error_proveedor");
   });
 
+  it("el mensaje de 'error_proveedor' NUNCA expone detalle interno (nombre de variable de " +
+    "entorno, hito H6a, etc.) al canal del humano/huesped (aud-1 tool-calling.md MEDIO #6)", async () => {
+    const provider = new EnvProvider({ env: { ANTHROPIC_API_KEY: "sk-test-123" } });
+    const runner = new AgentRunner(baseOptions({ provider }));
+    const result = await runner.run(ctxFor(), "hola");
+    expect(result.status).toBe("error_proveedor");
+    expect(result.message).not.toMatch(/ANTHROPIC_API_KEY/);
+    expect(result.message).not.toMatch(/H6a/);
+    expect(result.message).not.toMatch(/agent-core/);
+  });
+
   it("sin credenciales, EnvProvider produce el estado honesto 'no_configurado' (nunca finge una respuesta)", async () => {
     const provider = new EnvProvider({ env: {} });
     const runner = new AgentRunner(baseOptions({ provider }));

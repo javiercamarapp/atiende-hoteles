@@ -15,7 +15,7 @@ import {
   type LlmMessage,
   type LlmProvider,
 } from "./provider.ts";
-import { ProviderUnavailableError, ProviderNotImplementedError } from "./errors.ts";
+import { ProviderUnavailableError } from "./errors.ts";
 import type { AgentGate } from "./roles.ts";
 import type { AgentTraceEvent, CostLedger } from "./trace.ts";
 import { estimateCostUsd, type PricingTable } from "./pricing.ts";
@@ -158,13 +158,25 @@ export class AgentRunner {
           this.emit(ctx, runId, step, "error", { message: redact(err.message) });
           return this.close(runId, step, "no_configurado", null, pendingApprovalIds, err.message);
         }
-        const message =
-          err instanceof ProviderNotImplementedError
-            ? err.message
-            : "El proveedor de modelo fallo y no hay fallback disponible (o ya se uso); " +
-              "la corrida se cierra explicitamente, no se cuelga.";
+        // aud-1 tool-calling.md MEDIO #6: `AgentRunResult.message` es "SIEMPRE cerrado
+        // hacia el humano" (puede reenviarse tal cual a un huesped por WhatsApp/voz) --
+        // NUNCA debe llevar detalle interno de implementacion (nombre de variable de
+        // entorno, numero de hito, nombre de paquete). El detalle tecnico completo SI
+        // queda en la traza (`redact(err.message)`, ya emitida abajo), solo no en el
+        // mensaje de cierre. `ProviderNotImplementedError`/`ProviderTransientError` (sin
+        // fallback) y cualquier otro error de proveedor comparten el mismo mensaje
+        // generico y seguro.
         this.emit(ctx, runId, step, "error", { message: redact((err as Error).message) });
-        return this.close(runId, step, "error_proveedor", null, pendingApprovalIds, message);
+        return this.close(
+          runId,
+          step,
+          "error_proveedor",
+          null,
+          pendingApprovalIds,
+          "El proveedor de modelo no esta disponible o su integracion no esta completa en " +
+            "este entorno; se cierra explicitamente para que un humano revise (el detalle " +
+            "tecnico queda solo en la traza interna, nunca en este mensaje).",
+        );
       }
 
       const costUsd = estimateCostUsd(
