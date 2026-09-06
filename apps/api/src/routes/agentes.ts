@@ -334,6 +334,25 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     assertRole(c, def.allowedStaffRoles as unknown as HotelRole[]);
 
     const body = parseBody(ejecutarSchema, await c.req.json().catch(() => ({})));
+
+    // A5 (auditoria-2 agentico ALTO, REQ-AGT-020): serializa esta corrida contra
+    // cualquier otra corrida CONCURRENTE del MISMO (hotel, agente) -- el advisory
+    // lock es transaccional (se libera al COMMIT de esta transacción por-request,
+    // que incluye tanto la corrida del agente como el INSERT de `agent_run` con el
+    // costo real), así que una segunda petición concurrente espera a que la primera
+    // termine y comitee su costo real antes de leer `costoDelMes()`. Sin esto, dos
+    // corridas casi simultáneas podían ambas leer "restante > 0" antes de que
+    // cualquiera registrara su gasto, y juntas rebasar el techo mensual configurado.
+    // A5 (auditoria-2 agentico ALTO, REQ-AGT-020): serializa esta corrida contra
+    // cualquier otra corrida CONCURRENTE del MISMO (hotel, agente) -- el advisory
+    // lock es transaccional (se libera al COMMIT de esta transacción por-request,
+    // que incluye tanto la corrida del agente como el INSERT de `agent_run` con el
+    // costo real), así que una segunda petición concurrente espera a que la primera
+    // termine y comitee su costo real antes de leer `costoDelMes()`. Sin esto, dos
+    // corridas casi simultáneas podían ambas leer "restante > 0" antes de que
+    // cualquiera registrara su gasto, y juntas rebasar el techo mensual configurado.
+    await db.query("select public.lock_agent_budget($1, $2);", [hotelId, def.name]);
+
     const config = await resolveAgentConfig(db, hotelId, def);
     const consumidoAntes = await costoDelMes(db, hotelId, def.name);
     const restante = config.monthlyCeilingUsd - consumidoAntes;

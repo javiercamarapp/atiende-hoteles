@@ -218,3 +218,92 @@ describe("A1 (auditoria-2 agentico CRÍTICO): la demo SIEMPRE corre en gate shad
     expect(runs[0]!.gate).toBe("shadow");
   });
 });
+
+describe("A5 (auditoria-2 agentico ALTO): el techo mensual por (hotel, agente) es un límite duro bajo concurrencia real", () => {
+  it("dos corridas CONCURRENTES del mismo agente, con techo apenas suficiente para UNA, nunca dejan pasar a las dos", async () => {
+    // Mide el costo real de una corrida de demo de "enrutador_mensajes" (guion de un
+    // solo paso, el más barato del catálogo) con un techo generoso.
+    await fixture.app.request(`/hoteles/${hotelId}/agentes/enrutador_mensajes/config`, {
+      method: "PATCH",
+      headers: auth(ownerToken),
+      body: JSON.stringify({ techoMensualUsd: 1000 }),
+    });
+    const medicion = await fixture.app.request(`/hoteles/${hotelId}/agentes/enrutador_mensajes/ejecutar`, {
+      method: "POST",
+      headers: auth(frontdeskToken),
+      body: JSON.stringify({ mensaje: "medicion de costo", demo: true }),
+    });
+    const { costoUsd } = (await medicion.json()) as { costoUsd: number };
+    expect(costoUsd).toBeGreaterThan(0);
+
+    // Techo apenas suficiente para 1.5 corridas -- nunca alcanza para 2.
+    const techo = Math.round(costoUsd * 1.5 * 1_000_000) / 1_000_000;
+    await fixture.app.request(`/hoteles/${hotelId}/agentes/enrutador_mensajes/config`, {
+      method: "PATCH",
+      headers: auth(ownerToken),
+      body: JSON.stringify({ techoMensualUsd: techo }),
+    });
+    // Reinicia el consumo del mes para este agente (deja solo las corridas de ESTA prueba).
+    await fixture.engine.admin.query(
+      "delete from public.agent_run where hotel_id = $1 and agent_name = 'enrutador_mensajes';",
+      [hotelId],
+    );
+
+    const dispararDemo = () =>
+      fixture.app.request(`/hoteles/${hotelId}/agentes/enrutador_mensajes/ejecutar`, {
+        method: "POST",
+        headers: auth(frontdeskToken),
+        body: JSON.stringify({ mensaje: "consulta concurrente", demo: true }),
+      });
+
+    const [resA, resB] = await Promise.all([dispararDemo(), dispararDemo()]);
+    const [bodyA, bodyB] = (await Promise.all([resA.json(), resB.json()])) as Array<{ estado: string }>;
+    const bloqueadas = [bodyA, bodyB].filter((b) => b.estado === "presupuesto_agotado");
+    const completadas = [bodyA, bodyB].filter((b) => b.estado !== "presupuesto_agotado");
+
+    // Sin el lock, ambas podían leer "restante > 0" antes de que cualquiera
+    // registrara su gasto y las DOS pasaban -- con el fix, como máximo una completa.
+    expect(completadas.length).toBeLessThanOrEqual(1);
+    expect(bloqueadas.length).toBeGreaterThanOrEqual(1);
+
+    const { rows: gastoTotal } = await fixture.engine.admin.query<{ total: string }>(
+      "select coalesce(sum(cost_usd), 0)::text as total from public.agent_run where hotel_id = $1 and agent_name = 'enrutador_mensajes';",
+      [hotelId],
+    );
+    // El gasto total real NUNCA rebasa el techo configurado.
+    expect(Number(gastoTotal[0]!.total)).toBeLessThanOrEqual(techo + 1e-6);
+  });
+
+  it("lock_agent_budget() serializa dos sesiones reales y distintas del MISMO (hotel, agente): la segunda espera a que la primera comitee", async () => {
+    // Prueba directa del mecanismo (mismo patrón que night_audit_claim/
+    // lock_agent_approval_key): dos sesiones físicas reales, la primera sostiene el
+    // lock deliberadamente (pg_sleep DENTRO de su propia transacción, sobre el MISMO
+    // par hotel+agente) para forzar un entrelazado determinista -- sin esto, contra un
+    // embedded-postgres local en loopback las dos transacciones a veces terminan sin
+    // llegar a solaparse nunca (mismo problema documentado para otras pruebas de
+    // concurrencia de este lote).
+    const eventos: string[] = [];
+    const ownerId = fixture.seed.hotels[0]!.staff.find((s) => s.role === "owner")!.id;
+
+    const sesionA = fixture.engine.withAppSession({ userId: ownerId }, async (session) => {
+      await session.query("select public.lock_agent_budget($1, $2);", [hotelId, "lock-test-agent"]);
+      eventos.push("A:lock-adquirido");
+      await session.query("select pg_sleep(0.15);");
+      eventos.push("A:antes-de-comitear");
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 20)); // deja que A tome el lock primero
+    const sesionB = fixture.engine.withAppSession({ userId: ownerId }, async (session) => {
+      eventos.push("B:intentando-lock");
+      await session.query("select public.lock_agent_budget($1, $2);", [hotelId, "lock-test-agent"]);
+      eventos.push("B:lock-adquirido");
+    });
+
+    await Promise.all([sesionA, sesionB]);
+
+    // B solo pudo adquirir el lock DESPUÉS de que A llegó al punto justo antes de su
+    // propio commit (la transacción de A sigue abierta durante el pg_sleep) -- prueba
+    // directa de que el advisory lock sí bloquea a la segunda sesión.
+    expect(eventos.indexOf("B:lock-adquirido")).toBeGreaterThan(eventos.indexOf("A:antes-de-comitear"));
+  });
+});
