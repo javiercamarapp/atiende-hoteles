@@ -241,14 +241,6 @@ export interface RecepcionMovimiento {
   estado: string;
 }
 
-export interface PedidoAB {
-  id: string;
-  habitacionOMesa: string;
-  items: string;
-  estado: string;
-  total: number;
-}
-
 export interface ConversacionMensaje {
   id: string;
   huesped: string;
@@ -319,10 +311,6 @@ export async function listarDisponibilidad(hotelId: string): Promise<Disponibili
 
 export async function listarMovimientosRecepcion(hotelId: string): Promise<RecepcionMovimiento[]> {
   return obtenerModulo<RecepcionMovimiento[]>(hotelId, "recepcion");
-}
-
-export async function listarPedidosAB(hotelId: string): Promise<PedidoAB[]> {
-  return obtenerModulo<PedidoAB[]>(hotelId, "alimentos-bebidas");
 }
 
 export async function listarConversaciones(hotelId: string): Promise<ConversacionMensaje[]> {

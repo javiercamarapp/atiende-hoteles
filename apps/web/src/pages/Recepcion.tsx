@@ -20,6 +20,14 @@ export function Recepcion() {
   const checkins = query.data?.filter((m) => m.tipo === "check-in").length;
   const checkouts = query.data?.filter((m) => m.tipo === "check-out").length;
 
+  // auditoria-2/frontend [ALTO]: los movimientos de check-in/check-out salen de
+  // `reservation_status_event` propia (apps/api/src/routes/recepcion.ts) -- nunca
+  // dependieron de un PMS externo, así que un error real aquí NUNCA es "pendiente de
+  // credenciales del PMS" (ese texto se copió sin verificar la fuente del dato, ver
+  // el mismo fix ya aplicado en Resumen.tsx). Con la API caída/sin responder, el motivo
+  // honesto es "sin conexión con el API"; sin hotel activo, "sin hotel seleccionado".
+  const sinDatoStatCard = !hotelActivoId ? "Sin hotel seleccionado." : query.isError ? "Sin conexión con el API." : "Sin datos todavía.";
+
   return (
     <div>
       <PageHeader titulo="Recepción" descripcion="Movimientos de check-in y check-out del turno, con estado en tiempo real." />
@@ -27,8 +35,8 @@ export function Recepcion() {
       {hotelActivoId && <SeccionFolioHuesped hotelId={hotelActivoId} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-        <StatCard icon={DoorOpen} label="Check-ins pendientes" value={checkins != null ? String(checkins) : "—"} sinDato={checkins == null ? "Pendiente de credenciales del PMS." : undefined} />
-        <StatCard icon={DoorClosed} label="Check-outs pendientes" value={checkouts != null ? String(checkouts) : "—"} sinDato={checkouts == null ? "Pendiente de credenciales del PMS." : undefined} />
+        <StatCard icon={DoorOpen} label="Check-ins pendientes" value={checkins != null ? String(checkins) : "—"} sinDato={checkins == null ? sinDatoStatCard : undefined} />
+        <StatCard icon={DoorClosed} label="Check-outs pendientes" value={checkouts != null ? String(checkouts) : "—"} sinDato={checkouts == null ? sinDatoStatCard : undefined} />
       </div>
 
       <DataState

@@ -15,6 +15,7 @@ import { hotelesRoutes } from "./routes/hoteles.ts";
 import { resumenRoutes } from "./routes/resumen.ts";
 import { reservasRoutes } from "./routes/reservas.ts";
 import { disponibilidadRoutes } from "./routes/disponibilidad.ts";
+import { recepcionRoutes } from "./routes/recepcion.ts";
 import { huespedesRoutes } from "./routes/huespedes.ts";
 import { foliosRoutes } from "./routes/folios.ts";
 import { nightAuditRoutes } from "./routes/night-audit.ts";
@@ -154,6 +155,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", resumenRoutes(deps));
   app.route("/", reservasRoutes(deps));
   app.route("/", disponibilidadRoutes(deps));
+  app.route("/", recepcionRoutes(deps));
   app.route("/", huespedesRoutes(deps));
   app.route("/", foliosRoutes(resolvedDeps));
   app.route("/", nightAuditRoutes(deps));
