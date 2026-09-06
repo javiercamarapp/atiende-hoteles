@@ -48,10 +48,15 @@ export function verifyHmacSignature(
 export class InMemoryReplayGuard {
   private readonly seen = new Map<string, number>();
   // H6b: campo explicito, no "parameter property" -- ese azucar de TypeScript no esta
-  // soportado por el modo "strip types" de Node (`node --experimental-strip-types`, el
-  // runtime real de apps/api): cargar este modulo en ejecucion tumbaba el proceso con
-  // `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` en cuanto apps/api empezo a depender de un
-  // adaptador de packages/mcp-servers (H6b conecta WhatsApp por primera vez).
+  // soportado por el modo de solo "strip types" de Node (`node --experimental-strip-types`,
+  // que BORRA la sintaxis de tipos sin transformarla): cargar este modulo en ejecucion
+  // tumbaba el proceso con `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` en cuanto apps/api
+  // empezo a depender de un adaptador de packages/mcp-servers (H6b conecta WhatsApp
+  // por primera vez). auditoria-2/arquitectura [ALTO], corregido: desde H5,
+  // apps/api/package.json ("dev"/"start") usa `--experimental-transform-types` (SI
+  // transforma parameter properties), no `--experimental-strip-types` -- este archivo
+  // sigue evitando el azucar de todos modos, para seguir siendo valido bajo el modo
+  // mas estricto (ver scripts/check-runtime-flags.ts).
   private readonly ttlMs: number;
 
   constructor(ttlMs: number = 24 * 60 * 60 * 1000) {

@@ -18,7 +18,7 @@ export function metricsRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         return c.text("no autorizado", 401);
       }
     }
-    const body = await deps.metrics.render(deps.engine.admin);
+    const body = await deps.metrics.render(deps.engine.admin, deps.engine.getPoolErrorCount());
     return c.text(body, 200, { "Content-Type": "text/plain; version=0.0.4; charset=utf-8" });
   });
 

@@ -216,14 +216,6 @@ export interface Huesped {
   estancias: number;
 }
 
-export interface TicketOperativo {
-  id: string;
-  titulo: string;
-  area: "housekeeping" | "mantenimiento";
-  prioridad: "baja" | "media" | "alta";
-  estado: string;
-}
-
 export interface DisponibilidadFila {
   tipoHabitacionId: string;
   tipoHabitacion: string;
@@ -239,14 +231,6 @@ export interface RecepcionMovimiento {
   tipo: "check-in" | "check-out";
   hora: string;
   estado: string;
-}
-
-export interface PedidoAB {
-  id: string;
-  habitacionOMesa: string;
-  items: string;
-  estado: string;
-  total: number;
 }
 
 export interface ConversacionMensaje {
@@ -305,10 +289,6 @@ export async function listarHuespedes(hotelId: string): Promise<Huesped[]> {
   return request<Huesped[]>(`/hoteles/${hotelId}/huespedes`);
 }
 
-export async function listarTickets(hotelId: string, area: "housekeeping" | "mantenimiento"): Promise<TicketOperativo[]> {
-  return request<TicketOperativo[]>(`/hoteles/${hotelId}/tickets?area=${area}`);
-}
-
 export async function obtenerModulo<T>(hotelId: string, modulo: string): Promise<T> {
   return request<T>(`/hoteles/${hotelId}/${modulo}`);
 }
@@ -319,10 +299,6 @@ export async function listarDisponibilidad(hotelId: string): Promise<Disponibili
 
 export async function listarMovimientosRecepcion(hotelId: string): Promise<RecepcionMovimiento[]> {
   return obtenerModulo<RecepcionMovimiento[]>(hotelId, "recepcion");
-}
-
-export async function listarPedidosAB(hotelId: string): Promise<PedidoAB[]> {
-  return obtenerModulo<PedidoAB[]>(hotelId, "alimentos-bebidas");
 }
 
 export async function listarConversaciones(hotelId: string): Promise<ConversacionMensaje[]> {
@@ -685,7 +661,8 @@ export interface TicketMantenimiento {
   severidad: "alta" | "media" | "baja";
   estado: string;
   asignadoA: string | null;
-  costoEstimado: number;
+  /** null = nadie estimó un costo todavía (nunca se muestra como $0.00, REQ-UX-002). */
+  costoEstimado: number | null;
   costoReal: number | null;
   aprobacionId: string | null;
   creadoEn: string;

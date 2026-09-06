@@ -84,3 +84,10 @@
 2026-09-06 12:59:57 cron=4fe17d3a evento=disparo_cron agentes=0 vivos (429 masivo) → reanudar los 5
 2026-09-06 13:25:52 ciclo=41 evento=latido_dinamico intento_vercel_preview
 2026-09-06 13:29:05 ciclo=41 evento=VERCEL_PREVIEW proyecto=atiende-hoteles-web cuenta=likidaai-8016 url=https://atiende-hoteles-kcn3d4frh-likida.vercel.app
+2026-09-06 13:50:11 ciclo=42 evento=usuario 'continua'; reanudando 5 agentes (5º intento)
+2026-09-06 15:15:44 ciclo=43 evento=LIMITE_DE_SESION (cuota del usuario, se restablece 15:10 America/Merida): los 5 agentes cortados; sin trabajo posible hasta el reinicio; cron 4fe17d3a y wakeup programados
+2026-09-06 15:42:18 ciclo=45 evento=latido 15:42; reanudando 5 agentes (orden del usuario: todos)
+2026-09-06 16:08:20 ciclo=46 evento=latido 16:08; reanudando agentes caídos (todos, orden del usuario)
+2026-09-06 16:34:42 ciclo=47 evento=latido 16:34; wip asegurado y ramas empujadas; cierre secuencial: lote B primero
+2026-09-06 16:36:28 ciclo=47 evento=loteC_completo merge_en_curso(#58) loteB_activo
+2026-09-06 16:40:51 ciclo=48 evento=LIMPIEZA: shm SysV 30/32 segmentos (causa de shmget en pruebas) + servidor API huérfano pid 9595 (4h) terminado; segmentos huérfanos eliminados=30

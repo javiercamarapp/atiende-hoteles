@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BedDouble, ChevronLeft, ChevronRight } from "lucide-react";
-import { Button, StatCard } from "@atiende/ui";
+import { Button, StatCard, formatMoney } from "@atiende/ui";
 import { PageHeader } from "../components/PageHeader";
 import { DataState } from "../components/DataState";
 import { useHotel } from "../hooks/useHotel";
@@ -52,6 +52,14 @@ export function Disponibilidad() {
 
   const totalDisponibles = resumenQuery.data?.reduce((acc, f) => acc + f.disponibles, 0);
 
+  // auditoria-2/frontend [MEDIO]: `listarDisponibilidad` → GET /hoteles/:hotelId/disponibilidad
+  // agrega `room_type`/`availability` PROPIOS del hotel (apps/api/src/routes/disponibilidad.ts,
+  // comentario del propio archivo) -- nunca dependió de un PMS externo. Mismo texto
+  // "Pendiente de credenciales del PMS" ya corregido en Resumen.tsx por la misma razón
+  // (ver comentario ahí): con la API caída/sin responder el motivo real es "sin
+  // conexión con el API", nunca una integración pendiente.
+  const sinDatoStatCard = !hotelActivoId ? "Sin hotel seleccionado." : resumenQuery.isError ? "Sin conexión con el API." : "Sin datos todavía.";
+
   return (
     <div>
       <PageHeader titulo="Disponibilidad" descripcion="Inventario y tarifa por tipo de habitación, noche a noche." />
@@ -61,7 +69,7 @@ export function Disponibilidad() {
           icon={BedDouble}
           label="Habitaciones disponibles hoy"
           value={totalDisponibles != null ? String(totalDisponibles) : "—"}
-          sinDato={totalDisponibles == null ? "Pendiente de credenciales del PMS." : undefined}
+          sinDato={totalDisponibles == null ? sinDatoStatCard : undefined}
         />
       </div>
 
@@ -119,7 +127,7 @@ export function Disponibilidad() {
                             {dia.disponibles ?? "—"}/{dia.total ?? "—"}
                           </div>
                           <div className="text-xs text-muted-foreground tabular-nums">
-                            {dia.tarifa != null ? `$${dia.tarifa.toFixed(0)}` : "—"}
+                            {dia.tarifa != null ? `$${formatMoney(dia.tarifa, 0)}` : "—"}
                           </div>
                           {restringido && (
                             <div className="mt-0.5 flex flex-wrap justify-center gap-1 text-[10px] text-muted-foreground">

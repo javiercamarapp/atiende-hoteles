@@ -1,4 +1,5 @@
 export { cn } from "./lib/utils";
+export { formatMoney } from "./lib/formatMoney";
 
 export { AtiendeMark, AtiendeWordmark } from "./components/AtiendeLogo";
 export { ThemeSelector } from "./components/ThemeSelector";

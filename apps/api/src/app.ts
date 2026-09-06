@@ -15,6 +15,7 @@ import { hotelesRoutes } from "./routes/hoteles.ts";
 import { resumenRoutes } from "./routes/resumen.ts";
 import { reservasRoutes } from "./routes/reservas.ts";
 import { disponibilidadRoutes } from "./routes/disponibilidad.ts";
+import { recepcionRoutes } from "./routes/recepcion.ts";
 import { huespedesRoutes } from "./routes/huespedes.ts";
 import { foliosRoutes } from "./routes/folios.ts";
 import { nightAuditRoutes } from "./routes/night-audit.ts";
@@ -36,12 +37,30 @@ import { agentesRoutes } from "./routes/agentes.ts";
 import { roiRoutes } from "./routes/roi.ts";
 import { privacidadRoutes } from "./routes/privacidad.ts";
 import { toErrorBody } from "./lib/errors.ts";
-import { buildMoneyAlertLog, isMoneyPath } from "./lib/moneyAlert.ts";
+import {
+  buildMoneyAlertLog,
+  buildNoDestinationStartupLog,
+  dispatchMoneyAlert,
+  hasMoneyAlertDestination,
+  isMoneyPath,
+  resolveMoneyAlertDestination,
+} from "./lib/moneyAlert.ts";
 import { ipRateLimit, requestId, userRateLimit } from "./middleware.ts";
 import type { AppDeps, HonoEnvBindings, ResolvedAppDeps } from "./types.ts";
 
 export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   const app = new Hono<HonoEnvBindings>();
+
+  // auditoria-2/operabilidad [ALTO]: la alerta del camino del dinero (`nivel: "alerta"`
+  // más abajo) no tenía NINGÚN destinatario -- solo una línea de log a stdout, sin
+  // webhook/correo configurable (REQ-BO-034, todavía `pendiente` en
+  // docs/REQUISITOS.md). `createApp()` corre una única vez al arrancar el proceso real
+  // (server.ts) -- si ningún destino está configurado, se declara explícitamente aquí
+  // en vez de quedar como una brecha silenciosa que solo se nota leyendo el código.
+  const moneyAlertDestination = resolveMoneyAlertDestination();
+  if (!hasMoneyAlertDestination(moneyAlertDestination)) {
+    deps.logger.error(buildNoDestinationStartupLog(), "alerta_camino_dinero_sin_destinatario");
+  }
 
   // H5 · REQ-INT-002/REQ-INT-005: sin credenciales reales del PSP/PAC, `createApp`
   // instancia UN adaptador simulado compartido por proceso (su idempotencia interna
@@ -91,9 +110,13 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
     await next();
     const durationMs = Date.now() - start;
     const route = c.req.routePath || c.req.path;
-    deps.metrics.recordRequest(route, c.req.method, c.res.status, durationMs);
+    // auditoria-2/operabilidad [MEDIO]: etiqueta `hotel` en las métricas HTTP -- antes
+    // no existía ninguna forma de desglosar tráfico/errores/reservas por hotel desde
+    // `/metrics` sin cruzar contra los logs estructurados.
+    const hotelIdParaMetricas = c.get("hotelIds")?.[0];
+    deps.metrics.recordRequest(route, c.req.method, c.res.status, durationMs, hotelIdParaMetricas);
     if (c.req.method === "POST" && route === "/hoteles/:hotelId/reservas" && c.res.status === 201) {
-      deps.metrics.incrementReservationsCreated();
+      deps.metrics.incrementReservationsCreated(hotelIdParaMetricas);
     }
     deps.logger.info(
       {
@@ -114,19 +137,31 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
     // `nivel: "alerta"` -- cubre también las respuestas 500 devueltas directamente por
     // un handler (sin pasar por `app.onError`, ver más abajo).
     if (c.res.status >= 500 && isMoneyPath(route)) {
-      deps.logger.error(
-        buildMoneyAlertLog({
-          requestId: c.get("requestId") ?? "sin-id",
-          route,
-          method: c.req.method,
-          status: c.res.status,
-          orgId: c.get("orgId"),
-          hotelId: c.get("hotelIds")?.[0],
-          userId: c.get("userId"),
-          errorMessage: c.error?.message,
-        }),
-        "alerta_camino_dinero",
-      );
+      const alerta = buildMoneyAlertLog({
+        requestId: c.get("requestId") ?? "sin-id",
+        route,
+        method: c.req.method,
+        status: c.res.status,
+        orgId: c.get("orgId"),
+        hotelId: c.get("hotelIds")?.[0],
+        userId: c.get("userId"),
+        errorMessage: c.error?.message,
+        // auditoria-2/operabilidad [MEDIO]: path crudo (con IDs reales), SOLO para que
+        // buildMoneyAlertLog extraiga reservation_id/folio_id/charge_id/payment_id --
+        // `route` sigue siendo el patrón sin resolver (agregación por Prometheus/grep
+        // sin explosión de cardinalidad).
+        rawPath: c.req.path,
+      });
+      deps.logger.error(alerta, "alerta_camino_dinero");
+      // auditoria-2/operabilidad [ALTO]: entrega real al destino configurado (si hay
+      // uno, ver `hasMoneyAlertDestination` arriba) -- SIN `await` dentro del ciclo de
+      // respuesta: un webhook lento/caído nunca debe añadir latencia (ni un segundo
+      // fallo) al request que ya falló. `dispatchMoneyAlert` nunca lanza (atrapa sus
+      // propios errores de red y los loguea), así que este `.catch` es solo una red de
+      // seguridad adicional por si un caso no contemplado se escapa.
+      void dispatchMoneyAlert(alerta, moneyAlertDestination, { logger: deps.logger }).catch((err) => {
+        deps.logger.error({ err: err instanceof Error ? err.message : String(err) }, "fallo inesperado entregando alerta_camino_dinero");
+      });
     }
   });
 
@@ -155,6 +190,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", resumenRoutes(deps));
   app.route("/", reservasRoutes(deps));
   app.route("/", disponibilidadRoutes(deps));
+  app.route("/", recepcionRoutes(deps));
   app.route("/", huespedesRoutes(deps));
   app.route("/", foliosRoutes(resolvedDeps));
   app.route("/", nightAuditRoutes(deps));

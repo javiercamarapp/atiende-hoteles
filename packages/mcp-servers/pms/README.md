@@ -4,6 +4,17 @@ Puerto de integración con el PMS del hotel (Cloudbeds primero, H15-001). Hito *
 puerto + adaptador real esqueleto + adaptador simulado, sin credenciales reales. Ver
 `docs/ARQUITECTURA.md` ADR-007 y `docs/referencia/03-investigacion-H12-H21.md` §5.
 
+**auditoria-2/arquitectura [BAJO]**: NO confundir este paquete con `apps/api/src/pms/`
+(carpeta con el mismo nombre pero un propósito distinto): ese directorio contiene
+`taxConfig.ts`/`dbRoomRatePort.ts`, que leen `hotel_tax_config`/`rate_plan` DIRECTO de
+Postgres propio (nunca hablan con un PMS externo) -- es la ruta real de datos HOY. Este
+paquete (`@atiende-hoteles/mcp-pms`) es el conector PMS real de ADR-007 y **todavía no
+está conectado a nada**: `apps/api/package.json` no lo lista como dependencia, y nada
+fuera de este propio paquete lo importa salvo `tests/unit/mcp-servers/pms/*` y
+`scripts/checks/orden-conectores-pms.ts`. Cuando lleguen credenciales reales de
+Cloudbeds (ADR-007, hoy "pendiente de credenciales"), este es el paquete a cablear —
+no `apps/api/src/pms/`.
+
 ## Contrato (`src/port.ts`)
 
 `PmsPort` cubre REQ-INT-001 (P0): reservas, tarifas, housekeeping, folio/cargos y perfil

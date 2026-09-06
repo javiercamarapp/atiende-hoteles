@@ -12,6 +12,14 @@ Desde la raíz del monorepo (`npm install` ya resuelve los workspaces):
 
 ```bash
 npm install                # una vez, desde la raíz
+
+# auditoria-2/operabilidad [BAJO], corregido: sin este paso el panel arranca pero
+# EVERY pantalla muestra el EstadoError honesto de "no tiene a dónde conectarse" (no
+# es opcional en la práctica si quieres ver datos reales) -- antes vivía solo en la
+# tabla de "Variables de entorno" de más abajo, marcado "No" en la columna
+# "Requerida", framed como opcional. Solo hace falta una vez.
+echo "VITE_API_URL=http://localhost:3001" > apps/web/.env.local   # backend real corriendo con `npm run dev --workspace=@atiende-hoteles/api`
+
 npm run dev --workspace apps/web      # http://localhost:5173
 npm run build --workspace apps/web    # tsc --noEmit + vite build → apps/web/dist
 npm run typecheck --workspace apps/web
@@ -33,17 +41,18 @@ npm run e2e          # Playwright, Chrome del sistema (channel: 'chrome')
 
 | Variable | Requerida | Descripción |
 |---|---|---|
-| `VITE_API_URL` | No (pero sin ella todas las pantallas muestran `EstadoError` honesto) | Base URL del backend Hono (ADR-004), ej. `http://localhost:8787`. Sin backend disponible, `src/lib/api.ts` lanza `ApiUnavailableError` y cada pantalla lo captura con `EstadoError`/`EstadoVacio` — nunca se muestran datos de ejemplo. |
+| `VITE_API_URL` | No (pero sin ella todas las pantallas muestran `EstadoError` honesto) | Base URL del backend Hono (ADR-004), ej. `http://localhost:3001` (default de `apps/api`, ver `apps/api/README.md`). Sin backend disponible, `src/lib/api.ts` lanza `ApiUnavailableError` y cada pantalla lo captura con `EstadoError`/`EstadoVacio` — nunca se muestran datos de ejemplo. |
 
-Crea un `.env.local` (ignorado por git) si necesitas apuntar a un backend real:
+Crea un `.env.local` (ignorado por git) si necesitas apuntar a un backend real -- ver
+el bloque "Cómo correr" de arriba, este paso ya está incluido ahí:
 
 ```
-VITE_API_URL=http://localhost:8787
+VITE_API_URL=http://localhost:3001
 ```
 
 ## Estructura
 
-- `src/lib/api.ts` — cliente tipado de la API (auth, hoteles, resumen, reservas, disponibilidad, huéspedes, recepción, tickets housekeeping/mantenimiento, A&B, mensajería, reputación, back office, configuración).
+- `src/lib/api.ts` — cliente tipado de la API (auth, hoteles, resumen, reservas, disponibilidad, huéspedes, recepción, tickets housekeeping/mantenimiento, mensajería, reputación, back office, configuración). Alimentos y Bebidas (A&B) todavía no tiene backend construido en este repositorio -- `/alimentos-bebidas` es una pantalla honesta de "módulo no implementado", sin ninguna llamada a la API (auditoria-2/frontend [ALTO]).
 - `src/hooks/useAuth.tsx` — sesión (JWT propio, ADR-004) + guard de rutas `RutaProtegida`.
 - `src/hooks/useHotel.tsx` — selector de hotel activo (multi-hotel, `org → location`).
 - `src/layouts/AppShell.tsx` — sidebar hotelero (desktop) + `BottomNav`/`MobileHeader` (móvil real, cierra el hueco de `atiende-restaurantes` documentado en 05§2.5/§2.6).

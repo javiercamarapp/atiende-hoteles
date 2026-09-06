@@ -122,6 +122,27 @@ describe("apps/api: housekeeping + mantenimiento + aprobaciones (integración re
     expect(dup.duplicate).toBe(true);
   });
 
+  // auditoria-2/frontend [ALTO]: un ticket reportado SIN costo estimado (el formulario
+  // de "Reportar" no lo exige) debe quedar como `null` ("sin estimar") -- nunca como 0,
+  // que Mantenimiento.tsx mostraría como "Estimado: $0.00 MXN" (una medición
+  // fabricada). Migración 0080 volvió `estimated_cost` nullable para esto.
+  it("mantenimiento: crear ticket sin costo estimado persiste null, no 0 (REQ-UX-002)", async () => {
+    const crear = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento`, {
+      method: "POST",
+      headers: { ...authOf(gmToken), "content-type": "application/json" },
+      body: JSON.stringify({ roomCode, title: "Foco fundido (sin costo)", description: "Cambiar foco del pasillo." }),
+    });
+    expect(crear.status).toBe(201);
+    const { ticketId } = (await crear.json()) as { ticketId: string };
+
+    const lista = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento`, { headers: authOf(gmToken) });
+    expect(lista.status).toBe(200);
+    const tickets = (await lista.json()) as { id: string; costoEstimado: number | null }[];
+    const ticket = tickets.find((t) => t.id === ticketId);
+    expect(ticket).toBeDefined();
+    expect(ticket!.costoEstimado).toBeNull();
+  });
+
   it("cerrar-con-costo: requiere DOBLE confirmación de owner + gm, luego cierra el ticket y ejecuta la tool", async () => {
     const crearTicket = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento`, {
       method: "POST",

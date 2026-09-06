@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Wrench, Plus, DollarSign } from "lucide-react";
-import { Badge, Button, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Label, StatCard } from "@atiende/ui";
+import { Badge, Button, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Label, StatCard, formatMoney } from "@atiende/ui";
 import { PageHeader } from "../components/PageHeader";
 import { DataState } from "../components/DataState";
 import { useHotel } from "../hooks/useHotel";
@@ -53,7 +53,7 @@ export function Mantenimiento() {
   const invalidar = () => queryClient.invalidateQueries({ queryKey: ["mantenimiento-tickets", hotelActivoId] });
 
   const crear = useMutation({
-    mutationFn: (input: { roomCode?: string; title: string; description: string; severity: "alta" | "media" | "baja" }) =>
+    mutationFn: (input: { roomCode?: string; title: string; description: string; severity: "alta" | "media" | "baja"; estimatedCost?: number }) =>
       crearTicketMantenimiento(hotelActivoId as string, input),
     onSuccess: (res) => {
       invalidar();
@@ -130,8 +130,12 @@ export function Mantenimiento() {
                     {t.roomCode ? `Habitación ${t.roomCode} · ` : ""}Origen: {t.origen} · Estado: {t.estado}
                   </p>
                   <p className="text-sm">
-                    Estimado: ${t.costoEstimado.toFixed(2)} MXN
-                    {t.costoReal != null && <> · Real: ${t.costoReal.toFixed(2)} MXN</>}
+                    {/* auditoria-2/frontend [ALTO]: un ticket sin costo estimado
+                        capturado (el formulario de "Reportar" es opcional) muestra
+                        "Sin estimar" -- nunca "$0.00", que se leería como una medición
+                        real (REQ-UX-002). */}
+                    Estimado: {t.costoEstimado != null ? `$${formatMoney(t.costoEstimado)} MXN` : "Sin estimar"}
+                    {t.costoReal != null && <> · Real: ${formatMoney(t.costoReal)} MXN</>}
                   </p>
                   {esAdmin && t.estado !== "cerrado" && t.estado !== "cancelado" && !t.aprobacionId && (
                     <Button size="sm" variant="outline" onClick={() => setCerrando(t)}>
@@ -159,11 +163,14 @@ export function Mantenimiento() {
               e.preventDefault();
               const form = new FormData(e.currentTarget);
               const roomCode = String(form.get("roomCode") ?? "").trim();
+              const estimatedCostRaw = String(form.get("estimatedCost") ?? "").trim();
+              const estimatedCost = estimatedCostRaw === "" ? undefined : Number(estimatedCostRaw);
               crear.mutate({
                 roomCode: roomCode || undefined,
                 title: String(form.get("title") ?? "").trim(),
                 description: String(form.get("description") ?? "").trim(),
                 severity: (form.get("severity") as "alta" | "media" | "baja") ?? "media",
+                estimatedCost: estimatedCost != null && Number.isFinite(estimatedCost) ? estimatedCost : undefined,
               });
             }}
           >
@@ -186,6 +193,10 @@ export function Mantenimiento() {
                 <option value="media">Media</option>
                 <option value="baja">Baja</option>
               </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="mt-estimated-cost">Costo estimado en MXN (opcional)</Label>
+              <Input id="mt-estimated-cost" name="estimatedCost" type="number" step="0.01" min="0" placeholder="Déjalo vacío si aún no lo sabes" />
             </div>
             <Button type="submit" className="w-full" disabled={crear.isPending}>
               Reportar

@@ -22,6 +22,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  formatMoney,
 } from "@atiende/ui";
 import { PageHeader } from "../components/PageHeader";
 import { DataState } from "../components/DataState";
@@ -196,7 +197,7 @@ export function Reservas() {
                     <TableCell>
                       <EstadoBadge estado={r.estado} />
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">${r.total.toFixed(2)}</TableCell>
+                    <TableCell className="text-right tabular-nums">${formatMoney(r.total)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -412,7 +413,7 @@ function PanelDetalleReserva({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Total</span>
-              <span className="font-medium tabular-nums">${r.total.toFixed(2)}</span>
+              <span className="font-medium tabular-nums">${formatMoney(r.total)}</span>
             </div>
             {r.codigoConfirmacion && (
               <div className="flex items-center justify-between">

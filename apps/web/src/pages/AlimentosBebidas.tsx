@@ -1,65 +1,28 @@
-import { useQuery } from "@tanstack/react-query";
 import { UtensilsCrossed } from "lucide-react";
-import { StatCard, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge } from "@atiende/ui";
+import { EstadoVacio } from "@atiende/ui";
 import { PageHeader } from "../components/PageHeader";
-import { DataState } from "../components/DataState";
-import { useHotel } from "../hooks/useHotel";
-import { listarPedidosAB, type PedidoAB } from "../lib/api";
 
+/**
+ * auditoria-2/frontend [ALTO]: esta pantalla llamaba `GET /hoteles/:hotelId/alimentos-bebidas`,
+ * una ruta que ningún archivo de `apps/api/src/routes/*.ts` registraba nunca (404
+ * siempre) y mostraba "Pendiente de conexión con el POS" — atribución falsa: el 404 no
+ * era un problema de credenciales de una integración pendiente, era que el módulo de
+ * Alimentos y Bebidas (pedidos de restaurante/bar/servicio a cuarto) simplemente no se
+ * construyó todavía en este backend. Confirmado por el propio night audit
+ * (`apps/api/src/jobs/nightAudit.ts`), que reporta la conciliación de A&B como
+ * `conciliacionAB: { estado: "sin_pos_configurado" }` — declarado pendiente, no
+ * simulado. Mientras ese módulo no exista, esta pantalla no hace NINGUNA llamada
+ * fantasma: muestra un estado vacío honesto.
+ */
 export function AlimentosBebidas() {
-  const { hotelActivoId } = useHotel();
-  const query = useQuery({
-    queryKey: ["alimentos-bebidas", hotelActivoId],
-    queryFn: () => listarPedidosAB(hotelActivoId as string),
-    enabled: Boolean(hotelActivoId),
-    retry: false,
-  });
-
-  const totalDia = query.data?.reduce((acc, p) => acc + p.total, 0);
-
   return (
     <div>
       <PageHeader titulo="Alimentos y Bebidas" descripcion="Servicio a cuarto y consumo de restaurante/bar cargado a folio." />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-        <StatCard icon={UtensilsCrossed} label="Pedidos abiertos" value={query.data?.length != null ? String(query.data.length) : "—"} sinDato={query.data?.length == null ? "Pendiente de conexión con el POS." : undefined} />
-        <StatCard icon={UtensilsCrossed} label="Consumo del día" value={totalDia != null ? `$${totalDia.toFixed(2)}` : "—"} sinDato={totalDia == null ? "Pendiente de conexión con el POS." : undefined} />
-      </div>
-
-      <DataState
-        isLoading={query.isLoading}
-        error={query.error}
-        data={query.data}
-        mensajeVacio="No hay pedidos de alimentos y bebidas abiertos."
-        onReintentar={() => query.refetch()}
-      >
-        {(pedidos: PedidoAB[]) => (
-          <div className="rounded-xl border border-border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Habitación/Mesa</TableHead>
-                  <TableHead>Artículos</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pedidos.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium">{p.habitacionOMesa}</TableCell>
-                    <TableCell>{p.items}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{p.estado}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">${p.total.toFixed(2)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </DataState>
+      <EstadoVacio
+        icon={UtensilsCrossed}
+        titulo="Módulo no implementado todavía"
+        mensaje="Alimentos y Bebidas (pedidos de restaurante/bar/servicio a cuarto, conciliación con el POS) no tiene backend construido en este repositorio todavía — no es un problema de credenciales ni de conexión, el módulo en sí no existe aún. El night audit ya lo declara honestamente como 'sin_pos_configurado' en vez de simular un consumo."
+      />
     </div>
   );
 }

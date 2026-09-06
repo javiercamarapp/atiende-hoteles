@@ -4,7 +4,7 @@
 // calcula un monto/impuesto por su cuenta.
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ReceiptText, CreditCard, Undo2, Lock, FileCheck2 } from "lucide-react";
+import { ReceiptText, CreditCard, Undo2, Lock, FileCheck2, MoveHorizontal } from "lucide-react";
 import {
   Table,
   TableHeader,
@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogTrigger,
+  formatMoney,
 } from "@atiende/ui";
 import { DataState } from "../DataState";
 import {
@@ -42,6 +43,25 @@ function mensajeError(err: unknown): string {
   if (err instanceof ApiUnavailableError) return err.message;
   if (err instanceof Error) return err.message;
   return "Ocurrió un error inesperado.";
+}
+
+/**
+ * auditoria-2/frontend [MEDIO]: las tablas de cargos/pagos de este panel son más
+ * anchas que un viewport de 390px y quedan en un `overflow-x-auto` propio sin ninguna
+ * sombra/flecha/indicio de que hay contenido a la derecha (a diferencia de la página
+ * completa, que sí respeta `overflow-x: clip`) -- el recepcionista puede no notar que
+ * existe el botón "Reversar cargo" o el monto completo del pago sin deslizar
+ * deliberadamente. Este aviso solo se muestra por debajo de `sm` (donde el desborde es
+ * real, verificado en las capturas de 390×844) y desaparece en desktop, donde la tabla
+ * ya cabe completa.
+ */
+function AvisoScrollHorizontal() {
+  return (
+    <p className="sm:hidden flex items-center gap-1 px-3 pt-2 text-xs text-muted-foreground">
+      <MoveHorizontal className="size-3.5 shrink-0" aria-hidden="true" />
+      Desliza hacia la derecha para ver todas las columnas
+    </p>
+  );
 }
 
 const CONCEPTOS: { value: ConceptoCargo; label: string }[] = [
@@ -96,7 +116,7 @@ function FolioCard({ hotelId, folio, onCambio }: { hotelId: string; folio: Folio
           {folio.esPrincipal && <Badge variant="secondary">Principal</Badge>}
           <Badge variant={folio.estado === "abierto" ? "default" : "outline"}>{folio.estado}</Badge>
         </div>
-        <div className="text-sm tabular-nums font-semibold">Saldo: ${folio.saldo.toFixed(2)}</div>
+        <div className="text-sm tabular-nums font-semibold">Saldo: ${formatMoney(folio.saldo)}</div>
       </div>
 
       {error && (
@@ -105,6 +125,7 @@ function FolioCard({ hotelId, folio, onCambio }: { hotelId: string; folio: Folio
         </p>
       )}
 
+      <AvisoScrollHorizontal />
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -130,8 +151,8 @@ function FolioCard({ hotelId, folio, onCambio }: { hotelId: string; folio: Folio
                 <TableCell>
                   {c.descripcion} {c.revertidoPor && <span className="text-xs">(reversado)</span>}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">${c.monto.toFixed(2)}</TableCell>
-                <TableCell className="text-right tabular-nums">${c.impuesto.toFixed(2)}</TableCell>
+                <TableCell className="text-right tabular-nums">${formatMoney(c.monto)}</TableCell>
+                <TableCell className="text-right tabular-nums">${formatMoney(c.impuesto)}</TableCell>
                 <TableCell className="text-right">
                   {!c.revertidoPor && c.concepto !== "reverso" && folio.estado === "abierto" && (
                     <ReversarCargoBoton
@@ -152,7 +173,10 @@ function FolioCard({ hotelId, folio, onCambio }: { hotelId: string; folio: Folio
         </Table>
       </div>
 
-      <div className="overflow-x-auto border-t border-border">
+      <div className="border-t border-border">
+        <AvisoScrollHorizontal />
+      </div>
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -177,7 +201,7 @@ function FolioCard({ hotelId, folio, onCambio }: { hotelId: string; folio: Folio
                 <TableCell>
                   <Badge variant={p.estado === "capturado" ? "default" : "secondary"}>{p.estado}</Badge>
                 </TableCell>
-                <TableCell className="text-right tabular-nums">${p.monto.toFixed(2)}</TableCell>
+                <TableCell className="text-right tabular-nums">${formatMoney(p.monto)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -305,7 +329,7 @@ function AgregarCargoDialog({
             <Label htmlFor="cargo-concepto">Concepto</Label>
             <select
               id="cargo-concepto"
-              className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+              className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm"
               value={concepto}
               onChange={(e) => setConcepto(e.target.value as ConceptoCargo)}
             >
@@ -453,7 +477,7 @@ function AgregarPagoDialog({
             <Label htmlFor="pago-metodo">Método</Label>
             <select
               id="pago-metodo"
-              className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+              className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm"
               value={metodo}
               onChange={(e) => setMetodo(e.target.value as typeof metodo)}
             >
@@ -529,7 +553,7 @@ function CerrarFolioDialog({
           <DialogTitle>Cerrar folio</DialogTitle>
         </DialogHeader>
         <p className="text-sm">
-          Saldo actual: <strong className="tabular-nums">${saldo.toFixed(2)}</strong>
+          Saldo actual: <strong className="tabular-nums">${formatMoney(saldo)}</strong>
         </p>
         {!esSaldoCero && (
           <p className="text-sm text-amber-600">
@@ -539,7 +563,7 @@ function CerrarFolioDialog({
         <Label htmlFor="cierre-motivo">Motivo de cierre</Label>
         <select
           id="cierre-motivo"
-          className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+          className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm"
           value={motivo}
           onChange={(e) => setMotivo(e.target.value as typeof motivo)}
           disabled={!esSaldoCero}

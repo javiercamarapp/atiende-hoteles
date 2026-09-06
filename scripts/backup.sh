@@ -16,5 +16,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# auditoria-2/arquitectura [ALTO]: --experimental-strip-types (borra sintaxis de tipos,
+# no la transforma) es correcto aquí -- scripts/backup.ts no importa nada con
+# "parameter properties" de TypeScript, a diferencia de apps/api (que sí necesita
+# --experimental-transform-types desde H5, ver apps/api/package.json). Ver el
+# comentario completo en scripts/backup.ts.
 OUT_DIR="${1:-backups}"
 exec node --experimental-strip-types scripts/backup.ts --out-dir "$OUT_DIR"

@@ -58,6 +58,11 @@ jobs:
       # `services: postgres:` de GitHub Actions (cada archivo de prueba abre su propio
       # cluster efímero, igual que en desarrollo local).
       - run: node --experimental-strip-types scripts/check-migraciones.ts
+      # auditoria-2/arquitectura [ALTO]: falla si apps/api/package.json y la
+      # documentación del runtime real (--experimental-strip-types vs.
+      # --experimental-transform-types) vuelven a divergir -- ver
+      # scripts/check-runtime-flags.ts.
+      - run: node --experimental-strip-types scripts/check-runtime-flags.ts
       - run: npm test
       - name: Guardar logs de prueba como artifact (si algo falló)
         if: failure()

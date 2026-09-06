@@ -6,7 +6,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { checkMigrations, computeChecksums, findDestructiveStatements } from "../../scripts/check-migraciones.ts";
+import { checkMigrations, computeChecksums, findDestructiveStatements, findDuplicateNumberPrefixes } from "../../scripts/check-migraciones.ts";
 
 let dir: string | null = null;
 
@@ -119,5 +119,39 @@ describe("checkMigrations: falla si una migración nueva trae DROP/ALTER destruc
     const result = checkMigrations(migrationsDir, baselinePath);
     expect(result.ok).toBe(true);
     expect(result.warnings.length).toBeGreaterThan(0);
+  });
+});
+
+// auditoria-2/arquitectura [MEDIO]: "rango de numeración de migraciones sin
+// guardarraíl automatizado" -- dos líneas de trabajo en paralelo (dos worktrees, como
+// esta misma ronda de corrección con lotes A/B/C) podrían reclamar el mismo número de
+// migración con contenido distinto; ni el runner ni check-migraciones lo detectaban
+// antes de este fix.
+describe("findDuplicateNumberPrefixes", () => {
+  it("sin colisión: arreglo vacío", () => {
+    expect(findDuplicateNumberPrefixes(["0001_a.sql", "0002_b.sql", "0003_c.sql"])).toEqual([]);
+  });
+
+  it("dos archivos con el MISMO prefijo numérico (regresión exacta del hallazgo real)", () => {
+    const grupos = findDuplicateNumberPrefixes(["0027_add_x.sql", "0027_add_y.sql", "0028_z.sql"]);
+    expect(grupos).toEqual([["0027_add_x.sql", "0027_add_y.sql"]]);
+  });
+
+  it("archivos sin prefijo numérico reconocible se ignoran, no revientan", () => {
+    expect(findDuplicateNumberPrefixes(["README.md", "0001_a.sql"])).toEqual([]);
+  });
+});
+
+describe("checkMigrations: falla si dos migraciones reclaman el mismo prefijo numérico", () => {
+  it("0027_add_x.sql y 0027_add_y.sql conviviendo en el directorio: FALLA con un mensaje explícito", () => {
+    const migrationsDir = crearDirTemporal();
+    writeFileSync(join(migrationsDir, "0027_add_x.sql"), "create table x (id uuid primary key);\n");
+    writeFileSync(join(migrationsDir, "0027_add_y.sql"), "create table y (id uuid primary key);\n");
+    const baselinePath = join(migrationsDir, "baseline-vacio.json");
+    writeFileSync(baselinePath, "{}");
+
+    const result = checkMigrations(migrationsDir, baselinePath);
+    expect(result.ok).toBe(false);
+    expect(result.errors.some((e) => e.includes("0027_add_x.sql") && e.includes("0027_add_y.sql"))).toBe(true);
   });
 });

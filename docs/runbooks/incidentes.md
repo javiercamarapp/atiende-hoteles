@@ -138,9 +138,24 @@ Buscar en logs: `nivel = "alerta"` y `tipo = "error_camino_dinero"`
 (`apps/api/src/lib/moneyAlert.ts`). Cada línea trae `route`, `status`, `org_id`,
 `hotel_id`, `user_id`, `request_id`, `error`.
 
+**auditoria-2/operabilidad [ALTO], corregido**: si el proceso tiene
+`MONEY_ALERT_WEBHOOK_URL` (webhook genérico: Slack/PagerDuty/endpoint propio/relevo a
+correo) y/o el par `MONEY_ALERT_EMAIL_TO`+`MONEY_ALERT_EMAIL_WEBHOOK_URL` configurados
+(ver `apps/api/README.md` "Observabilidad"), la misma alerta también se entrega ahí por
+HTTP POST — no depende únicamente de que alguien esté mirando/filtrando los logs
+activamente. **Si ninguno está configurado**, el arranque del proceso ya lo declara con
+otra línea `nivel: "alerta"` (`tipo: "alerta_camino_dinero_sin_destinatario"`) y
+`GET /ready` lo refleja en `moneyAlertsConfigured: false` — confirmar ese campo antes
+de asumir que "alguien ya se habría enterado" de una alerta anterior.
+
 ### 3.2 Diagnóstico
-1. Con el `request_id` de la alerta, buscar la línea `request` correspondiente (mismo
-   `request_id`) para ver el `path`/`method`/`duration_ms` completos.
+1. **auditoria-2/operabilidad [MEDIO], corregido**: la alerta ya trae
+   `reservation_id`/`folio_id`/`charge_id`/`payment_id` cuando el path de la request los
+   incluye (`apps/api/src/lib/moneyAlert.ts::extractMoneyIdsFromPath`) -- ya NO hace
+   falta ir a buscar la línea `request` aparte solo para saber a qué folio/reserva
+   corresponde el error. Esa línea sigue siendo útil para el `path`/`method`/
+   `duration_ms` completos si se necesita más contexto: con el `request_id` de la
+   alerta, buscar la línea `request` correspondiente (mismo `request_id`).
 2. Con `org_id`/`hotel_id`, revisar `audit_log` de esa ventana para ver si la
    operación (cargo/pago/reserva) quedó a medias:
    ```sql

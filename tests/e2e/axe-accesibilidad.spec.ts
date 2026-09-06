@@ -10,6 +10,12 @@ const RUTAS: Array<{ nombre: string; ruta: string; protegida: boolean }> = [
   { nombre: "login", ruta: "/login", protegida: false },
   { nombre: "resumen", ruta: "/resumen", protegida: true },
   { nombre: "reservas", ruta: "/reservas", protegida: true },
+  // auditoria-2/frontend [BAJO]: docs/ACEPTACION.md:416 exige la suite axe sobre
+  // "rutas principales (login, reservas, folio, housekeeping)" -- "folio" vive en
+  // /recepcion (SeccionFolioHuesped/FolioPanel, la pantalla con más diálogos/formularios
+  // de todo el rubro: agregar cargo, descuento, pago, cerrar folio, emitir CFDI), pero
+  // faltaba en este arreglo desde que se agregó H5 después del spec original de H3.
+  { nombre: "recepcion", ruta: "/recepcion", protegida: true },
   // H4: grid de disponibilidad y formularios de tarifas/impuestos/política de
   // cancelación en Configuración.
   { nombre: "disponibilidad", ruta: "/disponibilidad", protegida: true },

@@ -16,6 +16,7 @@ import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
 import { ADMIN_ROLES, MANAGE_INVENTORY_ROLES } from "../domain/roles.ts";
+import { loadTaxConfig } from "../pms/taxConfig.ts";
 import type { AppDeps, HonoEnvBindings } from "../types.ts";
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "formato de fecha esperado YYYY-MM-DD");
@@ -184,14 +185,19 @@ export function tarifasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
 
   // ---- Impuestos por hotel ----
 
+  // auditoria-2/arquitectura [MEDIO], corregido: esta ruta reimplementaba a mano la
+  // MISMA consulta que `pms/taxConfig.ts::loadTaxConfig` (usada por routes/quotes.ts y
+  // routes/reservas.ts) y, para el mismo caso exacto (hotel sin fila en
+  // `hotel_tax_config`), respondía 404 mientras `loadTaxConfig` responde 400 --
+  // comportamiento inconsistente para el mismo hecho de negocio según qué ruta lo
+  // reportara, y una segunda copia de la consulta que podía desincronizarse de
+  // `loadTaxConfig`/`loadHotelMoneyConfig` si `hotel_tax_config` gana una columna
+  // nueva. Se reutiliza `loadTaxConfig` (400, "entrada inválida": el hotel existe, lo
+  // que falta es su configuración) en vez de reimplementar la consulta.
   app.get("/hoteles/:hotelId/impuestos", async (c) => {
     const db = c.get("db");
-    const { rows } = await db.query<{ iva_rate: string; ish_rate: string }>(
-      "select iva_rate, ish_rate from public.hotel_tax_config where hotel_id = $1;",
-      [c.req.param("hotelId")],
-    );
-    if (rows.length === 0) throw Errors.notFound("Este hotel no tiene impuestos configurados todavía.");
-    return c.json({ ivaRate: Number(rows[0]!.iva_rate), ishRate: Number(rows[0]!.ish_rate) });
+    const config = await loadTaxConfig(db, c.req.param("hotelId"));
+    return c.json({ ivaRate: config.ivaRate, ishRate: config.ishRate });
   });
 
   app.put("/hoteles/:hotelId/impuestos", async (c) => {

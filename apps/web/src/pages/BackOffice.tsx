@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Building2, ExternalLink, Moon, FileCheck2 } from "lucide-react";
-import { StatCard, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Card, CardHeader, CardTitle, CardContent, Button, Badge } from "@atiende/ui";
+import { StatCard, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Card, CardHeader, CardTitle, CardContent, Button, Badge, formatMoney } from "@atiende/ui";
 import { PageHeader } from "../components/PageHeader";
 import { DataState } from "../components/DataState";
 import { useHotel } from "../hooks/useHotel";
@@ -46,7 +46,7 @@ export function BackOffice() {
       {hotelActivoId && <SeccionCfdiEmitidos hotelId={hotelActivoId} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-        <StatCard icon={Building2} label="Total facturado del mes" value={totalMes != null ? `$${totalMes.toFixed(2)}` : "—"} sinDato={totalMes == null ? "Pendiente de conexión con facturación." : undefined} />
+        <StatCard icon={Building2} label="Total facturado del mes" value={totalMes != null ? `$${formatMoney(totalMes)}` : "—"} sinDato={totalMes == null ? "Pendiente de conexión con facturación." : undefined} />
       </div>
 
       <DataState
@@ -70,7 +70,7 @@ export function BackOffice() {
                 {lineas.map((l) => (
                   <TableRow key={l.id}>
                     <TableCell className="font-medium">{l.concepto}</TableCell>
-                    <TableCell className="text-right tabular-nums">${l.monto.toFixed(2)}</TableCell>
+                    <TableCell className="text-right tabular-nums">${formatMoney(l.monto)}</TableCell>
                     <TableCell>
                       {l.roiEventUrl ? (
                         <a href={l.roiEventUrl} className="inline-flex items-center gap-1 text-primary underline underline-offset-2">
@@ -225,7 +225,7 @@ function SeccionCfdiEmitidos({ hotelId }: { hotelId: string }) {
                           {cfdi.estado}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">${cfdi.total.toFixed(2)}</TableCell>
+                      <TableCell className="text-right tabular-nums">${formatMoney(cfdi.total)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

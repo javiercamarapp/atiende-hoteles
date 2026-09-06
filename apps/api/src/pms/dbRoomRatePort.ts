@@ -10,6 +10,14 @@
 // de las noches cobradas, [checkInDate, checkOutDate)): la fila de la fecha de SALIDA
 // se necesita para poder validar `closedToDeparture` (CTD) de esa fecha exacta (ver
 // packages/domain-hotel/src/quote.ts).
+//
+// auditoria-2/arquitectura [BAJO]: esta carpeta (`apps/api/src/pms/`) NO es el
+// conector PMS de ADR-007 -- ese es `@atiende-hoteles/mcp-pms`
+// (`packages/mcp-servers/pms`, ver su README), que hoy sigue sin conectar a nada.
+// Este archivo (junto con `taxConfig.ts`) es la frontera donde el precio/impuesto
+// "entra" desde una fila real de Postgres PROPIA del hotel, sin hablar con ningún PMS
+// externo -- dos cosas con el mismo nombre de carpeta ("pms") y propósitos distintos,
+// reutilizado sin revisar que ya existía un paquete con ese dominio.
 import type { DbClient } from "@atiende-hoteles/db";
 import type { NightlyRate } from "@atiende-hoteles/domain-hotel";
 

@@ -56,11 +56,22 @@ export class MetricsRegistry {
     return h;
   }
 
-  /** Registra una observación de latencia (ms) para una ruta+método+status. Etiqueta
-   *  `route` debe ser el PATRÓN de ruta (ej. `/hoteles/:hotelId/reservas`), nunca el
-   *  path crudo con IDs -- evita explosión de cardinalidad en el registro. */
-  recordRequest(route: string, method: string, status: number, durationMs: number): void {
-    const labels = { route, method, status: String(status) };
+  /** Registra una observación de latencia (ms) para una ruta+método+status(+hotel).
+   *  Etiqueta `route` debe ser el PATRÓN de ruta (ej. `/hoteles/:hotelId/reservas`),
+   *  nunca el path crudo con IDs -- evita explosión de cardinalidad en el registro.
+   *
+   *  auditoria-2/operabilidad [MEDIO]: `hotelId` es opcional (rutas sin sesión de
+   *  hotel -- `/health`, `/login` -- no tienen uno) y, cuando se pasa, se agrega como
+   *  etiqueta `hotel` -- sin esto, un panel de Prometheus/Grafana no podía alertar "el
+   *  hotel X dejó de recibir tráfico" ni "la tasa de error 5xx del hotel Y se disparó"
+   *  sin cruzar contra los logs estructurados (que sí llevan `hotel_id`), perdiendo la
+   *  granularidad por hotel que un despliegue multi-hotel necesita para no tratar un
+   *  problema de UN hotel como ruido agregado del sistema entero. El número de hoteles
+   *  por despliegue es acotado (no es un ID de usuario/request), así que el costo de
+   *  cardinalidad es aceptable -- mismo criterio ya usado por `incrementAgentCost`. */
+  recordRequest(route: string, method: string, status: number, durationMs: number, hotelId?: string): void {
+    const labels: Record<string, string> = { route, method, status: String(status) };
+    if (hotelId) labels.hotel = hotelId;
     const key = labelKey(labels);
     const h = this.getHistogram(key);
     h.sum += durationMs;
@@ -75,16 +86,22 @@ export class MetricsRegistry {
     }
     if (!placed) h.buckets[HISTOGRAM_BUCKETS_MS.length]! += 1; // +Inf
 
-    const totalKey = labelKey({ route, method, status: String(status) });
+    const totalKey = labelKey(labels);
     this.counters.set(`http_requests_total|${totalKey}`, (this.counters.get(`http_requests_total|${totalKey}`) ?? 0) + 1);
     if (status >= 500) {
-      const errKey = labelKey({ route, method });
+      const errLabels: Record<string, string> = { route, method };
+      if (hotelId) errLabels.hotel = hotelId;
+      const errKey = labelKey(errLabels);
       this.counters.set(`http_errors_total|${errKey}`, (this.counters.get(`http_errors_total|${errKey}`) ?? 0) + 1);
     }
   }
 
-  incrementReservationsCreated(): void {
-    this.counters.set("reservations_created_total", (this.counters.get("reservations_created_total") ?? 0) + 1);
+  /** auditoria-2/operabilidad [MEDIO]: antes un contador GLOBAL sin ninguna etiqueta --
+   *  no había forma de saber, desde `/metrics`, cuántas reservas se crearon en un hotel
+   *  frente a otro. `hotelId` opcional para no romper ningún llamador existente. */
+  incrementReservationsCreated(hotelId?: string): void {
+    const key = hotelId ? `reservations_created_total|${labelKey({ hotel: hotelId })}` : "reservations_created_total";
+    this.counters.set(key, (this.counters.get(key) ?? 0) + 1);
   }
 
   /** REQ-AGT-020: acumula el costo USD estimado de una corrida de agente, etiquetado
@@ -145,25 +162,34 @@ export class MetricsRegistry {
   private renderCounters(): string {
     const requestsLines: string[] = [];
     const errorsLines: string[] = [];
+    const reservationsLines: string[] = [];
     for (const [key, value] of this.counters) {
       if (key.startsWith("http_requests_total|")) {
         requestsLines.push(`http_requests_total{${key.slice("http_requests_total|".length)}} ${value}`);
       } else if (key.startsWith("http_errors_total|")) {
         errorsLines.push(`http_errors_total{${key.slice("http_errors_total|".length)}} ${value}`);
+      } else if (key === "reservations_created_total") {
+        reservationsLines.push(`reservations_created_total ${value}`);
+      } else if (key.startsWith("reservations_created_total|")) {
+        reservationsLines.push(`reservations_created_total{${key.slice("reservations_created_total|".length)}} ${value}`);
       }
     }
     const out: string[] = [];
     if (requestsLines.length) {
-      out.push("# HELP http_requests_total Total de solicitudes HTTP procesadas, por ruta/método/status.");
+      out.push("# HELP http_requests_total Total de solicitudes HTTP procesadas, por ruta/método/status/hotel.");
       out.push("# TYPE http_requests_total counter");
       out.push(...requestsLines);
     }
-    out.push("# HELP http_errors_total Total de respuestas 5xx (error del servidor), por ruta/método.");
+    out.push("# HELP http_errors_total Total de respuestas 5xx (error del servidor), por ruta/método/hotel.");
     out.push("# TYPE http_errors_total counter");
     out.push(...errorsLines);
-    out.push("# HELP reservations_created_total Total de reservas creadas con éxito desde que el proceso arrancó.");
+    out.push("# HELP reservations_created_total Total de reservas creadas con éxito desde que el proceso arrancó, por hotel cuando se conoce.");
     out.push("# TYPE reservations_created_total counter");
-    out.push(`reservations_created_total ${this.counters.get("reservations_created_total") ?? 0}`);
+    // auditoria-2/operabilidad [MEDIO]: antes era un único contador global sin
+    // etiquetas; ahora puede tener 0+ líneas etiquetadas por hotel -- si nunca se creó
+    // ninguna reserva todavía, se sigue reportando el total en 0 (nunca se omite la
+    // métrica, REQ-UX-002 aplicado también a observabilidad).
+    out.push(...(reservationsLines.length ? reservationsLines : ["reservations_created_total 0"]));
     return out.join("\n") + (out.length ? "\n" : "");
   }
 
@@ -182,7 +208,13 @@ export class MetricsRegistry {
   /** Combina las métricas en memoria (latencia/errores/reservas) con los gauges que
    *  requieren una consulta en vivo a la BD (outbox pendiente/dead-letter, aprobaciones
    *  pendientes). Nunca lanza: si una consulta falla, reporta el gauge como
-   *  indisponible en un comentario en vez de tumbar todo `/metrics`. */
+   *  indisponible en un comentario en vez de tumbar todo `/metrics`.
+   *
+   *  auditoria-2/operabilidad [ALTO]: `dbPoolErrorCount` (de
+   *  `EmbeddedPostgresEngine.getPoolErrorCount()`, packages/db) expone cuántos eventos
+   *  `pool.on("error")` ha visto el proceso -- antes esos eventos se descartaban sin
+   *  dejar NINGÚN rastro observable; ahora también quedan en `/metrics` como gauge,
+   *  además de la línea de log estructurada que emite `packages/db` en el momento. */
   private renderIdentityVaultPurge(): string {
     if (this.identityVaultPurgedTotal.size === 0) return "";
     const lines = [
@@ -207,7 +239,7 @@ export class MetricsRegistry {
     return lines.join("\n") + "\n";
   }
 
-  async render(admin: DbClient): Promise<string> {
+  async render(admin: DbClient, dbPoolErrorCount?: number): Promise<string> {
     const parts: string[] = [
       this.renderHistograms(),
       this.renderCounters(),
@@ -218,6 +250,15 @@ export class MetricsRegistry {
 
     parts.push(await this.renderOutboxGauges(admin));
     parts.push(await this.renderApprovalsGauge(admin));
+    if (dbPoolErrorCount != null) {
+      parts.push(
+        [
+          "# HELP db_pool_errors_total Eventos pool.on(\"error\") del pool de Postgres desde que el proceso arrancó.",
+          "# TYPE db_pool_errors_total counter",
+          `db_pool_errors_total ${dbPoolErrorCount}`,
+        ].join("\n"),
+      );
+    }
 
     return parts.filter(Boolean).join("\n");
   }

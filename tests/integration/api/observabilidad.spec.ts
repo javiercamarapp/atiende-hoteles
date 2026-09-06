@@ -163,7 +163,33 @@ describe("H8: observabilidad + seguridad de transporte (integración real)", () 
         headers: { authorization: `Bearer ${gmToken}` },
       });
       const body = await (await localApp.request("/metrics")).text();
-      expect(body).toMatch(/http_errors_total\{method="GET",route="\/hoteles\/:hotelId\/folios\/:folioId"\} [1-9]\d*/);
+      // auditoria-2/operabilidad [MEDIO]: ahora lleva etiqueta `hotel` (orden
+      // alfabético de labelKey: hotel,method,route) -- antes de este fix no existía
+      // ninguna forma de desglosar el error 5xx por hotel desde /metrics.
+      expect(body).toMatch(
+        new RegExp(`http_errors_total\\{hotel="${hotelId}",method="GET",route="/hoteles/:hotelId/folios/:folioId"\\} [1-9]\\d*`),
+      );
+    });
+
+    it("los contadores de reservas creadas y de requests HTTP llevan etiqueta hotel (auditoria-2/operabilidad MEDIO)", async () => {
+      const metrics = new MetricsRegistry();
+      const localDeps: AppDeps = { ...deps, metrics, logger: capturingLogger().logger };
+      const localApp = createApp(localDeps);
+      await localApp.request(`/hoteles/${hotelId}/disponibilidad`, { headers: { authorization: `Bearer ${gmToken}` } });
+
+      const roomTypeId = seed.hotels[0]!.roomTypes[0]!.id;
+      const creada = await localApp.request(`/hoteles/${hotelId}/reservas`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${gmToken}`, "content-type": "application/json", "idempotency-key": randomUUID() },
+        body: JSON.stringify({ roomTypeId, checkInDate: "2026-10-01", checkOutDate: "2026-10-02" }),
+      });
+      expect(creada.status).toBe(201);
+
+      const body = await (await localApp.request("/metrics")).text();
+      expect(body).toMatch(
+        new RegExp(`http_requests_total\\{hotel="${hotelId}",method="GET",route="/hoteles/:hotelId/disponibilidad",status="200"\\} 1`),
+      );
+      expect(body).toMatch(new RegExp(`reservations_created_total\\{hotel="${hotelId}"\\} 1`));
     });
   });
 
@@ -202,7 +228,11 @@ describe("H8: observabilidad + seguridad de transporte (integración real)", () 
       });
       expect(res.status).toBe(500);
 
-      const alertas = local.parsed().filter((l) => l.nivel === "alerta");
+      // auditoria-2/operabilidad [ALTO]: `createApp()` también emite, una vez, la
+      // alerta de arranque "sin destinatario" (tipo distinto) cuando ningún
+      // MONEY_ALERT_* está configurado (ver moneyAlert.spec más abajo) -- se filtra
+      // por el `tipo` específico de esta prueba, no por `nivel === "alerta"` a secas.
+      const alertas = local.parsed().filter((l) => l.nivel === "alerta" && l.tipo === "error_camino_dinero");
       expect(alertas.length).toBeGreaterThanOrEqual(1);
       const alerta = alertas[0]!;
       expect(alerta.tipo).toBe("error_camino_dinero");
@@ -210,6 +240,34 @@ describe("H8: observabilidad + seguridad de transporte (integración real)", () 
       expect(alerta.status).toBe(500);
       expect(alerta.hotel_id).toBe(hotelId);
       expect(alerta.request_id).toBeTruthy();
+    });
+
+    // auditoria-2/operabilidad [MEDIO]: "la alerta no lleva reservation_id/folio_id/
+    // charge_id" -- corregido: un 5xx sobre una ruta con un UUID real en el path ahora
+    // trae el identificador de negocio correspondiente.
+    it("un 5xx sobre un folio con UUID real en el path: la alerta trae folio_id (auditoria-2/operabilidad MEDIO)", async () => {
+      const local = capturingLogger();
+      const folioIdReal = randomUUID();
+      // Motor roto en withAppSession (dbSession corre ANTES de tocar el folio real) --
+      // fuerza un 500 real dentro del pipeline de la ruta, sin necesitar un folio
+      // existente de verdad; el path crudo SÍ trae el UUID real igual.
+      const brokenEngine = {
+        admin: deps.engine.admin,
+        withAppSession: () => {
+          throw new Error("conexión caída (simulada)");
+        },
+      } as unknown as EmbeddedPostgresEngine;
+      const localDeps: AppDeps = { ...deps, logger: local.logger, engine: brokenEngine, metrics: new MetricsRegistry() };
+      const localApp = createApp(localDeps);
+
+      const res = await localApp.request(`/hoteles/${hotelId}/folios/${folioIdReal}`, {
+        headers: { authorization: `Bearer ${gmToken}` },
+      });
+      expect(res.status).toBe(500);
+
+      const alertas = local.parsed().filter((l) => l.nivel === "alerta" && l.tipo === "error_camino_dinero");
+      expect(alertas.length).toBeGreaterThanOrEqual(1);
+      expect(alertas[0]!.folio_id).toBe(folioIdReal);
     });
 
     it("un 4xx normal (no 5xx) en una ruta de dinero NO dispara la alerta (solo errores reales del sistema)", async () => {
@@ -221,7 +279,7 @@ describe("H8: observabilidad + seguridad de transporte (integración real)", () 
         headers: { authorization: `Bearer ${gmToken}` },
       });
       expect(res.status).toBe(404); // folio inexistente, pero UUID válido: 404, no 500.
-      expect(local.parsed().some((l) => l.nivel === "alerta")).toBe(false);
+      expect(local.parsed().some((l) => l.nivel === "alerta" && l.tipo === "error_camino_dinero")).toBe(false);
     });
 
     it("un 5xx en una ruta que NO es del camino del dinero (/health simulando falla) no dispara la alerta", async () => {
@@ -231,7 +289,55 @@ describe("H8: observabilidad + seguridad de transporte (integración real)", () 
       const localApp = createApp(localDeps);
       const res = await localApp.request("/ready");
       expect(res.status).toBe(503); // no es 5xx además, pero confirma que /ready nunca es "money path"
-      expect(local.parsed().some((l) => l.nivel === "alerta")).toBe(false);
+      expect(local.parsed().some((l) => l.nivel === "alerta" && l.tipo === "error_camino_dinero")).toBe(false);
+    });
+
+    // auditoria-2/operabilidad [ALTO]: "la alerta del camino del dinero no tiene ningún
+    // destinatario -- es una línea de log a stdout". Corregido: sin ningún
+    // MONEY_ALERT_* configurado, el proceso lo declara al arrancar y /ready lo refleja.
+    it("sin MONEY_ALERT_WEBHOOK_URL/MONEY_ALERT_EMAIL_*: createApp() declara la brecha al arrancar y GET /ready la refleja", async () => {
+      const previo = {
+        webhook: process.env.MONEY_ALERT_WEBHOOK_URL,
+        emailTo: process.env.MONEY_ALERT_EMAIL_TO,
+        emailWebhook: process.env.MONEY_ALERT_EMAIL_WEBHOOK_URL,
+      };
+      delete process.env.MONEY_ALERT_WEBHOOK_URL;
+      delete process.env.MONEY_ALERT_EMAIL_TO;
+      delete process.env.MONEY_ALERT_EMAIL_WEBHOOK_URL;
+      try {
+        const local = capturingLogger();
+        const localDeps: AppDeps = { ...deps, logger: local.logger, metrics: new MetricsRegistry() };
+        const localApp = createApp(localDeps);
+
+        const startupAlerts = local.parsed().filter((l) => l.nivel === "alerta" && l.tipo === "alerta_camino_dinero_sin_destinatario");
+        expect(startupAlerts.length).toBe(1);
+
+        const res = await localApp.request("/ready");
+        expect(res.status).toBe(200);
+        expect((await res.json()) as { moneyAlertsConfigured: boolean }).toMatchObject({ moneyAlertsConfigured: false });
+      } finally {
+        if (previo.webhook !== undefined) process.env.MONEY_ALERT_WEBHOOK_URL = previo.webhook;
+        if (previo.emailTo !== undefined) process.env.MONEY_ALERT_EMAIL_TO = previo.emailTo;
+        if (previo.emailWebhook !== undefined) process.env.MONEY_ALERT_EMAIL_WEBHOOK_URL = previo.emailWebhook;
+      }
+    });
+
+    it("con MONEY_ALERT_WEBHOOK_URL configurado: NO declara la brecha al arrancar, y GET /ready refleja moneyAlertsConfigured: true", async () => {
+      const previo = process.env.MONEY_ALERT_WEBHOOK_URL;
+      process.env.MONEY_ALERT_WEBHOOK_URL = "https://hooks.example.com/atiende-hoteles";
+      try {
+        const local = capturingLogger();
+        const localDeps: AppDeps = { ...deps, logger: local.logger, metrics: new MetricsRegistry() };
+        const localApp = createApp(localDeps);
+
+        expect(local.parsed().some((l) => l.tipo === "alerta_camino_dinero_sin_destinatario")).toBe(false);
+
+        const res = await localApp.request("/ready");
+        expect((await res.json()) as { moneyAlertsConfigured: boolean }).toMatchObject({ moneyAlertsConfigured: true });
+      } finally {
+        if (previo === undefined) delete process.env.MONEY_ALERT_WEBHOOK_URL;
+        else process.env.MONEY_ALERT_WEBHOOK_URL = previo;
+      }
     });
   });
 });
