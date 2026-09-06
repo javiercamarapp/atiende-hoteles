@@ -3,13 +3,49 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="robots" content="noindex, nofollow" />
+    <!-- H12c · LAUNCH-025: la landing pública vive en "/" (Landing.tsx) y SÍ debe
+         indexarse; el resto de rutas están detrás de RutaProtegida (useAuth.tsx) y no
+         exponen contenido a un crawler sin sesión (redirigen a /login). Antes de este
+         hito todo el sitio era `noindex,nofollow` porque no existía landing pública. -->
+    <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#1D4ED8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <title>Atiende Hoteles — Panel</title>
+
+    <title>Atiende — Recepción por WhatsApp y voz para hoteles boutique</title>
+    <meta
+      name="description"
+      content="Atiende atiende a tus huéspedes por WhatsApp y voz, gestiona reservas y disponibilidad, coordina housekeeping y automatiza tu back office y CFDI — con agentes de IA que siempre piden aprobación humana antes de una acción irreversible. Hecho para hoteles boutique e independientes en México."
+    />
+    <!-- rel="canonical" se añade cuando exista dominio final de producción
+         (docs/BLOQUEOS.md D-005/LAUNCH-010) -- Vite trata `href="/"` en un `<link>`
+         como referencia de asset a resolver en build, no como URL relativa de runtime. -->
+
+    <!-- Open Graph (Facebook/WhatsApp/LinkedIn) -- estos scrapers NO ejecutan JS, por
+         eso estas etiquetas viven aquí en el HTML estático y no se inyectan desde
+         Landing.tsx. og:url/og:image son relativas a propósito: el dominio final de
+         producción está pendiente de decisión (docs/BLOQUEOS.md D-005/LAUNCH-010) -- se
+         actualizan a absolutas cuando exista. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Atiende" />
+    <meta property="og:title" content="Atiende — Recepción por WhatsApp y voz para hoteles boutique" />
+    <meta
+      property="og:description"
+      content="Reservas, housekeeping, back office y CFDI de tu hotel, con agentes de IA que siempre piden aprobación humana antes de una acción irreversible."
+    />
+    <meta property="og:image" content="/landing/back-office-cfdi.png" />
+    <meta property="og:locale" content="es_MX" />
+    <meta property="og:url" content="/" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Atiende — Recepción por WhatsApp y voz para hoteles boutique" />
+    <meta
+      name="twitter:description"
+      content="Reservas, housekeeping, back office y CFDI de tu hotel, con agentes de IA que siempre piden aprobación humana antes de una acción irreversible."
+    />
+    <meta name="twitter:image" content="/landing/back-office-cfdi.png" />
   </head>
   <body>
     <div id="root"></div>

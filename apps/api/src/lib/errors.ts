@@ -33,6 +33,10 @@ export const Errors = {
     new ApiError(400, "idempotency_key_required", "El header Idempotency-Key es obligatorio para esta operación."),
   rateLimited: (retryAfterSeconds: number, message = "Límite de solicitudes excedido. Intenta de nuevo en unos segundos.") =>
     new ApiError(429, "rate_limited", message, { "Retry-After": String(Math.max(0, Math.ceil(retryAfterSeconds))) }),
+  // H12c · LAUNCH-015: 402 explícito (nunca un bloqueo silencioso, REQ-UX-002) cuando
+  // una acción excedería el límite del plan de la organización -- ver
+  // apps/api/src/lib/entitlement.ts y public.check_entitlement() (0111).
+  entitlementExceeded: (message: string) => new ApiError(402, "entitlement_exceeded", message),
   internal: (message = "Ocurrió un error interno.") => new ApiError(500, "internal_error", message),
 };
 
@@ -98,6 +102,20 @@ export function toErrorBody(err: unknown, requestId: string): { status: number; 
     return {
       status: 409,
       body: { code: "conflict", message: "La operación entró en conflicto con el estado actual del recurso.", request_id: requestId },
+    };
+  }
+  // H12c · public.check_entitlement() (0111) lanza `entitlement_exceeded:<recurso>` o
+  // `entitlement_exceeded:suscripcion_inactiva`/`entitlement_exceeded:sin_suscripcion` --
+  // se traduce a 402 con el detalle real (hint de la excepción), nunca a un 500 genérico.
+  const entitlementMatch = /entitlement_exceeded:(\w+)/.exec(message);
+  if (entitlementMatch) {
+    return {
+      status: 402,
+      body: {
+        code: "entitlement_exceeded",
+        message: `Se alcanzó el límite del plan (${entitlementMatch[1]}). Mejora tu plan en /suscripcion para continuar.`,
+        request_id: requestId,
+      },
     };
   }
 

@@ -1,6 +1,7 @@
 import type { DbClient, EmbeddedPostgresEngine } from "@atiende-hoteles/db";
 import type { PaymentProviderPort } from "@atiende-hoteles/mcp-payments";
 import type { CfdiPort } from "@atiende-hoteles/mcp-cfdi";
+import type { BillingProviderPort } from "@atiende-hoteles/mcp-billing";
 import type { AppEnv } from "./env.ts";
 import type { Logger } from "./logger.ts";
 import type { MetricsRegistry } from "./metrics.ts";
@@ -23,14 +24,20 @@ export interface AppDeps {
    *  hotel) -- si se omite, `createApp` instancia dos PAC simulados detrás de
    *  `DualPacCfdiPort` (mismo mecanismo de conmutación que un PAC real tendría). */
   cfdi?: CfdiPort;
+  /** H12c · REQ-LAUNCH-015: `BillingProviderPort` real (pendiente de cuenta Stripe/
+   *  Conekta, ver README de packages/mcp-servers/billing) -- si se omite, `createApp`
+   *  instancia un `FakeBillingAdapter` único (mismo criterio que `payments`/`cfdi`). */
+  billing?: BillingProviderPort;
 }
 
-/** Vista de `AppDeps` con `payments`/`cfdi` ya resueltos -- lo que reciben los route
- *  factories que los usan (folios/night-audit/cfdi), para no repetir el `??` de
- *  default en cada uno. `createApp` (app.ts) es el único lugar que construye esto. */
+/** Vista de `AppDeps` con `payments`/`cfdi`/`billing` ya resueltos -- lo que reciben los
+ *  route factories que los usan (folios/night-audit/cfdi/suscripcion), para no repetir
+ *  el `??` de default en cada uno. `createApp` (app.ts) es el único lugar que construye
+ *  esto. */
 export interface ResolvedAppDeps extends AppDeps {
   payments: PaymentProviderPort;
   cfdi: CfdiPort;
+  billing: BillingProviderPort;
 }
 
 export type Variables = {

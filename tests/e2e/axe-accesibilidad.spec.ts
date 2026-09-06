@@ -7,6 +7,9 @@ import { sembrarSesionFalsa } from "./utils/session";
 // impacto se reportan pero no bloquean, igual que la mayoría de gates axe en
 // CI reales).
 const RUTAS: Array<{ nombre: string; ruta: string; protegida: boolean }> = [
+  // H12c · LAUNCH-025: landing pública -- debe ser accesible SIN sesión (es la puerta de
+  // entrada de un visitante anónimo, el caso de uso con más tráfico de todas las rutas).
+  { nombre: "landing", ruta: "/", protegida: false },
   { nombre: "login", ruta: "/login", protegida: false },
   { nombre: "resumen", ruta: "/resumen", protegida: true },
   { nombre: "reservas", ruta: "/reservas", protegida: true },
@@ -22,6 +25,9 @@ const RUTAS: Array<{ nombre: string; ruta: string; protegida: boolean }> = [
   { nombre: "aprobaciones", ruta: "/aprobaciones", protegida: true },
   // H7: gate/techo por agente, demo determinista y tarjeta de ROI en Resumen.
   { nombre: "agentes", ruta: "/agentes", protegida: true },
+  // H12c: estado de suscripción SaaS y centro de notificaciones.
+  { nombre: "suscripcion", ruta: "/suscripcion", protegida: true },
+  { nombre: "notificaciones", ruta: "/notificaciones", protegida: true },
 ];
 
 for (const { nombre, ruta, protegida } of RUTAS) {

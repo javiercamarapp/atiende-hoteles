@@ -8,6 +8,7 @@ import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 import { FakeStripeAdapter } from "@atiende-hoteles/mcp-payments";
 import { DualPacCfdiPort, FakeFinkokAdapter, FakeSwSapienAdapter } from "@atiende-hoteles/mcp-cfdi";
+import { FakeBillingAdapter } from "@atiende-hoteles/mcp-billing";
 import { authRoutes } from "./routes/auth.ts";
 import { healthRoutes } from "./routes/health.ts";
 import { metricsRoutes } from "./routes/metrics.ts";
@@ -35,6 +36,8 @@ import { mensajeriaRoutes } from "./routes/mensajeria.ts";
 import { agentesRoutes } from "./routes/agentes.ts";
 import { roiRoutes } from "./routes/roi.ts";
 import { privacidadRoutes } from "./routes/privacidad.ts";
+import { suscripcionRoutes } from "./routes/suscripcion.ts";
+import { notificacionesRoutes } from "./routes/notificaciones.ts";
 import { toErrorBody } from "./lib/errors.ts";
 import { buildMoneyAlertLog, isMoneyPath } from "./lib/moneyAlert.ts";
 import { ipRateLimit, requestId, userRateLimit } from "./middleware.ts";
@@ -52,6 +55,10 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
     ...deps,
     payments: deps.payments ?? new FakeStripeAdapter(),
     cfdi: deps.cfdi ?? new DualPacCfdiPort(new FakeFinkokAdapter(), new FakeSwSapienAdapter()),
+    // H12c · REQ-LAUNCH-015: sin credenciales de Stripe/Conekta Billing, `FakeBillingAdapter`
+    // único por proceso (misma razón que payments/cfdi arriba: su idempotencia/replay
+    // guard de webhook vive en memoria).
+    billing: deps.billing ?? new FakeBillingAdapter(),
   };
 
   // REQ-SEG (auditoria-1/seguridad.md [MEDIO] CORS): lista blanca explícita por
@@ -177,6 +184,8 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", agentesRoutes(deps));
   app.route("/", roiRoutes(deps));
   app.route("/", privacidadRoutes(deps));
+  app.route("/", suscripcionRoutes(resolvedDeps));
+  app.route("/", notificacionesRoutes(deps));
 
   return app;
 }

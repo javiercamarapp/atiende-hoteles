@@ -150,5 +150,21 @@ export async function seedDev(db: DbClient): Promise<SeedResult> {
     hotels.push({ id: hotelId, name: hotelDef.name, roomTypes, staff });
   }
 
+  // H12c · REQ-LAUNCH (facturación SaaS): el org demo arranca con una suscripción de
+  // prueba en el plan "pro" (2 hoteles/40 habitaciones caben dentro de sus límites,
+  // ver packages/db/migrations/0110) -- sin esta fila, /suscripcion mostraría
+  // "sin suscripción" para el tenant de desarrollo, que no es el estado real que un
+  // hotel recién dado de alta tendría (siempre nace con trial, ver routes/registro
+  // de H12a). Precio/límites son PROPUESTA pendiente de aprobación del fundador
+  // (docs/BLOQUEOS.md D-006), no una decisión de precio de lista tomada aquí.
+  const planRes = await db.query<{ id: string }>("select id from public.plan where code = 'pro';");
+  if (planRes.rows[0]) {
+    await db.query(
+      `insert into public.subscription (org_id, plan_id, status)
+       values ($1, $2, 'trial');`,
+      [orgId, planRes.rows[0].id],
+    );
+  }
+
   return { orgId, hotels };
 }
