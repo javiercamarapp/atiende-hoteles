@@ -1,0 +1,29 @@
+[OK] variables_de_entorno
+Las 5 variables obligatorias están presentes.
+
+[OK] env_example_documentado
+Todas las variables requeridas están documentadas en su .env.example.
+
+[OK] migraciones_desde_cero
+53 migración(es) aplicadas desde cero, 0 omitida por error.
+
+[OK] npm_test
+      Tests  136 passed (136)
+   Start at  16:54:03
+   Duration  25.52s (transform 331ms, setup 0ms, collect 1.45s, tests 23.85s, environment 0ms, prepare 30ms)
+
+
+
+[OK] npm_build
+dist/assets/index-VbEnl4Kh.css   42.68 kB │ gzip:   9.07 kB
+dist/assets/index-D0GwLkl9.js   537.41 kB │ gzip: 158.16 kB
+
+✓ built in 738ms
+
+
+[OK] presupuesto_bundle
+JS de apps/web/dist: 524.8 KB (presupuesto: 900 KB).
+
+[OK] npm_audit
+found 0 vulnerabilities
+
