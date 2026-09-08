@@ -86,6 +86,20 @@ export {
   type ParsedPassportMrz,
 } from "./mrz.ts";
 export {
+  pairAttendanceEvents,
+  crossCheckAttendance,
+  buildStpsAttendanceCsv,
+  type AttendanceEventType,
+  type AttendanceEvent,
+  type AttendanceSchedule,
+  type AttendanceShift,
+  type AttendanceAnomaly,
+  type AttendanceCrossCheckStatus,
+  type AttendanceCrossCheckResult,
+  type CrossCheckAttendanceInput,
+  type StpsExportRow,
+} from "./attendance.ts";
+export {
   computeIva,
   computeIsh,
   computeDsa,

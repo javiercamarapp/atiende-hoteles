@@ -138,7 +138,7 @@ en caso contrario.
 | REQ-BO-010 | pendiente | Pendiente sin razón | Requiere el motor de reporting financiero completo (P&L USALI, forecast, punto de equilibrio, caja 13 semanas); no se implementa parcialmente para evitar un P&L simulado. |
 | REQ-BO-011 | pendiente-credenciales | Credenciales | pendiente — depende de: WhatsApp |
 | REQ-BO-014 | pendiente-credenciales | Credenciales | pendiente — depende de: canal/credencial real (WhatsApp/voz), ver `docs/cierre-p0/inventario.md` §2 |
-| REQ-BO-024 | pendiente | Pendiente sin razón | Módulo de RR.HH./nómina no construido; no existe tabla de horarios/turnos contra la cual cruzar asistencia. |
+| REQ-BO-024 | hecho | Hecho | Checador append-only (`attendance_log`, migración 0091, hash encadenado por empleado + cabeza de cadena FOR UPDATE, patrón de `audit_log`/0015) + horario programado (`staff_schedule`, migración 0090) + cruce/alerta de horas extra no autorizadas (`packages/domain-hotel/src/attendance.ts`) + API (`apps/api/src/routes/asistencia.ts`, incluida exportación CSV para STPS) · `tests/unit/domain-hotel/attendance.spec.ts` (17/17), `tests/unit/attendance-log.spec.ts` (13/13), `tests/adversarial/checador-inalterable.spec.ts` (10/10) · `docs/logs/REQ-BO-024/`. |
 | REQ-BO-025 | pendiente | Pendiente sin razón | Regla de proceso sin superficie de producto propia todavía (no existe módulo de RR.HH.). |
 | REQ-BO-027 | pendiente-hardware | Hardware | pendiente — depende de: hardware IoT |
 | REQ-BO-028 | pendiente-hardware | Hardware | pendiente — depende de: hardware IoT |

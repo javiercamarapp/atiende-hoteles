@@ -1,0 +1,25 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/attendance-log.spec.ts (13 tests) 11478ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > registra entrada/salida vía record_attendance_event() dentro de una sesión real de staff  1471ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > SIEMPRE registra al propio auth.uid(): no existe ningún parámetro para fichar a nombre de otro empleado  978ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > rechaza registrar asistencia en un hotel al que el empleado no pertenece  846ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > cada fila referencia el hash de la fila anterior DEL MISMO empleado, y la primera no tiene prev_hash  820ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > dos empleados distintos tienen cadenas de hash INDEPENDIENTES (una no referencia a la otra)  782ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > el hash almacenado es verificable de forma independiente (recalculado desde las columnas persistidas coincide)  797ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > rechaza UPDATE incluso ejecutado con el cliente admin/propietario de la migración  801ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > rechaza DELETE incluso ejecutado con el cliente admin/propietario de la migración  907ms
+   ✓ staff_schedule: horario programado (mutable, administrado por owner/gm) > owner/gm puede programar un turno para un empleado de su propio hotel  882ms
+   ✓ staff_schedule: horario programado (mutable, administrado por owner/gm) > un rol sin administración (ej. housekeeping) NO puede programar horarios  807ms
+   ✓ staff_schedule: horario programado (mutable, administrado por owner/gm) > rechaza programar un horario para un empleado que no pertenece a ese hotel  807ms
+   ✓ staff_schedule: horario programado (mutable, administrado por owner/gm) > rechaza un rango con scheduled_end anterior o igual a scheduled_start  797ms
+   ✓ staff_schedule: horario programado (mutable, administrado por owner/gm) > un segundo upsert para el mismo (hotel, empleado, fecha) reemplaza el turno en vez de duplicarlo  783ms
+ ✓ tests/adversarial/checador-inalterable.spec.ts (10 tests) 1201ms
+ ✓ tests/unit/domain-hotel/attendance.spec.ts (17 tests) 1ms
+
+ Test Files  3 passed (3)
+      Tests  40 passed (40)
+   Start at  17:11:49
+   Duration  13.47s (transform 347ms, setup 0ms, collect 610ms, tests 12.68s, environment 0ms, prepare 45ms)
+

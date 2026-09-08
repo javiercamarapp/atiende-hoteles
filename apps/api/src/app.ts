@@ -31,6 +31,8 @@ import { backOfficeRoutes } from "./routes/backOffice.ts";
 import { checkinOnlineRoutes } from "./routes/checkinOnline.ts";
 import { housekeepingRoutes } from "./routes/housekeeping.ts";
 import { mantenimientoRoutes } from "./routes/mantenimiento.ts";
+import { reputacionRoutes } from "./routes/reputacion.ts";
+import { asistenciaRoutes } from "./routes/asistencia.ts";
 import { aprobacionesRoutes } from "./routes/aprobaciones.ts";
 import { aprobacionesWhatsappRoutes } from "./routes/aprobacionesWhatsapp.ts";
 import { mensajeriaRoutes } from "./routes/mensajeria.ts";
@@ -207,6 +209,8 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", checkinOnlineRoutes(deps));
   app.route("/", housekeepingRoutes(deps));
   app.route("/", mantenimientoRoutes(deps));
+  app.route("/", reputacionRoutes(deps));
+  app.route("/", asistenciaRoutes(deps));
   // REQ-UX-006: webhook público (sin sesión de staff) montado ANTES de la ruta
   // autenticada -- mismo criterio de orden que routes/mensajeria.ts.
   app.route("/", aprobacionesWhatsappRoutes(deps));
