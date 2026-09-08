@@ -1,0 +1,38 @@
+$ npm run test:adversarial
+fecha (UTC): 2026-09-08T20:17:21Z
+
+
+> atiende-hoteles@0.0.0 test:adversarial
+> vitest run --config vitest.config.ts tests/adversarial --pool=forks --poolOptions.forks.singleFork
+
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/adversarial/auditoria-2-lote-a-seguridad-legal.spec.ts (17 tests) 1569ms
+(node:82590) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ✓ tests/adversarial/prompt-injection.spec.ts (6 tests) 864ms
+ ✓ tests/adversarial/boveda-identidad.spec.ts (8 tests) 1110ms
+ ✓ tests/adversarial/housekeeping-mantenimiento-mensajeria.spec.ts (11 tests) 1059ms
+ ✓ tests/adversarial/auditoria-1-bd-criticos.spec.ts (9 tests) 1011ms
+ ✓ tests/adversarial/rpc-security-definer.spec.ts (5 tests) 1425ms
+ ✓ tests/adversarial/reserva-concurrencia-y-limites.spec.ts (5 tests) 3371ms
+ ✓ tests/adversarial/presentacion-sat-aprobacion.spec.ts (4 tests) 965ms
+ ✓ tests/adversarial/idempotencia-concurrente.spec.ts (2 tests) 928ms
+ ✓ tests/adversarial/agentes-aislamiento.spec.ts (9 tests) 1039ms
+ ✓ tests/adversarial/roles.spec.ts (20 tests) 2683ms
+ ✓ tests/adversarial/cancelacion-identidad.spec.ts (4 tests) 1340ms
+ ✓ tests/adversarial/checkin-chat-libre.spec.ts (3 tests) 1076ms
+ ✓ tests/adversarial/tarifas-roles.spec.ts (10 tests) 1193ms
+ ✓ tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts (4 tests) 1428ms
+ ✓ tests/adversarial/cargo-folio-verificacion.spec.ts (4 tests) 1163ms
+ ✓ tests/adversarial/reservas-aislamiento.spec.ts (4 tests) 1441ms
+ ✓ tests/adversarial/aislamiento-tenant-hotel.spec.ts (3 tests) 1266ms
+ ✓ tests/adversarial/housekeeping-cfdi-night-audit.spec.ts (3 tests) 1103ms
+ ✓ tests/adversarial/benchmark-k-minimo.spec.ts (5 tests) 1ms
+
+ Test Files  20 passed (20)
+      Tests  136 passed (136)
+   Start at  14:17:22
+   Duration  27.51s (transform 383ms, setup 0ms, collect 1.28s, tests 26.03s, environment 0ms, prepare 36ms)
+
