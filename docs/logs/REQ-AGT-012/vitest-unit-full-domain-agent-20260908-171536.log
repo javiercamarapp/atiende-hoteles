@@ -1,0 +1,46 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/agent-core/ocr-aislado-sin-internet.spec.ts (9 tests) 30ms
+ ✓ tests/unit/domain-hotel/estado-maquina.spec.ts (9 tests) 3ms
+ ✓ tests/unit/domain-hotel/walk-forward-backtest.spec.ts (15 tests) 5ms
+ ✓ tests/unit/agent-core/provider.spec.ts (17 tests) 5ms
+ ✓ tests/unit/agent-core/runner.spec.ts (33 tests) 18ms
+ ✓ tests/unit/agent-core/no-parallel-tool-money.spec.ts (6 tests) 13ms
+ ✓ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts (15 tests) 3ms
+ ✓ tests/unit/domain-hotel/impuestos-hospedaje.spec.ts (9 tests) 2ms
+ ✓ tests/unit/agent-core/tool.spec.ts (17 tests) 4ms
+ ✓ tests/unit/domain-hotel/parity-guard.spec.ts (27 tests) 5ms
+ ✓ tests/unit/domain-hotel/waitlist.spec.ts (7 tests) 4ms
+ ✓ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts (27 tests) 7ms
+ ✓ tests/unit/domain-hotel/fraude-deteccion.spec.ts (20 tests) 5ms
+ ✓ tests/unit/agent-core/postgres-approval-concurrency.spec.ts (2 tests) 5ms
+ ✓ tests/unit/agent-core/roles.spec.ts (13 tests) 3ms
+ ✓ tests/unit/domain-hotel/pricing-source.spec.ts (3 tests) 6ms
+ ✓ tests/unit/agent-core/redact.spec.ts (22 tests) 5ms
+ ✓ tests/unit/domain-hotel/revenue-engine-gate.spec.ts (28 tests) 9ms
+ ✓ tests/unit/agent-core/approval.spec.ts (17 tests) 5ms
+ ✓ tests/unit/agent-core/roi-tools.spec.ts (3 tests) 5ms
+ ✓ tests/unit/domain-hotel/motor-precio-total.spec.ts (7 tests) 4ms
+ ✓ tests/unit/domain-hotel/payment-free-text-guard.spec.ts (8 tests) 3ms
+ ✓ tests/unit/domain-hotel/cancelacion-policy.spec.ts (6 tests) 3ms
+ ✓ tests/unit/domain-hotel/attendance.spec.ts (17 tests) 11ms
+ ✓ tests/unit/domain-hotel/checkin-free-text-guard.spec.ts (6 tests) 30ms
+ ✓ tests/unit/domain-hotel/mrz.spec.ts (13 tests) 6ms
+ ✓ tests/unit/agent-core/trace.spec.ts (3 tests) 3ms
+ ✓ tests/unit/domain-hotel/overbooking.spec.ts (4 tests) 11ms
+ ✓ tests/unit/agent-core/agents.spec.ts (7 tests) 2ms
+ ✓ tests/unit/domain-hotel/restricciones-estadia.spec.ts (6 tests) 5ms
+ ✓ tests/unit/domain-hotel/folio-engine.spec.ts (16 tests) 2ms
+ ✓ tests/unit/agent-core/context.spec.ts (7 tests) 8ms
+ ✓ tests/unit/agent-core/pricing.spec.ts (4 tests) 3ms
+ ✓ tests/unit/agent-core/tool-schema-strict.spec.ts (9 tests) 3248ms
+   ✓ recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001) > cerrar un ticket con autorizar_gasto_mantenimiento deja una fila de audit_log con timestamp, agente y valor anterior/nuevo reales  2347ms
+   ✓ recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001) > audit_log sigue siendo append-only e inmutable para la fila que dejo la tool (ADR-005/GOB-026)  879ms
+
+ Test Files  34 passed (34)
+      Tests  412 passed (412)
+   Start at  17:15:48
+   Duration  3.89s (transform 580ms, setup 0ms, collect 5.53s, tests 3.48s, environment 3ms, prepare 2.02s)
+
+exit=0
