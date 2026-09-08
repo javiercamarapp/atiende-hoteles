@@ -1,0 +1,2 @@
+$ (cd apps/web && npx tsc --noEmit)
+exit code: 0

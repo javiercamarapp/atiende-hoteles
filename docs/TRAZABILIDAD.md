@@ -225,7 +225,7 @@ en caso contrario.
 | REQ-TEN-003 | parcial | Parcial (construcción en curso) | `tests/adversarial/roles.spec.ts` (20/20) · `docs/logs/h2-test-adversarial-20260906-053949.log`. Falta `tests/e2e/staff-pwa.spec.ts` (H6). |
 | REQ-TEN-006 | pendiente-decisión | Decisión del usuario | Depende de que exista contenido de disclosure real aprobado (texto legal, REQ-GOB-012) antes de tener sentido centralizarlo; construir el motor vacío sería simular el requisito. |
 | REQ-UX-001 | pendiente | Rediseño | Rediseño integral de `apps/web` (paridad visual completa); alto riesgo de romper páginas existentes sin revisión visual dedicada. |
-| REQ-UX-002 | pendiente | Rediseño | Auditar TODAS las pantallas existentes de `apps/web` con estados vacíos/errores honestos es un proyecto de UX propio (más allá de las 2 pantallas nuevas de UX-004/005 que sí lo cumplen). |
+| REQ-UX-002 | hecho (posterior a este pase) | Cerrado en un pase posterior | Auditadas las 20 pantallas reales de `apps/web/src/pages/**` contra `apps/api` real + embedded-postgres; 3 defectos reales corregidos (`Reputacion.tsx` atribución falsa a "credenciales" para un módulo sin backend; `AppShell.tsx` sin aviso cuando `GET /hoteles` falla, dejando a todas las pantallas mostrar su vacío genérico como si el hotel fuera real; `Reservas.tsx` selector sin indicio de error). `tests/e2e/estados-vacios-honestos.spec.ts`: 11/11 desktop + 11/11 mobile. Ver `docs/ACEPTACION.md` y `docs/logs/REQ-UX-002/`. |
 | REQ-UX-003 | pendiente | Rediseño | Auditoría de accesibilidad (teclado/contraste/ARIA) y móvil de toda la `hotel-staff-pwa` es un proyecto propio. |
 
 **Distribución de las 113 filas P0 no-hechas por clasificación:** Credenciales 45, Pendiente

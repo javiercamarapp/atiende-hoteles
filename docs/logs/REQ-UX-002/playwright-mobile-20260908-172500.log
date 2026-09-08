@@ -1,0 +1,19 @@
+[WebServer] 5:23:54 p.m. [vite] warning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-swc" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] You or a plugin you are using have set `optimizeDeps.esbuildOptions` but this option is now deprecated. Vite now uses Rolldown to optimize the dependencies. Please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] `esbuild` option is set to false, but `oxc` option was not set to false. `esbuild: false` does not have effect any more. If you want to disable the default transformation, which is now handled by Oxc, please set `oxc: false` instead.
+
+Running 11 tests using 1 worker
+
+  ✓   1 [mobile] › ../../tests/e2e/estados-vacios-honestos.spec.ts:91:3 › REQ-UX-002 · A) backend real, datos genuinamente vacíos (seed sin reservas/tareas/tickets) › login real y recorrido de pantallas con datos reales pero vacíos (11.1s)
+  ✓   2 [mobile] › ../../tests/e2e/estados-vacios-honestos.spec.ts:227:5 › REQ-UX-002 · B) sin backend disponible: error accionable de 'pendiente de credenciales' › resumen: sin VITE_API_URL → "Pendiente de credenciales" explícito, nunca un stack trace (796ms)
+  ✓   3 [mobile] › ../../tests/e2e/estados-vacios-honestos.spec.ts:227:5 › REQ-UX-002 · B) sin backend disponible: error accionable de 'pendiente de credenciales' › reservas: sin VITE_API_URL → "Pendiente de credenciales" explícito, nunca un stack trace (805ms)
+  ✓   4 [mobile] › ../../tests/e2e/estados-vacios-honestos.spec.ts:227:5 › REQ-UX-002 · B) sin backend disponible: error accionable de 'pendiente de credenciales' › huespedes: sin VITE_API_URL → "Pendiente de credenciales" explícito, nunca un stack trace (675ms)
+  ✓   5 [mobile] › ../../tests/e2e/estados-vacios-honestos.spec.ts:227:5 › REQ-UX-002 · B) sin backend disponible: error accionable de 'pendiente de credenciales' › mantenimiento: sin VITE_API_URL → "Pendiente de credenciales" explícito, nunca un stack trace (787ms)
+  ✓   6 [mobile] › ../../tests/e2e/estados-vacios-honestos.spec.ts:227:5 › REQ-UX-002 · B) sin backend disponible: error accionable de 'pendiente de credenciales' › mensajeria: sin VITE_API_URL → "Pendiente de credenciales" explícito, nunca un stack trace (769ms)
+  ✓   7 [mobile] › ../../tests/e2e/estados-vacios-honestos.spec.ts:227:5 › REQ-UX-002 · B) sin backend disponible: error accionable de 'pendiente de credenciales' › aprobaciones: sin VITE_API_URL → "Pendiente de credenciales" explícito, nunca un stack trace (759ms)
+  ✓   8 [mobile] › ../../tests/e2e/estados-vacios-honestos.spec.ts:227:5 › REQ-UX-002 · B) sin backend disponible: error accionable de 'pendiente de credenciales' › housekeeping: sin VITE_API_URL → "Pendiente de credenciales" explícito, nunca un stack trace (756ms)
+  ✓   9 [mobile] › ../../tests/e2e/estados-vacios-honestos.spec.ts:227:5 › REQ-UX-002 · B) sin backend disponible: error accionable de 'pendiente de credenciales' › configuracion: sin VITE_API_URL → "Pendiente de credenciales" explícito, nunca un stack trace (815ms)
+  ✓  10 [mobile] › ../../tests/e2e/estados-vacios-honestos.spec.ts:227:5 › REQ-UX-002 · B) sin backend disponible: error accionable de 'pendiente de credenciales' › agentes: sin VITE_API_URL → "Pendiente de credenciales" explícito, nunca un stack trace (800ms)
+  ✓  11 [mobile] › ../../tests/e2e/estados-vacios-honestos.spec.ts:251:3 › REQ-UX-002 · B) sin backend disponible: error accionable de 'pendiente de credenciales' › alimentos-bebidas y reputación: siguen mostrando 'módulo no implementado', nunca inventan su propia integración (566ms)
+
+  11 passed (22.9s)
