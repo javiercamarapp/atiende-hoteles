@@ -26,6 +26,10 @@ export interface BacklogTask {
   orden: number;
   estimacionHoras: number;
   gate: BacklogGate;
+  /** IDs de otras tareas del backlog de las que esta depende (GOB-001/GOB-046: "sin
+   *  dependencias abiertas"). Una dependencia se considera abierta salvo que exista en
+   *  el backlog dado y su `status` sea `done`. */
+  dependencies: string[];
   status: BacklogStatus;
   /** Contador de intentos fallidos POR LA MISMA CAUSA (GOB-008/GOB-045): al llegar a
    *  3, la tarea pasa automáticamente a `blocked` (ver `recordFailedAttempt`). */
@@ -72,6 +76,8 @@ export interface CreateBacklogTaskInput {
   orden: number;
   estimacionHoras: number;
   gate: BacklogGate;
+  /** Opcional: por defecto sin dependencias (`[]`). */
+  dependencies?: string[];
 }
 
 /** Toda tarea nueva nace en `draft` con 0 intentos (GOB-045: "una tarea = un archivo
@@ -82,6 +88,7 @@ export function createBacklogTask(input: CreateBacklogTaskInput): BacklogTask {
   }
   return {
     ...input,
+    dependencies: input.dependencies ?? [],
     status: "draft",
     attempts: 0,
     blockedReason: null,
@@ -150,7 +157,19 @@ export function recordFailedAttempt(task: BacklogTask, diagnostico: string): Bac
 // tests/unit/gob/backlog-state-machine.spec.ts.
 // ---------------------------------------------------------------------------
 
-const FRONTMATTER_FIELDS = ["id", "title", "module", "orden", "estimacionHoras", "gate", "status", "attempts", "blockedReason", "needsHumanReason"] as const;
+const FRONTMATTER_FIELDS = [
+  "id",
+  "title",
+  "module",
+  "orden",
+  "estimacionHoras",
+  "gate",
+  "dependencies",
+  "status",
+  "attempts",
+  "blockedReason",
+  "needsHumanReason",
+] as const;
 
 export function renderTaskFile(task: BacklogTask): string {
   const lines = ["---"];
@@ -187,6 +206,7 @@ export function parseTaskFile(content: string): BacklogTask {
     orden: Number(raw.orden),
     estimacionHoras: Number(raw.estimacionHoras),
     gate,
+    dependencies: raw.dependencies ? raw.dependencies.split(",").filter((d) => d.length > 0) : [],
     status,
     attempts: Number(raw.attempts ?? "0"),
     blockedReason: parseNullable(raw.blockedReason),
@@ -204,4 +224,31 @@ export function selectNextReadyTask(tasks: readonly BacklogTask[]): BacklogTask 
   const ready = tasks.filter((t) => t.status === "ready");
   if (ready.length === 0) return null;
   return [...ready].sort((a, b) => a.orden - b.orden || a.estimacionHoras - b.estimacionHoras)[0]!;
+}
+
+/**
+ * Una dependencia está ABIERTA salvo que exista en `tasks` con `status === "done"`
+ * (GOB-001/GOB-046: "sin dependencias abiertas"). Una dependencia declarada que no
+ * aparece en `tasks` se trata como abierta (nunca se asume resuelta sin evidencia).
+ */
+function hasOpenDependencies(task: BacklogTask, tasks: readonly BacklogTask[]): boolean {
+  return task.dependencies.some((depId) => tasks.find((t) => t.id === depId)?.status !== "done");
+}
+
+/**
+ * REQ-GOB-001 (GOB-001/GOB-046/GOB-049): selección de la siguiente tarea del backlog.
+ * Filtra `ready`, sin dependencias abiertas, dentro de `openModules` (los módulos
+ * abiertos del `FOCUS.md` vigente -- ese archivo lo produce/lee REQ-GOB-014; aquí se
+ * recibe ya resuelto como lista de módulos), por menor `orden` (empate → menor
+ * `estimacionHoras`), y la MUEVE a `doing` (transición real vía
+ * `transitionBacklogTask`, nunca una copia con `status` reescrito a mano). Devuelve
+ * `null` si ninguna tarea del backlog cumple los 3 filtros.
+ */
+export function selectNextTask(tasks: readonly BacklogTask[], openModules: readonly string[]): BacklogTask | null {
+  const candidates = tasks.filter(
+    (t) => t.status === "ready" && openModules.includes(t.module) && !hasOpenDependencies(t, tasks),
+  );
+  if (candidates.length === 0) return null;
+  const selected = [...candidates].sort((a, b) => a.orden - b.orden || a.estimacionHoras - b.estimacionHoras)[0]!;
+  return transitionBacklogTask(selected, "doing");
 }

@@ -1,0 +1,16 @@
+# REQ-GOB-001 -- comando previsto de ACEPTACION.md
+$ npx vitest run tests/unit/gob/seleccion-tarea.spec.ts
+# ejecutado: 2026-09-08T20:22:41Z
+
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/gob/seleccion-tarea.spec.ts (10 tests) 2ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  14:22:42
+   Duration  217ms (transform 24ms, setup 0ms, collect 23ms, tests 2ms, environment 0ms, prepare 45ms)
+
+
+EXIT_CODE=0
