@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/qa/no-tests-skip.spec.ts (16 tests) 26ms
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  15:55:42
+   Duration  245ms (transform 22ms, setup 0ms, collect 26ms, tests 26ms, environment 0ms, prepare 38ms)
+

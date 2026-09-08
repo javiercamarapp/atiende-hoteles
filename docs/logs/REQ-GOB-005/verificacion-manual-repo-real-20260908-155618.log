@@ -1,0 +1,11 @@
+=== REQ-GOB-005: verificación manual end-to-end contra tasks/ real (creado temporalmente, eliminado al final) ===
+
+--- caso 1: tarea de muestra REAL ya cerrada de este repo (REQ-GOB-004, commit real ead57d3) ---
+REQ-GOB-005 OK: 1 tarea(s) revisada(s) bajo tasks/ -- ninguna tarea `review`/`done` sin exactamente un commit real de `git log` en formato Conventional Commits referenciando su `id`.
+exit=0
+
+--- caso 2: tarea cerrada con id inventado, 0 commits la referencian -> debe bloquear ---
+exit=1
+
+--- limpieza: se elimina tasks/ de prueba, sin dejar rastro ---
+0 residuos en git status para tasks/

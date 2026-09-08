@@ -1,0 +1,7 @@
+
+/Users/javiercamaraportepetit/Desktop/supabase/hoteles/scripts/checks/cierre-tarea-conventional-commits.ts
+  267:40  error  Unnecessary escape character: \`  no-useless-escape
+  267:49  error  Unnecessary escape character: \`  no-useless-escape
+
+✖ 2 problems (2 errors, 0 warnings)
+

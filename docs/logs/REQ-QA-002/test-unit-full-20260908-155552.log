@@ -1,0 +1,124 @@
+
+> atiende-hoteles@0.0.0 test:unit
+> vitest run --config vitest.config.ts tests/unit
+
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/idempotency-key.spec.ts (3 tests) 7231ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > un INSERT plano con la misma clave dos veces es rechazado por el constraint UNIQUE  3749ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > INSERT ... ON CONFLICT DO NOTHING con la misma clave no duplica la fila (patron real de la app)  1701ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > la misma clave en dos tenants distintos NO colisiona (unicidad es por tenant)  1781ms
+ ✓ tests/unit/migrations.spec.ts (4 tests) 9500ms
+   ✓ runner de migraciones (PGlite) > aplica todas las migraciones desde una base vacia  3704ms
+   ✓ runner de migraciones (PGlite) > es idempotente: correrlo dos veces no reaplica nada la segunda vez  1767ms
+   ✓ runner de migraciones (PGlite) > rechaza continuar si una migracion ya aplicada fue editada (expand-only)  1603ms
+   ✓ runner de migraciones (PGlite) > db:reset (dropAllMigratedObjects) deja la base lista para re-aplicar desde cero  2425ms
+ ✓ tests/unit/rls/org-isolation.spec.ts (4 tests) 9740ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org compartido del fixture no ve nada del org independiente  3795ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org independiente tampoco ve el org compartido del fixture  2084ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > current_tenant_ids() del usuario del org independiente NO incluye el org del fixture  1766ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > INSERT: rechazado al intentar escribir en el hotel de otro org  2095ms
+ ✓ tests/unit/rls/money-role.spec.ts (4 tests) 10111ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer folio  3814ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer charge ni payment  2002ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede insertar un payment  1929ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > gm (rol con acceso a dinero) si puede leer folio/charge/payment de su hotel  2366ms
+ ✓ tests/unit/audit-log.spec.ts (5 tests) 12061ms
+   ✓ audit_log: append-only + cadena de hash > cada fila referencia el hash de la fila anterior del mismo tenant y el primero no tiene prev_hash  3814ms
+   ✓ audit_log: append-only + cadena de hash > el hash almacenado es verificable de forma independiente (recalculado desde las columnas persistidas coincide)  1888ms
+   ✓ audit_log: append-only + cadena de hash > una alteracion manual del payload rompe la verificacion del hash (detectada, no silenciosa)  1824ms
+   ✓ audit_log: append-only + cadena de hash > rechaza UPDATE incluso ejecutado con el rol admin/propietario  2181ms
+   ✓ audit_log: append-only + cadena de hash > rechaza DELETE incluso ejecutado con el rol admin/propietario  2333ms
+ ✓ tests/unit/reservation-state-machine.spec.ts (5 tests) 12393ms
+   ✓ maquina de estados de reservation > una reserva nueva arranca en 'cotizada' y queda registrada en el evento inicial  3946ms
+   ✓ maquina de estados de reservation > permite la cadena de transiciones valida completa  1972ms
+   ✓ maquina de estados de reservation > rechaza un salto invalido (cotizada -> en_estancia, saltandose confirmada/check_in)  1914ms
+   ✓ maquina de estados de reservation > rechaza reabrir una reserva cerrada (estado terminal)  2143ms
+   ✓ maquina de estados de reservation > rechaza confirmar una reserva ya cancelada  2417ms
+ ✓ tests/unit/schema/hotel-timezone.spec.ts (4 tests) 3612ms
+ ✓ tests/unit/schema/dinero-numeric.spec.ts (6 tests) 3496ms
+ ✓ tests/unit/gob/cierre-tarea-conventional-commits.spec.ts (46 tests) 1311ms
+   ✓ obtenerCommitsGitReal: contra un repositorio git real > lee hash/asunto/cuerpo de commits reales, en orden de git log (más reciente primero)  393ms
+   ✓ obtenerCommitsGitReal: contra un repositorio git real > checkCierreTareaConventionalCommits end-to-end contra el repo git real: tarea con su commit real -> 0 violaciones  439ms
+ ✓ tests/unit/mcp-servers/pms/registro-unico-conectores.spec.ts (11 tests) 51ms
+ ✓ tests/unit/agent-core/ocr-aislado-sin-internet.spec.ts (9 tests) 36ms
+ ✓ tests/unit/gob/evidencia-obligatoria-cierre.spec.ts (24 tests) 23ms
+ ✓ tests/unit/llm-juez-solo-sintetico.spec.ts (11 tests) 33ms
+ ✓ tests/unit/gob/scope-de-tarea.spec.ts (26 tests) 796ms
+ ✓ tests/unit/gob/gate-por-tarea.spec.ts (15 tests) 23ms
+ ✓ tests/unit/agent-core/runner.spec.ts (33 tests) 35ms
+ ✓ tests/unit/gob/pms-mirror-solo-lectura.spec.ts (13 tests) 48ms
+ ✓ tests/unit/qa/no-tests-skip.spec.ts (16 tests) 41ms
+ ✓ tests/unit/mcp-servers/whatsapp/contract.spec.ts (10 tests) 7ms
+ ✓ tests/unit/mcp-servers/payments/adapter-swap.spec.ts (16 tests) 6ms
+ ✓ tests/unit/ui/format-money.spec.ts (5 tests) 20ms
+ ✓ tests/unit/agent-core/approval.spec.ts (17 tests) 8ms
+ ✓ tests/unit/gob/tres-intentos-bloqueo.spec.ts (30 tests) 3018ms
+ ✓ tests/unit/agent-core/tool-schema-strict.spec.ts (9 tests) 5638ms
+   ✓ recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001) > cerrar un ticket con autorizar_gasto_mantenimiento deja una fila de audit_log con timestamp, agente y valor anterior/nuevo reales  3205ms
+   ✓ recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001) > audit_log sigue siendo append-only e inmutable para la fila que dejo la tool (ADR-005/GOB-026)  2420ms
+ ✓ tests/unit/agent-core/redact.spec.ts (22 tests) 5ms
+ ✓ tests/unit/gob/no-comandos-destructivos-agente.spec.ts (7 tests) 30ms
+ ✓ tests/unit/agent-core/no-parallel-tool-money.spec.ts (6 tests) 16ms
+ ✓ tests/unit/mcp-servers/cfdi/pac-doble.spec.ts (13 tests) 8ms
+ ✓ tests/unit/gob/seleccion-tarea.spec.ts (10 tests) 3ms
+ ✓ tests/unit/check-runtime-flags.spec.ts (7 tests) 8ms
+ ✓ tests/unit/mcp-servers/pms/contract.spec.ts (14 tests | 1 skipped) 8ms
+ ✓ tests/unit/mcp-servers/energy/contract.spec.ts (15 tests) 6ms
+ ✓ tests/unit/api/identity-encryption.spec.ts (8 tests) 7ms
+ ✓ tests/unit/gob/backlog-state-machine.spec.ts (21 tests) 8ms
+ ✓ tests/unit/check-migraciones.spec.ts (13 tests) 12ms
+ ✓ tests/unit/domain-hotel/restricciones-estadia.spec.ts (6 tests) 3ms
+ ✓ tests/unit/domain-hotel/pricing-source.spec.ts (3 tests) 5ms
+ ✓ tests/unit/domain-hotel/motor-precio-total.spec.ts (7 tests) 3ms
+ ✓ tests/unit/mcp-servers/shared/backoff.spec.ts (7 tests) 6ms
+ ✓ tests/unit/api/money-alert-destination.spec.ts (11 tests) 6ms
+ ✓ tests/unit/agent-core/tool.spec.ts (17 tests) 8ms
+ ✓ tests/unit/domain-hotel/estado-maquina.spec.ts (9 tests) 5ms
+ ✓ tests/unit/agent-core/postgres-approval-concurrency.spec.ts (2 tests) 4ms
+ ✓ tests/unit/api/money-alert-ids.spec.ts (7 tests) 2ms
+ ✓ tests/unit/agent-core/roi-tools.spec.ts (3 tests) 4ms
+ ✓ tests/unit/agent-core/agents.spec.ts (7 tests) 7ms
+ ✓ tests/unit/mcp-servers/locks/contract.spec.ts (11 tests) 4ms
+ ✓ tests/unit/agent-core/roles.spec.ts (13 tests) 3ms
+ ✓ tests/unit/mcp-servers/architecture/lock-isolation.spec.ts (7 tests) 5ms
+ ✓ tests/unit/domain-hotel/folio-engine.spec.ts (16 tests) 6ms
+ ✓ tests/unit/mcp-servers/shared/credentials.spec.ts (3 tests) 4ms
+ ✓ tests/unit/api/outbox-worker.spec.ts (8 tests) 15518ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un handler exitoso marca el evento 'enviado' y no lo vuelve a drenar  2962ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un handler que falla incrementa attempts y pospone available_at con backoff exponencial  1891ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > tras maxAttempts fallos consecutivos, el evento se marca 'fallido' (dead-letter) y deja de reintentarse  1889ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > auditoria-1/backend [ALTO]: la causa real del error queda persistida en outbox.last_error, no descartada por un catch{} mudo  1986ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > auditoria-1/backend [ALTO]: el dead-letter final también conserva la causa real del último intento  2507ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > auditoria-1/backend [ALTO]: un handler colgado (nunca resuelve) se trata como fallo por timeout sin bloquear el resto del batch  2514ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un event_type sin handler registrado se trata como fallo (nunca se marca 'enviado' silenciosamente)  1765ms
+ ✓ tests/unit/agent-core/context.spec.ts (7 tests) 2ms
+ ✓ tests/unit/domain-hotel/payment-free-text-guard.spec.ts (8 tests) 4ms
+ ✓ tests/unit/domain-hotel/cancelacion-policy.spec.ts (6 tests) 2ms
+ ✓ tests/unit/rls/tenant-isolation.spec.ts (4 tests) 9972ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > SELECT: solo devuelve filas del hotel del usuario  2957ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > INSERT: rechazado con violacion de politica al escribir en el hotel ajeno  2426ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > UPDATE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  2565ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > DELETE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  2022ms
+ ✓ tests/unit/api/rate-limiter.spec.ts (4 tests) 4ms
+ ✓ tests/unit/mcp-servers/pms/registro-conectores.spec.ts (4 tests) 4ms
+ ✓ tests/unit/gob/bloqueo-sin-criterio.spec.ts (9 tests) 3ms
+ ✓ tests/unit/domain-hotel/mrz.spec.ts (13 tests) 6ms
+ ✓ tests/unit/mcp-servers/shared/rate-limiter.spec.ts (3 tests) 2ms
+ ✓ tests/unit/mcp-servers/shared/hmac.spec.ts (10 tests) 2ms
+ ✓ tests/unit/domain-hotel/impuestos-hospedaje.spec.ts (9 tests) 4ms
+ ✓ tests/unit/domain-hotel/checkin-free-text-guard.spec.ts (6 tests) 3ms
+ ✓ tests/unit/agent-core/provider.spec.ts (8 tests) 10ms
+ ✓ tests/unit/mcp-servers/shared/idempotency.spec.ts (3 tests) 8ms
+ ✓ tests/unit/restore-verify.spec.ts (5 tests) 6ms
+ ✓ tests/unit/api/logger-redact.spec.ts (4 tests) 3ms
+ ✓ tests/unit/domain-hotel/overbooking.spec.ts (4 tests) 3ms
+ ✓ tests/unit/agent-core/pricing.spec.ts (4 tests) 2ms
+ ✓ tests/unit/agent-core/trace.spec.ts (3 tests) 2ms
+
+ Test Files  71 passed (71)
+      Tests  712 passed | 1 skipped (713)
+   Start at  15:55:52
+   Duration  18.48s (transform 1.60s, setup 0ms, collect 8.09s, tests 104.98s, environment 8ms, prepare 3.16s)
+
