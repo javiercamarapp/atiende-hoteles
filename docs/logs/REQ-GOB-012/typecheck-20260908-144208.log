@@ -1,0 +1,15 @@
+
+> atiende-hoteles@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json && tsc --noEmit -p apps/api/tsconfig.json
+
+tests/unit/gob/bloqueo-sin-criterio.spec.ts(8,3): error TS2305: Module '"../../../packages/agent-core/src/backlog/backlogStateMachine.ts"' has no exported member 'beginImplementation'.
+tests/unit/gob/bloqueo-sin-criterio.spec.ts(10,3): error TS2305: Module '"../../../packages/agent-core/src/backlog/backlogStateMachine.ts"' has no exported member 'hasVerifiableAcceptanceCriteria'.
+tests/unit/gob/bloqueo-sin-criterio.spec.ts(33,59): error TS2353: Object literal may only specify known properties, and 'criterioAceptacion' does not exist in type 'Partial<CreateBacklogTaskInput>'.
+tests/unit/gob/bloqueo-sin-criterio.spec.ts(37,59): error TS2353: Object literal may only specify known properties, and 'criterioAceptacion' does not exist in type 'Partial<CreateBacklogTaskInput>'.
+tests/unit/gob/bloqueo-sin-criterio.spec.ts(41,59): error TS2353: Object literal may only specify known properties, and 'criterioAceptacion' does not exist in type 'Partial<CreateBacklogTaskInput>'.
+tests/unit/gob/bloqueo-sin-criterio.spec.ts(46,7): error TS2353: Object literal may only specify known properties, and 'criterioAceptacion' does not exist in type 'Partial<CreateBacklogTaskInput>'.
+tests/unit/gob/bloqueo-sin-criterio.spec.ts(54,40): error TS2353: Object literal may only specify known properties, and 'criterioAceptacion' does not exist in type 'Partial<CreateBacklogTaskInput>'.
+tests/unit/gob/bloqueo-sin-criterio.spec.ts(71,45): error TS2353: Object literal may only specify known properties, and 'criterioAceptacion' does not exist in type 'Partial<CreateBacklogTaskInput>'.
+tests/unit/gob/bloqueo-sin-criterio.spec.ts(81,40): error TS2353: Object literal may only specify known properties, and 'criterioAceptacion' does not exist in type 'Partial<CreateBacklogTaskInput>'.
+tests/unit/gob/bloqueo-sin-criterio.spec.ts(92,7): error TS2353: Object literal may only specify known properties, and 'criterioAceptacion' does not exist in type 'Partial<CreateBacklogTaskInput>'.
+tests/unit/gob/bloqueo-sin-criterio.spec.ts(113,7): error TS2353: Object literal may only specify known properties, and 'criterioAceptacion' does not exist in type 'CreateBacklogTaskInput'.

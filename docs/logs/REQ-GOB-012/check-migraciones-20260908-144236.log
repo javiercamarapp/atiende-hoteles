@@ -1,0 +1,1 @@
+check-migraciones: OK (59 migración(es) verificadas contra el manifiesto base, 0 DROP/ALTER destructivo sin aprobar).
