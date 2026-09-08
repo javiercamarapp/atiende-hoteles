@@ -11,10 +11,12 @@ confirmados en el árbol de trabajo el día de este pase (comandos en §5).
 ## 0. Resumen ejecutivo (sin maquillaje)
 
 - **Estado canónico de los 276 REQ**: 18 `hecho` (6.5%), 19 `parcial` (6.9%), 87
-  `pendiente-credenciales` (31.5%), 20 `pendiente-hardware` (7.2%), 2 `pendiente-decisión`
-  (0.7%), 130 `pendiente` sin dependencia externa resuelta (47.1%).
+  `pendiente-credenciales` (31.5%), 20 `pendiente-hardware` (7.2%), 3 `pendiente-decisión`
+  (1.1%, ver nota §8: se sumó `REQ-AGT-013` el 2026-09-08, mismo criterio de
+  `REQ-SEG-001`/`REQ-TEN-006` — evidencia textual explícita de decisión reservada al
+  fundador, aquí LLM-023), 129 `pendiente` sin dependencia externa resuelta (46.7%).
 - **P0 (128 requisitos)**: solo **15 hechos = 11.7%**. El resto: 17 parciales, 45
-  pendientes de credenciales, 6 de hardware, 2 de decisión del fundador y 43 sin ninguna
+  pendientes de credenciales, 6 de hardware, 3 de decisión del fundador y 42 sin ninguna
   dependencia externa que lo explique (ver §2, columna "razón").
 - **Población real de renglones marcados `hecho` en `ACEPTACION.md`**: **23**, no ≥40. La
   tarea pedía verificar por muestreo ≥40 REQ marcados `hecho`; como la población total es
@@ -123,7 +125,7 @@ en caso contrario.
 | REQ-AGT-006 | pendiente | Pendiente sin razón | Excluido explícitamente del pase de cierre P0 (frente H7 en paralelo). |
 | REQ-AGT-008 | pendiente | Pendiente sin razón | Excluido explícitamente del pase de cierre P0 (frente H7 en paralelo). |
 | REQ-AGT-009 | pendiente | Pendiente sin razón | Excluido explícitamente del pase de cierre P0 (frente H7 en paralelo); además requiere su propio simulador de huéspedes (red-teaming en CI), no construido. |
-| REQ-AGT-013 | pendiente | Pendiente sin razón | Excluido explícitamente del pase de cierre P0 (frente H7 en paralelo). |
+| REQ-AGT-013 | pendiente-decisión | Decisión del usuario | Reclasificado 2026-09-08 (lectura más profunda, exactamente el caso que §8 de este documento dejaba como trabajo futuro explícito): `docs/ARQUITECTURA.md` "Resolución de las 10 contradicciones" #10 cita LLM-023 exigiendo confirmación separada del fundador antes de desplegar un motor de OCR de origen chino (PaddleOCR-VL/GLM-OCR/Qwen3-Embedding) en producción, distinta de la aprobación de la Opción C — ver `docs/BLOQUEOS.md` D-006. El guardrail estático que sí es verificable sin esa decisión se construyó y quedó en verde: `scripts/checks/ocr-aislado-sin-internet.ts` (0 llamadas a LLM de canal/endpoint chino para OCR) + `tests/unit/agent-core/ocr-aislado-sin-internet.spec.ts` (9/9, adversarial) · `docs/logs/REQ-AGT-013/`. |
 | REQ-AGT-015 | pendiente | Pendiente sin razón | Excluido explícitamente del pase de cierre P0 (frente H7 en paralelo). |
 | REQ-AGT-016 | pendiente-credenciales | Credenciales | pendiente — depende de: telefonía/voz |
 | REQ-AGT-018 | pendiente | Pendiente sin razón | Excluido explícitamente del pase de cierre P0 (frente H7 en paralelo). |

@@ -1,0 +1,7 @@
+$ node scripts/checks/ocr-aislado-sin-internet.ts
+REQ-AGT-013 OK: 0 llamadas a un LLM de canal o endpoint chino de primera parte para OCR en apps/** y packages/**.
+Nota: esto confirma la invariante de aislamiento de red/canal como guardrail permanente, NO que el servicio de
+OCR autoalojado real ya esté desplegado -- ese despliegue (PaddleOCR-VL/GLM-OCR u homólogo dentro del
+contenedor de la bóveda de identidad) sigue pendiente de confirmación explícita del fundador (LLM-023, ver
+docs/ARQUITECTURA.md, 'Resolución de las 10 contradicciones' #10).
+exit_code=0
