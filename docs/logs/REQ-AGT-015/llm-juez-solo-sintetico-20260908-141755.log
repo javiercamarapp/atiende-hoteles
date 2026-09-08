@@ -1,0 +1,3 @@
+$ node scripts/checks/llm-juez-solo-sintetico.ts
+REQ-AGT-015 OK: 0 rutas donde una transcripción de huésped real (public.message/public.conversation, routes/mensajeria, adaptador de canal no-fake/simulado) llegue a un archivo/función identificado como LLM-juez, en ninguna dirección, sobre apps/**/src, packages/**/src y scripts/** (excluyendo scripts/checks).
+exit_code=0

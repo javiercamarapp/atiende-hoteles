@@ -1,0 +1,54 @@
+REQ-AGT-015 -- nota de alcance (leída antes de escribir código, verificado contra el
+código real, no asumido en blanco):
+
+Estado real encontrado en el repo al iniciar esta tarea (2026-09-08):
+- El simulador de huéspedes (REQ-AGT-008, del cual depende semánticamente
+  REQ-AGT-015 según LLM-011) NO existe como código en ningún lugar del repo.
+- El LLM-juez de los evals tampoco existe como código en ningún lugar del repo
+  (0 coincidencias de "juez"/"judge"/"simulador"/"eval" en apps/**, packages/**,
+  scripts/** al momento de empezar).
+- docs/TRAZABILIDAD.md ya clasificaba REQ-AGT-015 como "pendiente / Pendiente sin
+  razón / Excluido explícitamente del pase de cierre P0 (frente H7 en paralelo)" --
+  consistente con lo encontrado: nunca se construyó.
+
+Lo que SÍ existe y es real en el repo: las tablas `public.conversation`/
+`public.message` (packages/db/migrations/0044_conversation_message.sql) servidas por
+`apps/api/src/routes/mensajeria.ts` -- la ruta de producción real de mensajería de
+huésped (hoy poblada solo por `FakeWhatsappAdapter` mientras no hay credenciales de
+Meta, marcada `message.simulated=true`, pero es la tabla/ruta real de producción, no
+un fixture de prueba).
+
+Decisión de alcance para esta tarea: dado que el criterio de aceptación LITERAL de
+docs/ACEPTACION.md para REQ-AGT-015 es únicamente "`grep`/revisión confirma 0 rutas
+donde una transcripción de huésped real llegue al LLM-juez" vía
+`scripts/checks/llm-juez-solo-sintetico.ts` (revisión estática) -- NO "construir el
+simulador completo de 200 escenarios" (eso es el alcance propio, separado y también
+pendiente, de REQ-AGT-008) -- se construyó el script de revisión estática como
+guardia hacia adelante (mismo patrón que scripts/checks/no-ota-directa.ts y
+scripts/checks/no-comandos-destructivos-agente.ts): define la frontera de datos
+exigida por LLM-011/LLM-012 contra las fuentes reales de dato de huésped que sí
+existen hoy (public.message/public.conversation, routes/mensajeria, adaptadores de
+canal no-fake) y falla si algún código futuro la cruza, en cualquiera de las dos
+direcciones (el juez importa el dato real, o el dato real importa al juez).
+
+Por qué esto NO es "marcar completo con mock" (principio 1 de ACEPTACION.md): el
+check no simula que el LLM-juez ya funciona ni que ya pasa evals reales -- reporta
+literalmente "0 archivos identificados como LLM-juez encontrados en el repo" (la
+única razón honesta por la que hoy pasa) y su lógica de detección se probó con
+fixtures SINTÉTICOS que SÍ contienen una violación real inyectada deliberadamente
+(tests/unit/llm-juez-solo-sintetico.spec.ts, 11/11 en verde, incluye casos que deben
+fallar y se confirma que el check los detecta antes de confirmar los casos limpios).
+
+Explícitamente NO cubierto por este trabajo (fuera de alcance de REQ-AGT-015, y
+depende de trabajo aún pendiente en REQ-AGT-008 / infraestructura de evals):
+- El simulador de huéspedes de 200 escenarios multilingüe en sí (REQ-AGT-008).
+- La implementación real del LLM-juez (Fable 5.1 + Opus 5 como segundo juez,
+  LLM-011) -- requiere decisión del fundador sobre el stack de modelos (ver
+  docs/BLOQUEOS.md D-002) y credenciales de Anthropic/proveedor.
+- Por lo tanto: este REQ-AGT-015 permanece, con criterio estricto, "pendiente" en el
+  sentido de que el LLM-juez de evals real todavía no existe -- lo entregado aquí es
+  la guardia estática que el propio texto de ACEPTACION.md pide como criterio, lista
+  y en verde, para cuando esa infraestructura sí se construya. No se reclasifica el
+  estado canónico de docs/ACEPTACION.md/docs/TRAZABILIDAD.md unilateralmente en esta
+  tarea -- se deja para verificación independiente, mismo criterio ya aplicado por el
+  trabajo paralelo visible en docs/logs/REQ-AGT-013/.
