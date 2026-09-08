@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/gob/tres-intentos-bloqueo.spec.ts (30 tests) 1178ms
+
+ Test Files  1 passed (1)
+      Tests  30 passed (30)
+   Start at  15:47:18
+   Duration  1.53s (transform 54ms, setup 0ms, collect 95ms, tests 1.18s, environment 0ms, prepare 66ms)
+

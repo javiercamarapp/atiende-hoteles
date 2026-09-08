@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/gob/bloqueo-sin-criterio.spec.ts (9 tests) 6ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  14:26:11
+   Duration  653ms (transform 70ms, setup 0ms, collect 86ms, tests 6ms, environment 0ms, prepare 156ms)
+
