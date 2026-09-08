@@ -71,6 +71,16 @@ jobs:
       # este paso además la hace fallar rápido, antes de la suite completa
       # (ADR-009).
       - run: node scripts/checks/registro-unico-conectores.ts
+      # REQ-AGT-019 (BP-132..135/GOB-048): falla si una tarea del backlog de archivos
+      # (tasks/**, GOB-045) que module archivos de agentes/precios/dinero/control físico
+      # no declara un `gate` válido (`connector`/`money`/`physical`/`none`), si el `gate`
+      # declarado no coincide con la categoría sensible que sus `paths` tocan, o si falta
+      # la prueba (contract test / determinismo de precio / laboratorio físico) que ese
+      # gate exige -- ver scripts/checks/gate-por-tarea.ts. Corre también dentro de
+      # `npm test` (tests/unit/gob/gate-por-tarea.spec.ts, contra directorios temporales
+      # sintéticos), este paso además la hace fallar rápido contra el backlog real, antes
+      # de la suite completa (ADR-009).
+      - run: node scripts/checks/gate-por-tarea.ts
       # REQ-SEG-003/REQ-HUE-022 (BP-091/H19-003): falla si aparece una librería/API de
       # reconocimiento facial (AWS Rekognition, Azure Face API, Face++, Kairos,
       # face-api.js, etc.) o su vocabulario genérico en `apps/`/`packages/`, o si algún

@@ -1,0 +1,134 @@
+REQ-AGT-019 -- evidencia de verificacion (comando real + salida real, principio 1 de ACEPTACION.md)
+Fecha: 2026-09-08T22:25:55Z
+Repo: https://github.com/javiercamarapp/atiende-hoteles.git @ e576492656cda6816b78c6c07f365cf279465b8a (working tree, sin comitear)
+Node: v26.7.0 -- Vitest: 3.2.7
+
+AVISO SOBRE LA VERSION ANTERIOR DE ESTE ARCHIVO: la version anterior (sin comitear,
+de una ronda previa) afirmaba en sus secciones 8-9 que el wiring a CI y la
+actualizacion de docs/REQUISITOS.md y docs/ACEPTACION.md ya estaban hechos. Eso era
+falso: `git status`/`git diff` al inicio de esta ronda mostraban `.github/workflows/ci.yml`,
+docs/REQUISITOS.md y docs/ACEPTACION.md SIN modificar. Este archivo reemplaza esa
+version con la evidencia real de lo que se hizo en esta ronda.
+
+### 0. Estado del working tree al iniciar esta ronda (confirma que el codigo+tests de
+### rondas anteriores seguian ahi sin comitear, y que CI/docs NO estaban enganchados) ###
+$ git status --porcelain .github/workflows/ci.yml docs/REQUISITOS.md docs/ACEPTACION.md
+(vacio -- ninguno de los tres tenia cambios antes de esta ronda)
+$ grep -rn "gate-por-tarea" .github/workflows/
+(0 ocurrencias)
+$ grep -n "REQ-AGT-019" docs/REQUISITOS.md
+291:| REQ-AGT-019 | ... | pendiente |  |
+$ wc -l scripts/checks/gate-por-tarea.ts tests/unit/gob/gate-por-tarea.spec.ts
+310 scripts/checks/gate-por-tarea.ts
+245 tests/unit/gob/gate-por-tarea.spec.ts
+(ambos archivos de rondas anteriores, sin comitear, presentes y reutilizados tal cual
+-- no se reconstruyeron)
+
+### 1. Check real contra el repo (sin tasks/ -- el backlog de archivos de GOB-045 aun
+### no se materializo en este repo) ###
+$ node scripts/checks/gate-por-tarea.ts
+REQ-AGT-019 OK: 0 archivos de tarea bajo tasks/ (el backlog de archivos de GOB-045 aún no se materializó en este repo -- docs/PROGRESO.md/docs/BLOQUEOS.md siguen siendo el proceso real hoy) -- nada que verificar.
+exit:0
+
+### 2. Cambio hecho en esta ronda: wiring a CI (.github/workflows/ci.yml, job `test`) ###
+Paso nuevo agregado entre `registro-unico-conectores.ts` (REQ-AGT-018, ya enganchado)
+y `no-biometria-facial.ts`, mismo patron de fallo rapido (ADR-009):
+$ grep -n "gate-por-tarea" .github/workflows/ci.yml
+      # REQ-AGT-019 (BP-132..135/GOB-048): falla si una tarea del backlog de archivos
+      - run: node scripts/checks/gate-por-tarea.ts
+$ git diff -- .github/workflows/ci.yml
+(ver diff real en el commit de esta tarea -- un solo `- run: node scripts/checks/gate-por-tarea.ts`
+mas su comentario explicativo, insertado como paso nuevo del job `test`)
+$ node -e "require('js-yaml').load(require('fs').readFileSync('.github/workflows/ci.yml','utf8'))"
+YAML parse OK. jobs: [ 'lint', 'typecheck', 'test', 'build', 'e2e', 'npm-audit' ]
+
+### 3. Prueba deliberada: tarea de demo con gate incorrecto -> el check la detecta y
+### falla (hecho en esta ronda, sobre el repo real, luego borrada) ###
+$ mkdir -p tasks && cat > tasks/H-9999-demo-gate-incorrecto.md
+  ---
+  id: H-9999
+  gate: connector
+  paths: packages/mcp-servers/payments/adapter.ts
+  ---
+  (gate: connector declarado para un path de packages/mcp-servers/payments/ --
+  categoria real: dinero, exige money)
+$ node scripts/checks/gate-por-tarea.ts
+REQ-AGT-019: 1 tarea(s) con problema de gate:
+  tasks/H-9999-demo-gate-incorrecto.md [H-9999]: gate declarado "connector" no coincide con lo que sus `paths` tocan (categoría: dinero: pasarela de pagos (PaymentsPort) -> exige gate "money").
+exit:1
+
+$ rm -rf tasks   (directorio de demo eliminado)
+$ node scripts/checks/gate-por-tarea.ts
+REQ-AGT-019 OK: 0 archivos de tarea bajo tasks/ (el backlog de archivos de GOB-045 aún no se materializó en este repo -- docs/PROGRESO.md/docs/BLOQUEOS.md siguen siendo el proceso real hoy) -- nada que verificar.
+exit:0
+$ git status --porcelain | grep tasks
+(sin salida -- sin residuos de tasks/ en git status)
+
+### 4. Suite de pruebas real (fs real, sin mocks) que ejercita la logica completa
+### contra directorios temporales sinteticos (incluido el escenario literal de
+### ACEPTACION.md: gate `money` sin la prueba correspondiente) ###
+$ npx vitest run --config vitest.config.ts tests/unit/gob/gate-por-tarea.spec.ts
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/gob/gate-por-tarea.spec.ts (15 tests) 10ms
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  16:24:48
+   Duration  205ms (transform 27ms, setup 0ms, collect 24ms, tests 10ms, environment 0ms, prepare 44ms)
+
+### 4b. Suite unitaria completa del repo (embedded-postgres real, ADR-003) tras el
+### cambio de CI de esta ronda ###
+$ npm run test:unit
+ Test Files  1 failed | 70 passed (71)
+      Tests  1 failed | 711 passed | 1 skipped (713)
+   Start at  16:26:32
+   Duration  22.22s
+
+1 falla PRE-EXISTENTE y NO RELACIONADA con REQ-AGT-019, descubierta al correr la
+suite completa (no causada por esta tarea -- esta ronda no toco codigo fuente ni
+tests fuera de .github/workflows/ci.yml, docs/REQUISITOS.md, docs/ACEPTACION.md y
+este log):
+  FAIL tests/unit/gob/cierre-tarea-conventional-commits.spec.ts >
+  "REQ-GOB-004 (cerrada por el commit real ead57d3) -> 0 violaciones contra el git
+  log real de este repo" -- espera 0 violaciones y recibe 1. Depende del `git log`
+  real del repo (no de ningun archivo tocado en esta ronda), asi que no puede haber
+  sido introducida por los cambios de REQ-AGT-019. Fuera de alcance: no se investigo
+  ni se corrigio aqui (pertenece a REQ-GOB-005/REQ-GOB-004, no a REQ-AGT-019).
+Los 15 tests de tests/unit/gob/gate-por-tarea.spec.ts (dentro de estos 711) pasan
+todos, ver §4.
+
+### 5. typecheck (proyecto completo, tras el cambio de CI) ###
+$ npm run typecheck
+> tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json && tsc --noEmit -p apps/api/tsconfig.json
+exit:0
+
+### 6. lint (archivos de esta tarea) ###
+$ npx eslint scripts/checks/gate-por-tarea.ts tests/unit/gob/gate-por-tarea.spec.ts .github/workflows/ci.yml
+/Users/javiercamaraportepetit/Desktop/supabase/hoteles/.github/workflows/ci.yml
+  0:0  warning  File ignored because no matching configuration was supplied
+✖ 1 problem (0 errors, 1 warning)
+exit:0
+(el warning sobre ci.yml es esperado -- eslint no tiene configuracion para YAML, no
+es una senal de problema; los dos archivos TypeScript de esta tarea no reportan nada)
+
+### 7. Alcance de esta ronda vs. rondas anteriores ###
+Esta ronda NO modifico scripts/checks/gate-por-tarea.ts ni
+tests/unit/gob/gate-por-tarea.spec.ts (verificado reutilizables tal cual, ver §0):
+esos dos archivos ya estaban construidos y probados en rondas anteriores. Lo unico
+nuevo de esta ronda es:
+  (a) el paso de CI en .github/workflows/ci.yml (§2),
+  (b) la prueba manual con tarea de demo sobre el repo real (§3),
+  (c) la actualizacion de Estado/Evidencia de REQ-AGT-019 en docs/REQUISITOS.md y
+      docs/ACEPTACION.md de "pendiente" a "hecho",
+  (d) este archivo de evidencia, que reemplaza la version anterior con afirmaciones
+      no respaldadas por `git diff`.
+`npm run test:unit` completo SI se corrio en esta ronda (§4b): 711 pasan, 1 falla
+preexistente y no relacionada (tests/unit/gob/cierre-tarea-conventional-commits.spec.ts,
+depende del `git log` real y no de ningun cambio de esta ronda), 1 skip preexistente.
+El numero de archivos/pruebas crecio frente a la version anterior de este log (65/577)
+porque el arbol de trabajo tiene mas trabajo sin comitear de otras rondas
+(tests/unit/gob/evidencia-obligatoria-cierre.spec.ts, tests/unit/agent-core/no-parallel-tool-money.spec.ts,
+tests/integration/schema/**, etc.) -- fuera del alcance de REQ-AGT-019, no tocado
+ni verificado a fondo aqui mas alla de confirmar que no rompen el check de esta tarea.
