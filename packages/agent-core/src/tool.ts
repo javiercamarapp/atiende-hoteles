@@ -166,6 +166,71 @@ export function defineTool<TInput>(spec: ToolDefinitionSpec<TInput>): ToolDefini
   return { ...spec };
 }
 
+// REQ-AGT-001/LLM-020/GOB-032: "cada accion de agente con efecto externo es una tool
+// `strict:true, additionalProperties:false` con esquema Zod" -- el formato que
+// `docs/referencia/03-investigacion-H12-H21.md` llama "agent-runtime (Claude API tool
+// runner, modo `strict: true`)". `defineTool()` YA garantiza en tiempo de definicion que
+// el esquema no puede colar additionalProperties:true en NINGUN nivel (assertNoIdentifierFields
+// rechaza .passthrough()/.catchall()/.record()/.any()/.unknown() en cualquier profundidad,
+// no solo el primer nivel) -- `toStrictToolSchema()` convierte ese esquema ya validado al
+// JSON Schema que se envia al proveedor de LLM, usando la conversion NATIVA de Zod v4
+// (`z.toJSONSchema`, sin libreria externa), y verifica de forma estatica (revision
+// estatica, ver docs/ACEPTACION.md REQ-AGT-001) que el resultado en verdad tiene
+// `additionalProperties:false` en todo objeto del esquema, top-level y anidado -- no
+// confia ciegamente en el default de Zod.
+export interface StrictToolSchema {
+  readonly name: string;
+  readonly description: string;
+  /** LLM-020/GOB-032: modo estricto del tool-calling del proveedor. Siempre `true` --
+   * nunca hay una tool "no estricta" en este catalogo. */
+  readonly strict: true;
+  /** JSON Schema (draft 2020-12) del `inputSchema` de la tool, con `additionalProperties:
+   * false` verificado en todo objeto, incluidos los anidados. */
+  readonly input_schema: Record<string, unknown>;
+}
+
+function assertAdditionalPropertiesFalseDeep(node: unknown, toolName: string, path: string): void {
+  if (Array.isArray(node)) {
+    node.forEach((item, i) => assertAdditionalPropertiesFalseDeep(item, toolName, `${path}[${i}]`));
+    return;
+  }
+  if (!node || typeof node !== "object") return;
+
+  const obj = node as Record<string, unknown>;
+  if (obj.type === "object") {
+    if (obj.additionalProperties !== false) {
+      throw new ToolDefinitionError(
+        `la tool "${toolName}" genero un JSON Schema con additionalProperties != false en "${path}" ` +
+          `(REQ-AGT-001 exige additionalProperties:false en todo objeto del esquema)`,
+      );
+    }
+  }
+  for (const [key, value] of Object.entries(obj)) {
+    assertAdditionalPropertiesFalseDeep(value, toolName, `${path}.${key}`);
+  }
+}
+
+/** Convierte una `ToolDefinition` (esquema Zod ya validado por `defineTool()`) al formato
+ * `strict:true`/`additionalProperties:false` que exige REQ-AGT-001 para enviarse al
+ * proveedor de LLM. Lanza `ToolDefinitionError` si, contra lo esperado, el JSON Schema
+ * generado NO tiene `additionalProperties:false` en algun objeto (defensa en profundidad:
+ * nunca se envia al proveedor un esquema que no se pudo verificar). */
+// Mismo motivo que `ToolRegistry.register` (abajo): acepta cualquier `ToolDefinition<TInput>`
+// concreta, nunca depende de un TInput particular.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toStrictToolSchema(tool: ToolDefinition<any>): StrictToolSchema {
+  const inputSchema = z.toJSONSchema(tool.inputSchema as ZodTypeAny, {
+    target: "draft-2020-12",
+  }) as Record<string, unknown>;
+  assertAdditionalPropertiesFalseDeep(inputSchema, tool.name, "(raiz)");
+  return {
+    name: tool.name,
+    description: tool.description,
+    strict: true,
+    input_schema: inputSchema,
+  };
+}
+
 /** Registro unico de tools (mismo espiritu que el `AGENT_REGISTRY` de Likida §2.4). */
 export class ToolRegistry {
   private readonly tools = new Map<string, ToolDefinition>();

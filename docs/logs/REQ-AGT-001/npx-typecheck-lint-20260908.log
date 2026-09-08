@@ -1,0 +1,8 @@
+== npx tsc --noEmit -p tsconfig.json ==
+exit=0
+== npx tsc --noEmit -p tests/e2e/tsconfig.json ==
+exit=0
+== npx tsc --noEmit -p apps/api/tsconfig.json ==
+exit=0
+== npx eslint packages/agent-core tests/unit/agent-core/tool-schema-strict.spec.ts ==
+exit=0

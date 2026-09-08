@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/agent-core/tool-schema-strict.spec.ts (9 tests) 5066ms
+   ✓ recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001) > cerrar un ticket con autorizar_gasto_mantenimiento deja una fila de audit_log con timestamp, agente y valor anterior/nuevo reales  3152ms
+   ✓ recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001) > audit_log sigue siendo append-only e inmutable para la fila que dejo la tool (ADR-005/GOB-026)  1899ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  14:20:20
+   Duration  5.95s (transform 241ms, setup 0ms, collect 472ms, tests 5.07s, environment 0ms, prepare 113ms)
+
