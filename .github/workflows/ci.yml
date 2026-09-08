@@ -63,6 +63,14 @@ jobs:
       # --experimental-transform-types) vuelven a divergir -- ver
       # scripts/check-runtime-flags.ts.
       - run: node --experimental-strip-types scripts/check-runtime-flags.ts
+      # REQ-AGT-018 (GOB-059/BP-141): falla si aparece un `if provider === X`/
+      # `if pms === X` (o `switch(provider|pms)`) fuera del registro único de
+      # conectores (packages/mcp-servers/pms/src/registry.ts) -- ver
+      # scripts/checks/registro-unico-conectores.ts. Corre también dentro de
+      # `npm test` (tests/unit/mcp-servers/pms/registro-unico-conectores.spec.ts),
+      # este paso además la hace fallar rápido, antes de la suite completa
+      # (ADR-009).
+      - run: node scripts/checks/registro-unico-conectores.ts
       - run: npm test
       - name: Guardar logs de prueba como artifact (si algo falló)
         if: failure()
