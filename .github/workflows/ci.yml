@@ -71,6 +71,59 @@ jobs:
       # este paso además la hace fallar rápido, antes de la suite completa
       # (ADR-009).
       - run: node scripts/checks/registro-unico-conectores.ts
+      # REQ-AGT-019 (BP-132..135/GOB-048): falla si una tarea del backlog de archivos
+      # (tasks/**, GOB-045) que module archivos de agentes/precios/dinero/control
+      # físico no declara un `gate` válido (`connector`/`money`/`physical`/`none`), o
+      # declara uno que no coincide con la categoría sensible que sus `paths` tocan, o
+      # le falta la prueba correspondiente (contract test / determinismo de precio /
+      # laboratorio físico) -- ver scripts/checks/gate-por-tarea.ts. Corre también
+      # dentro de `npm test` (tests/unit/gob/gate-por-tarea.spec.ts, contra fixtures
+      # sintéticas), este paso además la hace fallar rápido contra el backlog real,
+      # antes de la suite completa (ADR-009).
+      - run: node scripts/checks/gate-por-tarea.ts
+      # REQ-SEG-003/REQ-HUE-022 (BP-091/H19-003): falla si aparece una librería/API de
+      # reconocimiento facial (AWS Rekognition, Azure Face API, Face++, Kairos,
+      # face-api.js, etc.) o su vocabulario genérico en `apps/`/`packages/`, o si algún
+      # campo de dato biométrico (huella, iris, voz, ADN) se captura sin un tipo de
+      # consentimiento diferenciado del aviso general -- ver
+      # scripts/checks/no-biometria-facial.ts (compartido, un solo check, entre ambos
+      # requisitos). Corre también dentro de `npm test`
+      # (tests/adversarial/consentimiento-biometrico.spec.ts, que además verifica de
+      # extremo a extremo contra `embedded-postgres` real que un check-in sin
+      # consentimiento biométrico persiste 0 dato biométrico), este paso además la hace
+      # fallar rápido, antes de la suite completa (ADR-009).
+      - run: node scripts/checks/no-biometria-facial.ts
+      # REQ-OBS-010 (GOB-006/GOB-047): falla si una tarea del backlog de archivos
+      # (tasks/**, GOB-045) en estado `done`/`review` no tiene su directorio de
+      # evidencia `docs/logs/<id>/` no vacío -- "nada se marca completo con mock"
+      # (docs/ACEPTACION.md §1) hecho verificable, no solo convención -- ver
+      # scripts/checks/evidencia-obligatoria-cierre.ts. Corre también dentro de
+      # `npm test` (tests/unit/gob/evidencia-obligatoria-cierre.spec.ts, contra
+      # fixtures sintéticas), este paso además la hace fallar rápido contra el
+      # backlog real, antes de la suite completa (ADR-009).
+      - run: node scripts/checks/evidencia-obligatoria-cierre.ts
+      # REQ-QA-002 (GOB-012): falla si aparece `xit(`/`xdescribe(`/`it.skip(`/
+      # `describe.skip(` en `tests/` (prohibidos sin excepción -- ninguna forma de
+      # documentar un motivo), o un `test.skip(` (Playwright) fuera de `tests/e2e/`, o
+      # dentro de `tests/e2e/` sin un motivo documentado (segundo argumento no vacío) --
+      # "nunca se debe comentar, borrar ni marcar `skip` una prueba existente" hecho
+      # verificable en CI, no solo convención -- ver scripts/checks/no-tests-skip.ts.
+      # Corre también dentro de `npm test` (tests/unit/qa/no-tests-skip.spec.ts, contra
+      # fixtures sintéticas), este paso además la hace fallar rápido contra `tests/`
+      # real, antes de la suite completa (ADR-009).
+      - run: node scripts/checks/no-tests-skip.ts
+      # REQ-GOB-005: falla si una tarea del backlog de archivos (tasks/**, GOB-045) en
+      # estado `review`/`done` no tiene EXACTAMENTE un commit real de `git log` que la
+      # referencie (0 -> cierre sin commit real; 2+ -> "uno por tarea" no se cumple), o
+      # si ese único commit no sigue Conventional Commits -- ver
+      # scripts/checks/cierre-tarea-conventional-commits.ts (ADR-012 documenta por qué
+      # es un script separado de evidencia-obligatoria-cierre.ts/REQ-OBS-010 en vez de
+      # uno solo). Corre también dentro de `npm test`
+      # (tests/unit/gob/cierre-tarea-conventional-commits.spec.ts, contra fixtures
+      # sintéticas, un repositorio git real y la tarea de muestra REAL ya cerrada de
+      # este repo, REQ-GOB-004), este paso además la hace fallar rápido contra el
+      # backlog real, antes de la suite completa (ADR-009).
+      - run: node scripts/checks/cierre-tarea-conventional-commits.ts
       - run: npm test
       - name: Guardar logs de prueba como artifact (si algo falló)
         if: failure()
@@ -151,3 +204,37 @@ jobs:
       # documentadas (CVE/paquete/alcance/decisión) viven en
       # docs/auditoria-1/dependencias.md, nunca silenciadas sin registro.
       - run: npm audit --audit-level=high
+
+  secret-scan:
+    name: secret-scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Historial completo (no solo el commit del PR) -- REQ-SEG-012 exige
+          # cubrir también "commits", no solo el árbol de trabajo actual.
+          fetch-depth: 0
+      # REQ-SEG-012 (GOB-014/GOB-040): instala el binario oficial de gitleaks
+      # (github.com/gitleaks/gitleaks) con verificación de checksum SHA-256 --
+      # publicado en la propia release -- para no confiar a ciegas en el binario
+      # descargado. No requiere `npm ci` (herramienta Go independiente del árbol de
+      # Node), así que corre en paralelo con `lint`/`typecheck`, sin `needs`, para
+      # fallar rápido (ADR-009).
+      - name: Instalar gitleaks 8.30.1 (checksum verificado)
+        run: |
+          set -euo pipefail
+          curl -sSfL -o /tmp/gitleaks.tar.gz \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  /tmp/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          sudo install -m 0755 /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+      # REQ-SEG-012: confirma 0 PAN/CVV/e.firma(.cer/.key/.pfx/.p12)/tokens de
+      # API/contraseñas en código, logs, fixtures, prompts o commits. Reglas propias
+      # en .gitleaks.toml (PAN, CVV, archivos de e.firma) extienden el conjunto por
+      # defecto de gitleaks (~180 reglas: AWS, GCP, Slack, Stripe, JWT, claves
+      # privadas, contraseñas/tokens genéricos -- cubren "tokens de API"/
+      # "contraseñas"). Verificación real de que el escaneo bloquea (secreto de
+      # prueba insertado deliberadamente → gitleaks lo detecta):
+      # docs/logs/REQ-SEG-012/.
+      - run: gitleaks detect --source . --config .gitleaks.toml -v --redact
