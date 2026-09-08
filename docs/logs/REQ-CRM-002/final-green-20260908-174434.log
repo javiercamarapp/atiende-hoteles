@@ -1,0 +1,13 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/domain-hotel/reputacion-clasificador.spec.ts (42 tests) 9ms
+ ✓ tests/integration/crm/clasificacion-tematica.spec.ts (10 tests) 993ms
+
+ Test Files  2 passed (2)
+      Tests  52 passed (52)
+   Start at  17:44:35
+   Duration  1.64s (transform 276ms, setup 0ms, collect 521ms, tests 1.00s, environment 0ms, prepare 102ms)
+
+exit: 0
+wiring check: index.ts=1 app.ts=2

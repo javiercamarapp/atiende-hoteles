@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/domain-hotel/reputacion-clasificador.spec.ts (42 tests) 9ms
+
+ Test Files  1 passed (1)
+      Tests  42 passed (42)
+   Start at  17:34:08
+   Duration  312ms (transform 73ms, setup 0ms, collect 119ms, tests 9ms, environment 0ms, prepare 41ms)
+
+exit: 0
