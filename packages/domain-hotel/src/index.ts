@@ -76,3 +76,14 @@ export {
   type RetencionPlataformasDigitalesRates,
   type RetencionPlataformasDigitales,
 } from "./fiscalHospedaje.ts";
+export {
+  WAITLIST_STATUSES,
+  WAITLIST_OFFER_WINDOW_HOURS,
+  matchesWaitlistRequest,
+  selectNextWaitlistCandidate,
+  computeOfferExpiresAt,
+  isOfferExpired,
+  type WaitlistStatus,
+  type WaitlistCandidate,
+  type WaitlistMatchCriteria,
+} from "./reservas/waitlist.ts";
