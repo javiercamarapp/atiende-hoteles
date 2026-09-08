@@ -52,6 +52,28 @@ export {
 } from "./folioEngine.ts";
 export { looksLikeCheckinDataInFreeText } from "./checkinFreeTextGuard.ts";
 export {
+  KNOWN_REVIEW_TOPICS,
+  TOPIC_KEYWORDS,
+  TICKET_TOPICS,
+  COMPENSATION_CATALOG,
+  normalizar as normalizarTextoResena,
+  detectarTemas,
+  analizarSentimiento,
+  decidirAcciones,
+  clasificarResena,
+  type KnownReviewTopic,
+  type ReviewTopicId,
+  type TopicMatch,
+  type SentimentLabel,
+  type SentimentResult,
+  type StayState,
+  type CompensacionPropuesta,
+  type AccionReputacion,
+  type DecidirAccionesInput,
+  type ClasificarResenaInput,
+  type ResultadoClasificacion,
+} from "./reputacion/clasificador.ts";
+export {
   detectAndRedactPaymentData,
   luhnValid,
   type PaymentSensitiveDataResult,
@@ -92,3 +114,14 @@ export {
   type ValidateTurnosLftInput,
   type ValidateTurnosLftResult,
 } from "./housekeeping/turnos-lft.ts";
+export {
+  WAITLIST_STATUSES,
+  WAITLIST_OFFER_WINDOW_HOURS,
+  matchesWaitlistRequest,
+  selectNextWaitlistCandidate,
+  computeOfferExpiresAt,
+  isOfferExpired,
+  type WaitlistStatus,
+  type WaitlistCandidate,
+  type WaitlistMatchCriteria,
+} from "./reservas/waitlist.ts";

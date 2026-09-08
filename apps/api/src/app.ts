@@ -14,6 +14,7 @@ import { metricsRoutes } from "./routes/metrics.ts";
 import { hotelesRoutes } from "./routes/hoteles.ts";
 import { resumenRoutes } from "./routes/resumen.ts";
 import { reservasRoutes } from "./routes/reservas.ts";
+import { listaEsperaRoutes } from "./routes/listaEspera.ts";
 import { disponibilidadRoutes } from "./routes/disponibilidad.ts";
 import { recepcionRoutes } from "./routes/recepcion.ts";
 import { huespedesRoutes } from "./routes/huespedes.ts";
@@ -189,6 +190,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", hotelesRoutes(deps));
   app.route("/", resumenRoutes(deps));
   app.route("/", reservasRoutes(deps));
+  app.route("/", listaEsperaRoutes(deps));
   app.route("/", disponibilidadRoutes(deps));
   app.route("/", recepcionRoutes(deps));
   app.route("/", huespedesRoutes(deps));

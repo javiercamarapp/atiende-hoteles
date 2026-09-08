@@ -1,0 +1,36 @@
+REQ-RES-006 — lista de espera automática (P1/F)
+Fecha: 2026-09-08
+Agente: Sonnet (subagente de implementación)
+
+Archivos de este requisito:
+- packages/db/migrations/0096_waitlist.sql (tabla hotel_waitlist_entry + RLS)
+- packages/domain-hotel/src/reservas/waitlist.ts (nuevo, lógica pura FIFO/expiración)
+- packages/domain-hotel/src/index.ts (export del módulo anterior)
+- apps/api/src/pms/quoteNetAmount.ts (extraído de routes/reservas.ts para reutilizar
+  el mismo motor de cotización directa desde la oferta de lista de espera)
+- apps/api/src/pms/waitlistOffer.ts (nuevo: dispara la oferta automática)
+- apps/api/src/routes/listaEspera.ts (nuevo: POST/GET cola, POST .../aceptar, POST .../retirar)
+- apps/api/src/routes/reservas.ts (cancelación de staff dispara tryOfferWaitlistSlot)
+- apps/api/src/routes/cancelacionPublica.ts (cancelación pública TAMBIÉN dispara tryOfferWaitlistSlot)
+- apps/api/src/app.ts (registro de listaEsperaRoutes)
+- tests/unit/domain-hotel/waitlist.spec.ts (7/7)
+- tests/integration/reservas/lista-espera.spec.ts (4/4, embedded-postgres real)
+
+Comandos y evidencia:
+- vitest-unit-20260908-172003.log — npx vitest run tests/unit/domain-hotel/waitlist.spec.ts (7/7, exit 0)
+- vitest-integration-20260908-172003.log — npx vitest run tests/integration/reservas/lista-espera.spec.ts --pool=forks --poolOptions.forks.singleFork (4/4, exit 0)
+- vitest-integration-full-reservas-20260908-172003.log — mismo runner sobre TODO
+  tests/integration/reservas + tests/adversarial/cancelacion-identidad.spec.ts (9
+  archivos, 24/24, exit 0) — confirma que el cambio no rompió ninguna prueba existente
+  de reservaciones/cancelación.
+- typecheck-20260908-172003.log — npm run typecheck (exit 2). Las 3 líneas de error que
+  imprime son de tests/unit/domain-hotel/parity-guard.spec.ts y
+  tests/unit/domain-hotel/turnos-lft.spec.ts, archivos NO tocados por este requisito
+  (confirmado con `git status` -- son trabajo no comiteado de otra tarea concurrente en
+  este mismo árbol de trabajo compartido). Ningún archivo de REQ-RES-006 aparece en la
+  salida.
+
+Nota sobre el árbol de trabajo: este repositorio tenía, ANTES de empezar esta tarea,
+una cantidad grande de cambios sin comitear de sesiones concurrentes distintas (ver
+`git status` al momento de leer este log). Este requisito solo modificó/creó los
+archivos listados arriba -- ningún otro archivo del árbol fue tocado por este trabajo.

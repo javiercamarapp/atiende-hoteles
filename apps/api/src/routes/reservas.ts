@@ -12,65 +12,23 @@
 // simulado con variedad falsa.
 import { Hono } from "hono";
 import { z } from "zod";
-import type { DbClient } from "@atiende-hoteles/db";
 import {
-  computeQuote,
   evaluateCancellation,
   isCancellable,
   isModifiable,
   nightsBetween,
-  parseQuoteInput,
-  QuoteError,
   type ReservationStatus,
 } from "@atiende-hoteles/domain-hotel";
-import { Errors, ApiError } from "../lib/errors.ts";
+import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { withIdempotency } from "../lib/idempotency.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
 import { ADMIN_ROLES, MANAGE_RESERVATIONS_ROLES } from "../domain/roles.ts";
-import { loadNightlyRates } from "../pms/dbRoomRatePort.ts";
-import { loadCancellationPolicy, loadTaxConfig } from "../pms/taxConfig.ts";
+import { quoteNetAmount } from "../pms/quoteNetAmount.ts";
+import { loadCancellationPolicy } from "../pms/taxConfig.ts";
 import { runNoShowJob } from "../jobs/noShow.ts";
+import { tryOfferWaitlistSlot } from "../pms/waitlistOffer.ts";
 import type { AppDeps, HonoEnvBindings } from "../types.ts";
-
-const QUOTE_CODE_STATUS: Record<string, number> = {
-  estadia_invalida: 400,
-  sin_tarifa: 409,
-  cerrado_a_llegada: 409,
-  cerrado_a_salida: 409,
-  estadia_minima_no_alcanzada: 409,
-};
-
-async function quoteNetAmount(
-  db: DbClient,
-  params: { hotelId: string; roomTypeId: string; checkInDate: string; checkOutDate: string },
-): Promise<number> {
-  const taxConfig = await loadTaxConfig(db, params.hotelId);
-  const nightlyRates = await loadNightlyRates(db, {
-    hotelId: params.hotelId,
-    roomTypeId: params.roomTypeId,
-    fromDateInclusive: params.checkInDate,
-    toDateInclusive: params.checkOutDate,
-  });
-  try {
-    const input = parseQuoteInput({
-      checkInDate: params.checkInDate,
-      checkOutDate: params.checkOutDate,
-      taxConfig,
-      nightlyRates,
-    });
-    // `reservation.total_amount` guarda el NETO (sin impuestos): los impuestos se
-    // postean como cargo aparte en el folio (H5, apps/api/src/routes/folios.ts) — el
-    // desglose completo con IVA/ISH lo entrega POST /quotes para cotizar, no la
-    // reserva persistida.
-    return computeQuote(input).netAmount;
-  } catch (err) {
-    if (err instanceof QuoteError) {
-      throw new ApiError(QUOTE_CODE_STATUS[err.code] ?? 409, err.code, err.message);
-    }
-    throw err;
-  }
-}
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "formato de fecha esperado YYYY-MM-DD");
 
@@ -525,12 +483,25 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       [orgId, hotelId, reservationId, JSON.stringify({ penaltyAmount: evaluation.penaltyAmount, canceledBy: "staff" })],
     );
 
+    // REQ-RES-006: el inventario recién liberado (arriba) se ofrece de inmediato al
+    // primer contacto FIFO en lista de espera para este room_type/rango exacto de
+    // fechas, a precio directo sin comisión — best-effort (nunca revierte la
+    // cancelación si no hay a quién/qué ofertar).
+    const waitlistOffer = await tryOfferWaitlistSlot(db, {
+      tenantId: orgId,
+      hotelId,
+      roomTypeId: current.room_type_id,
+      checkInDate: current.check_in_date,
+      checkOutDate: current.check_out_date,
+    });
+
     return c.json({
       id: reservationId,
       estado: "cancelada",
       codigoConfirmacion: current.confirmation_code,
       montoPenalizacion: evaluation.penaltyAmount,
       montoReembolso: evaluation.refundAmount,
+      listaEsperaOfertada: waitlistOffer.offered,
     });
   });
 
