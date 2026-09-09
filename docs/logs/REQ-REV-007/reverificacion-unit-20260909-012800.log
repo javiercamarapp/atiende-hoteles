@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-rev-restantes
+
+ ✓ tests/unit/domain-hotel/parity-guard.spec.ts (27 tests) 24ms
+
+ Test Files  1 passed (1)
+      Tests  27 passed (27)
+   Start at  01:28:02
+   Duration  1.34s (transform 384ms, setup 0ms, collect 786ms, tests 24ms, environment 0ms, prepare 53ms)
+

@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-rev-restantes
+
+ ✓ tests/unit/domain-hotel/price-recommendation-explainer.spec.ts (24 tests) 7ms
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  01:27:36
+   Duration  1.28s (transform 419ms, setup 0ms, collect 738ms, tests 7ms, environment 0ms, prepare 78ms)
+

@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-rev-restantes
+
+ ✓ tests/unit/domain-hotel/walk-forward-backtest.spec.ts (15 tests) 12ms
+ ✓ tests/unit/domain-hotel/revenue-engine-gate.spec.ts (28 tests) 17ms
+
+ Test Files  2 passed (2)
+      Tests  43 passed (43)
+   Start at  01:27:53
+   Duration  1.29s (transform 345ms, setup 0ms, collect 1.35s, tests 29ms, environment 0ms, prepare 237ms)
+
