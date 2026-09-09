@@ -1,4 +1,4 @@
--- ORIGEN: packages/db/migrations/0125_hotel_voice_agent_config.sql sha256:2460a109305494a118f494b316a323b37b40dbc067257ec3788d3d6f5d7462a5
+-- ORIGEN: packages/db/migrations/0126_hotel_voice_agent_config.sql sha256:2460a109305494a118f494b316a323b37b40dbc067257ec3788d3d6f5d7462a5
 -- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
 -- nuevo el script tras cambiar la migración fuente.
 

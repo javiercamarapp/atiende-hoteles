@@ -53,7 +53,7 @@ existe todavía en este repo (pendiente-hardware)".
 
 ## 2. Qué se construyó
 
-- Migración `packages/db/migrations/0125_hotel_voice_agent_config.sql`: tabla por
+- Migración `packages/db/migrations/0126_hotel_voice_agent_config.sql`: tabla por
   hotel con secreto de webhook, `elevenlabs_agent_id` (bookkeeping) y flag `enabled`
   (BP-016, apagado por default).
 - `apps/api/src/routes/vozElevenlabs.ts`: el webhook público que ElevenLabs invoca

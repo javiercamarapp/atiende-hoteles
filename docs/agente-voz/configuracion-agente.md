@@ -24,7 +24,7 @@ dashboard de ElevenLabs directamente**.
   leer o rotar `hotel_voice_agent_config.tool_webhook_secret`.
 - **Secreto real fuera del código**, nunca hardcodeado ni devuelto a un rol que no lo
   necesita — aquí vive en la tabla `hotel_voice_agent_config` (RLS: solo owner/gm
-  pueden leer/escribir, ver migración `0125_hotel_voice_agent_config.sql`), no en
+  pueden leer/escribir, ver migración `0126_hotel_voice_agent_config.sql`), no en
   Supabase Vault (este repo no usa Supabase; el equivalente real es Postgres + RLS, que
   es exactamente el mecanismo de secretos que YA usa este repo para
   `hotel_messaging_config.webhook_secret`, `routes/mensajeria.ts`).
