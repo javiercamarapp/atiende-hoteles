@@ -1,0 +1,214 @@
+
+> atiende-hoteles@0.0.0 test:unit
+> vitest run --config vitest.config.ts tests/unit
+
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ❯ tests/unit/gob/cierre-tarea-conventional-commits.spec.ts (46 tests | 1 failed) 2940ms
+   ✓ parseTaskFrontmatterConCierre > lee id/status del frontmatter 1ms
+   ✓ parseTaskFrontmatterConCierre > un archivo sin frontmatter devuelve todo null (no lanza) 0ms
+   ✓ esConventionalCommit > acepta un asunto real/realista del repo: feat(gob): cierra REQ-GOB-004 — verificación de scope de tarea vs. diff real 0ms
+   ✓ esConventionalCommit > acepta un asunto real/realista del repo: fix(ci): regenerar package-lock.json para incluir binarios de plataforma 0ms
+   ✓ esConventionalCommit > acepta un asunto real/realista del repo: test(adversarial): REQ-AGT-009 — suite de red-teaming 0ms
+   ✓ esConventionalCommit > acepta un asunto real/realista del repo: docs: merges B y C de auditoría-2 completados 0ms
+   ✓ esConventionalCommit > acepta un asunto real/realista del repo: feat(req-agt-013): guardrail estático de aislamiento OCR 1ms
+   ✓ esConventionalCommit > acepta un asunto real/realista del repo: feat!: cambio incompatible con scope omitido 0ms
+   ✓ esConventionalCommit > acepta un asunto real/realista del repo: chore(deps): actualiza vitest 0ms
+   ✓ esConventionalCommit > rechaza un asunto que no sigue Conventional Commits: cierra REQ-GOB-004 sin prefijo de tipo 0ms
+   ✓ esConventionalCommit > rechaza un asunto que no sigue Conventional Commits: Feat: tipo con mayúscula no es del catálogo cerrado 0ms
+   ✓ esConventionalCommit > rechaza un asunto que no sigue Conventional Commits: feat : espacio antes de los dos puntos rompe el formato 0ms
+   ✓ esConventionalCommit > rechaza un asunto que no sigue Conventional Commits: feature(gob): tipo no está en el catálogo cerrado 0ms
+   ✓ esConventionalCommit > rechaza un asunto que no sigue Conventional Commits: feat(): scope vacío no es válido 0ms
+   ✓ esConventionalCommit > rechaza un asunto que no sigue Conventional Commits: feat: 0ms
+   ✓ esConventionalCommit > rechaza un asunto que no sigue Conventional Commits: feat:  0ms
+   ✓ commitReferenciaTarea > empareja el id en el asunto 1ms
+   ✓ commitReferenciaTarea > empareja el id en el cuerpo aunque no esté en el asunto 0ms
+   ✓ commitReferenciaTarea > insensible a mayúsculas (el historial real mezcla REQ-AGT-013/req-agt-013) 0ms
+   ✓ commitReferenciaTarea > NO empareja por subcadena cruda: REQ-GOB-5 no debe emparejar REQ-GOB-50 0ms
+   ✓ commitReferenciaTarea > NO empareja REQ-GOB-5 dentro de REQ-GOB-5A 0ms
+   ✓ commitReferenciaTarea > un commit que no menciona el id en absoluto -> false 0ms
+   ✓ commitsDeCierre > devuelve todos los commits que referencian el id, en cualquier orden de la lista 0ms
+   ✓ commitsDeCierre > 0 commits referencian el id -> arreglo vacío 0ms
+   ✓ checkCierreTareaConventionalCommits: escenario literal de ACEPTACION.md — 'un commit por tarea' > tarea en `review` con EXACTAMENTE 1 commit real en formato Conventional Commits -> 0 violaciones 3ms
+   ✓ checkCierreTareaConventionalCommits: escenario literal de ACEPTACION.md — 'un commit por tarea' > tarea en `done` con 0 commits que la referencien -> 1 violación (cierre sin commit real) 1ms
+   ✓ checkCierreTareaConventionalCommits: escenario literal de ACEPTACION.md — 'un commit por tarea' > tarea con 2 commits que la referencian -> 1 violación ('uno por tarea' no se cumple, ambigüedad) 1ms
+   ✓ checkCierreTareaConventionalCommits: escenario literal de ACEPTACION.md — 'un commit por tarea' > tarea con exactamente 1 commit que la referencia, pero SIN formato Conventional Commits -> 1 violación 1ms
+   ✓ checkCierreTareaConventionalCommits: tarea cerrada sin `id` declarado > status `done` sin `id` -> violación explícita, no se cae en silencio 1ms
+   ✓ checkCierreTareaConventionalCommits: solo `review`/`done` exigen commit de cierre > tarea en status `draft` sin ningún commit que la referencie -> 0 violaciones (aún no se cierra) 0ms
+   ✓ checkCierreTareaConventionalCommits: solo `review`/`done` exigen commit de cierre > tarea en status `ready` sin ningún commit que la referencie -> 0 violaciones (aún no se cierra) 0ms
+   ✓ checkCierreTareaConventionalCommits: solo `review`/`done` exigen commit de cierre > tarea en status `doing` sin ningún commit que la referencie -> 0 violaciones (aún no se cierra) 0ms
+   ✓ checkCierreTareaConventionalCommits: solo `review`/`done` exigen commit de cierre > tarea en status `blocked` sin ningún commit que la referencie -> 0 violaciones (aún no se cierra) 0ms
+   ✓ checkCierreTareaConventionalCommits: solo `review`/`done` exigen commit de cierre > tarea en status `needs-human` sin ningún commit que la referencie -> 0 violaciones (aún no se cierra) 1ms
+   ✓ checkCierreTareaConventionalCommits: solo `review`/`done` exigen commit de cierre > tarea sin `status` en absoluto -> 0 violaciones 0ms
+   ✓ checkCierreTareaConventionalCommits: comportamiento agregado y de entorno > varias tareas cerradas se revisan todas, violaciones se acumulan de forma independiente 1ms
+   ✓ checkCierreTareaConventionalCommits: comportamiento agregado y de entorno > `_template.md` se ignora (es la plantilla, no una tarea real, GOB-045) 0ms
+   ✓ checkCierreTareaConventionalCommits: comportamiento agregado y de entorno > un `tasks/` inexistente (backlog de archivos aún no materializado) no lanza y devuelve 0 violaciones 0ms
+   ✓ checkCierreTareaConventionalCommits: comportamiento agregado y de entorno > `tasks/` sin ninguna tarea en review/done -> 0 violaciones, ni siquiera invoca getCommits 0ms
+   ✓ obtenerCommitsGitReal: contra un repositorio git real > lee hash/asunto/cuerpo de commits reales, en orden de git log (más reciente primero)  432ms
+   ✓ obtenerCommitsGitReal: contra un repositorio git real > un repositorio git recién inicializado sin ningún commit -> arreglo vacío (no lanza)  1210ms
+   ✓ obtenerCommitsGitReal: contra un repositorio git real > checkCierreTareaConventionalCommits end-to-end contra el repo git real: tarea con su commit real -> 0 violaciones  751ms
+   ✓ obtenerCommitsGitReal: contra un repositorio git real > checkCierreTareaConventionalCommits end-to-end: commit real que NO sigue Conventional Commits -> violación real  370ms
+   × checkCierreTareaConventionalCommits: tarea de muestra REAL ya cerrada de este repo (REQ-GOB-004) > REQ-GOB-004 (cerrada por el commit real ead57d3) -> 0 violaciones contra el git log real de este repo 98ms
+     → expected [ { …(3) } ] to have a length of +0 but got 1
+   ✓ checkCierreTareaConventionalCommits: tarea de muestra REAL ya cerrada de este repo (REQ-GOB-004) > una tarea de muestra que NUNCA se cerró en este repo (id inventado) -> violación real de '0 commits' 60ms
+   ✓ checkCierreTareaConventionalCommits: contra el repo real (sin overrides) > corre contra `tasks/` real sin lanzar, y pasa en vacío honesto si `tasks/` no existe todavía 1ms
+ ✓ tests/unit/rls/money-role.spec.ts (4 tests) 53975ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer folio  12440ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer charge ni payment  13992ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede insertar un payment  11293ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > gm (rol con acceso a dinero) si puede leer folio/charge/payment de su hotel  16248ms
+ ✓ tests/unit/rls/tenant-isolation.spec.ts (4 tests) 57269ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > SELECT: solo devuelve filas del hotel del usuario  15035ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > INSERT: rechazado con violacion de politica al escribir en el hotel ajeno  13317ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > UPDATE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  14259ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > DELETE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  14657ms
+ ✓ tests/unit/migrations.spec.ts (4 tests) 55643ms
+   ✓ runner de migraciones (PGlite) > aplica todas las migraciones desde una base vacia  14577ms
+   ✓ runner de migraciones (PGlite) > es idempotente: correrlo dos veces no reaplica nada la segunda vez  10977ms
+   ✓ runner de migraciones (PGlite) > rechaza continuar si una migracion ya aplicada fue editada (expand-only)  11344ms
+   ✓ runner de migraciones (PGlite) > db:reset (dropAllMigratedObjects) deja la base lista para re-aplicar desde cero  18708ms
+ ✓ tests/unit/audit-log.spec.ts (5 tests) 66181ms
+   ✓ audit_log: append-only + cadena de hash > cada fila referencia el hash de la fila anterior del mismo tenant y el primero no tiene prev_hash  12496ms
+   ✓ audit_log: append-only + cadena de hash > el hash almacenado es verificable de forma independiente (recalculado desde las columnas persistidas coincide)  14688ms
+   ✓ audit_log: append-only + cadena de hash > una alteracion manual del payload rompe la verificacion del hash (detectada, no silenciosa)  11782ms
+   ✓ audit_log: append-only + cadena de hash > rechaza UPDATE incluso ejecutado con el rol admin/propietario  13999ms
+   ✓ audit_log: append-only + cadena de hash > rechaza DELETE incluso ejecutado con el rol admin/propietario  13209ms
+ ✓ tests/unit/reservation-state-machine.spec.ts (5 tests) 68000ms
+   ✓ maquina de estados de reservation > una reserva nueva arranca en 'cotizada' y queda registrada en el evento inicial  15155ms
+   ✓ maquina de estados de reservation > permite la cadena de transiciones valida completa  12935ms
+   ✓ maquina de estados de reservation > rechaza un salto invalido (cotizada -> en_estancia, saltandose confirmada/check_in)  12484ms
+   ✓ maquina de estados de reservation > rechaza reabrir una reserva cerrada (estado terminal)  14853ms
+   ✓ maquina de estados de reservation > rechaza confirmar una reserva ya cancelada  12572ms
+ ✓ tests/unit/schema/hotel-timezone.spec.ts (4 tests) 18367ms
+ ✓ tests/unit/schema/dinero-numeric.spec.ts (6 tests) 16772ms
+ ✓ tests/unit/gob/scope-de-tarea.spec.ts (26 tests) 3112ms
+   ✓ obtenerArchivosCambiadosGit: contra un repositorio git real > detecta un archivo trackeado modificado y un archivo nuevo sin trackear, ninguno más  952ms
+   ✓ obtenerArchivosCambiadosGit: contra un repositorio git real > un working tree limpio (sin cambios desde HEAD) devuelve arreglo vacío  897ms
+   ✓ obtenerArchivosCambiadosGit: contra un repositorio git real > checkScopeDeTarea end-to-end contra el repo git real: archivo fuera de scope real -> violación real  1196ms
+ ✓ tests/unit/gob/auditoria-periodica.spec.ts (17 tests) 784ms
+   ✓ discoverChecklist / runChecklistItemReal: contra el catálogo real de scripts/checks/ > runChecklistItemReal corre un check real que pasa (exit 0) -> ok:true  545ms
+ ✓ tests/unit/gob/pms-mirror-solo-lectura.spec.ts (13 tests) 360ms
+ ✓ tests/unit/agent-core/tool-schema-strict.spec.ts (9 tests) 33128ms
+   ✓ recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001) > cerrar un ticket con autorizar_gasto_mantenimiento deja una fila de audit_log con timestamp, agente y valor anterior/nuevo reales  17404ms
+   ✓ recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001) > audit_log sigue siendo append-only e inmutable para la fila que dejo la tool (ADR-005/GOB-026)  15614ms
+ ✓ tests/unit/agent-core/ocr-aislado-sin-internet.spec.ts (9 tests) 314ms
+ ✓ tests/unit/llm-juez-solo-sintetico.spec.ts (11 tests) 45ms
+ ✓ tests/unit/qa/no-tests-skip.spec.ts (16 tests) 302ms
+ ✓ tests/unit/agent-core/runner.spec.ts (33 tests) 29ms
+ ✓ tests/unit/gob/evidencia-obligatoria-cierre.spec.ts (24 tests) 42ms
+ ✓ tests/unit/mcp-servers/pms/registro-unico-conectores.spec.ts (11 tests) 154ms
+ ✓ tests/unit/gob/gate-por-tarea.spec.ts (15 tests) 253ms
+ ✓ tests/unit/gob/no-comandos-destructivos-agente.spec.ts (7 tests) 206ms
+ ✓ tests/unit/ui/format-money.spec.ts (5 tests) 97ms
+ ✓ tests/unit/mcp-servers/locks/contract.spec.ts (11 tests) 20ms
+ ✓ tests/unit/agent-core/approval.spec.ts (17 tests) 20ms
+ ✓ tests/unit/check-runtime-flags.spec.ts (7 tests) 35ms
+ ✓ tests/unit/api/outbox-worker.spec.ts (8 tests) 99129ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un handler exitoso marca el evento 'enviado' y no lo vuelve a drenar  15427ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un handler que falla incrementa attempts y pospone available_at con backoff exponencial  11717ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > tras maxAttempts fallos consecutivos, el evento se marca 'fallido' (dead-letter) y deja de reintentarse  13723ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > auditoria-1/backend [ALTO]: la causa real del error queda persistida en outbox.last_error, no descartada por un catch{} mudo  14145ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > auditoria-1/backend [ALTO]: el dead-letter final también conserva la causa real del último intento  14738ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > auditoria-1/backend [ALTO]: un handler colgado (nunca resuelve) se trata como fallo por timeout sin bloquear el resto del batch  14443ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un event_type sin handler registrado se trata como fallo (nunca se marca 'enviado' silenciosamente)  14934ms
+ ✓ tests/unit/agent-core/no-parallel-tool-money.spec.ts (6 tests) 17ms
+ ✓ tests/unit/gob/tres-intentos-bloqueo.spec.ts (30 tests) 16147ms
+ ✓ tests/unit/check-migraciones.spec.ts (13 tests) 103ms
+ ✓ tests/unit/agent-core/postgres-approval-concurrency.spec.ts (2 tests) 243ms
+ ✓ tests/unit/mcp-servers/pms/contract.spec.ts (14 tests | 1 skipped) 34ms
+ ✓ tests/unit/domain-hotel/motor-precio-total.spec.ts (7 tests) 11ms
+ ✓ tests/unit/api/money-alert-destination.spec.ts (11 tests) 12ms
+ ✓ tests/unit/mcp-servers/payments/adapter-swap.spec.ts (16 tests) 11ms
+ ✓ tests/unit/mcp-servers/energy/contract.spec.ts (15 tests) 11ms
+ ✓ tests/unit/idempotency-key.spec.ts (3 tests) 47583ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > un INSERT plano con la misma clave dos veces es rechazado por el constraint UNIQUE  17660ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > INSERT ... ON CONFLICT DO NOTHING con la misma clave no duplica la fila (patron real de la app)  15403ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > la misma clave en dos tenants distintos NO colisiona (unicidad es por tenant)  14520ms
+ ✓ tests/unit/domain-hotel/restricciones-estadia.spec.ts (6 tests) 8ms
+ ✓ tests/unit/agent-core/pricing.spec.ts (4 tests) 2ms
+ ✓ tests/unit/domain-hotel/pricing-source.spec.ts (3 tests) 18ms
+ ✓ tests/unit/mcp-servers/shared/credentials.spec.ts (3 tests) 3ms
+ ✓ tests/unit/mcp-servers/cfdi/pac-doble.spec.ts (13 tests) 10ms
+ ✓ tests/unit/domain-hotel/estado-maquina.spec.ts (9 tests) 103ms
+ ✓ tests/unit/api/identity-encryption.spec.ts (8 tests) 5ms
+ ✓ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts (15 tests) 9ms
+ ✓ tests/unit/gob/backlog-state-machine.spec.ts (37 tests) 8ms
+ ✓ tests/unit/agent-core/tool.spec.ts (17 tests) 6ms
+ ✓ tests/unit/agent-core/provider.spec.ts (8 tests) 67ms
+ ✓ tests/unit/domain-hotel/walk-forward-backtest.spec.ts (15 tests) 7ms
+ ✓ tests/unit/agent-core/redact.spec.ts (22 tests) 6ms
+ ✓ tests/unit/mcp-servers/architecture/lock-isolation.spec.ts (7 tests) 10ms
+ ✓ tests/unit/mcp-servers/whatsapp/contract.spec.ts (10 tests) 6ms
+ ✓ tests/unit/mcp-servers/shared/rate-limiter.spec.ts (3 tests) 4ms
+ ✓ tests/unit/agent-core/context.spec.ts (7 tests) 6ms
+ ✓ tests/unit/domain-hotel/revenue-engine-gate.spec.ts (28 tests) 11ms
+ ✓ tests/unit/mcp-servers/shared/idempotency.spec.ts (3 tests) 2ms
+ ✓ tests/unit/api/logger-redact.spec.ts (4 tests) 7ms
+ ✓ tests/unit/api/money-alert-ids.spec.ts (7 tests) 3ms
+ ✓ tests/unit/domain-hotel/attendance.spec.ts (17 tests) 9ms
+ ✓ tests/unit/gob/seleccion-tarea.spec.ts (10 tests) 3ms
+ ✓ tests/unit/mcp-servers/shared/backoff.spec.ts (7 tests) 6ms
+ ✓ tests/unit/gob/bloqueo-sin-criterio.spec.ts (9 tests) 4ms
+ ✓ tests/unit/restore-verify.spec.ts (5 tests) 6ms
+ ✓ tests/unit/agent-core/agents.spec.ts (7 tests) 4ms
+ ✓ tests/unit/api/rate-limiter.spec.ts (4 tests) 5ms
+ ✓ tests/unit/agent-core/roles.spec.ts (13 tests) 4ms
+ ✓ tests/unit/agent-core/roi-tools.spec.ts (3 tests) 4ms
+ ✓ tests/unit/domain-hotel/checkin-free-text-guard.spec.ts (6 tests) 9ms
+ ✓ tests/unit/domain-hotel/overbooking.spec.ts (4 tests) 18ms
+ ✓ tests/unit/domain-hotel/mrz.spec.ts (13 tests) 6ms
+ ✓ tests/unit/rls/org-isolation.spec.ts (4 tests) 59077ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org compartido del fixture no ve nada del org independiente  17408ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org independiente tampoco ve el org compartido del fixture  13627ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > current_tenant_ids() del usuario del org independiente NO incluye el org del fixture  15531ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > INSERT: rechazado al intentar escribir en el hotel de otro org  12511ms
+ ✓ tests/unit/mcp-servers/shared/hmac.spec.ts (10 tests) 3ms
+ ✓ tests/unit/domain-hotel/impuestos-hospedaje.spec.ts (9 tests) 3ms
+ ✓ tests/unit/domain-hotel/folio-engine.spec.ts (16 tests) 3ms
+ ✓ tests/unit/domain-hotel/payment-free-text-guard.spec.ts (8 tests) 4ms
+ ✓ tests/unit/mcp-servers/pms/registro-conectores.spec.ts (4 tests) 2ms
+ ✓ tests/unit/agent-core/trace.spec.ts (3 tests) 3ms
+ ✓ tests/unit/domain-hotel/cancelacion-policy.spec.ts (6 tests) 5ms
+ ✓ tests/unit/attendance-log.spec.ts (13 tests) 126536ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > registra entrada/salida vía record_attendance_event() dentro de una sesión real de staff  15470ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > SIEMPRE registra al propio auth.uid(): no existe ningún parámetro para fichar a nombre de otro empleado  12800ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > rechaza registrar asistencia en un hotel al que el empleado no pertenece  14243ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > cada fila referencia el hash de la fila anterior DEL MISMO empleado, y la primera no tiene prev_hash  15275ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > dos empleados distintos tienen cadenas de hash INDEPENDIENTES (una no referencia a la otra)  14392ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > el hash almacenado es verificable de forma independiente (recalculado desde las columnas persistidas coincide)  14240ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > rechaza UPDATE incluso ejecutado con el cliente admin/propietario de la migración  15516ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > rechaza DELETE incluso ejecutado con el cliente admin/propietario de la migración  12406ms
+   ✓ staff_schedule: horario programado (mutable, administrado por owner/gm) > owner/gm puede programar un turno para un empleado de su propio hotel  5401ms
+   ✓ staff_schedule: horario programado (mutable, administrado por owner/gm) > un rol sin administración (ej. housekeeping) NO puede programar horarios  2197ms
+   ✓ staff_schedule: horario programado (mutable, administrado por owner/gm) > rechaza programar un horario para un empleado que no pertenece a ese hotel  1784ms
+   ✓ staff_schedule: horario programado (mutable, administrado por owner/gm) > rechaza un rango con scheduled_end anterior o igual a scheduled_start  1517ms
+   ✓ staff_schedule: horario programado (mutable, administrado por owner/gm) > un segundo upsert para el mismo (hotel, empleado, fecha) reemplaza el turno en vez de duplicarlo  1283ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/gob/cierre-tarea-conventional-commits.spec.ts > checkCierreTareaConventionalCommits: tarea de muestra REAL ya cerrada de este repo (REQ-GOB-004) > REQ-GOB-004 (cerrada por el commit real ead57d3) -> 0 violaciones contra el git log real de este repo
+AssertionError: expected [ { …(3) } ] to have a length of +0 but got 1
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+ ❯ tests/unit/gob/cierre-tarea-conventional-commits.spec.ts:353:24
+    351|     const violations = checkCierreTareaConventionalCommits(tasksDir);
+    352| 
+    353|     expect(violations).toHaveLength(0);
+       |                        ^
+    354|   });
+    355| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 76 passed (77)
+      Tests  1 failed | 832 passed | 1 skipped (834)
+   Start at  16:58:08
+   Duration  127.54s (transform 3.79s, setup 0ms, collect 27.33s, tests 727.36s, environment 26ms, prepare 16.26s)
+

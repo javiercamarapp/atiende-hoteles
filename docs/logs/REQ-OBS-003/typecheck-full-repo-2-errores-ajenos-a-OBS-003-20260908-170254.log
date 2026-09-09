@@ -1,0 +1,15 @@
+NOTA HONESTA: esta corrida completa de 'npm run typecheck' se hizo en un repo con trabajo
+CONCURRENTE de otras tareas (sesiones paralelas escribiendo al mismo working directory --
+confirmado por 'git status' con archivos ajenos a REQ-OBS-003 apareciendo durante esta sesión,
+p.ej. tests/unit/domain-hotel/parity-guard.spec.ts). Los 2 errores de abajo son en ESE archivo
+ajeno (WIP de otra tarea), no en ningún archivo tocado por REQ-OBS-003. Evidencia de que MI
+código sí typechequea limpio: typecheck-packages-agent-core-aislado-*.log (0 errores) y la
+corrida completa 0-errores capturada ANTES de que ese archivo ajeno apareciera (ver transcript
+de la sesión; no se guardó a archivo esa primera corrida por no anticipar la interferencia).
+---
+
+> atiende-hoteles@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json && tsc --noEmit -p apps/api/tsconfig.json
+
+tests/unit/domain-hotel/parity-guard.spec.ts(169,12): error TS2532: Object is possibly 'undefined'.
+tests/unit/domain-hotel/parity-guard.spec.ts(206,12): error TS2532: Object is possibly 'undefined'.

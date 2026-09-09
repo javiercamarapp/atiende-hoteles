@@ -1,0 +1,5 @@
+REQ-OBS-003 OK: ronda 1 marcada como resuelta (docs/auditoria-N/ronda-1.md). Loop de construcción libre de nuevo.
+exit=0
+=== tras resolver, misma cuenta de tareas (8): reporta veredicto existente, ya NO bloquea ===
+REQ-OBS-003 OK: la ronda 1 ya se ejecutó (docs/auditoria-N/ronda-1.md), veredicto rojo.
+exit=0

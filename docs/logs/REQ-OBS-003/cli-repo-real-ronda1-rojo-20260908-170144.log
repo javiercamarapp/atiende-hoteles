@@ -1,0 +1,5 @@
+REQ-OBS-003: ronda 1 -> veredicto ROJO (3/16 ítem(s) fallidos). Documento: docs/auditoria-N/ronda-1.md. Loop de construcción bloqueado hasta resolución.
+exit=1
+=== segunda corrida (debe seguir bloqueado, sin re-ejecutar checklist) ===
+REQ-OBS-003: loop de construcción BLOQUEADO -- la ronda 1 (2026-09-08) sigue en rojo sin resolver. Ver docs/auditoria-N/ronda-1.md. Resolver con: node scripts/checks/auditoria-periodica.ts --resolver 1
+exit=1

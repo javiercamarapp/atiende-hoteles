@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/gob/seleccion-tarea.spec.ts (10 tests) 5ms
+ ✓ tests/unit/gob/backlog-state-machine.spec.ts (37 tests) 8ms
+ ✓ tests/unit/gob/auditoria-periodica.spec.ts (17 tests) 269ms
+
+ Test Files  3 passed (3)
+      Tests  64 passed (64)
+   Start at  17:03:14
+   Duration  784ms (transform 131ms, setup 0ms, collect 224ms, tests 282ms, environment 0ms, prepare 273ms)
+
