@@ -129,6 +129,45 @@ export {
   type ValidateTurnosLftResult,
 } from "./housekeeping/turnos-lft.ts";
 export {
+  classifyVoiceGuardrailRefusal,
+  looksLikeCardPaymentByVoice,
+  looksLikeOffPmsRateRequest,
+  looksLikeRoomOrPresenceDisclosureRequest,
+  looksLikeKeyIssuanceByVoiceRequest,
+  type VoiceGuardrailReason,
+  type VoiceGuardrailRefusal,
+} from "./voiceGuardrails.ts";
+export {
+  USALI_REVENUE_DEPARTMENTS,
+  USALI_UNDISTRIBUTED_DEPARTMENTS,
+  REVENUE_FORECAST_HORIZON_DAYS,
+  CASH_PROJECTION_WEEKS,
+  buildDepartmentalStatements,
+  buildUsaliPL,
+  forecastDailyRevenue90Days,
+  computeDynamicBreakeven,
+  buildCashFlow13Weeks,
+  buildOwnersReport,
+  type UsaliRevenueDepartment,
+  type UsaliUndistributedDepartment,
+  type UsaliExpenseCategory,
+  type DepartmentRevenueRow,
+  type DepartmentExpenseRow,
+  type DepartmentStatement,
+  type UndistributedRow,
+  type UsaliPL,
+  type BuildUsaliPLInput,
+  type DynamicBreakevenInput,
+  type DynamicBreakevenResult,
+  type CashWeekInput,
+  type CashWeekProjection,
+  type OwnersReportKpis,
+  type ForecastSummary,
+  type CashSummary,
+  type OwnersReportInput,
+  type OwnersReport,
+} from "./pl/usaliPL.ts";
+export {
   WAITLIST_STATUSES,
   WAITLIST_OFFER_WINDOW_HOURS,
   matchesWaitlistRequest,
@@ -139,3 +178,53 @@ export {
   type WaitlistCandidate,
   type WaitlistMatchCriteria,
 } from "./reservas/waitlist.ts";
+export {
+  GUEST_TICKET_DEPARTMENTS,
+  GUEST_TICKET_PRIORITIES,
+  DEFAULT_SLA_MINUTES_BY_PRIORITY,
+  classifyGuestMessage,
+  resolveSlaMinutes,
+  computeSlaDueAt,
+  isSlaOverdue,
+  type GuestTicketDepartment,
+  type GuestTicketPriority,
+  type GuestMessageClassification,
+} from "./tickets/slaPolicy.ts";
+export {
+  lintMarketingTemplateBody,
+  type MarketingTemplateLintResult,
+} from "./marketingTemplateLinter.ts";
+export {
+  classifyUnaccompaniedMinorEscalation,
+  containsDiscriminatoryContent,
+  type UnaccompaniedMinorSignal,
+  type DiscriminatoryCategory,
+  type DiscriminatoryContentResult,
+} from "./conversationalGuardrails.ts";
+export {
+  OTP_CODE_LENGTH,
+  OTP_TTL_MINUTES,
+  OTP_MAX_ATTEMPTS,
+  generateOtpCode,
+  evaluateOtpConfirmation,
+  type OtpConfirmationOutcome,
+  type EvaluateOtpConfirmationInput,
+  type EvaluateOtpConfirmationResult,
+} from "./guestContactChangeOtp.ts";
+export {
+  buildReporteMensualDueno,
+  type RoiEventoMensual,
+  type ReporteMensualDuenoInput,
+  type ReporteMensualDueno,
+} from "./pl/reporteMensualDueno.ts";
+export {
+  BASELINE_SIGNING_WINDOW_DAYS,
+  daysBetween as daysBetweenRoiBaseline,
+  isWithinWeek1 as isRoiBaselineWithinWeek1,
+  assertBaselineSignableWithinWeek1,
+  evaluateCobroPorResultadoActivation,
+  RoiBaselineError,
+  type RoiBaselineSummary,
+  type CobroPorResultadoActivationParams,
+  type CobroPorResultadoActivationCheck,
+} from "./roi/roiBaseline.ts";

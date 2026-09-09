@@ -1,0 +1,2131 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts (15 tests | 15 failed) 5ms
+   × looksLikeAllergyDeclaration > detecta declaraciones explícitas de alergia 2ms
+     → (0 , looksLikeAllergyDeclaration) is not a function
+   × looksLikeAllergyDeclaration > detecta intolerancias y enfermedad celiaca 0ms
+     → (0 , looksLikeAllergyDeclaration) is not a function
+   × looksLikeAllergyDeclaration > detecta restricciones alimentarias declaradas en frase libre 0ms
+     → (0 , looksLikeAllergyDeclaration) is not a function
+   × looksLikeAllergyDeclaration > NO marca un pedido normal sin ninguna mención de alergia/restricción 0ms
+     → (0 , looksLikeAllergyDeclaration) is not a function
+   × looksLikeAllergyDeclaration > null/undefined/vacío no truena y no detecta nada 0ms
+     → (0 , looksLikeAllergyDeclaration) is not a function
+   × resolveAllergyDeclared > el campo estructurado en true siempre declara, sin importar el texto 0ms
+     → (0 , resolveAllergyDeclared) is not a function
+   × resolveAllergyDeclared > red de seguridad: campo estructurado en false pero una nota libre PARECE declarar alergia 0ms
+     → (0 , resolveAllergyDeclared) is not a function
+   × resolveAllergyDeclared > sin campo estructurado y sin ninguna nota sospechosa, NO declara alergia 0ms
+     → (0 , resolveAllergyDeclared) is not a function
+   × canAssureDishIsSafe / assertCanAssureDishIsSafe > sin alergia declarada, siempre es seguro afirmar (nada que confirmar) 0ms
+     → (0 , canAssureDishIsSafe) is not a function
+   × canAssureDishIsSafe / assertCanAssureDishIsSafe > con alergia declarada y SIN confirmación del cocinero, NUNCA es seguro afirmar 0ms
+     → (0 , canAssureDishIsSafe) is not a function
+   × canAssureDishIsSafe / assertCanAssureDishIsSafe > con alergia declarada y CON confirmación del cocinero, es seguro afirmar 0ms
+     → (0 , canAssureDishIsSafe) is not a function
+   × canAssureDishIsSafe / assertCanAssureDishIsSafe > el error lanzado trae el código estable para mapear a un 409 en la ruta 1ms
+     → The instanceof assertion needs a constructor but undefined was given.
+   × describeSafetyAssuranceMessage > sin alergia declarada: mensaje genérico, sin afirmación de seguridad 0ms
+     → (0 , describeSafetyAssuranceMessage) is not a function
+   × describeSafetyAssuranceMessage > con alergia declarada y SIN confirmación: el mensaje NUNCA afirma que el platillo es seguro 0ms
+     → (0 , describeSafetyAssuranceMessage) is not a function
+   × describeSafetyAssuranceMessage > con alergia declarada y CON confirmación: el mensaje SÍ afirma seguridad, atribuida al cocinero 0ms
+     → (0 , describeSafetyAssuranceMessage) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts (20 tests | 20 failed) 5ms
+   × detectDiscountOutsidePolicy (1/4 — descuentos fuera de política) > no alerta un descuento por debajo del umbral, sin autorización 2ms
+     → (0 , detectDiscountOutsidePolicy) is not a function
+   × detectDiscountOutsidePolicy (1/4 — descuentos fuera de política) > no alerta un descuento exactamente en el umbral (tolerancia de redondeo) 0ms
+     → (0 , detectDiscountOutsidePolicy) is not a function
+   × detectDiscountOutsidePolicy (1/4 — descuentos fuera de política) > alerta un descuento sobre el umbral SIN autorización y aplicado por un rol no administrativo 0ms
+     → (0 , detectDiscountOutsidePolicy) is not a function
+   × detectDiscountOutsidePolicy (1/4 — descuentos fuera de política) > evalúa por MAGNITUD del descuento (charge.amount puede venir negativo) 0ms
+     → (0 , detectDiscountOutsidePolicy) is not a function
+   × detectDiscountOutsidePolicy (1/4 — descuentos fuera de política) > NO alerta si quien aplicó el descuento ya tenía rol administrativo (se autoriza a sí mismo) 0ms
+     → (0 , detectDiscountOutsidePolicy) is not a function
+   × detectDiscountOutsidePolicy (1/4 — descuentos fuera de política) > NO alerta si trae discount_authorized_by de un tercero administrativo 0ms
+     → (0 , detectDiscountOutsidePolicy) is not a function
+   × detectDiscountOutsidePolicy (1/4 — descuentos fuera de política) > SÍ alerta cuando ni el actor ni un tercero autorizaron un descuento por encima del umbral 0ms
+     → (0 , detectDiscountOutsidePolicy) is not a function
+   × detectFolioReopenedAfterAudit (2/4 — folio reabierto post-auditoría) > no alerta un cargo creado ANTES del cierre del folio 0ms
+     → (0 , detectFolioReopenedAfterAudit) is not a function
+   × detectFolioReopenedAfterAudit (2/4 — folio reabierto post-auditoría) > no alerta un cargo creado en el MISMO instante del cierre 0ms
+     → (0 , detectFolioReopenedAfterAudit) is not a function
+   × detectFolioReopenedAfterAudit (2/4 — folio reabierto post-auditoría) > alerta un cargo creado DESPUÉS del cierre del folio (implica reapertura fuera del flujo) 0ms
+     → (0 , detectFolioReopenedAfterAudit) is not a function
+   × detectUnpostedFnbCharge (3/4 — cargo F&B no posteado) > no alerta cuando la venta POS coincide en monto con un cargo F&B posteado 0ms
+     → (0 , detectUnpostedFnbCharge) is not a function
+   × detectUnpostedFnbCharge (3/4 — cargo F&B no posteado) > tolera un centavo de diferencia por redondeo 0ms
+     → (0 , detectUnpostedFnbCharge) is not a function
+   × detectUnpostedFnbCharge (3/4 — cargo F&B no posteado) > alerta cuando NO hay ningún cargo F&B posteado para la venta POS 0ms
+     → (0 , detectUnpostedFnbCharge) is not a function
+   × detectUnpostedFnbCharge (3/4 — cargo F&B no posteado) > alerta cuando el cargo posteado NO coincide en monto con la venta POS 0ms
+     → (0 , detectUnpostedFnbCharge) is not a function
+   × detectRefundToDifferentCard (4/4 — reembolso a tarjeta distinta) > no alerta cuando el reembolso coincide con un pago capturado del mismo folio 0ms
+     → (0 , detectRefundToDifferentCard) is not a function
+   × detectRefundToDifferentCard (4/4 — reembolso a tarjeta distinta) > alerta cuando el token del reembolso NO coincide con ningún pago capturado del folio 0ms
+     → (0 , detectRefundToDifferentCard) is not a function
+   × recipientRolesForPattern (REQ-REC-014: alerta al destinatario correspondiente) > descuento_fuera_de_politica → owner/gm 0ms
+     → (0 , recipientRolesForPattern) is not a function
+   × recipientRolesForPattern (REQ-REC-014: alerta al destinatario correspondiente) > folio_reabierto_post_auditoria → owner/gm/accountant 0ms
+     → (0 , recipientRolesForPattern) is not a function
+   × recipientRolesForPattern (REQ-REC-014: alerta al destinatario correspondiente) > cargo_fnb_no_posteado → owner/gm/fnb 0ms
+     → (0 , recipientRolesForPattern) is not a function
+   × recipientRolesForPattern (REQ-REC-014: alerta al destinatario correspondiente) > reembolso_tarjeta_distinta → owner/gm/accountant 0ms
+     → (0 , recipientRolesForPattern) is not a function
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts (15 tests | 15 failed) 9ms
+   × buildWalkForwardWindows > arma ventanas deslizantes sin solape cuando stepDays === testDays 4ms
+     → (0 , buildWalkForwardWindows) is not a function
+   × buildWalkForwardWindows > cada ventana de prueba usa SOLO datos anteriores a sí misma (sin fuga de datos futuros) 0ms
+     → (0 , buildWalkForwardWindows) is not a function
+   × buildWalkForwardWindows > nunca genera una ventana de prueba que se pase del final de la serie 0ms
+     → (0 , buildWalkForwardWindows) is not a function
+   × buildWalkForwardWindows > serie vacía produce cero ventanas 0ms
+     → (0 , buildWalkForwardWindows) is not a function
+   × buildWalkForwardWindows > rechaza specs con días no positivos 1ms
+     → expected error to be instance of RangeError
+   × buildWalkForwardWindows > rechaza una serie no ordenada o con fechas duplicadas 1ms
+     → expected [Function] to throw error matching /serie_no_ordenada/ but got '(0 , buildWalkF…'
+   × buildWalkForwardWindows > stepDays menor que testDays produce ventanas de prueba solapadas 0ms
+     → (0 , buildWalkForwardWindows) is not a function
+   × evaluateWalkForwardBacktest > pasa cuando el motor mejora el total agregado y gana la mayoría de ventanas 0ms
+     → (0 , evaluateWalkForwardBacktest) is not a function
+   × evaluateWalkForwardBacktest > falla por ventanas insuficientes aunque el total mejore (un solo mes no basta) 0ms
+     → (0 , evaluateWalkForwardBacktest) is not a function
+   × evaluateWalkForwardBacktest > falla si el motor no mejora el total vs. baseline 0ms
+     → (0 , evaluateWalkForwardBacktest) is not a function
+   × evaluateWalkForwardBacktest > falla si mejora el total pero pierde en la mayoría de las ventanas (outlier oculta pérdida sistemática) 0ms
+     → (0 , evaluateWalkForwardBacktest) is not a function
+   × evaluateWalkForwardBacktest > falla con baseline agregado no positivo en vez de dividir entre cero 0ms
+     → (0 , evaluateWalkForwardBacktest) is not a function
+   × evaluateWalkForwardBacktest > respeta thresholds configurables (minWindows/minImprovementPct/minWindowWinRatio) 0ms
+     → (0 , evaluateWalkForwardBacktest) is not a function
+   × evaluateWalkForwardBacktest > propaga el counterfactualMethod declarado en el resultado (auditable, nunca silencioso) 0ms
+     → (0 , evaluateWalkForwardBacktest) is not a function
+   × evaluateWalkForwardBacktest > cero ventanas evaluadas nunca pasa y no explota (windowWinRatio 0, no NaN) 0ms
+     → (0 , evaluateWalkForwardBacktest) is not a function
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts (27 tests | 26 failed) 12ms
+   × PARITY_MODES > expone exactamente los 2 modos del requisito: bloquea y alerta 5ms
+     → expected undefined to deeply equal [ 'bloquea', 'alerta' ]
+   × computeParityFloor > con tolerancia 0 (paridad estricta) el piso es igual a la referencia 0ms
+     → (0 , computeParityFloor) is not a function
+   × computeParityFloor > con tolerancia > 0 el piso es proporcionalmente menor a la referencia 0ms
+     → (0 , computeParityFloor) is not a function
+   × assertValidParityChannelConfig > acepta un canal válido sin lanzar 1ms
+     → expected [Function] to not throw an error but 'TypeError: (0 , __vite_ssr_import_1__…' was thrown
+   × assertValidParityChannelConfig > rechaza nombre de canal vacío 0ms
+     → expected [Function] to throw error matching /canal_faltante/ but got '(0 , assertVali…'
+   × assertValidParityChannelConfig > rechaza tarifa de referencia no positiva o no finita 0ms
+     → expected [Function] to throw error matching /tarifa_referencia_invalida/ but got '(0 , assertVali…'
+   × assertValidParityChannelConfig > rechaza tolerancia fuera de [0, 100) 0ms
+     → expected [Function] to throw error matching /tolerancia_invalida/ but got '(0 , assertVali…'
+   × assertValidParityChannelConfig > el límite 0 (paridad estricta) sí es válido 0ms
+     → expected [Function] to not throw an error but 'TypeError: (0 , __vite_ssr_import_1__…' was thrown
+   × assertValidParityGuardConfig > acepta configuración válida con varios canales distintos 0ms
+     → expected [Function] to not throw an error but 'TypeError: (0 , __vite_ssr_import_1__…' was thrown
+   × assertValidParityGuardConfig > acepta channels vacío (hotel sin cláusula de paridad vigente todavía) 0ms
+     → expected [Function] to not throw an error but 'TypeError: (0 , __vite_ssr_import_1__…' was thrown
+   × assertValidParityGuardConfig > rechaza modo inválido 0ms
+     → expected [Function] to throw error matching /modo_invalido/ but got '(0 , assertVali…'
+   × assertValidParityGuardConfig > rechaza canal duplicado (mismo canal, distinto o igual criterio) para el mismo hotel 0ms
+     → expected [Function] to throw error matching /canal_duplicado/ but got '(0 , assertVali…'
+   × assertValidParityGuardConfig > propaga la validación de cada canal individual 0ms
+     → expected [Function] to throw error matching /tarifa_referencia_invalida/ but got '(0 , assertVali…'
+   ✓ evaluateParityGuard — validación de entrada > lanza ParityGuardError si la configuración es inválida (no confunde config rota con 'sin violaciones') 0ms
+   × evaluateParityGuard — validación de entrada > lanza ParityGuardError si la tarifa propuesta no es un número positivo 0ms
+     → expected [Function] to throw error matching /tarifa_propuesta_invalida/ but got '(0 , evaluatePa…'
+   × evaluateParityGuard — sin cláusula de paridad configurada > channels vacío siempre permite la propuesta, sin violaciones 0ms
+     → (0 , evaluateParityGuard) is not a function
+   × evaluateParityGuard — modo 'bloquea' > una tarifa propuesta igual a la referencia (paridad estricta) no viola nada 0ms
+     → (0 , evaluateParityGuard) is not a function
+   × evaluateParityGuard — modo 'bloquea' > una tarifa propuesta por ENCIMA de la referencia nunca viola la paridad 0ms
+     → (0 , evaluateParityGuard) is not a function
+   × evaluateParityGuard — modo 'bloquea' > una tarifa propuesta por debajo del piso pactado (paridad estricta) BLOQUEA la propuesta 0ms
+     → (0 , evaluateParityGuard) is not a function
+   × evaluateParityGuard — modo 'bloquea' > respeta la tolerancia pactada: justo en el piso (referencia - tolerancia) NO es violación 0ms
+     → (0 , evaluateParityGuard) is not a function
+   × evaluateParityGuard — modo 'bloquea' > 1 centavo por debajo del piso pactado SÍ es violación (el margen es exactamente el pactado, no más) 0ms
+     → (0 , evaluateParityGuard) is not a function
+   × evaluateParityGuard — modo 'bloquea' > tolera error de punto flotante en la frontera exacta del piso 0ms
+     → (0 , evaluateParityGuard) is not a function
+   × evaluateParityGuard — modo 'bloquea' > la paridad debe cumplirse INDIVIDUALMENTE con cada canal — romper con uno solo ya bloquea 0ms
+     → (0 , evaluateParityGuard) is not a function
+   × evaluateParityGuard — modo 'bloquea' > puede romper la paridad con varios canales a la vez — reporta una violación por canal 0ms
+     → (0 , evaluateParityGuard) is not a function
+   × evaluateParityGuard — modo 'alerta' > una violación de paridad NO bloquea en modo alerta, pero se reporta igual 0ms
+     → (0 , evaluateParityGuard) is not a function
+   × evaluateParityGuard — modo 'alerta' > sin violaciones, modo alerta también permite y no reporta nada 0ms
+     → (0 , evaluateParityGuard) is not a function
+   × evaluateParityGuard — el resultado siempre refleja hotelId/mode/proposedRate de entrada > ecoa hotelId, mode y proposedRate en el resultado para trazabilidad 0ms
+     → (0 , evaluateParityGuard) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts (28 tests | 25 failed) 13ms
+   × REVENUE_GATE_STATES / constantes (REQ-REV-003) > expone exactamente los 3 gates en orden 8ms
+     → expected undefined to deeply equal [ 'shadow', 'propone', 'autopilot' ]
+   × REVENUE_GATE_STATES / constantes (REQ-REV-003) > el mínimo de shadow es 90 días 0ms
+     → expected undefined to be 90 // Object.is equality
+   × REVENUE_GATE_STATES / constantes (REQ-REV-003) > la banda de variación en propone es ±10-15% 0ms
+     → expected undefined to be 10 // Object.is equality
+   × daysElapsed / hasMetMinimumShadowPeriod > cuenta días completos, sin redondear hacia arriba 0ms
+     → (0 , daysElapsed) is not a function
+   × daysElapsed / hasMetMinimumShadowPeriod > 89 días NO cumple el mínimo; 90 sí 0ms
+     → (0 , hasMetMinimumShadowPeriod) is not a function
+   × isPromotion / isDemotion > solo shadow->propone y propone->autopilot son promociones (un escalón) 0ms
+     → (0 , isPromotion) is not a function
+   × isPromotion / isDemotion > cualquier retroceso es una democión 0ms
+     → (0 , isDemotion) is not a function
+   × evaluateGateTransition — shadow -> propone > bloquea con menos de 90 días en shadow, con el motivo exacto 0ms
+     → (0 , evaluateGateTransition) is not a function
+   × evaluateGateTransition — shadow -> propone > permite la transición con exactamente 90 días 0ms
+     → (0 , evaluateGateTransition) is not a function
+   × evaluateGateTransition — shadow -> propone > bloquea si no se aporta shadowStartedAt 0ms
+     → (0 , evaluateGateTransition) is not a function
+   × evaluateGateTransition — propone -> autopilot > bloquea sin backtest 0ms
+     → (0 , evaluateGateTransition) is not a function
+   × evaluateGateTransition — propone -> autopilot > bloquea con un backtest que no supera el baseline 0ms
+     → (0 , evaluateWalkForwardBacktest) is not a function
+   × evaluateGateTransition — propone -> autopilot > bloquea un backtest que pasa pero es anterior a que el hotel entrara en propone (obsoleto) 0ms
+     → (0 , evaluateWalkForwardBacktest) is not a function
+   × evaluateGateTransition — propone -> autopilot > bloquea sin aprobación del fundador aunque el backtest pase (REQ-GOB-012) 0ms
+     → (0 , evaluateWalkForwardBacktest) is not a function
+   × evaluateGateTransition — propone -> autopilot > permite la transición con backtest vigente que pasa + aprobación del fundador 0ms
+     → (0 , evaluateWalkForwardBacktest) is not a function
+   × evaluateGateTransition — propone -> autopilot > acumula TODAS las razones de bloqueo a la vez (backtest y aprobación faltantes simultáneamente) 0ms
+     → (0 , evaluateGateTransition) is not a function
+   × evaluateGateTransition — reglas de la máquina de estados > no-op (from === to) siempre se permite 0ms
+     → (0 , evaluateGateTransition) is not a function
+   × evaluateGateTransition — reglas de la máquina de estados > nunca permite saltar directo de shadow a autopilot 0ms
+     → (0 , evaluateWalkForwardBacktest) is not a function
+   × evaluateGateTransition — reglas de la máquina de estados > cualquier democión se permite sin condiciones (freno de emergencia) 0ms
+     → (0 , evaluateGateTransition) is not a function
+   ✓ assertValidProponeVariationPct / isPriceChangeWithinProponeLimit > rechaza un límite fuera de la banda ±10-15% 1ms
+   × assertValidProponeVariationPct / isPriceChangeWithinProponeLimit > acepta los bordes exactos de la banda 1ms
+     → expected [Function] to not throw an error but 'TypeError: (0 , __vite_ssr_import_1__…' was thrown
+   × assertValidProponeVariationPct / isPriceChangeWithinProponeLimit > un cambio dentro del límite se acepta, uno fuera se rechaza 0ms
+     → (0 , isPriceChangeWithinProponeLimit) is not a function
+   ✓ assertValidProponeVariationPct / isPriceChangeWithinProponeLimit > rechaza un baseline no positivo 0ms
+   ✓ assertValidProponeVariationPct / isPriceChangeWithinProponeLimit > rechaza un precio propuesto negativo 0ms
+   × evaluateRevenueProposal (REQ-REV-003: shadow nunca ejecuta, propone limita y exige aprobación, autopilot pleno libre) > en shadow, NUNCA se permite ejecutar aunque el cambio sea mínimo 0ms
+     → (0 , evaluateRevenueProposal) is not a function
+   × evaluateRevenueProposal (REQ-REV-003: shadow nunca ejecuta, propone limita y exige aprobación, autopilot pleno libre) > en propone, un cambio dentro del límite requiere aprobación pero es elegible 0ms
+     → (0 , evaluateRevenueProposal) is not a function
+   × evaluateRevenueProposal (REQ-REV-003: shadow nunca ejecuta, propone limita y exige aprobación, autopilot pleno libre) > en propone, un cambio que excede el límite se rechaza aunque hubiera aprobación 0ms
+     → (0 , evaluateRevenueProposal) is not a function
+   × evaluateRevenueProposal (REQ-REV-003: shadow nunca ejecuta, propone limita y exige aprobación, autopilot pleno libre) > en autopilot pleno, no hay límite de variación ni aprobación requerida 0ms
+     → (0 , evaluateRevenueProposal) is not a function
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts (27 tests | 20 failed) 11ms
+   × forecastExponentialSmoothing · Holt (sin estacionalidad) > con alpha=beta=1 reproduce EXACTAMENTE la continuación de una tendencia lineal (kWh) 3ms
+     → (0 , forecastExponentialSmoothing) is not a function
+   × forecastExponentialSmoothing · Holt (sin estacionalidad) > es determinista: misma entrada siempre produce la misma salida 0ms
+     → (0 , forecastExponentialSmoothing) is not a function
+   × forecastExponentialSmoothing · Holt (sin estacionalidad) > la banda de incertidumbre crece con el horizonte (más incierto a más plazo) 0ms
+     → (0 , forecastExponentialSmoothing) is not a function
+   × forecastExponentialSmoothing · Holt (sin estacionalidad) > rechaza horizonte no positivo o no entero 1ms
+     → expected error to be instance of RangeError
+   × forecastExponentialSmoothing · Holt (sin estacionalidad) > rechaza alpha/beta/gamma fuera de (0,1] 0ms
+     → expected error to be instance of RangeError
+   × forecastExponentialSmoothing · Holt (sin estacionalidad) > rechaza historia insuficiente (menos de 2 puntos sin estacionalidad) 0ms
+     → expected error to be instance of RangeError
+   × forecastExponentialSmoothing · Holt (sin estacionalidad) > rechaza una serie con valores no finitos 0ms
+     → expected error to be instance of RangeError
+   × forecastExponentialSmoothing · Holt (sin estacionalidad) > degrada a Holt simple cuando se pide estacionalidad pero no hay historia suficiente 0ms
+     → (0 , forecastExponentialSmoothing) is not a function
+   × forecastExponentialSmoothing · Holt-Winters aditivo (con estacionalidad, ocupación/demanda) > con una serie estacionaria y sin ruido, reproduce EXACTAMENTE el ciclo (2 ciclos de 7 días bastan) 0ms
+     → (0 , forecastExponentialSmoothing) is not a function
+   × forecastExponentialSmoothing · Holt-Winters aditivo (con estacionalidad, ocupación/demanda) > captura una tendencia ascendente además del patrón estacional (kWh con crecimiento + fin de semana alto) 0ms
+     → (0 , forecastExponentialSmoothing) is not a function
+   × forecastExponentialSmoothing · Holt-Winters aditivo (con estacionalidad, ocupación/demanda) > es determinista 0ms
+     → (0 , forecastExponentialSmoothing) is not a function
+   × forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > usa el punto exacto de la curva cuando existe 0ms
+     → (0 , forecastPickup) is not a function
+   × forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > interpola linealmente entre los dos puntos vecinos cuando no hay coincidencia exacta 0ms
+     → (0 , forecastPickup) is not a function
+   × forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > nunca extrapola más allá de la historia: usa el extremo más cercano fuera de rango 0ms
+     → (0 , forecastPickup) is not a function
+   × forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > acota el pronóstico final al máximo histórico observado cuando se provee 0ms
+     → (0 , forecastPickup) is not a function
+   × forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > es determinista 0ms
+     → (0 , forecastPickup) is not a function
+   × forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > rechaza curvas con daysBeforeArrival duplicado 0ms
+     → expected error to be instance of RangeError
+   × forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > rechaza onTheBooksCount o daysBeforeArrival inválidos 0ms
+     → expected error to be instance of RangeError
+   × forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > rechaza una curva histórica vacía 0ms
+     → expected error to be instance of RangeError
+   ✓ redactar_explicacion_pronostico · el LLM solo redacta, nunca calcula el número > declara su nombre, effect=read y no exige aprobación (solo genera texto, sin efecto externo) 1ms
+   ✓ redactar_explicacion_pronostico · el LLM solo redacta, nunca calcula el número > el esquema de entrada EXIGE el pronóstico ya calculado (`puntos`): sin eso, Zod rechaza antes de ejecutar nada 1ms
+   ✓ redactar_explicacion_pronostico · el LLM solo redacta, nunca calcula el número > devuelve EXACTAMENTE los números de entrada sin alterarlos, y la explicación viene del LLM 0ms
+   ✓ redactar_explicacion_pronostico · el LLM solo redacta, nunca calcula el número > aunque el LLM intente 'corregir' o inventar cifras distintas en el texto, los números que la tool reporta NO cambian 0ms
+   ✓ redactar_explicacion_pronostico · el LLM solo redacta, nunca calcula el número > si el proveedor de LLM se corta (truncado) o no devuelve texto, la tool falla honestamente (ok=false), sin inventar una explicación 0ms
+   ✓ redactar_explicacion_pronostico · el LLM solo redacta, nunca calcula el número > registra el consumo de tokens de la llamada de redacción en el presupuesto de la corrida 0ms
+   ✓ redactar_explicacion_pronostico · el LLM solo redacta, nunca calcula el número > el prompt que recibe el proveedor incluye los valores ya calculados y prohíbe explícitamente inventar cifras 1ms
+   × redactar_explicacion_pronostico · el LLM solo redacta, nunca calcula el número > integración con el modelo real de series de tiempo: los `puntos` que la tool reporta son EXACTAMENTE los que produjo `forecastExponentialSmoothing`, no algo re-derivado del LLM 0ms
+     → (0 , forecastExponentialSmoothing) is not a function
+ ❯ tests/unit/gob/cierre-tarea-conventional-commits.spec.ts (46 tests | 1 failed) 949ms
+   ✓ parseTaskFrontmatterConCierre > lee id/status del frontmatter 1ms
+   ✓ parseTaskFrontmatterConCierre > un archivo sin frontmatter devuelve todo null (no lanza) 0ms
+   ✓ esConventionalCommit > acepta un asunto real/realista del repo: feat(gob): cierra REQ-GOB-004 — verificación de scope de tarea vs. diff real 0ms
+   ✓ esConventionalCommit > acepta un asunto real/realista del repo: fix(ci): regenerar package-lock.json para incluir binarios de plataforma 0ms
+   ✓ esConventionalCommit > acepta un asunto real/realista del repo: test(adversarial): REQ-AGT-009 — suite de red-teaming 0ms
+   ✓ esConventionalCommit > acepta un asunto real/realista del repo: docs: merges B y C de auditoría-2 completados 0ms
+   ✓ esConventionalCommit > acepta un asunto real/realista del repo: feat(req-agt-013): guardrail estático de aislamiento OCR 0ms
+   ✓ esConventionalCommit > acepta un asunto real/realista del repo: feat!: cambio incompatible con scope omitido 0ms
+   ✓ esConventionalCommit > acepta un asunto real/realista del repo: chore(deps): actualiza vitest 0ms
+   ✓ esConventionalCommit > rechaza un asunto que no sigue Conventional Commits: cierra REQ-GOB-004 sin prefijo de tipo 0ms
+   ✓ esConventionalCommit > rechaza un asunto que no sigue Conventional Commits: Feat: tipo con mayúscula no es del catálogo cerrado 0ms
+   ✓ esConventionalCommit > rechaza un asunto que no sigue Conventional Commits: feat : espacio antes de los dos puntos rompe el formato 0ms
+   ✓ esConventionalCommit > rechaza un asunto que no sigue Conventional Commits: feature(gob): tipo no está en el catálogo cerrado 0ms
+   ✓ esConventionalCommit > rechaza un asunto que no sigue Conventional Commits: feat(): scope vacío no es válido 0ms
+   ✓ esConventionalCommit > rechaza un asunto que no sigue Conventional Commits: feat: 0ms
+   ✓ esConventionalCommit > rechaza un asunto que no sigue Conventional Commits: feat:  0ms
+   ✓ commitReferenciaTarea > empareja el id en el asunto 0ms
+   ✓ commitReferenciaTarea > empareja el id en el cuerpo aunque no esté en el asunto 0ms
+   ✓ commitReferenciaTarea > insensible a mayúsculas (el historial real mezcla REQ-AGT-013/req-agt-013) 0ms
+   ✓ commitReferenciaTarea > NO empareja por subcadena cruda: REQ-GOB-5 no debe emparejar REQ-GOB-50 0ms
+   ✓ commitReferenciaTarea > NO empareja REQ-GOB-5 dentro de REQ-GOB-5A 0ms
+   ✓ commitReferenciaTarea > un commit que no menciona el id en absoluto -> false 0ms
+   ✓ commitsDeCierre > devuelve todos los commits que referencian el id, en cualquier orden de la lista 0ms
+   ✓ commitsDeCierre > 0 commits referencian el id -> arreglo vacío 0ms
+   ✓ checkCierreTareaConventionalCommits: escenario literal de ACEPTACION.md — 'un commit por tarea' > tarea en `review` con EXACTAMENTE 1 commit real en formato Conventional Commits -> 0 violaciones 1ms
+   ✓ checkCierreTareaConventionalCommits: escenario literal de ACEPTACION.md — 'un commit por tarea' > tarea en `done` con 0 commits que la referencien -> 1 violación (cierre sin commit real) 1ms
+   ✓ checkCierreTareaConventionalCommits: escenario literal de ACEPTACION.md — 'un commit por tarea' > tarea con 2 commits que la referencian -> 1 violación ('uno por tarea' no se cumple, ambigüedad) 0ms
+   ✓ checkCierreTareaConventionalCommits: escenario literal de ACEPTACION.md — 'un commit por tarea' > tarea con exactamente 1 commit que la referencia, pero SIN formato Conventional Commits -> 1 violación 0ms
+   ✓ checkCierreTareaConventionalCommits: tarea cerrada sin `id` declarado > status `done` sin `id` -> violación explícita, no se cae en silencio 0ms
+   ✓ checkCierreTareaConventionalCommits: solo `review`/`done` exigen commit de cierre > tarea en status `draft` sin ningún commit que la referencie -> 0 violaciones (aún no se cierra) 0ms
+   ✓ checkCierreTareaConventionalCommits: solo `review`/`done` exigen commit de cierre > tarea en status `ready` sin ningún commit que la referencie -> 0 violaciones (aún no se cierra) 0ms
+   ✓ checkCierreTareaConventionalCommits: solo `review`/`done` exigen commit de cierre > tarea en status `doing` sin ningún commit que la referencie -> 0 violaciones (aún no se cierra) 0ms
+   ✓ checkCierreTareaConventionalCommits: solo `review`/`done` exigen commit de cierre > tarea en status `blocked` sin ningún commit que la referencie -> 0 violaciones (aún no se cierra) 0ms
+   ✓ checkCierreTareaConventionalCommits: solo `review`/`done` exigen commit de cierre > tarea en status `needs-human` sin ningún commit que la referencie -> 0 violaciones (aún no se cierra) 0ms
+   ✓ checkCierreTareaConventionalCommits: solo `review`/`done` exigen commit de cierre > tarea sin `status` en absoluto -> 0 violaciones 0ms
+   ✓ checkCierreTareaConventionalCommits: comportamiento agregado y de entorno > varias tareas cerradas se revisan todas, violaciones se acumulan de forma independiente 1ms
+   ✓ checkCierreTareaConventionalCommits: comportamiento agregado y de entorno > `_template.md` se ignora (es la plantilla, no una tarea real, GOB-045) 0ms
+   ✓ checkCierreTareaConventionalCommits: comportamiento agregado y de entorno > un `tasks/` inexistente (backlog de archivos aún no materializado) no lanza y devuelve 0 violaciones 0ms
+   ✓ checkCierreTareaConventionalCommits: comportamiento agregado y de entorno > `tasks/` sin ninguna tarea en review/done -> 0 violaciones, ni siquiera invoca getCommits 0ms
+   ✓ obtenerCommitsGitReal: contra un repositorio git real > lee hash/asunto/cuerpo de commits reales, en orden de git log (más reciente primero) 217ms
+   ✓ obtenerCommitsGitReal: contra un repositorio git real > un repositorio git recién inicializado sin ningún commit -> arreglo vacío (no lanza) 86ms
+   ✓ obtenerCommitsGitReal: contra un repositorio git real > checkCierreTareaConventionalCommits end-to-end contra el repo git real: tarea con su commit real -> 0 violaciones 250ms
+   ✓ obtenerCommitsGitReal: contra un repositorio git real > checkCierreTareaConventionalCommits end-to-end: commit real que NO sigue Conventional Commits -> violación real  309ms
+   × checkCierreTareaConventionalCommits: tarea de muestra REAL ya cerrada de este repo (REQ-GOB-004) > REQ-GOB-004 (cerrada por el commit real ead57d3) -> 0 violaciones contra el git log real de este repo 45ms
+     → expected [ { …(3) } ] to have a length of +0 but got 1
+   ✓ checkCierreTareaConventionalCommits: tarea de muestra REAL ya cerrada de este repo (REQ-GOB-004) > una tarea de muestra que NUNCA se cerró en este repo (id inventado) -> violación real de '0 commits' 32ms
+   ✓ checkCierreTareaConventionalCommits: contra el repo real (sin overrides) > corre contra `tasks/` real sin lanzar, y pasa en vacío honesto si `tasks/` no existe todavía 1ms
+ ✓ tests/unit/rls/org-isolation.spec.ts (4 tests) 9283ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org compartido del fixture no ve nada del org independiente  3588ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org independiente tampoco ve el org compartido del fixture  1977ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > current_tenant_ids() del usuario del org independiente NO incluye el org del fixture  1844ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > INSERT: rechazado al intentar escribir en el hotel de otro org  1874ms
+ ✓ tests/unit/rls/tenant-isolation.spec.ts (4 tests) 9423ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > SELECT: solo devuelve filas del hotel del usuario  3930ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > INSERT: rechazado con violacion de politica al escribir en el hotel ajeno  1930ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > UPDATE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  1782ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > DELETE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  1780ms
+ ✓ tests/unit/rls/money-role.spec.ts (4 tests) 9256ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer folio  3749ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer charge ni payment  1819ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede insertar un payment  1976ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > gm (rol con acceso a dinero) si puede leer folio/charge/payment de su hotel  1712ms
+ ✓ tests/unit/reservation-state-machine.spec.ts (5 tests) 11363ms
+   ✓ maquina de estados de reservation > una reserva nueva arranca en 'cotizada' y queda registrada en el evento inicial  3685ms
+   ✓ maquina de estados de reservation > permite la cadena de transiciones valida completa  1936ms
+   ✓ maquina de estados de reservation > rechaza un salto invalido (cotizada -> en_estancia, saltandose confirmada/check_in)  1853ms
+   ✓ maquina de estados de reservation > rechaza reabrir una reserva cerrada (estado terminal)  1921ms
+   ✓ maquina de estados de reservation > rechaza confirmar una reserva ya cancelada  1968ms
+ ✓ tests/unit/audit-log.spec.ts (5 tests) 11438ms
+   ✓ audit_log: append-only + cadena de hash > cada fila referencia el hash de la fila anterior del mismo tenant y el primero no tiene prev_hash  3587ms
+   ✓ audit_log: append-only + cadena de hash > el hash almacenado es verificable de forma independiente (recalculado desde las columnas persistidas coincide)  2144ms
+   ✓ audit_log: append-only + cadena de hash > una alteracion manual del payload rompe la verificacion del hash (detectada, no silenciosa)  1773ms
+   ✓ audit_log: append-only + cadena de hash > rechaza UPDATE incluso ejecutado con el rol admin/propietario  1965ms
+   ✓ audit_log: append-only + cadena de hash > rechaza DELETE incluso ejecutado con el rol admin/propietario  1968ms
+ ✓ tests/unit/schema/hotel-timezone.spec.ts (4 tests) 2966ms
+ ✓ tests/unit/schema/dinero-numeric.spec.ts (6 tests) 2919ms
+ ✓ tests/unit/agent-core/tool-schema-strict.spec.ts (9 tests) 5229ms
+   ✓ recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001) > cerrar un ticket con autorizar_gasto_mantenimiento deja una fila de audit_log con timestamp, agente y valor anterior/nuevo reales  3182ms
+   ✓ recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001) > audit_log sigue siendo append-only e inmutable para la fila que dejo la tool (ADR-005/GOB-026)  2039ms
+ ✓ tests/unit/gob/scope-de-tarea.spec.ts (26 tests) 1022ms
+   ✓ obtenerArchivosCambiadosGit: contra un repositorio git real > detecta un archivo trackeado modificado y un archivo nuevo sin trackear, ninguno más  350ms
+   ✓ obtenerArchivosCambiadosGit: contra un repositorio git real > un working tree limpio (sin cambios desde HEAD) devuelve arreglo vacío  326ms
+   ✓ obtenerArchivosCambiadosGit: contra un repositorio git real > checkScopeDeTarea end-to-end contra el repo git real: archivo fuera de scope real -> violación real  325ms
+ ✓ tests/unit/gob/pms-mirror-solo-lectura.spec.ts (13 tests) 72ms
+ ✓ tests/unit/gob/auditoria-periodica.spec.ts (17 tests) 216ms
+ ✓ tests/unit/mcp-servers/pms/registro-unico-conectores.spec.ts (11 tests) 68ms
+ ✓ tests/unit/agent-core/ocr-aislado-sin-internet.spec.ts (9 tests) 56ms
+ ✓ tests/unit/qa/no-tests-skip.spec.ts (16 tests) 68ms
+ ✓ tests/unit/llm-juez-solo-sintetico.spec.ts (11 tests) 42ms
+ ✓ tests/unit/domain-hotel/turnos-lft.spec.ts (23 tests) 27ms
+ ✓ tests/unit/gob/evidencia-obligatoria-cierre.spec.ts (24 tests) 18ms
+ ✓ tests/unit/api/outbox-worker.spec.ts (8 tests) 16231ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un handler exitoso marca el evento 'enviado' y no lo vuelve a drenar  3444ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un handler que falla incrementa attempts y pospone available_at con backoff exponencial  1972ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > tras maxAttempts fallos consecutivos, el evento se marca 'fallido' (dead-letter) y deja de reintentarse  1940ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > auditoria-1/backend [ALTO]: la causa real del error queda persistida en outbox.last_error, no descartada por un catch{} mudo  1954ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > auditoria-1/backend [ALTO]: el dead-letter final también conserva la causa real del último intento  2223ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > auditoria-1/backend [ALTO]: un handler colgado (nunca resuelve) se trata como fallo por timeout sin bloquear el resto del batch  2309ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un event_type sin handler registrado se trata como fallo (nunca se marca 'enviado' silenciosamente)  2387ms
+ ✓ tests/unit/idempotency-key.spec.ts (3 tests) 7528ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > un INSERT plano con la misma clave dos veces es rechazado por el constraint UNIQUE  3093ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > INSERT ... ON CONFLICT DO NOTHING con la misma clave no duplica la fila (patron real de la app)  1999ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > la misma clave en dos tenants distintos NO colisiona (unicidad es por tenant)  2435ms
+ ✓ tests/unit/mcp-servers/architecture/lock-isolation.spec.ts (7 tests) 9ms
+ ✓ tests/unit/agent-core/runner.spec.ts (33 tests) 26ms
+ ✓ tests/unit/gob/tres-intentos-bloqueo.spec.ts (30 tests) 2752ms
+ ✓ tests/unit/ui/format-money.spec.ts (5 tests) 13ms
+ ✓ tests/unit/gob/no-comandos-destructivos-agente.spec.ts (7 tests) 8ms
+ ✓ tests/unit/domain-hotel/checkin-free-text-guard.spec.ts (6 tests) 6ms
+ ✓ tests/unit/domain-hotel/reputacion-clasificador.spec.ts (42 tests) 20ms
+ ✓ tests/unit/mcp-servers/pms/contract.spec.ts (14 tests | 1 skipped) 15ms
+ ✓ tests/unit/gob/gate-por-tarea.spec.ts (15 tests) 12ms
+ ✓ tests/unit/agent-core/tool.spec.ts (17 tests) 4ms
+ ✓ tests/unit/check-runtime-flags.spec.ts (7 tests) 8ms
+ ✓ tests/unit/check-migraciones.spec.ts (13 tests) 19ms
+ ✓ tests/unit/agent-core/no-parallel-tool-money.spec.ts (6 tests) 17ms
+ ✓ tests/unit/gob/backlog-state-machine.spec.ts (37 tests) 12ms
+ ✓ tests/unit/domain-hotel/motor-precio-total.spec.ts (7 tests) 6ms
+ ✓ tests/unit/domain-hotel/voice-guardrails.spec.ts (11 tests) 9ms
+ ✓ tests/unit/mcp-servers/cfdi/pac-doble.spec.ts (13 tests) 6ms
+ ✓ tests/unit/domain-hotel/conversational-guardrails.spec.ts (11 tests) 4ms
+ ✓ tests/unit/mcp-servers/payments/adapter-swap.spec.ts (16 tests) 13ms
+ ✓ tests/unit/gob/focus-vigente.spec.ts (17 tests) 5ms
+ ✓ tests/unit/agent-core/postgres-approval-concurrency.spec.ts (2 tests) 3ms
+ ✓ tests/unit/agent-core/approval.spec.ts (17 tests) 5ms
+ ✓ tests/unit/domain-hotel/attendance.spec.ts (17 tests) 6ms
+ ✓ tests/unit/api/identity-encryption.spec.ts (8 tests) 6ms
+ ✓ tests/unit/domain-hotel/pricing-source.spec.ts (3 tests) 9ms
+ ✓ tests/unit/agent-core/provider.spec.ts (17 tests) 4ms
+ ✓ tests/unit/mcp-servers/locks/contract.spec.ts (11 tests) 6ms
+ ✓ tests/unit/mcp-servers/energy/contract.spec.ts (15 tests) 11ms
+ ✓ tests/unit/migrations.spec.ts (4 tests) 9549ms
+   ✓ runner de migraciones (PGlite) > aplica todas las migraciones desde una base vacia  2499ms
+   ✓ runner de migraciones (PGlite) > es idempotente: correrlo dos veces no reaplica nada la segunda vez  2279ms
+   ✓ runner de migraciones (PGlite) > rechaza continuar si una migracion ya aplicada fue editada (expand-only)  2011ms
+   ✓ runner de migraciones (PGlite) > db:reset (dropAllMigratedObjects) deja la base lista para re-aplicar desde cero  2759ms
+ ✓ tests/unit/domain-hotel/mrz.spec.ts (13 tests) 3ms
+ ✓ tests/unit/gob/seleccion-tarea.spec.ts (10 tests) 3ms
+ ✓ tests/unit/api/money-alert-destination.spec.ts (11 tests) 4ms
+ ✓ tests/unit/mcp-servers/whatsapp/contract.spec.ts (10 tests) 10ms
+ ✓ tests/unit/gob/bloqueo-sin-criterio.spec.ts (9 tests) 3ms
+ ✓ tests/unit/domain-hotel/ticket-sla-policy.spec.ts (20 tests) 4ms
+ ✓ tests/unit/domain-hotel/folio-engine.spec.ts (16 tests) 3ms
+ ✓ tests/unit/agent-core/redact.spec.ts (22 tests) 9ms
+ ✓ tests/unit/domain-hotel/restricciones-estadia.spec.ts (6 tests) 3ms
+ ✓ tests/unit/domain-hotel/estado-maquina.spec.ts (9 tests) 8ms
+ ✓ tests/unit/mcp-servers/shared/hmac.spec.ts (10 tests) 2ms
+ ✓ tests/unit/agent-core/agents.spec.ts (7 tests) 5ms
+ ✓ tests/unit/domain-hotel/payment-free-text-guard.spec.ts (8 tests) 2ms
+ ✓ tests/unit/mcp-servers/shared/idempotency.spec.ts (3 tests) 11ms
+ ✓ tests/unit/domain-hotel/usali-pl.spec.ts (10 tests) 8ms
+ ✓ tests/unit/domain-hotel/cancelacion-policy.spec.ts (6 tests) 5ms
+ ✓ tests/unit/mcp-servers/pms/registro-conectores.spec.ts (4 tests) 4ms
+ ✓ tests/unit/domain-hotel/waitlist.spec.ts (7 tests) 3ms
+ ✓ tests/unit/restore-verify.spec.ts (5 tests) 3ms
+ ✓ tests/unit/mcp-servers/shared/backoff.spec.ts (7 tests) 3ms
+ ✓ tests/unit/agent-core/roi-tools.spec.ts (3 tests) 3ms
+ ✓ tests/unit/agent-core/context.spec.ts (7 tests) 5ms
+ ✓ tests/unit/agent-core/pricing.spec.ts (4 tests) 2ms
+ ✓ tests/unit/api/logger-redact.spec.ts (4 tests) 3ms
+ ✓ tests/unit/domain-hotel/guest-contact-change-otp.spec.ts (8 tests) 3ms
+ ✓ tests/unit/mcp-servers/shared/rate-limiter.spec.ts (3 tests) 3ms
+ ✓ tests/unit/api/money-alert-ids.spec.ts (7 tests) 2ms
+ ✓ tests/unit/agent-core/roles.spec.ts (13 tests) 3ms
+ ✓ tests/unit/domain-hotel/marketing-template-linter.spec.ts (7 tests) 2ms
+ ✓ tests/unit/domain-hotel/roi-baseline.spec.ts (10 tests) 5ms
+ ✓ tests/unit/domain-hotel/reporte-mensual-honestidad.spec.ts (10 tests) 5ms
+ ✓ tests/unit/api/rate-limiter.spec.ts (4 tests) 3ms
+ ✓ tests/unit/mcp-servers/shared/credentials.spec.ts (3 tests) 5ms
+ ✓ tests/unit/agent-core/trace.spec.ts (3 tests) 2ms
+ ✓ tests/unit/domain-hotel/overbooking.spec.ts (4 tests) 3ms
+ ✓ tests/unit/domain-hotel/impuestos-hospedaje.spec.ts (9 tests) 2ms
+ ✓ tests/unit/attendance-log.spec.ts (13 tests) 23319ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > registra entrada/salida vía record_attendance_event() dentro de una sesión real de staff  3396ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > SIEMPRE registra al propio auth.uid(): no existe ningún parámetro para fichar a nombre de otro empleado  2109ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > rechaza registrar asistencia en un hotel al que el empleado no pertenece  1908ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > cada fila referencia el hash de la fila anterior DEL MISMO empleado, y la primera no tiene prev_hash  1862ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > dos empleados distintos tienen cadenas de hash INDEPENDIENTES (una no referencia a la otra)  1971ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > el hash almacenado es verificable de forma independiente (recalculado desde las columnas persistidas coincide)  2366ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > rechaza UPDATE incluso ejecutado con el cliente admin/propietario de la migración  1915ms
+   ✓ attendance_log: append-only + cadena de hash por empleado > rechaza DELETE incluso ejecutado con el cliente admin/propietario de la migración  2409ms
+   ✓ staff_schedule: horario programado (mutable, administrado por owner/gm) > owner/gm puede programar un turno para un empleado de su propio hotel  1561ms
+   ✓ staff_schedule: horario programado (mutable, administrado por owner/gm) > un rol sin administración (ej. housekeeping) NO puede programar horarios  1576ms
+   ✓ staff_schedule: horario programado (mutable, administrado por owner/gm) > rechaza programar un horario para un empleado que no pertenece a ese hotel  761ms
+   ✓ staff_schedule: horario programado (mutable, administrado por owner/gm) > rechaza un rango con scheduled_end anterior o igual a scheduled_start  749ms
+   ✓ staff_schedule: horario programado (mutable, administrado por owner/gm) > un segundo upsert para el mismo (hotel, empleado, fecha) reemplaza el turno en vez de duplicarlo  733ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 122 ⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/domain-hotel/fnb-allergy-guard.spec.ts > looksLikeAllergyDeclaration > detecta declaraciones explícitas de alergia
+TypeError: (0 , looksLikeAllergyDeclaration) is not a function
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts:17:12
+     15| describe("looksLikeAllergyDeclaration", () => {
+     16|   it("detecta declaraciones explícitas de alergia", () => {
+     17|     expect(looksLikeAllergyDeclaration("soy alérgico a los mariscos"))…
+       |            ^
+     18|     expect(looksLikeAllergyDeclaration("tengo alergia al gluten")).toB…
+     19|     expect(looksLikeAllergyDeclaration("Alergias: cacahuate")).toBe(tr…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fnb-allergy-guard.spec.ts > looksLikeAllergyDeclaration > detecta intolerancias y enfermedad celiaca
+TypeError: (0 , looksLikeAllergyDeclaration) is not a function
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts:23:12
+     21| 
+     22|   it("detecta intolerancias y enfermedad celiaca", () => {
+     23|     expect(looksLikeAllergyDeclaration("soy intolerante a la lactosa")…
+       |            ^
+     24|     expect(looksLikeAllergyDeclaration("soy celiaco, sin gluten por fa…
+     25|     expect(looksLikeAllergyDeclaration("tengo una condición de anafila…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fnb-allergy-guard.spec.ts > looksLikeAllergyDeclaration > detecta restricciones alimentarias declaradas en frase libre
+TypeError: (0 , looksLikeAllergyDeclaration) is not a function
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts:29:12
+     27| 
+     28|   it("detecta restricciones alimentarias declaradas en frase libre", (…
+     29|     expect(looksLikeAllergyDeclaration("tengo una restricción alimenta…
+       |            ^
+     30|     expect(looksLikeAllergyDeclaration("no puedo comer camarón")).toBe…
+     31|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fnb-allergy-guard.spec.ts > looksLikeAllergyDeclaration > NO marca un pedido normal sin ninguna mención de alergia/restricción
+TypeError: (0 , looksLikeAllergyDeclaration) is not a function
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts:34:12
+     32| 
+     33|   it("NO marca un pedido normal sin ninguna mención de alergia/restric…
+     34|     expect(looksLikeAllergyDeclaration("dos pizzas margarita y una coc…
+       |            ^
+     35|     expect(looksLikeAllergyDeclaration("sin cebolla, gracias")).toBe(f…
+     36|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fnb-allergy-guard.spec.ts > looksLikeAllergyDeclaration > null/undefined/vacío no truena y no detecta nada
+TypeError: (0 , looksLikeAllergyDeclaration) is not a function
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts:39:12
+     37| 
+     38|   it("null/undefined/vacío no truena y no detecta nada", () => {
+     39|     expect(looksLikeAllergyDeclaration(null)).toBe(false);
+       |            ^
+     40|     expect(looksLikeAllergyDeclaration(undefined)).toBe(false);
+     41|     expect(looksLikeAllergyDeclaration("")).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fnb-allergy-guard.spec.ts > resolveAllergyDeclared > el campo estructurado en true siempre declara, sin importar el texto
+TypeError: (0 , resolveAllergyDeclared) is not a function
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts:47:17
+     45| describe("resolveAllergyDeclared", () => {
+     46|   it("el campo estructurado en true siempre declara, sin importar el t…
+     47|     const out = resolveAllergyDeclared({ structuredFlag: true, freeTex…
+       |                 ^
+     48|     expect(out.allergyDeclared).toBe(true);
+     49|     expect(out.declaredVia).toBe("estructurado");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fnb-allergy-guard.spec.ts > resolveAllergyDeclared > red de seguridad: campo estructurado en false pero una nota libre PARECE declarar alergia
+TypeError: (0 , resolveAllergyDeclared) is not a function
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts:53:17
+     51| 
+     52|   it("red de seguridad: campo estructurado en false pero una nota libr…
+     53|     const out = resolveAllergyDeclared({
+       |                 ^
+     54|       structuredFlag: false,
+     55|       freeTextFields: [null, "soy alérgico a los cacahuates, por favor…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fnb-allergy-guard.spec.ts > resolveAllergyDeclared > sin campo estructurado y sin ninguna nota sospechosa, NO declara alergia
+TypeError: (0 , resolveAllergyDeclared) is not a function
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts:62:17
+     60| 
+     61|   it("sin campo estructurado y sin ninguna nota sospechosa, NO declara…
+     62|     const out = resolveAllergyDeclared({ structuredFlag: false, freeTe…
+       |                 ^
+     63|     expect(out.allergyDeclared).toBe(false);
+     64|     expect(out.declaredVia).toBeNull();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fnb-allergy-guard.spec.ts > canAssureDishIsSafe / assertCanAssureDishIsSafe > sin alergia declarada, siempre es seguro afirmar (nada que confirmar)
+TypeError: (0 , canAssureDishIsSafe) is not a function
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts:70:12
+     68| describe("canAssureDishIsSafe / assertCanAssureDishIsSafe", () => {
+     69|   it("sin alergia declarada, siempre es seguro afirmar (nada que confi…
+     70|     expect(canAssureDishIsSafe({ allergyDeclared: false, kitchenConfir…
+       |            ^
+     71|     expect(() => assertCanAssureDishIsSafe({ allergyDeclared: false, k…
+     72|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fnb-allergy-guard.spec.ts > canAssureDishIsSafe / assertCanAssureDishIsSafe > con alergia declarada y SIN confirmación del cocinero, NUNCA es seguro afirmar
+TypeError: (0 , canAssureDishIsSafe) is not a function
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts:75:12
+     73| 
+     74|   it("con alergia declarada y SIN confirmación del cocinero, NUNCA es …
+     75|     expect(canAssureDishIsSafe({ allergyDeclared: true, kitchenConfirm…
+       |            ^
+     76|     expect(canAssureDishIsSafe({ allergyDeclared: true, kitchenConfirm…
+     77|     expect(() => assertCanAssureDishIsSafe({ allergyDeclared: true, ki…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fnb-allergy-guard.spec.ts > canAssureDishIsSafe / assertCanAssureDishIsSafe > con alergia declarada y CON confirmación del cocinero, es seguro afirmar
+TypeError: (0 , canAssureDishIsSafe) is not a function
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts:84:12
+     82|   it("con alergia declarada y CON confirmación del cocinero, es seguro…
+     83|     const order = { allergyDeclared: true, kitchenConfirmedBy: "staff-…
+     84|     expect(canAssureDishIsSafe(order)).toBe(true);
+       |            ^
+     85|     expect(() => assertCanAssureDishIsSafe(order)).not.toThrow();
+     86|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fnb-allergy-guard.spec.ts > canAssureDishIsSafe / assertCanAssureDishIsSafe > el error lanzado trae el código estable para mapear a un 409 en la ruta
+AssertionError: The instanceof assertion needs a constructor but undefined was given.
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts:93:19
+     91|       expect.unreachable("debía lanzar");
+     92|     } catch (err) {
+     93|       expect(err).toBeInstanceOf(AllergySafetyAssuranceBlockedError);
+       |                   ^
+     94|       expect((err as AllergySafetyAssuranceBlockedError).code).toBe("f…
+     95|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fnb-allergy-guard.spec.ts > describeSafetyAssuranceMessage > sin alergia declarada: mensaje genérico, sin afirmación de seguridad
+TypeError: (0 , describeSafetyAssuranceMessage) is not a function
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts:101:17
+     99| describe("describeSafetyAssuranceMessage", () => {
+    100|   it("sin alergia declarada: mensaje genérico, sin afirmación de segur…
+    101|     const msg = describeSafetyAssuranceMessage({ allergyDeclared: fals…
+       |                 ^
+    102|     expect(msg).not.toMatch(/es seguro/i);
+    103|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fnb-allergy-guard.spec.ts > describeSafetyAssuranceMessage > con alergia declarada y SIN confirmación: el mensaje NUNCA afirma que el platillo es seguro
+TypeError: (0 , describeSafetyAssuranceMessage) is not a function
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts:106:17
+    104| 
+    105|   it("con alergia declarada y SIN confirmación: el mensaje NUNCA afirm…
+    106|     const msg = describeSafetyAssuranceMessage({ allergyDeclared: true…
+       |                 ^
+    107|     expect(msg).not.toMatch(/es seguro/i);
+    108|     expect(msg.toLowerCase()).toContain("cocinero");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fnb-allergy-guard.spec.ts > describeSafetyAssuranceMessage > con alergia declarada y CON confirmación: el mensaje SÍ afirma seguridad, atribuida al cocinero
+TypeError: (0 , describeSafetyAssuranceMessage) is not a function
+ ❯ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts:112:17
+    110| 
+    111|   it("con alergia declarada y CON confirmación: el mensaje SÍ afirma s…
+    112|     const msg = describeSafetyAssuranceMessage({ allergyDeclared: true…
+       |                 ^
+    113|     expect(msg).toMatch(/es seguro/i);
+    114|     expect(msg.toLowerCase()).toContain("confirmado");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectDiscountOutsidePolicy (1/4 — descuentos fuera de política) > no alerta un descuento por debajo del umbral, sin autorización
+TypeError: (0 , detectDiscountOutsidePolicy) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:24:12
+     22| 
+     23|   it("no alerta un descuento por debajo del umbral, sin autorización",…
+     24|     expect(detectDiscountOutsidePolicy({ ...base, discountAmount: -200…
+       |            ^
+     25|   });
+     26| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectDiscountOutsidePolicy (1/4 — descuentos fuera de política) > no alerta un descuento exactamente en el umbral (tolerancia de redondeo)
+TypeError: (0 , detectDiscountOutsidePolicy) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:28:12
+     26| 
+     27|   it("no alerta un descuento exactamente en el umbral (tolerancia de r…
+     28|     expect(detectDiscountOutsidePolicy({ ...base, discountAmount: -500…
+       |            ^
+     29|   });
+     30| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectDiscountOutsidePolicy (1/4 — descuentos fuera de política) > alerta un descuento sobre el umbral SIN autorización y aplicado por un rol no administrativo
+TypeError: (0 , detectDiscountOutsidePolicy) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:32:21
+     30| 
+     31|   it("alerta un descuento sobre el umbral SIN autorización y aplicado …
+     32|     const finding = detectDiscountOutsidePolicy({ ...base, discountAmo…
+       |                     ^
+     33|     expect(finding).not.toBeNull();
+     34|     expect(finding?.pattern).toBe("descuento_fuera_de_politica");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectDiscountOutsidePolicy (1/4 — descuentos fuera de política) > evalúa por MAGNITUD del descuento (charge.amount puede venir negativo)
+TypeError: (0 , detectDiscountOutsidePolicy) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:42:22
+     40| 
+     41|   it("evalúa por MAGNITUD del descuento (charge.amount puede venir neg…
+     42|     const negativo = detectDiscountOutsidePolicy({ ...base, discountAm…
+       |                      ^
+     43|     const positivo = detectDiscountOutsidePolicy({ ...base, discountAm…
+     44|     expect(negativo).not.toBeNull();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectDiscountOutsidePolicy (1/4 — descuentos fuera de política) > NO alerta si quien aplicó el descuento ya tenía rol administrativo (se autoriza a sí mismo)
+TypeError: (0 , detectDiscountOutsidePolicy) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:51:12
+     49| 
+     50|   it("NO alerta si quien aplicó el descuento ya tenía rol administrati…
+     51|     expect(detectDiscountOutsidePolicy({ ...base, discountAmount: -900…
+       |            ^
+     52|   });
+     53| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectDiscountOutsidePolicy (1/4 — descuentos fuera de política) > NO alerta si trae discount_authorized_by de un tercero administrativo
+TypeError: (0 , detectDiscountOutsidePolicy) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:56:7
+     54|   it("NO alerta si trae discount_authorized_by de un tercero administr…
+     55|     expect(
+     56|       detectDiscountOutsidePolicy({ ...base, discountAmount: -900, dis…
+       |       ^
+     57|     ).toBeNull();
+     58|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectDiscountOutsidePolicy (1/4 — descuentos fuera de política) > SÍ alerta cuando ni el actor ni un tercero autorizaron un descuento por encima del umbral
+TypeError: (0 , detectDiscountOutsidePolicy) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:61:21
+     59| 
+     60|   it("SÍ alerta cuando ni el actor ni un tercero autorizaron un descue…
+     61|     const finding = detectDiscountOutsidePolicy({
+       |                     ^
+     62|       ...base,
+     63|       discountAmount: -1200,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectFolioReopenedAfterAudit (2/4 — folio reabierto post-auditoría) > no alerta un cargo creado ANTES del cierre del folio
+TypeError: (0 , detectFolioReopenedAfterAudit) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:73:21
+     71| describe("detectFolioReopenedAfterAudit (2/4 — folio reabierto post-au…
+     72|   it("no alerta un cargo creado ANTES del cierre del folio", () => {
+     73|     const finding = detectFolioReopenedAfterAudit({
+       |                     ^
+     74|       folioId: "folio-1",
+     75|       folioClosedAt: "2026-09-05T10:00:00.000Z",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectFolioReopenedAfterAudit (2/4 — folio reabierto post-auditoría) > no alerta un cargo creado en el MISMO instante del cierre
+TypeError: (0 , detectFolioReopenedAfterAudit) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:83:21
+     81| 
+     82|   it("no alerta un cargo creado en el MISMO instante del cierre", () =…
+     83|     const finding = detectFolioReopenedAfterAudit({
+       |                     ^
+     84|       folioId: "folio-1",
+     85|       folioClosedAt: "2026-09-05T10:00:00.000Z",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectFolioReopenedAfterAudit (2/4 — folio reabierto post-auditoría) > alerta un cargo creado DESPUÉS del cierre del folio (implica reapertura fuera del flujo)
+TypeError: (0 , detectFolioReopenedAfterAudit) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:93:21
+     91| 
+     92|   it("alerta un cargo creado DESPUÉS del cierre del folio (implica rea…
+     93|     const finding = detectFolioReopenedAfterAudit({
+       |                     ^
+     94|       folioId: "folio-1",
+     95|       folioClosedAt: "2026-09-05T10:00:00.000Z",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectUnpostedFnbCharge (3/4 — cargo F&B no posteado) > no alerta cuando la venta POS coincide en monto con un cargo F&B posteado
+TypeError: (0 , detectUnpostedFnbCharge) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:109:21
+    107| describe("detectUnpostedFnbCharge (3/4 — cargo F&B no posteado)", () =…
+    108|   it("no alerta cuando la venta POS coincide en monto con un cargo F&B…
+    109|     const finding = detectUnpostedFnbCharge({
+       |                     ^
+    110|       folioId: "folio-1",
+    111|       posSaleId: "pos-1",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectUnpostedFnbCharge (3/4 — cargo F&B no posteado) > tolera un centavo de diferencia por redondeo
+TypeError: (0 , detectUnpostedFnbCharge) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:119:21
+    117| 
+    118|   it("tolera un centavo de diferencia por redondeo", () => {
+    119|     const finding = detectUnpostedFnbCharge({
+       |                     ^
+    120|       folioId: "folio-1",
+    121|       posSaleId: "pos-1",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectUnpostedFnbCharge (3/4 — cargo F&B no posteado) > alerta cuando NO hay ningún cargo F&B posteado para la venta POS
+TypeError: (0 , detectUnpostedFnbCharge) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:129:21
+    127| 
+    128|   it("alerta cuando NO hay ningún cargo F&B posteado para la venta POS…
+    129|     const finding = detectUnpostedFnbCharge({
+       |                     ^
+    130|       folioId: "folio-1",
+    131|       posSaleId: "pos-2",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectUnpostedFnbCharge (3/4 — cargo F&B no posteado) > alerta cuando el cargo posteado NO coincide en monto con la venta POS
+TypeError: (0 , detectUnpostedFnbCharge) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:143:21
+    141| 
+    142|   it("alerta cuando el cargo posteado NO coincide en monto con la vent…
+    143|     const finding = detectUnpostedFnbCharge({
+       |                     ^
+    144|       folioId: "folio-1",
+    145|       posSaleId: "pos-3",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectRefundToDifferentCard (4/4 — reembolso a tarjeta distinta) > no alerta cuando el reembolso coincide con un pago capturado del mismo folio
+TypeError: (0 , detectRefundToDifferentCard) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:157:21
+    155| describe("detectRefundToDifferentCard (4/4 — reembolso a tarjeta disti…
+    156|   it("no alerta cuando el reembolso coincide con un pago capturado del…
+    157|     const finding = detectRefundToDifferentCard({
+       |                     ^
+    158|       folioId: "folio-1",
+    159|       refundPaymentId: "pago-refund-1",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > detectRefundToDifferentCard (4/4 — reembolso a tarjeta distinta) > alerta cuando el token del reembolso NO coincide con ningún pago capturado del folio
+TypeError: (0 , detectRefundToDifferentCard) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:167:21
+    165| 
+    166|   it("alerta cuando el token del reembolso NO coincide con ningún pago…
+    167|     const finding = detectRefundToDifferentCard({
+       |                     ^
+    168|       folioId: "folio-1",
+    169|       refundPaymentId: "pago-refund-2",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > recipientRolesForPattern (REQ-REC-014: alerta al destinatario correspondiente) > descuento_fuera_de_politica → owner/gm
+TypeError: (0 , recipientRolesForPattern) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:183:12
+    181| describe("recipientRolesForPattern (REQ-REC-014: alerta al destinatari…
+    182|   it("descuento_fuera_de_politica → owner/gm", () => {
+    183|     expect(recipientRolesForPattern("descuento_fuera_de_politica")).to…
+       |            ^
+    184|   });
+    185| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > recipientRolesForPattern (REQ-REC-014: alerta al destinatario correspondiente) > folio_reabierto_post_auditoria → owner/gm/accountant
+TypeError: (0 , recipientRolesForPattern) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:187:12
+    185| 
+    186|   it("folio_reabierto_post_auditoria → owner/gm/accountant", () => {
+    187|     expect(recipientRolesForPattern("folio_reabierto_post_auditoria"))…
+       |            ^
+    188|   });
+    189| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > recipientRolesForPattern (REQ-REC-014: alerta al destinatario correspondiente) > cargo_fnb_no_posteado → owner/gm/fnb
+TypeError: (0 , recipientRolesForPattern) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:191:12
+    189| 
+    190|   it("cargo_fnb_no_posteado → owner/gm/fnb", () => {
+    191|     expect(recipientRolesForPattern("cargo_fnb_no_posteado")).toEqual(…
+       |            ^
+    192|   });
+    193| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/122]⎯
+
+ FAIL  tests/unit/domain-hotel/fraude-deteccion.spec.ts > recipientRolesForPattern (REQ-REC-014: alerta al destinatario correspondiente) > reembolso_tarjeta_distinta → owner/gm/accountant
+TypeError: (0 , recipientRolesForPattern) is not a function
+ ❯ tests/unit/domain-hotel/fraude-deteccion.spec.ts:195:12
+    193| 
+    194|   it("reembolso_tarjeta_distinta → owner/gm/accountant", () => {
+    195|     expect(recipientRolesForPattern("reembolso_tarjeta_distinta")).toE…
+       |            ^
+    196|   });
+    197| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > PARITY_MODES > expone exactamente los 2 modos del requisito: bloquea y alerta
+AssertionError: expected undefined to deeply equal [ 'bloquea', 'alerta' ]
+
+[32m- Expected:[39m 
+[
+  "bloquea",
+  "alerta",
+]
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:27:26
+     25| describe("PARITY_MODES", () => {
+     26|   it("expone exactamente los 2 modos del requisito: bloquea y alerta",…
+     27|     expect(PARITY_MODES).toEqual(["bloquea", "alerta"]);
+       |                          ^
+     28|   });
+     29| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > computeParityFloor > con tolerancia 0 (paridad estricta) el piso es igual a la referencia
+TypeError: (0 , computeParityFloor) is not a function
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:33:12
+     31| describe("computeParityFloor", () => {
+     32|   it("con tolerancia 0 (paridad estricta) el piso es igual a la refere…
+     33|     expect(computeParityFloor(100, 0)).toBe(100);
+       |            ^
+     34|   });
+     35| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > computeParityFloor > con tolerancia > 0 el piso es proporcionalmente menor a la referencia
+TypeError: (0 , computeParityFloor) is not a function
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:37:12
+     35| 
+     36|   it("con tolerancia > 0 el piso es proporcionalmente menor a la refer…
+     37|     expect(computeParityFloor(100, 5)).toBeCloseTo(95, 9);
+       |            ^
+     38|     expect(computeParityFloor(200, 10)).toBeCloseTo(180, 9);
+     39|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > assertValidParityChannelConfig > acepta un canal válido sin lanzar
+AssertionError: expected [Function] to not throw an error but 'TypeError: (0 , __vite_ssr_import_1__…' was thrown
+
+[32m- Expected:[39m 
+undefined
+
+[31m+ Received:[39m 
+"TypeError: (0 , __vite_ssr_import_1__.assertValidParityChannelConfig) is not a function"
+
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:44:126
+     42| describe("assertValidParityChannelConfig", () => {
+     43|   it("acepta un canal válido sin lanzar", () => {
+     44|     expect(() => assertValidParityChannelConfig({ channel: "booking.co…
+       |                                                                                                                              ^
+     45|   });
+     46| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > assertValidParityChannelConfig > rechaza nombre de canal vacío
+AssertionError: expected [Function] to throw error matching /canal_faltante/ but got '(0 , assertVali…'
+
+[32m- Expected:[39m 
+/canal_faltante/
+
+[31m+ Received:[39m 
+"(0 , __vite_ssr_import_1__.assertValidParityChannelConfig) is not a function"
+
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:49:114
+     47|   it("rechaza nombre de canal vacío", () => {
+     48|     expect(() => assertValidParityChannelConfig({ channel: "", referen…
+     49|     expect(() => assertValidParityChannelConfig({ channel: "   ", refe…
+       |                                                                                                                  ^
+     50|   });
+     51| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > assertValidParityChannelConfig > rechaza tarifa de referencia no positiva o no finita
+AssertionError: expected [Function] to throw error matching /tarifa_referencia_invalida/ but got '(0 , assertVali…'
+
+[32m- Expected:[39m 
+/tarifa_referencia_invalida/
+
+[31m+ Received:[39m 
+"(0 , __vite_ssr_import_1__.assertValidParityChannelConfig) is not a function"
+
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:53:116
+     51| 
+     52|   it("rechaza tarifa de referencia no positiva o no finita", () => {
+     53|     expect(() => assertValidParityChannelConfig({ channel: "expedia", …
+       |                                                                                                                    ^
+     54|       /tarifa_referencia_invalida/,
+     55|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[41/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > assertValidParityChannelConfig > rechaza tolerancia fuera de [0, 100)
+AssertionError: expected [Function] to throw error matching /tolerancia_invalida/ but got '(0 , assertVali…'
+
+[32m- Expected:[39m 
+/tolerancia_invalida/
+
+[31m+ Received:[39m 
+"(0 , __vite_ssr_import_1__.assertValidParityChannelConfig) is not a function"
+
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:65:119
+     63| 
+     64|   it("rechaza tolerancia fuera de [0, 100)", () => {
+     65|     expect(() => assertValidParityChannelConfig({ channel: "expedia", …
+       |                                                                                                                       ^
+     66|       /tolerancia_invalida/,
+     67|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[42/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > assertValidParityChannelConfig > el límite 0 (paridad estricta) sí es válido
+AssertionError: expected [Function] to not throw an error but 'TypeError: (0 , __vite_ssr_import_1__…' was thrown
+
+[32m- Expected:[39m 
+undefined
+
+[31m+ Received:[39m 
+"TypeError: (0 , __vite_ssr_import_1__.assertValidParityChannelConfig) is not a function"
+
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:77:122
+     75| 
+     76|   it("el límite 0 (paridad estricta) sí es válido", () => {
+     77|     expect(() => assertValidParityChannelConfig({ channel: "expedia", …
+       |                                                                                                                          ^
+     78|   });
+     79| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > assertValidParityGuardConfig > acepta configuración válida con varios canales distintos
+AssertionError: expected [Function] to not throw an error but 'TypeError: (0 , __vite_ssr_import_1__…' was thrown
+
+[32m- Expected:[39m 
+undefined
+
+[31m+ Received:[39m 
+"TypeError: (0 , __vite_ssr_import_1__.assertValidParityGuardConfig) is not a function"
+
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:92:11
+     90|         }),
+     91|       ),
+     92|     ).not.toThrow();
+       |           ^
+     93|   });
+     94| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[44/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > assertValidParityGuardConfig > acepta channels vacío (hotel sin cláusula de paridad vigente todavía)
+AssertionError: expected [Function] to not throw an error but 'TypeError: (0 , __vite_ssr_import_1__…' was thrown
+
+[32m- Expected:[39m 
+undefined
+
+[31m+ Received:[39m 
+"TypeError: (0 , __vite_ssr_import_1__.assertValidParityGuardConfig) is not a function"
+
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:96:82
+     94| 
+     95|   it("acepta channels vacío (hotel sin cláusula de paridad vigente tod…
+     96|     expect(() => assertValidParityGuardConfig(baseConfig({ channels: […
+       |                                                                                  ^
+     97|   });
+     98| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[45/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > assertValidParityGuardConfig > rechaza modo inválido
+AssertionError: expected [Function] to throw error matching /modo_invalido/ but got '(0 , assertVali…'
+
+[32m- Expected:[39m 
+/modo_invalido/
+
+[31m+ Received:[39m 
+"(0 , __vite_ssr_import_1__.assertValidParityGuardConfig) is not a function"
+
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:101:79
+     99|   it("rechaza modo inválido", () => {
+    100|     // @ts-expect-error -- modo inválido a propósito para probar la va…
+    101|     expect(() => assertValidParityGuardConfig(baseConfig({ mode: "avis…
+       |                                                                               ^
+    102|   });
+    103| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[46/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > assertValidParityGuardConfig > rechaza canal duplicado (mismo canal, distinto o igual criterio) para el mismo hotel
+AssertionError: expected [Function] to throw error matching /canal_duplicado/ but got '(0 , assertVali…'
+
+[32m- Expected:[39m 
+/canal_duplicado/
+
+[31m+ Received:[39m 
+"(0 , __vite_ssr_import_1__.assertValidParityGuardConfig) is not a function"
+
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:114:7
+    112|         }),
+    113|       ),
+    114|     ).toThrow(/canal_duplicado/);
+       |       ^
+    115|   });
+    116| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[47/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > assertValidParityGuardConfig > propaga la validación de cada canal individual
+AssertionError: expected [Function] to throw error matching /tarifa_referencia_invalida/ but got '(0 , assertVali…'
+
+[32m- Expected:[39m 
+/tarifa_referencia_invalida/
+
+[31m+ Received:[39m 
+"(0 , __vite_ssr_import_1__.assertValidParityGuardConfig) is not a function"
+
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:120:7
+    118|     expect(() =>
+    119|       assertValidParityGuardConfig(baseConfig({ channels: [{ channel: …
+    120|     ).toThrow(/tarifa_referencia_invalida/);
+       |       ^
+    121|   });
+    122| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[48/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > evaluateParityGuard — validación de entrada > lanza ParityGuardError si la tarifa propuesta no es un número positivo
+AssertionError: expected [Function] to throw error matching /tarifa_propuesta_invalida/ but got '(0 , evaluatePa…'
+
+[32m- Expected:[39m 
+/tarifa_propuesta_invalida/
+
+[31m+ Received:[39m 
+"(0 , __vite_ssr_import_1__.evaluateParityGuard) is not a function"
+
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:130:56
+    128| 
+    129|   it("lanza ParityGuardError si la tarifa propuesta no es un número po…
+    130|     expect(() => evaluateParityGuard(baseConfig(), 0)).toThrow(/tarifa…
+       |                                                        ^
+    131|     expect(() => evaluateParityGuard(baseConfig(), -50)).toThrow(/tari…
+    132|     expect(() => evaluateParityGuard(baseConfig(), Number.NaN)).toThro…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[49/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > evaluateParityGuard — sin cláusula de paridad configurada > channels vacío siempre permite la propuesta, sin violaciones
+TypeError: (0 , evaluateParityGuard) is not a function
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:138:20
+    136| describe("evaluateParityGuard — sin cláusula de paridad configurada", …
+    137|   it("channels vacío siempre permite la propuesta, sin violaciones", (…
+    138|     const result = evaluateParityGuard(baseConfig({ channels: [] }), 1…
+       |                    ^
+    139|     expect(result.allowed).toBe(true);
+    140|     expect(result.violations).toEqual([]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[50/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > evaluateParityGuard — modo 'bloquea' > una tarifa propuesta igual a la referencia (paridad estricta) no viola nada
+TypeError: (0 , evaluateParityGuard) is not a function
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:147:20
+    145| describe("evaluateParityGuard — modo 'bloquea'", () => {
+    146|   it("una tarifa propuesta igual a la referencia (paridad estricta) no…
+    147|     const result = evaluateParityGuard(baseConfig({ mode: "bloquea" })…
+       |                    ^
+    148|     expect(result.allowed).toBe(true);
+    149|     expect(result.violations).toEqual([]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[51/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > evaluateParityGuard — modo 'bloquea' > una tarifa propuesta por ENCIMA de la referencia nunca viola la paridad
+TypeError: (0 , evaluateParityGuard) is not a function
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:153:20
+    151| 
+    152|   it("una tarifa propuesta por ENCIMA de la referencia nunca viola la …
+    153|     const result = evaluateParityGuard(baseConfig({ mode: "bloquea" })…
+       |                    ^
+    154|     expect(result.allowed).toBe(true);
+    155|     expect(result.violations).toEqual([]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[52/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > evaluateParityGuard — modo 'bloquea' > una tarifa propuesta por debajo del piso pactado (paridad estricta) BLOQUEA la propuesta
+TypeError: (0 , evaluateParityGuard) is not a function
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:159:20
+    157| 
+    158|   it("una tarifa propuesta por debajo del piso pactado (paridad estric…
+    159|     const result = evaluateParityGuard(baseConfig({ mode: "bloquea" })…
+       |                    ^
+    160|     expect(result.allowed).toBe(false);
+    161|     expect(result.violations).toHaveLength(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[53/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > evaluateParityGuard — modo 'bloquea' > respeta la tolerancia pactada: justo en el piso (referencia - tolerancia) NO es violación
+TypeError: (0 , evaluateParityGuard) is not a function
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:176:20
+    174|   it("respeta la tolerancia pactada: justo en el piso (referencia - to…
+    175|     const config = baseConfig({ channels: [{ channel: "expedia", refer…
+    176|     const result = evaluateParityGuard(config, 95); // piso = 100 * 0.…
+       |                    ^
+    177|     expect(result.allowed).toBe(true);
+    178|     expect(result.violations).toEqual([]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[54/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > evaluateParityGuard — modo 'bloquea' > 1 centavo por debajo del piso pactado SÍ es violación (el margen es exactamente el pactado, no más)
+TypeError: (0 , evaluateParityGuard) is not a function
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:183:20
+    181|   it("1 centavo por debajo del piso pactado SÍ es violación (el margen…
+    182|     const config = baseConfig({ channels: [{ channel: "expedia", refer…
+    183|     const result = evaluateParityGuard(config, 94.99);
+       |                    ^
+    184|     expect(result.allowed).toBe(false);
+    185|     expect(result.violations).toHaveLength(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[55/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > evaluateParityGuard — modo 'bloquea' > tolera error de punto flotante en la frontera exacta del piso
+TypeError: (0 , evaluateParityGuard) is not a function
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:190:20
+    188|   it("tolera error de punto flotante en la frontera exacta del piso", …
+    189|     const config = baseConfig({ channels: [{ channel: "expedia", refer…
+    190|     const result = evaluateParityGuard(config, 95 - 1e-12); // "prácti…
+       |                    ^
+    191|     expect(result.allowed).toBe(true);
+    192|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[56/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > evaluateParityGuard — modo 'bloquea' > la paridad debe cumplirse INDIVIDUALMENTE con cada canal — romper con uno solo ya bloquea
+TypeError: (0 , evaluateParityGuard) is not a function
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:203:20
+    201|     });
+    202|     // 100 respeta a booking.com (piso 100) pero rompe con expedia (pi…
+    203|     const result = evaluateParityGuard(config, 100);
+       |                    ^
+    204|     expect(result.allowed).toBe(false);
+    205|     expect(result.violations).toHaveLength(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[57/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > evaluateParityGuard — modo 'bloquea' > puede romper la paridad con varios canales a la vez — reporta una violación por canal
+TypeError: (0 , evaluateParityGuard) is not a function
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:217:20
+    215|       ],
+    216|     });
+    217|     const result = evaluateParityGuard(config, 50);
+       |                    ^
+    218|     expect(result.allowed).toBe(false);
+    219|     expect(result.violations).toHaveLength(2);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[58/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > evaluateParityGuard — modo 'alerta' > una violación de paridad NO bloquea en modo alerta, pero se reporta igual
+TypeError: (0 , evaluateParityGuard) is not a function
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:228:20
+    226|   it("una violación de paridad NO bloquea en modo alerta, pero se repo…
+    227|     const config = baseConfig({ mode: "alerta" });
+    228|     const result = evaluateParityGuard(config, 90);
+       |                    ^
+    229|     expect(result.allowed).toBe(true); // nunca bloquea en este modo
+    230|     expect(result.violations).toHaveLength(1); // pero la violación re…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[59/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > evaluateParityGuard — modo 'alerta' > sin violaciones, modo alerta también permite y no reporta nada
+TypeError: (0 , evaluateParityGuard) is not a function
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:235:20
+    233| 
+    234|   it("sin violaciones, modo alerta también permite y no reporta nada",…
+    235|     const result = evaluateParityGuard(baseConfig({ mode: "alerta" }),…
+       |                    ^
+    236|     expect(result.allowed).toBe(true);
+    237|     expect(result.violations).toEqual([]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[60/122]⎯
+
+ FAIL  tests/unit/domain-hotel/parity-guard.spec.ts > evaluateParityGuard — el resultado siempre refleja hotelId/mode/proposedRate de entrada > ecoa hotelId, mode y proposedRate en el resultado para trazabilidad
+TypeError: (0 , evaluateParityGuard) is not a function
+ ❯ tests/unit/domain-hotel/parity-guard.spec.ts:245:20
+    243|   it("ecoa hotelId, mode y proposedRate en el resultado para trazabili…
+    244|     const config = baseConfig({ hotelId: "hotel-42", mode: "alerta" });
+    245|     const result = evaluateParityGuard(config, 77);
+       |                    ^
+    246|     expect(result.hotelId).toBe("hotel-42");
+    247|     expect(result.mode).toBe("alerta");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[61/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastExponentialSmoothing · Holt (sin estacionalidad) > con alpha=beta=1 reproduce EXACTAMENTE la continuación de una tendencia lineal (kWh)
+TypeError: (0 , forecastExponentialSmoothing) is not a function
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:55:20
+     53|     // (residuales=0), así que el resultado es matemáticamente predeci…
+     54|     // la implementación bajo prueba.
+     55|     const result = forecastExponentialSmoothing(series([10, 12, 14, 16…
+       |                    ^
+     56|       horizon: 3,
+     57|       alpha: 1,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[62/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastExponentialSmoothing · Holt (sin estacionalidad) > es determinista: misma entrada siempre produce la misma salida
+TypeError: (0 , forecastExponentialSmoothing) is not a function
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:74:15
+     72|   it("es determinista: misma entrada siempre produce la misma salida",…
+     73|     const input = series([5, 7, 6, 9, 11, 10, 13]);
+     74|     const a = forecastExponentialSmoothing(input, { horizon: 4 });
+       |               ^
+     75|     const b = forecastExponentialSmoothing(input, { horizon: 4 });
+     76|     expect(a).toEqual(b);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[63/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastExponentialSmoothing · Holt (sin estacionalidad) > la banda de incertidumbre crece con el horizonte (más incierto a más plazo)
+TypeError: (0 , forecastExponentialSmoothing) is not a function
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:81:20
+     79|   it("la banda de incertidumbre crece con el horizonte (más incierto a…
+     80|     // Serie con algo de variación para tener residuales != 0.
+     81|     const result = forecastExponentialSmoothing(series([10, 11, 9, 12,…
+       |                    ^
+     82|     for (let i = 1; i < result.points.length; i++) {
+     83|       const prevWidth = result.points[i - 1]!.upperBound - result.poin…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[64/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastExponentialSmoothing · Holt (sin estacionalidad) > rechaza horizonte no positivo o no entero
+AssertionError: expected error to be instance of RangeError
+
+[32m- Expected:[39m 
+[Function RangeError]
+
+[31m+ Received:[39m 
+TypeError {
+  "message": "(0 , __vite_ssr_import_1__.forecastExponentialSmoothing) is not a function",
+}
+
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:90:83
+     88| 
+     89|   it("rechaza horizonte no positivo o no entero", () => {
+     90|     expect(() => forecastExponentialSmoothing(series([1, 2, 3]), { hor…
+       |                                                                                   ^
+     91|     expect(() => forecastExponentialSmoothing(series([1, 2, 3]), { hor…
+     92|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[65/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastExponentialSmoothing · Holt (sin estacionalidad) > rechaza alpha/beta/gamma fuera de (0,1]
+AssertionError: expected error to be instance of RangeError
+
+[32m- Expected:[39m 
+[Function RangeError]
+
+[31m+ Received:[39m 
+TypeError {
+  "message": "(0 , __vite_ssr_import_1__.forecastExponentialSmoothing) is not a function",
+}
+
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:95:93
+     93| 
+     94|   it("rechaza alpha/beta/gamma fuera de (0,1]", () => {
+     95|     expect(() => forecastExponentialSmoothing(series([1, 2, 3]), { hor…
+       |                                                                                             ^
+     96|     expect(() => forecastExponentialSmoothing(series([1, 2, 3]), { hor…
+     97|     expect(() => forecastExponentialSmoothing(series([1, 2, 3]), { hor…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[66/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastExponentialSmoothing · Holt (sin estacionalidad) > rechaza historia insuficiente (menos de 2 puntos sin estacionalidad)
+AssertionError: expected error to be instance of RangeError
+
+[32m- Expected:[39m 
+[Function RangeError]
+
+[31m+ Received:[39m 
+TypeError {
+  "message": "(0 , __vite_ssr_import_1__.forecastExponentialSmoothing) is not a function",
+}
+
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:101:77
+     99| 
+    100|   it("rechaza historia insuficiente (menos de 2 puntos sin estacionali…
+    101|     expect(() => forecastExponentialSmoothing(series([5]), { horizon: …
+       |                                                                             ^
+    102|   });
+    103| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[67/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastExponentialSmoothing · Holt (sin estacionalidad) > rechaza una serie con valores no finitos
+AssertionError: expected error to be instance of RangeError
+
+[32m- Expected:[39m 
+[Function RangeError]
+
+[31m+ Received:[39m 
+TypeError {
+  "message": "(0 , __vite_ssr_import_1__.forecastExponentialSmoothing) is not a function",
+}
+
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:106:69
+    104|   it("rechaza una serie con valores no finitos", () => {
+    105|     const bad: TimeSeriesPoint[] = [{ date: "2026-01-01", value: NaN }…
+    106|     expect(() => forecastExponentialSmoothing(bad, { horizon: 1 })).to…
+       |                                                                     ^
+    107|   });
+    108| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[68/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastExponentialSmoothing · Holt (sin estacionalidad) > degrada a Holt simple cuando se pide estacionalidad pero no hay historia suficiente
+TypeError: (0 , forecastExponentialSmoothing) is not a function
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:110:20
+    108| 
+    109|   it("degrada a Holt simple cuando se pide estacionalidad pero no hay …
+    110|     const result = forecastExponentialSmoothing(series([1, 2, 3]), { h…
+       |                    ^
+    111|     expect(result.method).toBe("holt_doble_exponencial");
+    112|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[69/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastExponentialSmoothing · Holt-Winters aditivo (con estacionalidad, ocupación/demanda) > con una serie estacionaria y sin ruido, reproduce EXACTAMENTE el ciclo (2 ciclos de 7 días bastan)
+TypeError: (0 , forecastExponentialSmoothing) is not a function
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:124:20
+    122|     const weekPattern = [1, 2, 3, 4, 5, 6, 7];
+    123|     const values = [...weekPattern, ...weekPattern];
+    124|     const result = forecastExponentialSmoothing(series(values), { hori…
+       |                    ^
+    125| 
+    126|     expect(result.method).toBe("holt_winters_aditivo");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[70/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastExponentialSmoothing · Holt-Winters aditivo (con estacionalidad, ocupación/demanda) > captura una tendencia ascendente además del patrón estacional (kWh con crecimiento + fin de semana alto)
+TypeError: (0 , forecastExponentialSmoothing) is not a function
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:141:20
+    139|     const offsets = [0, 0, 0, 0, 0, 10, 15];
+    140|     const values = Array.from({ length: 21 }, (_, t) => 100 + t + offs…
+    141|     const result = forecastExponentialSmoothing(series(values), { hori…
+       |                    ^
+    142| 
+    143|     expect(result.method).toBe("holt_winters_aditivo");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[71/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastExponentialSmoothing · Holt-Winters aditivo (con estacionalidad, ocupación/demanda) > es determinista
+TypeError: (0 , forecastExponentialSmoothing) is not a function
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:159:15
+    157|   it("es determinista", () => {
+    158|     const values = Array.from({ length: 14 }, (_, t) => 50 + (t % 7) *…
+    159|     const a = forecastExponentialSmoothing(series(values), { horizon: …
+       |               ^
+    160|     const b = forecastExponentialSmoothing(series(values), { horizon: …
+    161|     expect(a).toEqual(b);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[72/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > usa el punto exacto de la curva cuando existe
+TypeError: (0 , forecastPickup) is not a function
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:174:20
+    172| 
+    173|   it("usa el punto exacto de la curva cuando existe", () => {
+    174|     const result = forecastPickup({ onTheBooksCount: 40, daysBeforeArr…
+       |                    ^
+    175|     expect(result.method).toBe("pickup_promedio_historico");
+    176|     expect(result.expectedRemainingPickup).toBe(12);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[73/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > interpola linealmente entre los dos puntos vecinos cuando no hay coincidencia exacta
+TypeError: (0 , forecastPickup) is not a function
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:183:20
+    181|   it("interpola linealmente entre los dos puntos vecinos cuando no hay…
+    182|     // A medio camino entre 7 (pickup 5) y 14 (pickup 12) -> día 10.5 …
+    183|     const result = forecastPickup({ onTheBooksCount: 30, daysBeforeArr…
+       |                    ^
+    184|     expect(result.interpolated).toBe(true);
+    185|     // ratio = (10-7)/(14-7) = 3/7 ; 5 + 3/7*(12-5) = 5 + 3 = 8
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[74/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > nunca extrapola más allá de la historia: usa el extremo más cercano fuera de rango
+TypeError: (0 , forecastPickup) is not a function
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:191:20
+    189| 
+    190|   it("nunca extrapola más allá de la historia: usa el extremo más cerc…
+    191|     const beyond = forecastPickup({ onTheBooksCount: 10, daysBeforeArr…
+       |                    ^
+    192|     expect(beyond.expectedRemainingPickup).toBe(20); // extremo superi…
+    193|     expect(beyond.interpolated).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[75/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > acota el pronóstico final al máximo histórico observado cuando se provee
+TypeError: (0 , forecastPickup) is not a function
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:197:20
+    195| 
+    196|   it("acota el pronóstico final al máximo histórico observado cuando s…
+    197|     const result = forecastPickup({
+       |                    ^
+    198|       onTheBooksCount: 90,
+    199|       daysBeforeArrival: 30,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[76/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > es determinista
+TypeError: (0 , forecastPickup) is not a function
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:210:12
+    208|   it("es determinista", () => {
+    209|     const input = { onTheBooksCount: 25, daysBeforeArrival: 5, histori…
+    210|     expect(forecastPickup(input)).toEqual(forecastPickup(input));
+       |            ^
+    211|   });
+    212| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[77/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > rechaza curvas con daysBeforeArrival duplicado
+AssertionError: expected error to be instance of RangeError
+
+[32m- Expected:[39m 
+[Function RangeError]
+
+[31m+ Received:[39m 
+TypeError {
+  "message": "(0 , __vite_ssr_import_1__.forecastPickup) is not a function",
+}
+
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:223:7
+    221|         ],
+    222|       }),
+    223|     ).toThrow(RangeError);
+       |       ^
+    224|   });
+    225| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[78/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > rechaza onTheBooksCount o daysBeforeArrival inválidos
+AssertionError: expected error to be instance of RangeError
+
+[32m- Expected:[39m 
+[Function RangeError]
+
+[31m+ Received:[39m 
+TypeError {
+  "message": "(0 , __vite_ssr_import_1__.forecastPickup) is not a function",
+}
+
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:227:111
+    225| 
+    226|   it("rechaza onTheBooksCount o daysBeforeArrival inválidos", () => {
+    227|     expect(() => forecastPickup({ onTheBooksCount: -1, daysBeforeArriv…
+       |                                                                                                               ^
+    228|       RangeError,
+    229|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[79/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > forecastPickup · pronóstico de pick-up hotelero (curva histórica, no un LLM) > rechaza una curva histórica vacía
+AssertionError: expected error to be instance of RangeError
+
+[32m- Expected:[39m 
+[Function RangeError]
+
+[31m+ Received:[39m 
+TypeError {
+  "message": "(0 , __vite_ssr_import_1__.forecastPickup) is not a function",
+}
+
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:236:107
+    234| 
+    235|   it("rechaza una curva histórica vacía", () => {
+    236|     expect(() => forecastPickup({ onTheBooksCount: 5, daysBeforeArriva…
+       |                                                                                                           ^
+    237|       RangeError,
+    238|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[80/122]⎯
+
+ FAIL  tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts > redactar_explicacion_pronostico · el LLM solo redacta, nunca calcula el número > integración con el modelo real de series de tiempo: los `puntos` que la tool reporta son EXACTAMENTE los que produjo `forecastExponentialSmoothing`, no algo re-derivado del LLM
+TypeError: (0 , forecastExponentialSmoothing) is not a function
+ ❯ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts:397:22
+    395| 
+    396|   it("integración con el modelo real de series de tiempo: los `puntos`…
+    397|     const forecast = forecastExponentialSmoothing(series([10, 12, 14, …
+       |                      ^
+    398|       horizon: 3,
+    399|       alpha: 1,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[81/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > REVENUE_GATE_STATES / constantes (REQ-REV-003) > expone exactamente los 3 gates en orden
+AssertionError: expected undefined to deeply equal [ 'shadow', 'propone', 'autopilot' ]
+
+[32m- Expected:[39m 
+[
+  "shadow",
+  "propone",
+  "autopilot",
+]
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:46:33
+     44| describe("REVENUE_GATE_STATES / constantes (REQ-REV-003)", () => {
+     45|   it("expone exactamente los 3 gates en orden", () => {
+     46|     expect(REVENUE_GATE_STATES).toEqual(["shadow", "propone", "autopil…
+       |                                 ^
+     47|   });
+     48| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[82/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > REVENUE_GATE_STATES / constantes (REQ-REV-003) > el mínimo de shadow es 90 días
+AssertionError: expected undefined to be 90 // Object.is equality
+
+[32m- Expected:[39m 
+90
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:50:29
+     48| 
+     49|   it("el mínimo de shadow es 90 días", () => {
+     50|     expect(MIN_SHADOW_DAYS).toBe(90);
+       |                             ^
+     51|   });
+     52| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[83/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > REVENUE_GATE_STATES / constantes (REQ-REV-003) > la banda de variación en propone es ±10-15%
+AssertionError: expected undefined to be 10 // Object.is equality
+
+[32m- Expected:[39m 
+10
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:54:39
+     52| 
+     53|   it("la banda de variación en propone es ±10-15%", () => {
+     54|     expect(PROPONE_VARIATION_PCT_MIN).toBe(10);
+       |                                       ^
+     55|     expect(PROPONE_VARIATION_PCT_MAX).toBe(15);
+     56|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[84/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > daysElapsed / hasMetMinimumShadowPeriod > cuenta días completos, sin redondear hacia arriba
+TypeError: (0 , daysElapsed) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:62:12
+     60|   it("cuenta días completos, sin redondear hacia arriba", () => {
+     61|     const now = new Date("2026-09-08T00:00:00Z");
+     62|     expect(daysElapsed(new Date("2026-09-07T12:00:00Z"), now)).toBe(0)…
+       |            ^
+     63|     expect(daysElapsed(new Date("2026-09-07T00:00:00Z"), now)).toBe(1);
+     64|     expect(daysElapsed(daysAgo(90, now), now)).toBe(90);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[85/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > daysElapsed / hasMetMinimumShadowPeriod > 89 días NO cumple el mínimo; 90 sí
+TypeError: (0 , hasMetMinimumShadowPeriod) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:70:12
+     68|   it("89 días NO cumple el mínimo; 90 sí", () => {
+     69|     const now = new Date("2026-09-08T00:00:00Z");
+     70|     expect(hasMetMinimumShadowPeriod(daysAgo(89, now), now)).toBe(fals…
+       |            ^
+     71|     expect(hasMetMinimumShadowPeriod(daysAgo(90, now), now)).toBe(true…
+     72|     expect(hasMetMinimumShadowPeriod(daysAgo(91, now), now)).toBe(true…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[86/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > isPromotion / isDemotion > solo shadow->propone y propone->autopilot son promociones (un escalón)
+TypeError: (0 , isPromotion) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:78:12
+     76| describe("isPromotion / isDemotion", () => {
+     77|   it("solo shadow->propone y propone->autopilot son promociones (un es…
+     78|     expect(isPromotion("shadow", "propone")).toBe(true);
+       |            ^
+     79|     expect(isPromotion("propone", "autopilot")).toBe(true);
+     80|     expect(isPromotion("shadow", "autopilot")).toBe(false); // saltar …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[87/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > isPromotion / isDemotion > cualquier retroceso es una democión
+TypeError: (0 , isDemotion) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:86:12
+     84| 
+     85|   it("cualquier retroceso es una democión", () => {
+     86|     expect(isDemotion("autopilot", "shadow")).toBe(true);
+       |            ^
+     87|     expect(isDemotion("autopilot", "propone")).toBe(true);
+     88|     expect(isDemotion("propone", "shadow")).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[88/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateGateTransition — shadow -> propone > bloquea con menos de 90 días en shadow, con el motivo exacto
+TypeError: (0 , evaluateGateTransition) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:98:20
+     96| 
+     97|   it("bloquea con menos de 90 días en shadow, con el motivo exacto", (…
+     98|     const result = evaluateGateTransition("shadow", "propone", { shado…
+       |                    ^
+     99|     expect(result.allowed).toBe(false);
+    100|     expect(result.reasons[0]).toContain("shadow_insuficiente");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[89/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateGateTransition — shadow -> propone > permite la transición con exactamente 90 días
+TypeError: (0 , evaluateGateTransition) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:105:20
+    103| 
+    104|   it("permite la transición con exactamente 90 días", () => {
+    105|     const result = evaluateGateTransition("shadow", "propone", { shado…
+       |                    ^
+    106|     expect(result).toEqual({ allowed: true, reasons: [] });
+    107|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[90/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateGateTransition — shadow -> propone > bloquea si no se aporta shadowStartedAt
+TypeError: (0 , evaluateGateTransition) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:110:20
+    108| 
+    109|   it("bloquea si no se aporta shadowStartedAt", () => {
+    110|     const result = evaluateGateTransition("shadow", "propone", { now }…
+       |                    ^
+    111|     expect(result.allowed).toBe(false);
+    112|     expect(result.reasons[0]).toContain("shadow_started_at_faltante");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[91/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateGateTransition — propone -> autopilot > bloquea sin backtest
+TypeError: (0 , evaluateGateTransition) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:121:20
+    119| 
+    120|   it("bloquea sin backtest", () => {
+    121|     const result = evaluateGateTransition("propone", "autopilot", {
+       |                    ^
+    122|       now,
+    123|       proponeStartedAt,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[92/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateGateTransition — propone -> autopilot > bloquea con un backtest que no supera el baseline
+TypeError: (0 , evaluateWalkForwardBacktest) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:131:29
+    129| 
+    130|   it("bloquea con un backtest que no supera el baseline", () => {
+    131|     const failingBacktest = evaluateWalkForwardBacktest({
+       |                             ^
+    132|       counterfactualMethod: "misma_tarifa_periodo_anterior",
+    133|       evaluations: [{ window: { trainStart: "a", trainEnd: "b", testSt…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[93/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateGateTransition — propone -> autopilot > bloquea un backtest que pasa pero es anterior a que el hotel entrara en propone (obsoleto)
+TypeError: (0 , evaluateWalkForwardBacktest) is not a function
+ ❯ passingBacktest tests/unit/domain-hotel/revenue-engine-gate.spec.ts:33:10
+     31| 
+     32| function passingBacktest(overrides: Partial<WalkForwardBacktestResult>…
+     33|   return evaluateWalkForwardBacktest({
+       |          ^
+     34|     counterfactualMethod: "misma_tarifa_periodo_anterior",
+     35|     evaluations: [
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:150:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[94/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateGateTransition — propone -> autopilot > bloquea sin aprobación del fundador aunque el backtest pase (REQ-GOB-012)
+TypeError: (0 , evaluateWalkForwardBacktest) is not a function
+ ❯ passingBacktest tests/unit/domain-hotel/revenue-engine-gate.spec.ts:33:10
+     31| 
+     32| function passingBacktest(overrides: Partial<WalkForwardBacktestResult>…
+     33|   return evaluateWalkForwardBacktest({
+       |          ^
+     34|     counterfactualMethod: "misma_tarifa_periodo_anterior",
+     35|     evaluations: [
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:162:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[95/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateGateTransition — propone -> autopilot > permite la transición con backtest vigente que pasa + aprobación del fundador
+TypeError: (0 , evaluateWalkForwardBacktest) is not a function
+ ❯ passingBacktest tests/unit/domain-hotel/revenue-engine-gate.spec.ts:33:10
+     31| 
+     32| function passingBacktest(overrides: Partial<WalkForwardBacktestResult>…
+     33|   return evaluateWalkForwardBacktest({
+       |          ^
+     34|     counterfactualMethod: "misma_tarifa_periodo_anterior",
+     35|     evaluations: [
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:174:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[96/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateGateTransition — propone -> autopilot > acumula TODAS las razones de bloqueo a la vez (backtest y aprobación faltantes simultáneamente)
+TypeError: (0 , evaluateGateTransition) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:182:20
+    180| 
+    181|   it("acumula TODAS las razones de bloqueo a la vez (backtest y aproba…
+    182|     const result = evaluateGateTransition("propone", "autopilot", { no…
+       |                    ^
+    183|     expect(result.allowed).toBe(false);
+    184|     expect(result.reasons).toHaveLength(2);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[97/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateGateTransition — reglas de la máquina de estados > no-op (from === to) siempre se permite
+TypeError: (0 , evaluateGateTransition) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:190:12
+    188| describe("evaluateGateTransition — reglas de la máquina de estados", (…
+    189|   it("no-op (from === to) siempre se permite", () => {
+    190|     expect(evaluateGateTransition("shadow", "shadow")).toEqual({ allow…
+       |            ^
+    191|     expect(evaluateGateTransition("autopilot", "autopilot")).toEqual({…
+    192|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[98/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateGateTransition — reglas de la máquina de estados > nunca permite saltar directo de shadow a autopilot
+TypeError: (0 , evaluateWalkForwardBacktest) is not a function
+ ❯ passingBacktest tests/unit/domain-hotel/revenue-engine-gate.spec.ts:33:10
+     31| 
+     32| function passingBacktest(overrides: Partial<WalkForwardBacktestResult>…
+     33|   return evaluateWalkForwardBacktest({
+       |          ^
+     34|     counterfactualMethod: "misma_tarifa_periodo_anterior",
+     35|     evaluations: [
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:197:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[99/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateGateTransition — reglas de la máquina de estados > cualquier democión se permite sin condiciones (freno de emergencia)
+TypeError: (0 , evaluateGateTransition) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:205:12
+    203| 
+    204|   it("cualquier democión se permite sin condiciones (freno de emergenc…
+    205|     expect(evaluateGateTransition("autopilot", "shadow")).toEqual({ al…
+       |            ^
+    206|     expect(evaluateGateTransition("autopilot", "propone")).toEqual({ a…
+    207|     expect(evaluateGateTransition("propone", "shadow")).toEqual({ allo…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[100/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > assertValidProponeVariationPct / isPriceChangeWithinProponeLimit > acepta los bordes exactos de la banda
+AssertionError: expected [Function] to not throw an error but 'TypeError: (0 , __vite_ssr_import_1__…' was thrown
+
+[32m- Expected:[39m 
+undefined
+
+[31m+ Received:[39m 
+"TypeError: (0 , __vite_ssr_import_1__.assertValidProponeVariationPct) is not a function"
+
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:220:58
+    218| 
+    219|   it("acepta los bordes exactos de la banda", () => {
+    220|     expect(() => assertValidProponeVariationPct(10)).not.toThrow();
+       |                                                          ^
+    221|     expect(() => assertValidProponeVariationPct(15)).not.toThrow();
+    222|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[101/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > assertValidProponeVariationPct / isPriceChangeWithinProponeLimit > un cambio dentro del límite se acepta, uno fuera se rechaza
+TypeError: (0 , isPriceChangeWithinProponeLimit) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:225:12
+    223| 
+    224|   it("un cambio dentro del límite se acepta, uno fuera se rechaza", ()…
+    225|     expect(isPriceChangeWithinProponeLimit(1000, 1100, 10)).toBe(true)…
+       |            ^
+    226|     expect(isPriceChangeWithinProponeLimit(1000, 1101, 10)).toBe(false…
+    227|     expect(isPriceChangeWithinProponeLimit(1000, 900, 10)).toBe(true);…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[102/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateRevenueProposal (REQ-REV-003: shadow nunca ejecuta, propone limita y exige aprobación, autopilot pleno libre) > en shadow, NUNCA se permite ejecutar aunque el cambio sea mínimo
+TypeError: (0 , evaluateRevenueProposal) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:243:20
+    241| describe("evaluateRevenueProposal (REQ-REV-003: shadow nunca ejecuta, …
+    242|   it("en shadow, NUNCA se permite ejecutar aunque el cambio sea mínimo…
+    243|     const result = evaluateRevenueProposal("shadow", { baselinePrice: …
+       |                    ^
+    244|     expect(result.allowed).toBe(false);
+    245|     expect(result.requiresApproval).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[103/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateRevenueProposal (REQ-REV-003: shadow nunca ejecuta, propone limita y exige aprobación, autopilot pleno libre) > en propone, un cambio dentro del límite requiere aprobación pero es elegible
+TypeError: (0 , evaluateRevenueProposal) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:250:20
+    248| 
+    249|   it("en propone, un cambio dentro del límite requiere aprobación pero…
+    250|     const result = evaluateRevenueProposal("propone", { baselinePrice:…
+       |                    ^
+    251|     expect(result.allowed).toBe(true);
+    252|     expect(result.requiresApproval).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[104/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateRevenueProposal (REQ-REV-003: shadow nunca ejecuta, propone limita y exige aprobación, autopilot pleno libre) > en propone, un cambio que excede el límite se rechaza aunque hubiera aprobación
+TypeError: (0 , evaluateRevenueProposal) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:257:20
+    255| 
+    256|   it("en propone, un cambio que excede el límite se rechaza aunque hub…
+    257|     const result = evaluateRevenueProposal("propone", { baselinePrice:…
+       |                    ^
+    258|     expect(result.allowed).toBe(false);
+    259|     expect(result.withinVariationLimit).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[105/122]⎯
+
+ FAIL  tests/unit/domain-hotel/revenue-engine-gate.spec.ts > evaluateRevenueProposal (REQ-REV-003: shadow nunca ejecuta, propone limita y exige aprobación, autopilot pleno libre) > en autopilot pleno, no hay límite de variación ni aprobación requerida
+TypeError: (0 , evaluateRevenueProposal) is not a function
+ ❯ tests/unit/domain-hotel/revenue-engine-gate.spec.ts:264:20
+    262| 
+    263|   it("en autopilot pleno, no hay límite de variación ni aprobación req…
+    264|     const result = evaluateRevenueProposal("autopilot", { baselinePric…
+       |                    ^
+    265|     expect(result.allowed).toBe(true);
+    266|     expect(result.requiresApproval).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[106/122]⎯
+
+ FAIL  tests/unit/domain-hotel/walk-forward-backtest.spec.ts > buildWalkForwardWindows > arma ventanas deslizantes sin solape cuando stepDays === testDays
+TypeError: (0 , buildWalkForwardWindows) is not a function
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts:24:21
+     22|   it("arma ventanas deslizantes sin solape cuando stepDays === testDay…
+     23|     const series = dailySeries("2026-01-01", 120); // ~4 meses de hist…
+     24|     const windows = buildWalkForwardWindows(series, { trainDays: 60, t…
+       |                     ^
+     25| 
+     26|     expect(windows.length).toBeGreaterThanOrEqual(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[107/122]⎯
+
+ FAIL  tests/unit/domain-hotel/walk-forward-backtest.spec.ts > buildWalkForwardWindows > cada ventana de prueba usa SOLO datos anteriores a sí misma (sin fuga de datos futuros)
+TypeError: (0 , buildWalkForwardWindows) is not a function
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts:36:21
+     34|   it("cada ventana de prueba usa SOLO datos anteriores a sí misma (sin…
+     35|     const series = dailySeries("2026-01-01", 200);
+     36|     const windows = buildWalkForwardWindows(series, { trainDays: 30, t…
+       |                     ^
+     37| 
+     38|     for (const w of windows) {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[108/122]⎯
+
+ FAIL  tests/unit/domain-hotel/walk-forward-backtest.spec.ts > buildWalkForwardWindows > nunca genera una ventana de prueba que se pase del final de la serie
+TypeError: (0 , buildWalkForwardWindows) is not a function
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts:47:21
+     45|   it("nunca genera una ventana de prueba que se pase del final de la s…
+     46|     const series = dailySeries("2026-01-01", 95); // justo insuficient…
+     47|     const windows = buildWalkForwardWindows(series, { trainDays: 60, t…
+       |                     ^
+     48|     expect(windows).toHaveLength(1); // train 60 + test 30 = 90 <= 95;…
+     49|     expect(new Date(windows[0]!.testEnd).getTime()).toBeLessThanOrEqua…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[109/122]⎯
+
+ FAIL  tests/unit/domain-hotel/walk-forward-backtest.spec.ts > buildWalkForwardWindows > serie vacía produce cero ventanas
+TypeError: (0 , buildWalkForwardWindows) is not a function
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts:53:12
+     51| 
+     52|   it("serie vacía produce cero ventanas", () => {
+     53|     expect(buildWalkForwardWindows([], { trainDays: 30, testDays: 15, …
+       |            ^
+     54|   });
+     55| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[110/122]⎯
+
+ FAIL  tests/unit/domain-hotel/walk-forward-backtest.spec.ts > buildWalkForwardWindows > rechaza specs con días no positivos
+AssertionError: expected error to be instance of RangeError
+
+[32m- Expected:[39m 
+[Function RangeError]
+
+[31m+ Received:[39m 
+TypeError {
+  "message": "(0 , __vite_ssr_import_1__.buildWalkForwardWindows) is not a function",
+}
+
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts:58:95
+     56|   it("rechaza specs con días no positivos", () => {
+     57|     const series = dailySeries("2026-01-01", 10);
+     58|     expect(() => buildWalkForwardWindows(series, { trainDays: 0, testD…
+       |                                                                                               ^
+     59|     expect(() => buildWalkForwardWindows(series, { trainDays: 5, testD…
+     60|     expect(() => buildWalkForwardWindows(series, { trainDays: 5, testD…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[111/122]⎯
+
+ FAIL  tests/unit/domain-hotel/walk-forward-backtest.spec.ts > buildWalkForwardWindows > rechaza una serie no ordenada o con fechas duplicadas
+AssertionError: expected [Function] to throw error matching /serie_no_ordenada/ but got '(0 , buildWalkF…'
+
+[32m- Expected:[39m 
+/serie_no_ordenada/
+
+[31m+ Received:[39m 
+"(0 , __vite_ssr_import_1__.buildWalkForwardWindows) is not a function"
+
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts:66:7
+     64|     expect(() =>
+     65|       buildWalkForwardWindows([{ date: "2026-01-02" }, { date: "2026-0…
+     66|     ).toThrow(/serie_no_ordenada/);
+       |       ^
+     67|     expect(() =>
+     68|       buildWalkForwardWindows([{ date: "2026-01-01" }, { date: "2026-0…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[112/122]⎯
+
+ FAIL  tests/unit/domain-hotel/walk-forward-backtest.spec.ts > buildWalkForwardWindows > stepDays menor que testDays produce ventanas de prueba solapadas
+TypeError: (0 , buildWalkForwardWindows) is not a function
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts:74:21
+     72|   it("stepDays menor que testDays produce ventanas de prueba solapadas…
+     73|     const series = dailySeries("2026-01-01", 150);
+     74|     const windows = buildWalkForwardWindows(series, { trainDays: 30, t…
+       |                     ^
+     75|     expect(windows.length).toBeGreaterThan(1);
+     76|     // La segunda ventana de prueba empieza 15 días después de la prim…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[113/122]⎯
+
+ FAIL  tests/unit/domain-hotel/walk-forward-backtest.spec.ts > evaluateWalkForwardBacktest > pasa cuando el motor mejora el total agregado y gana la mayoría de ventanas
+TypeError: (0 , evaluateWalkForwardBacktest) is not a function
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts:95:20
+     93| describe("evaluateWalkForwardBacktest", () => {
+     94|   it("pasa cuando el motor mejora el total agregado y gana la mayoría …
+     95|     const result = evaluateWalkForwardBacktest({
+       |                    ^
+     96|       counterfactualMethod: "misma_tarifa_periodo_anterior",
+     97|       evaluations: evalsOf([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[114/122]⎯
+
+ FAIL  tests/unit/domain-hotel/walk-forward-backtest.spec.ts > evaluateWalkForwardBacktest > falla por ventanas insuficientes aunque el total mejore (un solo mes no basta)
+TypeError: (0 , evaluateWalkForwardBacktest) is not a function
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts:113:20
+    111| 
+    112|   it("falla por ventanas insuficientes aunque el total mejore (un solo…
+    113|     const result = evaluateWalkForwardBacktest({
+       |                    ^
+    114|       counterfactualMethod: "misma_tarifa_periodo_anterior",
+    115|       evaluations: evalsOf([[1500, 1000]]),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[115/122]⎯
+
+ FAIL  tests/unit/domain-hotel/walk-forward-backtest.spec.ts > evaluateWalkForwardBacktest > falla si el motor no mejora el total vs. baseline
+TypeError: (0 , evaluateWalkForwardBacktest) is not a function
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts:122:20
+    120| 
+    121|   it("falla si el motor no mejora el total vs. baseline", () => {
+    122|     const result = evaluateWalkForwardBacktest({
+       |                    ^
+    123|       counterfactualMethod: "misma_tarifa_periodo_anterior",
+    124|       evaluations: evalsOf([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[116/122]⎯
+
+ FAIL  tests/unit/domain-hotel/walk-forward-backtest.spec.ts > evaluateWalkForwardBacktest > falla si mejora el total pero pierde en la mayoría de las ventanas (outlier oculta pérdida sistemática)
+TypeError: (0 , evaluateWalkForwardBacktest) is not a function
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts:135:20
+    133| 
+    134|   it("falla si mejora el total pero pierde en la mayoría de las ventan…
+    135|     const result = evaluateWalkForwardBacktest({
+       |                    ^
+    136|       counterfactualMethod: "misma_tarifa_periodo_anterior",
+    137|       evaluations: evalsOf([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[117/122]⎯
+
+ FAIL  tests/unit/domain-hotel/walk-forward-backtest.spec.ts > evaluateWalkForwardBacktest > falla con baseline agregado no positivo en vez de dividir entre cero
+TypeError: (0 , evaluateWalkForwardBacktest) is not a function
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts:151:20
+    149| 
+    150|   it("falla con baseline agregado no positivo en vez de dividir entre …
+    151|     const result = evaluateWalkForwardBacktest({
+       |                    ^
+    152|       counterfactualMethod: "misma_tarifa_periodo_anterior",
+    153|       evaluations: evalsOf([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[118/122]⎯
+
+ FAIL  tests/unit/domain-hotel/walk-forward-backtest.spec.ts > evaluateWalkForwardBacktest > respeta thresholds configurables (minWindows/minImprovementPct/minWindowWinRatio)
+TypeError: (0 , evaluateWalkForwardBacktest) is not a function
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts:165:20
+    163| 
+    164|   it("respeta thresholds configurables (minWindows/minImprovementPct/m…
+    165|     const result = evaluateWalkForwardBacktest({
+       |                    ^
+    166|       counterfactualMethod: "tarifa_estatica_pre_motor",
+    167|       evaluations: evalsOf([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[119/122]⎯
+
+ FAIL  tests/unit/domain-hotel/walk-forward-backtest.spec.ts > evaluateWalkForwardBacktest > propaga el counterfactualMethod declarado en el resultado (auditable, nunca silencioso)
+TypeError: (0 , evaluateWalkForwardBacktest) is not a function
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts:179:20
+    177| 
+    178|   it("propaga el counterfactualMethod declarado en el resultado (audit…
+    179|     const result = evaluateWalkForwardBacktest({
+       |                    ^
+    180|       counterfactualMethod: "modelo_elasticidad_declarado",
+    181|       evaluations: evalsOf([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[120/122]⎯
+
+ FAIL  tests/unit/domain-hotel/walk-forward-backtest.spec.ts > evaluateWalkForwardBacktest > cero ventanas evaluadas nunca pasa y no explota (windowWinRatio 0, no NaN)
+TypeError: (0 , evaluateWalkForwardBacktest) is not a function
+ ❯ tests/unit/domain-hotel/walk-forward-backtest.spec.ts:191:20
+    189| 
+    190|   it("cero ventanas evaluadas nunca pasa y no explota (windowWinRatio …
+    191|     const result = evaluateWalkForwardBacktest({ counterfactualMethod:…
+       |                    ^
+    192|     expect(result.passes).toBe(false);
+    193|     expect(result.windowWinRatio).toBe(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[121/122]⎯
+
+ FAIL  tests/unit/gob/cierre-tarea-conventional-commits.spec.ts > checkCierreTareaConventionalCommits: tarea de muestra REAL ya cerrada de este repo (REQ-GOB-004) > REQ-GOB-004 (cerrada por el commit real ead57d3) -> 0 violaciones contra el git log real de este repo
+AssertionError: expected [ { …(3) } ] to have a length of +0 but got 1
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+ ❯ tests/unit/gob/cierre-tarea-conventional-commits.spec.ts:353:24
+    351|     const violations = checkCierreTareaConventionalCommits(tasksDir);
+    352| 
+    353|     expect(violations).toHaveLength(0);
+       |                        ^
+    354|   });
+    355| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[122/122]⎯
+
+
+ Test Files  7 failed | 85 passed (92)
+      Tests  122 failed | 970 passed | 1 skipped (1093)
+   Start at  18:40:46
+   Duration  23.95s (transform 1.96s, setup 0ms, collect 9.94s, tests 124.26s, environment 10ms, prepare 4.13s)
+
