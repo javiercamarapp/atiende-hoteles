@@ -16,6 +16,8 @@ import { z } from "zod";
 import { defineTool, type ToolDefinition } from "../tool.ts";
 import { recordToolAudit } from "../audit.ts";
 import type { SqlClient } from "../sql.ts";
+import { notifyStaffOfNewTask } from "./staffNotify.ts";
+import type { WhatsappSenderLike } from "./messagingTools.ts";
 
 /** Umbral (MXN) a partir del cual un ticket de mantenimiento se marca como
  * `requires_approval` -- informativo en la creacion; la aprobacion real la exige la tool
@@ -30,6 +32,13 @@ export function maintenanceApprovalThresholdMxn(env: Record<string, string | und
 
 export interface HousekeepingToolDeps {
   readonly db: SqlClient;
+  /** Notificación ACTIVA por WhatsApp al staff responsable (ver staffNotify.ts) --
+   *  ausente/`undefined`: `createHousekeepingTaskTool`/`createMaintenanceTicketTool` NO
+   *  intentan notificar nada (mismo criterio honesto de "sin adaptador configurado" que
+   *  el resto de este módulo), `createAuthorizeMaintenanceExpenseTool` la ignora por
+   *  completo -- no necesita notificar. */
+  readonly messaging?: WhatsappSenderLike;
+  readonly simulated?: boolean;
 }
 
 const priorityEnum = z.enum(["alta", "media", "baja"]);
@@ -74,11 +83,24 @@ export function createHousekeepingTaskTool(deps: HousekeepingToolDeps): ToolDefi
          returning id;`,
         [ctx.orgId, ctx.hotelId, room.id, input.priority, JSON.stringify(input.checklist), input.notes ?? null, createdBy],
       );
+      const taskId = rows[0]!.id;
+
+      // Hallazgo de auditoría (H6b): antes de esto, la ÚNICA forma de enterarse de una
+      // tarea nueva era el tablero de staff -- ver comentario de archivo de
+      // staffNotify.ts. `assignedTo` nunca se fija en esta creación (ver comentario de
+      // `HousekeepingToolDeps`), así que esto siempre notifica por rol "housekeeping".
+      const notificacion = await notifyStaffOfNewTask(deps, {
+        hotelId: ctx.hotelId,
+        role: "housekeeping",
+        templateName: "tarea_housekeeping_nueva",
+        parameters: [input.roomCode, input.priority],
+        dedupeKey: taskId,
+      });
 
       return {
         ok: true,
         summary: `Tarea de housekeeping creada para la habitación ${input.roomCode} (prioridad ${input.priority}).`,
-        data: { taskId: rows[0]!.id, roomCode: input.roomCode },
+        data: { taskId, roomCode: input.roomCode, notificacion },
       };
     },
   });
@@ -172,11 +194,28 @@ export function createMaintenanceTicketTool(deps: HousekeepingToolDeps): ToolDef
           roomId,
         ]);
       }
+      const ticketId = rows[0]!.id;
+
+      // Hallazgo de auditoría (H6b): antes de esto, la ÚNICA forma de enterarse de un
+      // ticket de mantenimiento nuevo era el tablero de staff -- ver comentario de
+      // archivo de staffNotify.ts. Se notifica en TODA creación (no solo severidad
+      // alta): el trigger de BD `notify_ticket_urgente` (0114) ya cubre el bell interno
+      // solo para severidad alta, esta es la notificación ACTIVA por WhatsApp que hoy
+      // no existe para ninguna severidad. `assignedTo` nunca se fija en esta creación
+      // (ver comentario de `HousekeepingToolDeps`), así que esto siempre notifica por
+      // rol "maintenance".
+      const notificacion = await notifyStaffOfNewTask(deps, {
+        hotelId: ctx.hotelId,
+        role: "maintenance",
+        templateName: "ticket_mantenimiento_nuevo",
+        parameters: [input.title, input.severity, input.roomCode ?? "sin habitación"],
+        dedupeKey: ticketId,
+      });
 
       return {
         ok: true,
         summary: `Ticket de mantenimiento "${input.title}" creado (severidad ${input.severity}).`,
-        data: { ticketId: rows[0]!.id, requiresApproval, marksOutOfService },
+        data: { ticketId, requiresApproval, marksOutOfService, notificacion },
       };
     },
   });

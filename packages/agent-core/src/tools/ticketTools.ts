@@ -33,9 +33,16 @@ import { z } from "zod";
 import { defineTool, type ToolDefinition } from "../tool.ts";
 import type { StaffRole } from "../context.ts";
 import type { SqlClient } from "../sql.ts";
+import { notifyStaffOfNewTask } from "./staffNotify.ts";
+import type { WhatsappSenderLike } from "./messagingTools.ts";
 
 export interface TicketToolDeps {
   readonly db: SqlClient;
+  /** Notificación ACTIVA por WhatsApp al departamento responsable al crear el ticket
+   *  (ver staffNotify.ts) -- ausente/`undefined`: `createGuestTicketTool` no intenta
+   *  notificar nada. */
+  readonly messaging?: WhatsappSenderLike;
+  readonly simulated?: boolean;
 }
 
 const departmentEnum = z.enum([
@@ -133,6 +140,20 @@ export function createGuestTicketTool(deps: TicketToolDeps): ToolDefinition<Crea
           createdBy,
         ],
       );
+      const ticketId = rows[0]!.id;
+
+      // H6b-notif: notificación ACTIVA por WhatsApp al departamento responsable -- ver
+      // staffNotify.ts. `input.department` ya es el `StaffRole` real (huésped/QR/staff
+      // ya lo decidieron o `classifyGuestMessage` lo resolvió por defecto ANTES de
+      // invocar esta tool, ver comentario de archivo); `assignedTo` nunca se fija en
+      // esta creación, así que esto siempre notifica por rol/departamento.
+      const notificacion = await notifyStaffOfNewTask(deps, {
+        hotelId: ctx.hotelId,
+        role: input.department,
+        templateName: "ticket_huesped_nuevo",
+        parameters: [input.department, input.priority, input.guestMessage.slice(0, 200)],
+        dedupeKey: ticketId,
+      });
 
       return {
         ok: true,
@@ -140,11 +161,12 @@ export function createGuestTicketTool(deps: TicketToolDeps): ToolDefinition<Crea
           `Ticket creado para ${input.department} (prioridad ${input.priority}, SLA ${slaMinutes} min)` +
           (input.roomCode ? ` — habitación ${input.roomCode}.` : "."),
         data: {
-          ticketId: rows[0]!.id,
+          ticketId,
           department: input.department satisfies StaffRole,
           priority: input.priority,
           slaMinutes,
           slaDueAt: rows[0]!.sla_due_at,
+          notificacion,
         },
       };
     },

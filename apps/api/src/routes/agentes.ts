@@ -151,9 +151,9 @@ async function tieneCorridasEsteMes(db: DbClient, hotelId: string, agentName: st
 function buildToolForName(name: string, deps: { db: DbClient; agentName: string }): ToolDefinition<any> {
   switch (name) {
     case "crear_tarea_housekeeping":
-      return createHousekeepingTaskTool({ db: deps.db });
+      return createHousekeepingTaskTool({ db: deps.db, messaging: sharedWhatsappAdapter, simulated: true });
     case "crear_ticket_mantenimiento":
-      return createMaintenanceTicketTool({ db: deps.db });
+      return createMaintenanceTicketTool({ db: deps.db, messaging: sharedWhatsappAdapter, simulated: true });
     case "enviar_mensaje_whatsapp_plantilla":
       return createSendWhatsappTemplateTool({ db: deps.db, messaging: sharedWhatsappAdapter, simulated: true });
     case "registrar_evento_roi":
@@ -365,7 +365,7 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         { orgId, hotelId, actor: { type: "staff", id: c.get("userId") }, requestId: c.get("requestId") },
         createRunBudget({}),
       );
-      const ticketResult = await createGuestTicketTool({ db }).run(ticketCtx, {
+      const ticketResult = await createGuestTicketTool({ db, messaging: sharedWhatsappAdapter, simulated: true }).run(ticketCtx, {
         guestMessage: body.mensaje,
         department: "frontdesk",
         priority: "alta",

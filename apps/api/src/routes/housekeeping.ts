@@ -7,6 +7,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { buildToolContext, createHousekeepingTaskTool, createRunBudget } from "@atiende-hoteles/agent-core";
+import { sharedWhatsappAdapter, whatsappAdapterSimulated } from "../lib/messaging.ts";
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
@@ -109,7 +110,7 @@ export function housekeepingRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       createRunBudget({}),
     );
 
-    const tool = createHousekeepingTaskTool({ db });
+    const tool = createHousekeepingTaskTool({ db, messaging: sharedWhatsappAdapter, simulated: whatsappAdapterSimulated });
     const result = await tool.run(ctx, body);
     if (!result.ok) throw Errors.validation(result.summary);
 
