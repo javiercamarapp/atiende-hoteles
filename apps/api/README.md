@@ -62,6 +62,8 @@ al arrancar `npm run dev`/`vite dev` de `apps/web` (o en un `.env.local` de esa 
 | `LOG_PRETTY` | (sin definir) | No | `1` para formato legible en desarrollo (`pino-pretty`); en producción siempre JSON. |
 | `MONEY_ALERT_WEBHOOK_URL` | (sin definir) | No | Webhook genérico que recibe cada alerta del camino del dinero por HTTP POST. Sin definir (ni el par de abajo), la alerta queda solo como log. |
 | `MONEY_ALERT_EMAIL_TO` / `MONEY_ALERT_EMAIL_WEBHOOK_URL` | (sin definir) | No | Ambas juntas: envía `{to, subject, alert}` al webhook de correo configurado. |
+| `SECRETS_BACKEND` | `env` | No | REQ-SEG-013: `env` (default) no cambia nada -- lee `process.env` directo. `vault` activa `apps/api/src/lib/secretsProvider.ts`, que ANTES de `loadEnv()` lee un secreto real de HashiCorp Vault (KV v2) y copia sus claves a `process.env`. Fail-closed: `vault` sin `VAULT_ADDR`/`VAULT_TOKEN`/`VAULT_SECRET_PATH`, o Vault inalcanzable, hace fallar el arranque. **Nunca probado contra un Vault real en este repo** — solo contra un `fetch` sustituido (`tests/unit/api/secrets-provider.spec.ts`); no activar en producción sin un Vault/KMS real desplegado. |
+| `VAULT_ADDR` / `VAULT_TOKEN` / `VAULT_SECRET_PATH` / `VAULT_KV_MOUNT` | (sin definir) | Sí, solo si `SECRETS_BACKEND=vault` | Dirección del cluster, token de acceso, ruta del secreto KV v2 y mount (`VAULT_KV_MOUNT`, default `secret`). |
 
 ## Credenciales de desarrollo (seed)
 

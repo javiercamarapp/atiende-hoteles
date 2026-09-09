@@ -9,6 +9,7 @@ import { bootstrapProductionEngine, readProductionDbConfig } from "./dbProductio
 import { loadEnv } from "./env.ts";
 import { rootLogger } from "./logger.ts";
 import { RateLimiter } from "./lib/rateLimit.ts";
+import { bootstrapProductionSecrets } from "./lib/secretsProvider.ts";
 import { MetricsRegistry } from "./metrics.ts";
 import type { AppDeps } from "./types.ts";
 import { startNightAuditScheduler } from "./jobs/nightAuditScheduler.ts";
@@ -18,10 +19,19 @@ import { startTicketEscalationScheduler } from "./jobs/ticketEscalationScheduler
 import { startEmailOutboxScheduler, resolveEmailPort } from "./emailOutbox/runEmailOutboxWorker.ts";
 
 async function main() {
+  // REQ-SEG-013 · antes de leer cualquier secreto de `process.env`, le da a Vault/KMS
+  // la oportunidad de poblarlo (opt-in vía SECRETS_BACKEND=vault -- sin esa variable
+  // es un no-op exacto, 0 llamadas de red). `loadEnv()`/`identityEncryption.ts`/etc.
+  // siguen leyendo `process.env` sin ningún cambio; no necesitan saber si el valor
+  // vino de Vault o de un export de shell.
+  const secretsBoot = await bootstrapProductionSecrets();
   const env = loadEnv();
   const logger = rootLogger;
 
-  logger.info({ port: env.port, nodeEnv: env.nodeEnv }, "arrancando apps/api");
+  logger.info(
+    { port: env.port, nodeEnv: env.nodeEnv, secretsBackend: secretsBoot.backend, secretsKeysLoaded: secretsBoot.keysLoaded.length },
+    "arrancando apps/api",
+  );
 
   // H12b · LAUNCH-009/D-006: `SUPABASE_DB_HOST`/`SUPABASE_DB_PASSWORD_APP` presentes ->
   // motor de producción contra Postgres gestionado (nunca arranca un servidor propio,
