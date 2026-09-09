@@ -47,7 +47,16 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck
     steps:
+      # fetch-depth: 0 (historial completo, no el shallow clone default de depth=1):
+      # tests/unit/gob/cierre-tarea-conventional-commits.spec.ts corre contra el git
+      # log REAL de este repo (una tarea de muestra ya cerrada, sin mocks del
+      # historial) -- con un checkout superficial, `git log` solo ve el commit del
+      # push actual y CUALQUIER tarea de muestra reporta "0 commits la referencian",
+      # sin importar cuál se elija (falla real encontrada en CI, no reproducible en
+      # local porque el checkout local siempre tiene el historial completo).
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
