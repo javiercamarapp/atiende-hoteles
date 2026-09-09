@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/gob/evidencia-obligatoria-cierre.spec.ts (24 tests) 15ms
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  15:44:25
+   Duration  270ms (transform 28ms, setup 0ms, collect 26ms, tests 15ms, environment 0ms, prepare 49ms)
+

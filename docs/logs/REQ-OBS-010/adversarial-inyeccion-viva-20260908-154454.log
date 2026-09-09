@@ -1,0 +1,11 @@
+--- con tarea done sin evidencia (esperado: exit 1) ---
+REQ-OBS-010: 1 tarea(s) cerrada(s) sin evidencia:
+  tasks/REQ-DEMO-EVIDENCIA.md [REQ-DEMO-EVIDENCIA]: la tarea está en `done` pero no existe `docs/logs/REQ-DEMO-EVIDENCIA/` -- cierre bloqueado sin evidencia de verificación en verde.
+exit=1
+--- con evidencia guardada (esperado: exit 0) ---
+REQ-OBS-010 OK: 1 tarea(s) revisada(s) bajo tasks/ -- ninguna tarea `done`/`review` sin su directorio de evidencia no vacío bajo docs/logs/.
+exit=0
+--- limpiando la demo (no debe quedar residuo) ---
+REQ-OBS-010 OK: 0 archivos de tarea bajo tasks/ (el backlog de archivos de GOB-045 aún no se materializó en este repo -- docs/PROGRESO.md/docs/BLOQUEOS.md siguen siendo el proceso real hoy) -- nada que verificar.
+exit=0
+sin residuos de la demo
