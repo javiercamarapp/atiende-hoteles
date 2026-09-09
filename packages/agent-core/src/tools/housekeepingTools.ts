@@ -16,6 +16,7 @@ import { z } from "zod";
 import { defineTool, type ToolDefinition } from "../tool.ts";
 import { recordToolAudit } from "../audit.ts";
 import type { SqlClient } from "../sql.ts";
+import { syncTaskToOutboundConnectorBestEffort, type OutboundTaskSyncLike } from "./outboundTaskSync.ts";
 
 /** Umbral (MXN) a partir del cual un ticket de mantenimiento se marca como
  * `requires_approval` -- informativo en la creacion; la aprobacion real la exige la tool
@@ -30,6 +31,10 @@ export function maintenanceApprovalThresholdMxn(env: Record<string, string | und
 
 export interface HousekeepingToolDeps {
   readonly db: SqlClient;
+  /** Conector outbound PMS-enterprise (packages/mcp-servers/outbound), opcional -- ver
+   *  outboundTaskSync.ts. Sin esta dependencia (la mayoría de llamadores hoy), la tool
+   *  se comporta exactamente igual que antes de que existiera este conector. */
+  readonly outboundSync?: OutboundTaskSyncLike;
 }
 
 const priorityEnum = z.enum(["alta", "media", "baja"]);
@@ -74,11 +79,26 @@ export function createHousekeepingTaskTool(deps: HousekeepingToolDeps): ToolDefi
          returning id;`,
         [ctx.orgId, ctx.hotelId, room.id, input.priority, JSON.stringify(input.checklist), input.notes ?? null, createdBy],
       );
+      const taskId = rows[0]!.id;
+
+      // REQ conector-pms-enterprise: best-effort, ver outboundTaskSync.ts -- nunca
+      // bloquea ni revierte la creación local de arriba.
+      const outboundSync = await syncTaskToOutboundConnectorBestEffort(deps.outboundSync, {
+        taskType: "housekeeping_task",
+        taskId,
+        hotelId: ctx.hotelId,
+        title: `Limpieza/preparación habitación ${input.roomCode}`,
+        description: input.notes,
+        priority: input.priority,
+        roomCode: input.roomCode,
+        status: "pendiente",
+        occurredAt: new Date().toISOString(),
+      });
 
       return {
         ok: true,
         summary: `Tarea de housekeeping creada para la habitación ${input.roomCode} (prioridad ${input.priority}).`,
-        data: { taskId: rows[0]!.id, roomCode: input.roomCode },
+        data: { taskId, roomCode: input.roomCode, ...(outboundSync ? { outboundSync } : {}) },
       };
     },
   });
@@ -172,11 +192,26 @@ export function createMaintenanceTicketTool(deps: HousekeepingToolDeps): ToolDef
           roomId,
         ]);
       }
+      const ticketId = rows[0]!.id;
+
+      // REQ conector-pms-enterprise: best-effort, ver outboundTaskSync.ts -- nunca
+      // bloquea ni revierte la creación local de arriba.
+      const outboundSync = await syncTaskToOutboundConnectorBestEffort(deps.outboundSync, {
+        taskType: "maintenance_ticket",
+        taskId: ticketId,
+        hotelId: ctx.hotelId,
+        title: input.title,
+        description: input.description,
+        priority: input.severity,
+        roomCode: input.roomCode ?? null,
+        status: "abierto",
+        occurredAt: new Date().toISOString(),
+      });
 
       return {
         ok: true,
         summary: `Ticket de mantenimiento "${input.title}" creado (severidad ${input.severity}).`,
-        data: { ticketId: rows[0]!.id, requiresApproval, marksOutOfService },
+        data: { ticketId, requiresApproval, marksOutOfService, ...(outboundSync ? { outboundSync } : {}) },
       };
     },
   });

@@ -22,7 +22,7 @@ import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
 import { ADMIN_ROLES, MANAGE_ROOM_STATUS_ROLES } from "../domain/roles.ts";
-import type { AppDeps, HonoEnvBindings } from "../types.ts";
+import type { HonoEnvBindings, ResolvedAppDeps } from "../types.ts";
 
 // auditoria-2/frontend [ALTO]: `estimatedCost` YA NO tiene `.default(0)` -- el
 // formulario de "Reportar" no pedía ningún costo, así que todo ticket quedaba en $0.00
@@ -60,7 +60,7 @@ interface TicketRow {
   created_at: string;
 }
 
-export function mantenimientoRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
+export function mantenimientoRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
   const app = new Hono<HonoEnvBindings>();
 
   app.use(
@@ -116,7 +116,7 @@ export function mantenimientoRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       createRunBudget({}),
     );
 
-    const tool = createMaintenanceTicketTool({ db });
+    const tool = createMaintenanceTicketTool({ db, outboundSync: deps.outboundTaskSyncGateway });
     // auditoria-2/frontend [ALTO]: `CreateMaintenanceTicketInput.estimatedCost`
     // (packages/agent-core, fuera de este lote) sigue tipado `number` no-nulo con
     // `.default(0)` en su propio esquema Zod -- pero esa tool nunca re-valida `input`

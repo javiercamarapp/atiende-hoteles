@@ -69,6 +69,7 @@ import {
   PostgresApprovalQueue,
   RECEPCION_VIRTUAL,
   transactionalTemplateCheckFromDb,
+  type OutboundTaskSyncLike,
   type ToolDefinition,
 } from "@atiende-hoteles/agent-core";
 import type { DbClient } from "@atiende-hoteles/db";
@@ -78,7 +79,7 @@ import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
 import { ADMIN_ROLES } from "../domain/roles.ts";
 import { resolveAgentConfig } from "./agentes.ts";
-import type { AppDeps, HonoEnvBindings } from "../types.ts";
+import type { HonoEnvBindings, ResolvedAppDeps } from "../types.ts";
 
 const RECEPCION_VIRTUAL_DEF = AGENT_DEFINITIONS[RECEPCION_VIRTUAL]!;
 
@@ -185,12 +186,12 @@ const VOZ_TOOL_NAMES = new Set<VozToolName>([
 ]);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- catálogo heterogéneo: cada tool trae su propio TInput, igual que buildToolForName() en routes/agentes.ts.
-function buildTool(toolName: VozToolName, db: DbClient): ToolDefinition<any> {
+function buildTool(toolName: VozToolName, db: DbClient, outboundSync: OutboundTaskSyncLike): ToolDefinition<any> {
   switch (toolName) {
     case "crear-tarea-housekeeping":
-      return createHousekeepingTaskTool({ db });
+      return createHousekeepingTaskTool({ db, outboundSync });
     case "crear-ticket-mantenimiento":
-      return createMaintenanceTicketTool({ db });
+      return createMaintenanceTicketTool({ db, outboundSync });
     case "enviar-whatsapp-plantilla":
       return createSendWhatsappTemplateTool({ db, messaging: sharedWhatsappAdapter, simulated: true });
     case "registrar-evento-roi":
@@ -198,7 +199,7 @@ function buildTool(toolName: VozToolName, db: DbClient): ToolDefinition<any> {
   }
 }
 
-export function vozElevenlabsRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
+export function vozElevenlabsRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
   const app = new Hono<HonoEnvBindings>();
 
   // Webhook PÚBLICO: ElevenLabs no manda ningún Bearer de staff (mismo criterio que
@@ -230,7 +231,7 @@ export function vozElevenlabsRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     const params = extractToolParams(raw);
     const requestId = toolCallId(raw, params);
 
-    const tool = buildTool(toolName, deps.engine.admin);
+    const tool = buildTool(toolName, deps.engine.admin, deps.outboundTaskSyncGateway);
     const parsed = tool.inputSchema.safeParse(params);
     if (!parsed.success) {
       const first = parsed.error.issues[0];

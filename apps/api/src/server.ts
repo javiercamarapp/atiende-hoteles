@@ -11,6 +11,7 @@ import { rootLogger } from "./logger.ts";
 import { RateLimiter } from "./lib/rateLimit.ts";
 import { bootstrapProductionSecrets } from "./lib/secretsProvider.ts";
 import { resolvePaymentPort } from "./lib/resolvePaymentPort.ts";
+import { resolveOutboundTaskSyncPort } from "./lib/resolveOutboundTaskSyncPort.ts";
 import { MetricsRegistry } from "./metrics.ts";
 import type { AppDeps } from "./types.ts";
 import { startNightAuditScheduler } from "./jobs/nightAuditScheduler.ts";
@@ -72,6 +73,17 @@ async function main() {
     "adaptador de pagos resuelto",
   );
 
+  // H18 · conector-pms-enterprise: mismo criterio que `paymentPort` arriba -- se
+  // resuelve aquí, una vez, a partir de las variables de entorno del proceso real (ver
+  // `resolveOutboundTaskSyncPort()`). No hay credencial global que reportar en el log
+  // (la credencial es por hotel, ver `hotel_pms_outbound_config`), solo si el mecanismo
+  // de envío en sí está activo o apagado por el interruptor operativo.
+  const outboundTaskSyncPort = resolveOutboundTaskSyncPort(process.env);
+  logger.info(
+    { provider: outboundTaskSyncPort.status().provider, simulated: outboundTaskSyncPort.status().simulated },
+    "conector outbound pms-enterprise resuelto",
+  );
+
   const deps: AppDeps = {
     engine,
     env,
@@ -81,6 +93,7 @@ async function main() {
     metrics: new MetricsRegistry(),
     emailPort,
     payments: paymentPort,
+    outboundTaskSync: outboundTaskSyncPort,
   };
 
   const app = createApp(deps);

@@ -33,9 +33,13 @@ import { z } from "zod";
 import { defineTool, type ToolDefinition } from "../tool.ts";
 import type { StaffRole } from "../context.ts";
 import type { SqlClient } from "../sql.ts";
+import { syncTaskToOutboundConnectorBestEffort, type OutboundTaskSyncLike } from "./outboundTaskSync.ts";
 
 export interface TicketToolDeps {
   readonly db: SqlClient;
+  /** Conector outbound PMS-enterprise (packages/mcp-servers/outbound), opcional -- ver
+   *  outboundTaskSync.ts. Mismo criterio que `HousekeepingToolDeps.outboundSync`. */
+  readonly outboundSync?: OutboundTaskSyncLike;
 }
 
 const departmentEnum = z.enum([
@@ -134,17 +138,38 @@ export function createGuestTicketTool(deps: TicketToolDeps): ToolDefinition<Crea
         ],
       );
 
+      const ticketId = rows[0]!.id;
+
+      // REQ conector-pms-enterprise: best-effort, ver outboundTaskSync.ts -- nunca
+      // bloquea ni revierte la creación local de arriba. El título saliente es un
+      // resumen corto del mensaje del huésped (el mensaje completo va en `description`);
+      // `guestMessage` no trae un título propio, a diferencia de mantenimiento.
+      const outboundSync = await syncTaskToOutboundConnectorBestEffort(deps.outboundSync, {
+        taskType: "guest_ticket",
+        taskId: ticketId,
+        hotelId: ctx.hotelId,
+        title:
+          input.guestMessage.length > 150 ? `${input.guestMessage.slice(0, 147)}...` : input.guestMessage,
+        description: input.guestMessage,
+        priority: input.priority,
+        roomCode: input.roomCode ?? null,
+        department: input.department,
+        status: "abierto",
+        occurredAt: new Date().toISOString(),
+      });
+
       return {
         ok: true,
         summary:
           `Ticket creado para ${input.department} (prioridad ${input.priority}, SLA ${slaMinutes} min)` +
           (input.roomCode ? ` — habitación ${input.roomCode}.` : "."),
         data: {
-          ticketId: rows[0]!.id,
+          ticketId,
           department: input.department satisfies StaffRole,
           priority: input.priority,
           slaMinutes,
           slaDueAt: rows[0]!.sla_due_at,
+          ...(outboundSync ? { outboundSync } : {}),
         },
       };
     },

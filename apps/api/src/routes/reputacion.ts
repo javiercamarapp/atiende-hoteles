@@ -25,13 +25,14 @@ import {
   createMaintenanceTicketTool,
   createRunBudget,
   type CreateMaintenanceTicketInput,
+  type OutboundTaskSyncLike,
 } from "@atiende-hoteles/agent-core";
 import { clasificarResena, type AccionReputacion, type StayState } from "@atiende-hoteles/domain-hotel";
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
 import { ADMIN_ROLES, type HotelRole } from "../domain/roles.ts";
-import type { AppDeps, HonoEnvBindings } from "../types.ts";
+import type { HonoEnvBindings, ResolvedAppDeps } from "../types.ts";
 
 const REVIEW_SUBMIT_ROLES: HotelRole[] = [...ADMIN_ROLES, "frontdesk", "reservations"];
 const REVIEW_VIEW_ROLES: HotelRole[] = [...ADMIN_ROLES, "frontdesk", "reservations", "accountant"];
@@ -78,6 +79,7 @@ async function persistirAcciones(
   ctx: { orgId: string; hotelId: string; userId: string; requestId: string },
   reviewId: string,
   acciones: AccionReputacion[],
+  outboundSync: OutboundTaskSyncLike,
 ): Promise<AccionPersistida[]> {
   const persistidas: AccionPersistida[] = [];
 
@@ -92,7 +94,7 @@ async function persistirAcciones(
         },
         createRunBudget({}),
       );
-      const tool = createMaintenanceTicketTool({ db });
+      const tool = createMaintenanceTicketTool({ db, outboundSync });
       const input: CreateMaintenanceTicketInput = {
         title: accion.titulo,
         description: accion.descripcion,
@@ -171,7 +173,7 @@ function mapAccionRow(a: AccionRow) {
   };
 }
 
-export function reputacionRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
+export function reputacionRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
   const app = new Hono<HonoEnvBindings>();
 
   app.use(
@@ -287,6 +289,7 @@ export function reputacionRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       { orgId, hotelId, userId: c.get("userId"), requestId: c.get("requestId") },
       reviewId,
       resultado.acciones,
+      deps.outboundTaskSyncGateway,
     );
 
     return c.json(

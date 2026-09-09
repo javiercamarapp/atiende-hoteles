@@ -11,7 +11,7 @@ import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
 import { ADMIN_ROLES } from "../domain/roles.ts";
-import type { AppDeps, HonoEnvBindings } from "../types.ts";
+import type { HonoEnvBindings, ResolvedAppDeps } from "../types.ts";
 
 const SUPERVISOR_ROLES = ["owner", "gm", "frontdesk"] as const;
 
@@ -41,7 +41,7 @@ interface TableroRow {
   sla_due_at: string | null;
 }
 
-export function housekeepingRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
+export function housekeepingRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
   const app = new Hono<HonoEnvBindings>();
 
   app.use(
@@ -109,7 +109,7 @@ export function housekeepingRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       createRunBudget({}),
     );
 
-    const tool = createHousekeepingTaskTool({ db });
+    const tool = createHousekeepingTaskTool({ db, outboundSync: deps.outboundTaskSyncGateway });
     const result = await tool.run(ctx, body);
     if (!result.ok) throw Errors.validation(result.summary);
 

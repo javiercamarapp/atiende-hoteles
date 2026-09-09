@@ -20,7 +20,7 @@ import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
 import { HOTEL_ROLES } from "../domain/roles.ts";
-import type { AppDeps, HonoEnvBindings } from "../types.ts";
+import type { HonoEnvBindings, ResolvedAppDeps } from "../types.ts";
 
 const departmentEnum = z.enum(HOTEL_ROLES);
 const priorityEnum = z.enum(["alta", "media", "baja"]);
@@ -75,7 +75,7 @@ function serializeTicket(t: TicketRow) {
   };
 }
 
-export function ticketsRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
+export function ticketsRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
   const app = new Hono<HonoEnvBindings>();
 
   app.use(
@@ -139,7 +139,7 @@ export function ticketsRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       createRunBudget({}),
     );
 
-    const tool = createGuestTicketTool({ db });
+    const tool = createGuestTicketTool({ db, outboundSync: deps.outboundTaskSyncGateway });
     const result = await tool.run(ctx, {
       guestMessage: body.guestMessage,
       roomCode: body.roomCode,
