@@ -333,18 +333,28 @@ describe("obtenerCommitsGitReal: contra un repositorio git real", () => {
 
 // ---------------------------------------------------------------------------------
 // Verificación end-to-end contra una tarea de MUESTRA REAL de este propio repo
-// (REQ-GOB-004, ya cerrada por el commit real `ead57d3` -- ver `git log --oneline`):
+// (REQ-GOB-003, ya cerrada por el commit real `2e15f3c` -- ver `git log --oneline`):
 // exactamente el escenario que el criterio de REQ-GOB-005 exige ("verificado con una
 // tarea de muestra cerrada end-to-end"). Se inyecta SOLO el archivo de tarea (una
 // fixture temporal, nunca escrita bajo `tasks/` real -- ese directorio no existe todavía
 // en este repo) contra el historial REAL de git de este repositorio (sin inyectar
-// commits), confirmando que el commit real de cierre de REQ-GOB-004 (a) existe, (b) es
+// commits), confirmando que el commit real de cierre de REQ-GOB-003 (a) existe, (b) es
 // único, y (c) cumple Conventional Commits -- sin ningún mock del historial.
+//
+// La muestra usaba originalmente REQ-GOB-004 (commit `ead57d3`), pero dos commits
+// POSTERIORES y ajenos (`f682d7c` REQ-HK-008, `101a141` REQ-GOB-005) mencionan
+// "REQ-GOB-004" en el CUERPO de su mensaje por razones narrativas propias -- el propio
+// cuerpo de `f682d7c` documenta explícitamente que esto "rompe la suposición de commit
+// único". Como el historial de git es inmutable (ya en `main`), ese id quedó
+// permanentemente ambiguo (3 commits) para este checker, que SÍ detecta la ambigüedad
+// correctamente (no es un bug del checker, ver `commitReferenciaTarea`) -- se cambió la
+// muestra a REQ-GOB-003, cuyo único commit real de cierre no está referenciado en
+// ningún otro lugar del historial.
 // ---------------------------------------------------------------------------------
-describe("checkCierreTareaConventionalCommits: tarea de muestra REAL ya cerrada de este repo (REQ-GOB-004)", () => {
-  it("REQ-GOB-004 (cerrada por el commit real ead57d3) -> 0 violaciones contra el git log real de este repo", () => {
+describe("checkCierreTareaConventionalCommits: tarea de muestra REAL ya cerrada de este repo (REQ-GOB-003)", () => {
+  it("REQ-GOB-003 (cerrada por el commit real 2e15f3c) -> 0 violaciones contra el git log real de este repo", () => {
     const tasksDir = crearDirTemporal("cierre-muestra-real-");
-    escribirTarea(tasksDir, "REQ-GOB-004.md", { id: "REQ-GOB-004", status: "review" });
+    escribirTarea(tasksDir, "REQ-GOB-003.md", { id: "REQ-GOB-003", status: "review" });
 
     // repoRoot por defecto (ROOT del script) -> lee el git log REAL de este repositorio,
     // no un repo sintético; solo el directorio de tareas es temporal.

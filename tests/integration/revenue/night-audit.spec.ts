@@ -26,6 +26,12 @@ describe("night audit (REQ-REV-013)", () => {
     return { authorization: `Bearer ${gmToken}`, "content-type": "application/json" };
   }
 
+  function isoDate(daysFromNow: number): string {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() + daysFromNow);
+    return d.toISOString().slice(0, 10);
+  }
+
   async function runAudit(businessDate: string) {
     return fixture.app.request(`/hoteles/${hotelId}/night-audit`, {
       method: "POST",
@@ -92,11 +98,24 @@ describe("night audit (REQ-REV-013)", () => {
   });
 
   it("marca no-show en el mismo cierre para una reserva confirmada cuya llegada ya pasó", async () => {
-    const businessDate = "2026-09-12";
+    // Fechas relativas a "ahora" (no absolutas): la seed sólo cubre tarifa/disponibilidad
+    // desde "hoy" en adelante (ver createApiFixture/seedDev), así que un checkInDate
+    // absoluto que quede en el pasado real (p.ej. si esta suite corre días después de
+    // escrita) hace que quoteNetAmount() no encuentre tarifa y la reserva falle con 500
+    // -- ya no es "llegada ya pasada" respecto al negocio, es "fuera de la ventana
+    // sembrada". Lo que importa para la semántica de no-show es que checkInDate quede
+    // ANTES de businessDate, no que sea anterior al reloj real.
+    // Offsets +6/+7/+9 elegidos para no colisionar con las fechas fijas de los demás
+    // tests de este archivo (+1/+2/+4/+5/+11/+13 desde "hoy") -- el night audit es
+    // idempotente por business_date (ver el test de arriba), así que reusar una fecha
+    // "cierra el día" para cualquier otro test que la use después.
+    const checkInDate = isoDate(6);
+    const checkOutDate = isoDate(7);
+    const businessDate = isoDate(9);
     const { reservationId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
-      checkInDate: "2026-09-07",
-      checkOutDate: "2026-09-08",
+      checkInDate,
+      checkOutDate,
     });
 
     const res = await runAudit(businessDate);

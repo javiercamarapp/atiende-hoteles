@@ -193,10 +193,10 @@ async function diffPixeles(page: Page, pngA: Buffer, pngB: Buffer, umbral = 32):
 }
 
 test.describe("Paridad visual en vivo — Atiende Hoteles vs. atiende-restaurantes (REQ-UX-001)", () => {
-  test.skip(
-    ({ browserName }) => browserName !== "chromium",
-    "La comparación exige el mismo motor Chrome en ambas capturas.",
-  );
+  // En una sola línea a propósito: REQ-QA-002 (scripts/checks/no-tests-skip.ts) solo
+  // puede verificar el motivo de un test.skip() si abre y cierra en la misma línea
+  // (falla cerrado ante multilínea) -- no reformatear a varias líneas.
+  test.skip(({ browserName }) => browserName !== "chromium", "La comparación exige el mismo motor Chrome en ambas capturas.");
 
   // eslint-disable-next-line no-empty-pattern -- Playwright exige la firma (fixtures, testInfo); no se usa ningún fixture aquí.
   test("logo/tokens/tipografía: mismo Chrome, mismos flags --force-prefers-reduced-motion", async ({}, testInfo) => {

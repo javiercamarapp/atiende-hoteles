@@ -206,9 +206,15 @@ describe("fraude interno (REQ-REC-014)", () => {
 
     it("control negativo: una venta POS que SÍ coincide con un cargo F&B posteado no alerta", async () => {
       const { folioId } = await nuevaReserva();
+      // REQ-AB-012: un cargo de concepto 'ab' sin verificación de identidad ahora
+      // exige un rol administrativo (gm/owner) -- fnbToken (rol 'fnb') ya no puede
+      // postearlo sin verificacionIdentidad. Este test es sobre reconciliación
+      // PMS/POS, no sobre identidad, así que usamos el override legítimo (gmToken)
+      // en vez de debilitar el guard o inventar datos de huésped que no existen en
+      // este fixture.
       const cargoRes = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cargos`, {
         method: "POST",
-        headers: { ...auth(fnbToken), "idempotency-key": crypto.randomUUID() },
+        headers: { ...auth(gmToken), "idempotency-key": crypto.randomUUID() },
         body: JSON.stringify({ descripcion: "Consumo de restaurante", monto: 480, concepto: "ab" }),
       });
       expect(cargoRes.status).toBe(201);
