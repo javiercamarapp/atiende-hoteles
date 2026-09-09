@@ -17,6 +17,7 @@ import { startIdentityVaultPurgeScheduler } from "./jobs/purgeIdentityVaultSched
 import { startConversationPurgeScheduler } from "./jobs/purgeConversationsScheduler.ts";
 import { startTicketEscalationScheduler } from "./jobs/ticketEscalationScheduler.ts";
 import { startEmailOutboxScheduler, resolveEmailPort } from "./emailOutbox/runEmailOutboxWorker.ts";
+import { startPaymentPreauthPurgeScheduler } from "./jobs/purgePaymentPreauthScheduler.ts";
 
 async function main() {
   // REQ-SEG-013 · antes de leer cualquier secreto de `process.env`, le da a Vault/KMS
@@ -118,6 +119,16 @@ async function main() {
     onError: (err) => logger.error({ err }, "worker de correo por outbox: error en tick"),
   });
 
+  // REQ-SEG-011 · "los tokens de VCC/pre-autorización no utilizados deben
+  // purgarse/expirar automáticamente" -- mismo criterio que las purgas de arriba:
+  // planificador en proceso, lock por hotel, log + métrica por corrida (ver
+  // jobs/purgePaymentPreauthScheduler.ts).
+  const paymentPreauthPurgeScheduler = startPaymentPreauthPurgeScheduler(engine.admin, {
+    onHotelResult: (hotelId, result) => deps.metrics.incrementPaymentPreauthPurged(hotelId, result.expiredTotal),
+    onTick: (results) => logger.info({ results }, "purga de pre-autorizaciones de pago: tick"),
+    onError: (err) => logger.error({ err }, "purga de pre-autorizaciones de pago: error en tick"),
+  });
+
   const shutdown = async () => {
     logger.info("apagando apps/api");
     nightAuditScheduler.stop();
@@ -125,6 +136,7 @@ async function main() {
     conversationPurgeScheduler.stop();
     ticketEscalationScheduler.stop();
     emailOutboxScheduler.stop();
+    paymentPreauthPurgeScheduler.stop();
     await engine.stop();
     process.exit(0);
   };

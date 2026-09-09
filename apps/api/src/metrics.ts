@@ -46,6 +46,10 @@ export class MetricsRegistry {
   // ya escriben en audit_log, por hotel.
   private identityVaultPurgedTotal = new Map<string, number>();
   private conversationsPurgedTotal = new Map<string, number>();
+  // REQ-SEG-011: mismo criterio -- espejo en memoria de lo que
+  // jobs/purgePaymentPreauthScheduler.ts ya escribe en audit_log, por hotel, cada vez
+  // que expira/purga tokens de pre-autorización vencidos.
+  private paymentPreauthPurgedTotal = new Map<string, number>();
 
   private getHistogram(key: string): HistogramState {
     let h = this.histograms.get(key);
@@ -130,6 +134,16 @@ export class MetricsRegistry {
     this.conversationsPurgedTotal.set(key, (this.conversationsPurgedTotal.get(key) ?? 0) + count);
   }
 
+  /** REQ-SEG-011: incrementa el contador de pre-autorizaciones de pago expiradas y
+   *  purgadas (token_ref limpiado) por hotel -- llamado desde
+   *  jobs/purgePaymentPreauthScheduler.ts en cada tick que sí purgó algo (ver
+   *  server.ts). */
+  incrementPaymentPreauthPurged(hotelId: string, count: number): void {
+    if (count <= 0) return;
+    const key = labelKey({ hotel: hotelId });
+    this.paymentPreauthPurgedTotal.set(key, (this.paymentPreauthPurgedTotal.get(key) ?? 0) + count);
+  }
+
   /** Solo para pruebas: limpia todo el estado acumulado. */
   reset(): void {
     this.histograms.clear();
@@ -137,6 +151,7 @@ export class MetricsRegistry {
     this.agentCostUsd.clear();
     this.identityVaultPurgedTotal.clear();
     this.conversationsPurgedTotal.clear();
+    this.paymentPreauthPurgedTotal.clear();
   }
 
   private renderHistograms(): string {
@@ -239,6 +254,21 @@ export class MetricsRegistry {
     return lines.join("\n") + "\n";
   }
 
+  /** REQ-SEG-011: observabilidad real de que la purga de tokens de pre-autorización
+   *  vencidos CORRE (no solo que la función existe), mismo criterio que
+   *  `renderIdentityVaultPurge`/`renderConversationsPurge`. */
+  private renderPaymentPreauthPurge(): string {
+    if (this.paymentPreauthPurgedTotal.size === 0) return "";
+    const lines = [
+      "# HELP payment_preauth_purged_total Pre-autorizaciones de pago expiradas y con token_ref purgado, por hotel, desde que el proceso arrancó.",
+      "# TYPE payment_preauth_purged_total counter",
+    ];
+    for (const [key, value] of this.paymentPreauthPurgedTotal) {
+      lines.push(`payment_preauth_purged_total{${key}} ${value}`);
+    }
+    return lines.join("\n") + "\n";
+  }
+
   async render(admin: DbClient, dbPoolErrorCount?: number): Promise<string> {
     const parts: string[] = [
       this.renderHistograms(),
@@ -246,6 +276,7 @@ export class MetricsRegistry {
       this.renderAgentCost(),
       this.renderIdentityVaultPurge(),
       this.renderConversationsPurge(),
+      this.renderPaymentPreauthPurge(),
     ];
 
     parts.push(await this.renderOutboxGauges(admin));
