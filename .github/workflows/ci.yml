@@ -93,6 +93,17 @@ jobs:
       # consentimiento biométrico persiste 0 dato biométrico), este paso además la hace
       # fallar rápido, antes de la suite completa (ADR-009).
       - run: node scripts/checks/no-biometria-facial.ts
+      # REQ-AGT-006 (GOB-035/BP-123/H08-020/BP-168): falla si aparece una librería/API/
+      # vendor de reconocimiento de LOCUTOR (voiceprint/speaker recognition) o de
+      # reconocimiento facial en `apps/`/`packages/` -- verificación independiente de la
+      # de REQ-SEG-003/REQ-HUE-022 de arriba (ese script solo cubre lo facial; este cubre
+      # ambas, con su propia lista de patrones, ver comentario de archivo) -- ver
+      # scripts/checks/no-voiceprint-facial.ts. Corre también dentro de `npm test`
+      # (tests/adversarial/pii-redaction-trazas.spec.ts, que además verifica de extremo a
+      # extremo contra `embedded-postgres` real que una traza sintética con PII persiste
+      # 0 PII en `audit_log`/`agent_run`), este paso además la hace fallar rápido, antes
+      # de la suite completa (ADR-009).
+      - run: node scripts/checks/no-voiceprint-facial.ts
       # REQ-QA-002 (GOB-012): falla si aparece `xit(`/`xdescribe(`/`it.skip(`/
       # `describe.skip(` en `tests/` (prohibidos sin excepción -- ninguna forma de
       # documentar un motivo), o un `test.skip(` (Playwright) fuera de `tests/e2e/`, o

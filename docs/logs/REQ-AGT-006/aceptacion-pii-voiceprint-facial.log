@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/adversarial/pii-redaction-trazas.spec.ts (3 tests) 2730ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  18:15:21
+   Duration  3.91s (transform 246ms, setup 0ms, collect 554ms, tests 2.73s, environment 0ms, prepare 256ms)
+
+REQ-AGT-006 OK: 0 referencias a reconocimiento de voz (voiceprint) o facial en apps/ y packages/ (24 patrones de voiceprint + 24 patrones faciales verificados, comentarios excluidos).
+EXIT_CODE=0

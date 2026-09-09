@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/integration/api/agentes.spec.ts (10 tests) 1582ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  18:15:34
+   Duration  2.88s (transform 615ms, setup 0ms, collect 1.11s, tests 1.58s, environment 0ms, prepare 40ms)
+
+EXIT_CODE=0
