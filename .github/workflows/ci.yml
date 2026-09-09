@@ -167,15 +167,18 @@ jobs:
           cache: "npm"
       - run: npm ci
       # Mitigacion de un bug conocido de npm con dependencias opcionales
-      # (github.com/npm/cli/issues/4828): `npm ci` en Linux a veces no descarga el
-      # binding nativo especifico de plataforma de un paquete opcional (aqui,
+      # (github.com/npm/cli/issues/4828): `npm ci` en Linux no descarga el binding
+      # nativo especifico de plataforma de un paquete opcional (aqui,
       # @rolldown/binding-linux-x64-gnu que usa vite/rolldown vía apps/web), aunque
       # esta declarado correctamente en package-lock.json -- falla recien al
-      # ejecutar `vite build`, no en la instalacion misma. `npm install` (no solo
-      # `ci`) fuerza una segunda pasada de resolucion que sí lo trae. Encontrado
-      # recien porque el job "test" nunca antes habia pasado en esta rama -- el
-      # job "build" jamas habia llegado a ejecutarse de verdad hasta ahora.
-      - run: npm install --no-save
+      # ejecutar `vite build`, no en la instalacion misma. Un `npm install` ENCIMA
+      # de node_modules ya poblado por `npm ci` NO alcanza a corregirlo (verificado
+      # en CI real: mismo error exacto) -- el mensaje de error del propio rolldown
+      # dice explicitamente el remedio: hace falta un reinstall limpio (node_modules
+      # eliminado primero). Encontrado porque el job "test" nunca antes habia
+      # pasado en esta rama -- el job "build" jamas habia llegado a ejecutarse de
+      # verdad hasta ahora.
+      - run: rm -rf node_modules && npm install
       - run: npm run build
       - uses: actions/upload-artifact@v4
         with:
@@ -195,15 +198,18 @@ jobs:
           cache: "npm"
       - run: npm ci
       # Mitigacion de un bug conocido de npm con dependencias opcionales
-      # (github.com/npm/cli/issues/4828): `npm ci` en Linux a veces no descarga el
-      # binding nativo especifico de plataforma de un paquete opcional (aqui,
+      # (github.com/npm/cli/issues/4828): `npm ci` en Linux no descarga el binding
+      # nativo especifico de plataforma de un paquete opcional (aqui,
       # @rolldown/binding-linux-x64-gnu que usa vite/rolldown vía apps/web), aunque
       # esta declarado correctamente en package-lock.json -- falla recien al
-      # ejecutar `vite build`, no en la instalacion misma. `npm install` (no solo
-      # `ci`) fuerza una segunda pasada de resolucion que sí lo trae. Encontrado
-      # recien porque el job "test" nunca antes habia pasado en esta rama -- el
-      # job "build" jamas habia llegado a ejecutarse de verdad hasta ahora.
-      - run: npm install --no-save
+      # ejecutar `vite build`, no en la instalacion misma. Un `npm install` ENCIMA
+      # de node_modules ya poblado por `npm ci` NO alcanza a corregirlo (verificado
+      # en CI real: mismo error exacto) -- el mensaje de error del propio rolldown
+      # dice explicitamente el remedio: hace falta un reinstall limpio (node_modules
+      # eliminado primero). Encontrado porque el job "test" nunca antes habia
+      # pasado en esta rama -- el job "build" jamas habia llegado a ejecutarse de
+      # verdad hasta ahora.
+      - run: rm -rf node_modules && npm install
       - run: npm run build
       # Instala el canal "chrome" real (no solo Chromium genérico) -- mismo canal que
       # tests/e2e usa en desarrollo (`channel: 'chrome'`, docs/runbooks/despliegue.md
