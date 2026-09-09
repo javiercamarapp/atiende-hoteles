@@ -1,4 +1,4 @@
--- ORIGEN: packages/db/migrations/0122_auditoria_conversaciones_semanal.sql sha256:63390aa2672489ef7cb2fa976e6e47e324d32f2f46638c5ff4e2616183a85746
+-- ORIGEN: packages/db/migrations/0124_auditoria_conversaciones_semanal.sql sha256:63390aa2672489ef7cb2fa976e6e47e324d32f2f46638c5ff4e2616183a85746
 -- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
 -- nuevo el script tras cambiar la migración fuente.
 
