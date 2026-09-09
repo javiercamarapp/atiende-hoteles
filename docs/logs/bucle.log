@@ -107,3 +107,4 @@
 2026-09-08 23:23:16 ciclo=61 evento=latido 23:22 esperando push del integrador
 2026-09-08 23:25:50 ciclo=61 evento=limpieza 4 vitest huérfanos del integrador estancado; integrador fresco sin actividad de transcript desde 22:30 (posible Bash largo)
 2026-09-08 23:27:09 ciclo=62 evento=FIX_CRITICO domain-hotel/src/index.ts no cargaba (6 exports a archivos inexistentes desde 5e21c12, ajeno a H12c) + forecast/index.ts sin re-exportar (REQ-AGT-012); typecheck/lint/build en verde tras fusionar origin/main (33 commits) sobre H12a/H12b/H12c; push en curso
+2026-09-08 23:28:34 ciclo=62 evento=PARADA_POR_TRASPASO origin/main=d15573e cron=4fe17d3a_eliminado
