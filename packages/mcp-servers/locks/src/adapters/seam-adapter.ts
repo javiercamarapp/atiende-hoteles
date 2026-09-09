@@ -11,6 +11,8 @@ import { PortUnavailableError, checkEnvCredentials, type AdapterStatus } from "@
 import {
   DoubleConfirmationRequiredError,
   PmsEvidenceMissingError,
+  assertValidIssueKeyCommand,
+  assertValidRevokeKeyCommand,
   type LockPort,
   type IssueKeyInput,
   type DigitalKey,
@@ -61,8 +63,12 @@ export class SeamAdapter implements LockPort {
   }
 
   async issueKey(input: IssueKeyInput, confirmations: [LockConfirmation, LockConfirmation]): Promise<DigitalKey> {
-    // Las guardas de doble confirmación + evidencia del PMS se verifican SIEMPRE,
-    // incluso antes de comprobar si hay hardware -- nunca se saltan por falta de cuenta Seam.
+    // REQ-SEG-015/REQ-REC-009: validación de RUNTIME primero -- rechaza fail-closed un
+    // `origin` inválido (p.ej. "voz"/"regla_automatica_energia") aunque haya llegado sin
+    // pasar por el compilador de TypeScript. Las guardas de doble confirmación +
+    // evidencia del PMS se verifican SIEMPRE después, incluso antes de comprobar si hay
+    // hardware -- nunca se saltan por falta de cuenta Seam.
+    assertValidIssueKeyCommand(input, confirmations);
     assertDoubleConfirmationAndEvidence(confirmations, input.pmsEvidence);
     this.assertAvailable();
     void SEAM_API_BASE;
@@ -70,6 +76,7 @@ export class SeamAdapter implements LockPort {
   }
 
   async revokeKey(input: RevokeKeyInput, confirmations: [LockConfirmation, LockConfirmation]): Promise<DigitalKey> {
+    assertValidRevokeKeyCommand(input, confirmations);
     const [a, b] = confirmations;
     if (!a.approved || !b.approved || a.confirmedBy === b.confirmedBy) {
       throw new DoubleConfirmationRequiredError("ambas confirmaciones deben ser approved:true de actores distintos");

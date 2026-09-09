@@ -9,6 +9,8 @@ import type { AdapterStatus } from "@atiende-hoteles/mcp-shared";
 import {
   DoubleConfirmationRequiredError,
   PmsEvidenceMissingError,
+  assertValidIssueKeyCommand,
+  assertValidRevokeKeyCommand,
   type LockPort,
   type IssueKeyInput,
   type DigitalKey,
@@ -45,6 +47,10 @@ export class SimulatedLockAdapter implements LockPort {
   }
 
   async issueKey(input: IssueKeyInput, confirmations: [LockConfirmation, LockConfirmation]): Promise<DigitalKey> {
+    // REQ-SEG-015/REQ-REC-009: valida en RUNTIME (no solo en tipos) antes de cualquier
+    // otra cosa -- rechaza fail-closed un `origin` como "voz"/"regla_automatica_energia"
+    // aunque haya llegado sin pasar por el compilador de TypeScript.
+    assertValidIssueKeyCommand(input, confirmations);
     assertDoubleConfirmation(confirmations);
     if (!input.pmsEvidence.checkInPaid || !input.pmsEvidence.identityVerified) {
       throw new PmsEvidenceMissingError(input.reservationId);
@@ -65,6 +71,7 @@ export class SimulatedLockAdapter implements LockPort {
   }
 
   async revokeKey(input: RevokeKeyInput, confirmations: [LockConfirmation, LockConfirmation]): Promise<DigitalKey> {
+    assertValidRevokeKeyCommand(input, confirmations);
     assertDoubleConfirmation(confirmations);
     const key = this.keys.get(input.keyId);
     if (!key) throw new Error(`SimulatedLockAdapter: llave desconocida ${input.keyId}`);

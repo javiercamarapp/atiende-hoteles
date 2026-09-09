@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /private/tmp/hoteles-fix-digital-keys-security
+
+ ✓ tests/unit/mcp-servers/architecture/lock-isolation.spec.ts (7 tests) 5ms
+ ✓ tests/unit/mcp-servers/locks/contract.spec.ts (11 tests) 16ms
+ ✓ tests/adversarial/llaves-digitales.spec.ts (26 tests) 41ms
+
+ Test Files  3 passed (3)
+      Tests  44 passed (44)
+   Start at  22:57:05
+   Duration  487ms (transform 177ms, setup 0ms, collect 409ms, tests 62ms, environment 0ms, prepare 141ms)
+
