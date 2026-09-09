@@ -59,9 +59,12 @@ import { Hono } from "hono";
 import { z } from "zod";
 import {
   SEND_WHATSAPP_TEMPLATE_TOOL_NAME,
+  AGENT_DEFINITIONS,
   AVISO_PRIVACIDAD_PATH,
+  RECEPCION_VIRTUAL,
   buildDisclosureMessageConAvisoPrivacidad,
   buildToolContext,
+  createGuestTicketTool,
   createRunBudget,
   createSendWhatsappTemplateTool,
   createTransactionalTemplateApprovalQueue,
@@ -74,17 +77,26 @@ import {
 } from "@atiende-hoteles/agent-core";
 import { WebhookReplayError, WebhookSignatureError } from "@atiende-hoteles/mcp-shared";
 import {
+  classifyGuestMessage,
   detectAndRedactPaymentData,
   lintMarketingTemplateBody,
   looksLikeCheckinDataInFreeText,
 } from "@atiende-hoteles/domain-hotel";
 import { resolveWhatsappWebhookVerifier, sharedWhatsappAdapter, whatsappAdapterSimulated } from "../lib/messaging.ts";
 import type { DbClient } from "@atiende-hoteles/db";
+import { resolveAgentConfig } from "./agentes.ts";
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
 import { ADMIN_ROLES } from "../domain/roles.ts";
 import type { AppDeps, HonoEnvBindings } from "../types.ts";
+
+// REQ-HUE-014 (mensaje/petición del huésped -> `guest_ticket`, ver comentario extenso
+// más abajo junto al bloque que la usa): definición de `recepcion_virtual` ya
+// catalogada en agent-core `agents.ts` -- MISMO patrón `AGENT_DEFINITIONS[...]!` que
+// `routes/vozElevenlabs.ts` (ese archivo importa `RECEPCION_VIRTUAL_DEF` con este
+// nombre exacto; se reutiliza aquí sin re-declarar la tabla de agentes).
+const RECEPCION_VIRTUAL_DEF = AGENT_DEFINITIONS[RECEPCION_VIRTUAL]!;
 
 const enviarSchema = z.object({
   guestPhone: z.string().trim().min(8).max(20),
@@ -361,6 +373,69 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
                    $4, $5, $6);`,
           [configRows[0].tenant_id, hotelId, convRows[0]!.id, redirect.externalMessageId, redirect.status, whatsappAdapterSimulated],
         );
+      }
+
+      // REQ-HUE-014: "cada mensaje/petición del huésped debe convertirse en un ticket
+      // con departamento/habitación/prioridad/SLA" -- este webhook es el ÚNICO punto
+      // real de este repo que procesa un mensaje entrante de WhatsApp (ver comentario de
+      // archivo), así que es donde debía conectarse: hasta este cambio, un texto libre
+      // que no calzaba ninguno de los patrones fijos de arriba (disclosure/es-humano/
+      // tarjeta/check-in) solo se guardaba (INSERT de arriba) sin ninguna acción de
+      // negocio -- `classifyGuestMessage`/`createGuestTicketTool` (domain-hotel/
+      // agent-core) ya existían y los usaban `routes/tickets.ts` (QR/staff sin selector
+      // de categoría) y `routes/agentes.ts` (escalación de menor no acompañado); esta es
+      // la MISMA función y la MISMA tool, no una reimplementación -- "una sola
+      // implementación de la regla, todos los caminos de entrada" (mismo criterio que el
+      // comentario de cabecera de `ticketTools.ts`).
+      //
+      // Se omite cuando el mensaje ya disparó una de las respuestas fijas de arriba
+      // (pregunta "¿eres humano?", número de tarjeta, intento de check-in por texto):
+      // esos ya tienen su propia respuesta resuelta, no son peticiones operativas que un
+      // departamento deba atender. El disclosure de primer turno NO es una exclusión --
+      // es incondicional por turno, no una clasificación de contenido, así que el mismo
+      // mensaje que dispara el disclosure también puede generar su ticket.
+      //
+      // Gate del hotel para `recepcion_virtual` (agent_config) -- MISMO criterio que
+      // `routes/vozElevenlabs.ts` punto 3 de su comentario de archivo: mientras el gate
+      // siga en "shadow" (default, BP-016), no se crea ningún ticket real desde este
+      // canal -- el WhatsApp entrante es otro transporte del MISMO agente
+      // `recepcion_virtual` que ya respeta ese gate en voz. "propone"/"autopilot" sí
+      // crean el ticket: `crear_ticket_huesped` tiene `needsApproval: false` (ver
+      // comentario de `ticketTools.ts`: registrar una petición no mueve dinero ni sale
+      // del sistema, GOB-026 no aplica), así que no hay una cola de aprobación
+      // intermedia que distinga esos dos gates para esta tool en particular (igual que
+      // en `AgentRunner.run()`, runner.ts).
+      //
+      // Sin habitación: ninguna tabla de este repo asocia un teléfono de WhatsApp
+      // (`guest.phone`) a una reserva/habitación activa (ver 0005_guest.sql/
+      // 0006_reservation.sql -- `reservation` ni siquiera referencia `room`, solo
+      // `room_type`; el canal "qr" resuelve la habitación porque el QR de la propia
+      // habitación se la manda explícita al crear el ticket, `routes/tickets.ts`). Se
+      // crea el ticket SIN `roomCode` (la tool ya soporta esto, ver `ticketTools.ts`)
+      // en vez de adivinar una habitación -- honestidad de "esqueleto real" (ADR-006/
+      // 007) sobre inventar una asociación que este repo no puede verificar hoy.
+      const mensajeYaAtendidoPorPatronFijo =
+        esPreguntaSiEsHumano(event.textBody) || pago.containsCardNumber || looksLikeCheckinDataInFreeText(event.textBody);
+      if (event.textBody && event.textBody.trim().length > 0 && !mensajeYaAtendidoPorPatronFijo) {
+        const agentConfig = await resolveAgentConfig(deps.engine.admin, hotelId, RECEPCION_VIRTUAL_DEF);
+        if (agentConfig.gate !== "shadow") {
+          const classification = classifyGuestMessage(bodyParaGuardar);
+          const ticketCtx = buildToolContext(
+            {
+              orgId: configRows[0].tenant_id,
+              hotelId,
+              actor: { type: "system", id: "whatsapp_webhook" },
+              requestId: `whatsapp-ticket-${event.eventId}`,
+            },
+            createRunBudget({}),
+          );
+          await createGuestTicketTool({ db: deps.engine.admin }).run(ticketCtx, {
+            guestMessage: bodyParaGuardar,
+            department: classification.department,
+            priority: classification.priority,
+            channel: "whatsapp",
+          });
+        }
       }
     } else if (event.type === "message.status_updated" && event.externalMessageId) {
       await deps.engine.admin.query(
