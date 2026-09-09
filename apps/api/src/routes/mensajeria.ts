@@ -1,18 +1,26 @@
 // H6b · /hoteles/:hotelId/mensajeria — bandeja de conversaciones de WhatsApp por huésped
 // (REQ-HUE-001/002, REQ-HK-002/013/021, H09) sobre `MessagingPort`
-// (packages/mcp-servers/whatsapp): SIEMPRE `FakeWhatsappAdapter` en este hito (sin
-// credenciales de Meta, ADR-007 "PENDIENTE DE CREDENCIALES"), nunca una llamada real.
+// (packages/mcp-servers/whatsapp): `MetaWhatsappAdapter` real si `WHATSAPP_ACCESS_TOKEN`/
+// `WHATSAPP_PHONE_NUMBER_ID`/`WHATSAPP_APP_SECRET` están configuradas (ver
+// `lib/messaging.ts`, mismo patrón que `resolveEmailPort`), `FakeWhatsappAdapter` si no
+// (ADR-007 "PENDIENTE DE CREDENCIALES") -- fix de auditoría: antes de este cambio era
+// SIEMPRE el Fake, sin rama condicional, aunque las credenciales estuvieran presentes.
 // Enviar una plantilla reutiliza la MISMA tool de dominio de agent-core
 // (`enviar_mensaje_whatsapp_plantilla`); las plantillas transaccionales configuradas por
 // hotel (`hotel_messaging_config.transactional_templates`) se auto-aprueban sin espera
 // humana (`createTransactionalTemplateApprovalQueue`), cualquier otra queda pendiente en
 // `agent_approval` hasta que routes/aprobaciones.ts la decida.
 //
-// El webhook de entrada (`POST /hoteles/:hotelId/mensajeria/webhook`) es PUBLICO (Meta no
-// manda un Bearer de staff): la autorización es la firma HMAC del cuerpo crudo contra el
-// `webhook_secret` del hotel, mismo criterio de "sin sesión de staff, cliente admin" que
-// `routes/cancelacionPublica.ts`. Idempotencia por `event_id` vía `idempotency_key`
-// (0009/0011): un replay del MISMO evento nunca reprocesa ni duplica un mensaje.
+// El webhook de entrada (`GET`/`POST /hoteles/:hotelId/mensajeria/webhook`) es PUBLICO
+// (Meta no manda un Bearer de staff): el `GET` es la verificación de suscripción que
+// Meta exige antes de activar cualquier webhook (`hub.challenge`, ver handler abajo); la
+// autorización del `POST` es la firma HMAC-SHA256 del cuerpo crudo (`X-Hub-Signature-256`)
+// -- contra el `WHATSAPP_APP_SECRET` real cuando hay credenciales de Meta, o contra el
+// `webhook_secret` por hotel (desarrollo/pruebas) si no las hay, ver
+// `resolveWhatsappWebhookVerifier` en `lib/messaging.ts` -- mismo criterio de "sin sesión
+// de staff, cliente admin" que `routes/cancelacionPublica.ts`. Idempotencia por
+// `event_id` vía `idempotency_key` (0009/0011): un replay del MISMO evento nunca
+// reprocesa ni duplica un mensaje.
 //
 // REQ-HUE-021/REQ-SEG-007: las plantillas que el hotel clasifica como marketing
 // (`hotel_messaging_config.marketing_templates`, migración 0099) exigen opt-in previo
@@ -64,14 +72,13 @@ import {
   transactionalTemplateCheckFromDb,
   type SendWhatsappTemplateInput,
 } from "@atiende-hoteles/agent-core";
-import { FakeWhatsappAdapter } from "@atiende-hoteles/mcp-whatsapp";
 import { WebhookReplayError, WebhookSignatureError } from "@atiende-hoteles/mcp-shared";
 import {
   detectAndRedactPaymentData,
   lintMarketingTemplateBody,
   looksLikeCheckinDataInFreeText,
 } from "@atiende-hoteles/domain-hotel";
-import { sharedWhatsappAdapter } from "../lib/messaging.ts";
+import { resolveWhatsappWebhookVerifier, sharedWhatsappAdapter, whatsappAdapterSimulated } from "../lib/messaging.ts";
 import type { DbClient } from "@atiende-hoteles/db";
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
@@ -159,6 +166,28 @@ async function ensureMessagingConfig(db: DbClient, hotelId: string, orgId: strin
 export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
   const app = new Hono<HonoEnvBindings>();
 
+  // GET de verificación de webhook (Meta lo exige para poder activar CUALQUIER webhook,
+  // https://developers.facebook.com/docs/graph-api/webhooks/getting-started#verification-requests):
+  // al configurar la URL en el panel de Meta for Developers, Meta manda esta petición
+  // UNA vez con `hub.mode=subscribe`, `hub.verify_token` (el valor que tú mismo elegiste
+  // al configurar el webhook) y `hub.challenge` (un valor aleatorio) -- si el token
+  // coincide, se responde el `hub.challenge` tal cual (texto plano, no JSON) y Meta
+  // activa el webhook; si no coincide (o no hay token configurado), se rechaza SIEMPRE
+  // (fail-closed, nunca se activa un webhook con un token adivinado). El `verify_token`
+  // es del ÚNICO webhook de la app de Meta (no por hotel, ver limitación documentada en
+  // lib/messaging.ts) -- `WHATSAPP_WEBHOOK_VERIFY_TOKEN` es una sola variable de entorno
+  // global, no una columna de `hotel_messaging_config`.
+  app.get("/hoteles/:hotelId/mensajeria/webhook", (c) => {
+    const expected = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
+    const mode = c.req.query("hub.mode");
+    const token = c.req.query("hub.verify_token");
+    const challenge = c.req.query("hub.challenge");
+    if (!expected || mode !== "subscribe" || !token || token !== expected || !challenge) {
+      throw Errors.forbidden("Verificación de webhook de Meta fallida (hub.verify_token ausente o no coincide).");
+    }
+    return c.text(challenge, 200);
+  });
+
   // Webhook PUBLICO: sin authMiddleware/dbSession de staff a propósito (ver comentario de
   // archivo). Se registra ANTES del bloque `app.use` de abajo para que ese middleware
   // (que exige Bearer de staff) nunca intercepte esta ruta.
@@ -173,7 +202,7 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     }>("select webhook_secret, tenant_id from public.hotel_messaging_config where hotel_id = $1;", [hotelId]);
     if (!configRows[0]) throw Errors.notFound("Este hotel no tiene mensajería configurada.");
 
-    const adapter = new FakeWhatsappAdapter(undefined, undefined, configRows[0].webhook_secret);
+    const adapter = resolveWhatsappWebhookVerifier(configRows[0].webhook_secret);
     let event;
     try {
       event = await adapter.verifyAndNormalizeWebhook(rawBody, signature);
@@ -236,8 +265,16 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       const bodyParaGuardar = event.textBody ? pago.redactedText : "(mensaje sin texto)";
       await deps.engine.admin.query(
         `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, body, external_message_id, delivery_status, simulated, contiene_dato_sensible)
-         values ($1, $2, $3, 'entrante', 'whatsapp', $4, $5, 'entregado', true, $6);`,
-        [configRows[0].tenant_id, hotelId, convRows[0]!.id, bodyParaGuardar, event.externalMessageId ?? null, pago.containsSensitiveData],
+         values ($1, $2, $3, 'entrante', 'whatsapp', $4, $5, 'entregado', $6, $7);`,
+        [
+          configRows[0].tenant_id,
+          hotelId,
+          convRows[0]!.id,
+          bodyParaGuardar,
+          event.externalMessageId ?? null,
+          whatsappAdapterSimulated,
+          pago.containsSensitiveData,
+        ],
       );
 
       // REQ-HUE-006: disclosure de IA en el PRIMER mensaje del hilo -- se envía antes
@@ -253,17 +290,18 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
           to: event.from,
           templateName: "disclosure_ia",
           languageCode: "es_MX",
-          // El parámetro de plantilla real de Meta (pendiente de credenciales, ADR-007)
-          // llevaría esta misma URL -- aquí se conserva además como el `body` guardado
-          // (única fuente verificable en este entorno simulado, ver
-          // FakeWhatsappAdapter.sendTemplateMessage, que ignora `parameters`).
+          // Con `MetaWhatsappAdapter` real, este parámetro SÍ viaja en el `template.
+          // components[0].parameters` del POST real a Graph API (ver
+          // meta-whatsapp-adapter.ts); con el Fake (sin credenciales), se ignora para el
+          // envío pero el `body` guardado abajo (`disclosureConAviso`) es la fuente
+          // verificable de todos modos, real o simulado.
           parameters: [avisoPrivacidadUrl],
           clientMessageId: `disclosure-ia-${event.eventId}`,
         });
         await deps.engine.admin.query(
           `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, template_name, body, external_message_id, delivery_status, simulated)
-           values ($1, $2, $3, 'saliente', 'whatsapp', 'disclosure_ia', $4, $5, $6, true);`,
-          [configRows[0].tenant_id, hotelId, convRows[0]!.id, disclosureConAviso, disclosure.externalMessageId, disclosure.status],
+           values ($1, $2, $3, 'saliente', 'whatsapp', 'disclosure_ia', $4, $5, $6, $7);`,
+          [configRows[0].tenant_id, hotelId, convRows[0]!.id, disclosureConAviso, disclosure.externalMessageId, disclosure.status, whatsappAdapterSimulated],
         );
       }
 
@@ -280,8 +318,8 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         });
         await deps.engine.admin.query(
           `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, template_name, body, external_message_id, delivery_status, simulated)
-           values ($1, $2, $3, 'saliente', 'whatsapp', 'respuesta_es_humano', $4, $5, $6, true);`,
-          [configRows[0].tenant_id, hotelId, convRows[0]!.id, RESPUESTA_FIJA_ES_HUMANO, respuesta.externalMessageId, respuesta.status],
+           values ($1, $2, $3, 'saliente', 'whatsapp', 'respuesta_es_humano', $4, $5, $6, $7);`,
+          [configRows[0].tenant_id, hotelId, convRows[0]!.id, RESPUESTA_FIJA_ES_HUMANO, respuesta.externalMessageId, respuesta.status, whatsappAdapterSimulated],
         );
       }
 
@@ -297,8 +335,8 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
           `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, template_name, body, external_message_id, delivery_status, simulated)
            values ($1, $2, $3, 'saliente', 'whatsapp', 'pago_seguro_enlace',
                    'Por tu seguridad, nunca compartas tu tarjeta por chat: te compartimos un enlace de pago seguro.',
-                   $4, $5, true);`,
-          [configRows[0].tenant_id, hotelId, convRows[0]!.id, aviso.externalMessageId, aviso.status],
+                   $4, $5, $6);`,
+          [configRows[0].tenant_id, hotelId, convRows[0]!.id, aviso.externalMessageId, aviso.status, whatsappAdapterSimulated],
         );
       }
 
@@ -320,8 +358,8 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
           `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, template_name, body, external_message_id, delivery_status, simulated)
            values ($1, $2, $3, 'saliente', 'whatsapp', 'checkin_enlace_estructurado',
                    'Por seguridad, tu check-in no puede completarse por chat: te compartimos un enlace seguro de un solo uso.',
-                   $4, $5, true);`,
-          [configRows[0].tenant_id, hotelId, convRows[0]!.id, redirect.externalMessageId, redirect.status],
+                   $4, $5, $6);`,
+          [configRows[0].tenant_id, hotelId, convRows[0]!.id, redirect.externalMessageId, redirect.status, whatsappAdapterSimulated],
         );
       }
     } else if (event.type === "message.status_updated" && event.externalMessageId) {
@@ -497,7 +535,7 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       );
     }
 
-    const tool = createSendWhatsappTemplateTool({ db, messaging: sharedWhatsappAdapter, simulated: true });
+    const tool = createSendWhatsappTemplateTool({ db, messaging: sharedWhatsappAdapter, simulated: whatsappAdapterSimulated });
     const approvalQueue = createTransactionalTemplateApprovalQueue(
       new PostgresApprovalQueue(db),
       transactionalTemplateCheckFromDb(db),

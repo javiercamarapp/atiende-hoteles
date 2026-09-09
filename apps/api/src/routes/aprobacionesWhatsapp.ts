@@ -2,7 +2,9 @@
 // poder ejecutarse mediante botón directamente en el mensaje de WhatsApp, sin
 // requerir acceso al panel web." Webhook PÚBLICO (Meta no manda sesión de staff),
 // mismo criterio de verificación que routes/mensajeria.ts (HMAC contra el
-// `webhook_secret` del hotel, idempotencia persistente por `event_id`). El actor real
+// `WHATSAPP_APP_SECRET` real cuando hay credenciales de Meta, o contra el
+// `webhook_secret` del hotel en desarrollo/pruebas -- ver `resolveWhatsappWebhookVerifier`
+// en lib/messaging.ts -- idempotencia persistente por `event_id`). El actor real
 // (quién aprobó) se resuelve por el número de WhatsApp remitente contra
 // `staff_user.whatsapp_phone` (migración 0053) -- nunca por un JWT, porque
 // deliberadamente no existe ninguno en este camino.
@@ -12,7 +14,7 @@
 // "más permisivo" que el panel, solo un canal distinto para el mismo owner/gm.
 import { Hono } from "hono";
 import { WebhookReplayError, WebhookSignatureError } from "@atiende-hoteles/mcp-shared";
-import { FakeWhatsappAdapter } from "@atiende-hoteles/mcp-whatsapp";
+import { resolveWhatsappWebhookVerifier } from "../lib/messaging.ts";
 import { decidirYEjecutarAprobacion } from "../lib/aprobacionEjecutor.ts";
 import { Errors } from "../lib/errors.ts";
 import { ADMIN_ROLES, type HotelRole } from "../domain/roles.ts";
@@ -34,7 +36,7 @@ export function aprobacionesWhatsappRoutes(deps: AppDeps): Hono<HonoEnvBindings>
     );
     if (!configRows[0]) throw Errors.notFound("Este hotel no tiene mensajería configurada.");
 
-    const adapter = new FakeWhatsappAdapter(undefined, undefined, configRows[0].webhook_secret);
+    const adapter = resolveWhatsappWebhookVerifier(configRows[0].webhook_secret);
     let event;
     try {
       event = await adapter.verifyAndNormalizeWebhook(rawBody, signature);
