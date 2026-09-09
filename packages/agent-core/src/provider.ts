@@ -166,6 +166,73 @@ export class FakeProvider implements LlmProvider {
   }
 }
 
+export interface ProviderRouterOptions {
+  /** Proveedores en orden de prioridad; el primero DISPONIBLE de la lista es al que se
+   * llama. Se necesita al menos uno. */
+  readonly providers: readonly LlmProvider[];
+  readonly id?: string;
+}
+
+/**
+ * Router propio de proveedor de modelo (REQ-AGT-011/LLM-022): en los canales
+ * conversacionales (`recepcion_virtual`/`enrutador_mensajes`, ver `roles.ts`
+ * `ModelRole` "canal"/"enrutador") el `AgentRunner` debe hablar con un `LlmProvider` que
+ * garantice continuidad si el primario no esta disponible, en vez de que cada punto de
+ * wiring (`apps/api`) tenga que decidir a mano cual proveedor usar. `ProviderRouter`
+ * cubre el escenario que NINGUN otro mecanismo de este archivo cubria: el proveedor
+ * primario todavia NO se ha intentado llamar y YA se sabe, por `isAvailable()`, que va a
+ * fallar (sin credenciales, o cualquier chequeo de salud que el propio `LlmProvider`
+ * implemente) -- salta derecho al siguiente proveedor disponible de la lista en vez de
+ * pagar una llamada que ya se sabe perdida.
+ *
+ * Un fallo TRANSITORIO a mitad de una llamada ya en curso (`ProviderTransientError`) se
+ * propaga tal cual, sin capturarlo aqui: ese caso ya lo cubre
+ * `AgentRunnerOptions.fallbackProvider` (`runner.ts`), que reintenta la MISMA ronda con
+ * el proveedor de respaldo y SI deja rastro en la traza (`provider_fallback`,
+ * `AgentTraceEvent`) -- este router resuelve el caso anterior a esa llamada, no lo
+ * duplica. Las dos capas se combinan pasando el mismo proveedor de respaldo como
+ * `providers[1]` de este router Y como `fallbackProvider` del `AgentRunner` (ver
+ * `apps/api/src/routes/agentes.ts`), para continuidad tanto si el primario nunca estuvo
+ * disponible como si falla a medio camino.
+ */
+export class ProviderRouter implements LlmProvider {
+  readonly id: string;
+  private readonly providers: readonly LlmProvider[];
+  private lastUsedProviderId: string | undefined;
+
+  constructor(options: ProviderRouterOptions) {
+    if (options.providers.length === 0) {
+      throw new Error("ProviderRouter requiere al menos un LlmProvider registrado");
+    }
+    this.id = options.id ?? "router";
+    this.providers = options.providers;
+  }
+
+  /** true si CUALQUIERA de los proveedores registrados esta disponible -- el router en
+   * su conjunto solo esta "caido" cuando TODOS lo estan. */
+  isAvailable(): boolean {
+    return this.providers.some((provider) => provider.isAvailable());
+  }
+
+  /** `id` del proveedor que de verdad resolvio la ultima llamada -- `undefined` antes de
+   * la primera. Util para atribuir costo/trazabilidad sin adivinar. */
+  getLastUsedProviderId(): string | undefined {
+    return this.lastUsedProviderId;
+  }
+
+  async complete(params: LlmCompleteParams): Promise<LlmCompletion> {
+    const chosen = this.providers.find((provider) => provider.isAvailable());
+    if (!chosen) {
+      throw new ProviderUnavailableError(
+        this.id,
+        `ningun proveedor disponible en este router (probados: ${this.providers.map((p) => p.id).join(", ")})`,
+      );
+    }
+    this.lastUsedProviderId = chosen.id;
+    return chosen.complete(params);
+  }
+}
+
 export interface EnvProviderOptions {
   readonly id?: string;
   /** Orden de prioridad de variables de entorno a revisar. */

@@ -102,8 +102,9 @@ humano via API/WhatsApp/web -- ver ADR-006) implemente el mismo contrato sin toc
 
 Bucle de tool-calling con proveedor LLM abstracto (`LlmProvider`). Nunca termina en
 silencio: toda corrida regresa un `AgentRunResult` con `status` explicito
-(`completado | esperando_aprobacion | agotado_pasos | presupuesto_agotado |
-no_configurado | error_proveedor | truncado`) y un `message` legible para un humano.
+(`completado | esperando_aprobacion | accion_rechazada | agotado_pasos |
+presupuesto_agotado | no_configurado | error_proveedor | paralelismo_dinero_bloqueado |
+roi_event_faltante | truncado`) y un `message` legible para un humano.
 
 - **Loop-guard**: (a) detecta la repeticion inmediata de la misma tool+input y corta
   antes de re-ejecutarla; (b) en la ultima ronda permitida, si ninguna de las tools
@@ -131,6 +132,20 @@ no_configurado | error_proveedor | truncado`) y un `message` legible para un hum
   `needsApproval: true` (obligatorio para `external`/`money`) sigue pasando por la
   `ApprovalQueue` -- el gate y `needsApproval` son controles independientes y
   complementarios.
+- **Cobertura de ROIEvent (REQ-AGT-003/H17-001/GOB-037)**: justo despues de ejecutar con
+  exito (`result.ok===true`) cualquier tool `effect="money"`, `AgentRunner` invoca
+  `tool.deriveRoiEvent(ctx, input, result)` (`tool.ts`) y persiste el `ROIEvent`
+  resultante via `AgentRunnerOptions.roiEventRecorder` (interfaz `RoiEventRecorder`,
+  implementacion real `createPostgresRoiEventRecorder` en `tools/roiTools.ts`) -- NUNCA
+  depende de que el modelo decida llamar aparte la tool `registrar_evento_roi` (esa
+  tool sigue existiendo para eventos que NINGUNA tool `money` produce, p.ej. el cierre
+  nocturno del auditor). Fail-closed: si la tool no declara `deriveRoiEvent`, la
+  devuelve `null`, no hay `roiEventRecorder` configurado, o la persistencia falla, la
+  corrida se cierra `status: "roi_event_faltante"` -- la mutacion real que la tool ya
+  hizo NO se revierte (este nucleo no hace two-phase commit sobre efectos externos),
+  pero tampoco se reporta `"completado"` sin esa cobertura. Verificado con
+  `embedded-postgres`/`PostgresApprovalQueue` reales en
+  `tests/integration/agent-core/roi-event-cobertura.spec.ts`.
 
 ### 5. Runtime por rol (`src/roles.ts`)
 
@@ -152,7 +167,9 @@ omision (BP-016/BP-053).
 - `FakeProvider`: determinista, reproduce un guion fijo de pasos (`tool_calls`,
   `final`, `truncated`, `transient_error`) -- usado en todas las pruebas de este
   paquete, sin red.
-- `EnvProvider`: lee `ANTHROPIC_API_KEY`/`OPENROUTER_API_KEY` de entorno.
+- `EnvProvider`: lee credenciales de entorno (`envKeys`, default
+  `ANTHROPIC_API_KEY`/`OPENROUTER_API_KEY`); `id` es configurable (`EnvProviderOptions`)
+  para poder registrar dos instancias distintas (una por variable) ante `ProviderRouter`.
   - Sin credenciales: `isAvailable()` es `false` y `complete()` lanza
     `ProviderUnavailableError` ("agente de IA no configurado en este entorno").
   - Con credenciales: `complete()` lanza `ProviderNotImplementedError` -- la llamada
@@ -160,6 +177,20 @@ omision (BP-016/BP-053).
     CREDENCIALES"/adaptador real); **nunca** se fabrica una respuesta para aparentar que
     la integracion funciona. Este hito (H6a) es nucleo puro, sin llamadas reales a
     proveedores de LLM.
+- `ProviderRouter` (REQ-AGT-011/LLM-022): router propio de fallback de proveedor,
+  implementado -- YA NO es solo la aspiración descrita en versiones previas de este
+  README. Recibe una lista de `LlmProvider` en orden de prioridad; `complete()` llama al
+  primero cuyo `isAvailable()` sea `true` (nunca paga una llamada que ya sabe perdida) y
+  `isAvailable()` del propio router es `true` si CUALQUIERA de la lista lo está. Cubre el
+  escenario que `AgentRunner.fallbackProvider` (§4) NO cubre: el primario nunca llega a
+  intentar la llamada porque ya está `isAvailable() === false` (típicamente, sin
+  credenciales). Un fallo TRANSITORIO a mitad de una llamada ya en curso se sigue
+  resolviendo con `AgentRunner.fallbackProvider`, sin duplicar esa lógica aquí --
+  `apps/api/src/routes/agentes.ts` combina las dos capas (mismo proveedor de respaldo
+  como `providers[1]` del router Y como `fallbackProvider` del `AgentRunner`) para los
+  agentes de canal CONVERSACIONAL (`canal`/`enrutador`; el auditor `batch_nocturno` se
+  queda con un único proveedor, sin router). Verificado con Postgres real en
+  `tests/integration/agent-core/fallback-proveedor.spec.ts`.
 
 ### 7. Trazabilidad (`src/trace.ts`)
 
@@ -246,7 +277,12 @@ paquete (session/API) y queda **pendiente** -- ver
   write) pero nunca exige aprobación humana. Rechaza (sin tocar la BD) un evento sin
   `montoEstimado` NI `montoVerificado`. La columna `estimado` de `roi_event`
   (`packages/db/migrations/0026`) la recalcula un TRIGGER en Postgres a partir de si hay
-  `monto_verificado` — la tool nunca decide esa bandera.
+  `monto_verificado` — la tool nunca decide esa bandera. Esta tool sigue siendo el
+  camino para eventos que NINGUNA tool `money` produce (p.ej. el cierre nocturno del
+  auditor); la cobertura **obligatoria, sin excepción** de toda tool `effect="money"`
+  real ahora vive en el núcleo (`AgentRunner`, ver §4 arriba) vía
+  `deriveRoiEvent`/`RoiEventRecorder`/`createPostgresRoiEventRecorder` (mismo
+  `insertRoiEvent` compartido) — nunca depende de que el modelo llame esta tool.
 - `apps/api/src/routes/agentes.ts` es quien construye el `ToolContext` (desde la sesión,
   nunca del cliente), resuelve el gate/techo efectivo (`agent_config` o default de
   código), corta por presupuesto ANTES de invocar al proveedor

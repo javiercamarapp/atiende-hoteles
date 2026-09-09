@@ -1,0 +1,31 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/agent-core/ocr-aislado-sin-internet.spec.ts (9 tests) 29ms
+ ✓ tests/unit/agent-core/redact.spec.ts (22 tests) 9ms
+ ✓ tests/unit/agent-core/no-parallel-tool-money.spec.ts (6 tests) 10ms
+ ✓ tests/unit/agent-core/runner.spec.ts (33 tests) 84ms
+ ✓ tests/unit/agent-core/approval.spec.ts (17 tests) 5ms
+ ✓ tests/unit/agent-core/postgres-approval-concurrency.spec.ts (2 tests) 5ms
+ ✓ tests/unit/agent-core/tool.spec.ts (17 tests) 5ms
+ ✓ tests/unit/agent-core/agents.spec.ts (7 tests) 3ms
+ ✓ tests/unit/agent-core/roi-tools.spec.ts (3 tests) 4ms
+ ✓ tests/unit/agent-core/provider.spec.ts (17 tests) 6ms
+ ✓ tests/integration/agent-core/fallback-proveedor.spec.ts (3 tests) 1838ms
+ ✓ tests/unit/agent-core/trace.spec.ts (3 tests) 2ms
+ ✓ tests/unit/agent-core/context.spec.ts (7 tests) 2ms
+ ✓ tests/integration/agent-core/journey-checkin-incidencia.spec.ts (6 tests) 2203ms
+ ✓ tests/unit/agent-core/roles.spec.ts (13 tests) 66ms
+ ✓ tests/unit/agent-core/pricing.spec.ts (4 tests) 2ms
+ ✓ tests/integration/api/agentes.spec.ts (10 tests) 2501ms
+ ✓ tests/integration/agent-core/postgres-approval-queue.spec.ts (17 tests) 3948ms
+   ✓ PostgresApprovalQueue (persistencia real) > sobrevive un reinicio del PROCESO: el estado vive en Postgres, no en el objeto JS  1521ms
+ ✓ tests/unit/agent-core/tool-schema-strict.spec.ts (9 tests) 4645ms
+   ✓ recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001) > cerrar un ticket con autorizar_gasto_mantenimiento deja una fila de audit_log con timestamp, agente y valor anterior/nuevo reales  3306ms
+   ✓ recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001) > audit_log sigue siendo append-only e inmutable para la fila que dejo la tool (ADR-005/GOB-026)  1321ms
+
+ Test Files  19 passed (19)
+      Tests  205 passed (205)
+   Start at  17:16:47
+   Duration  5.17s (transform 1.08s, setup 0ms, collect 4.92s, tests 15.37s, environment 2ms, prepare 1.16s)
+

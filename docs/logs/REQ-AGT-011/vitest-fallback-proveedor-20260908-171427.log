@@ -1,0 +1,14 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/agent-core/provider.spec.ts (17 tests) 4ms
+ ✓ tests/unit/agent-core/runner.spec.ts (33 tests) 20ms
+ ✓ tests/integration/agent-core/fallback-proveedor.spec.ts (3 tests) 1447ms
+ ✓ tests/integration/agent-core/journey-checkin-incidencia.spec.ts (6 tests) 1548ms
+ ✓ tests/integration/api/agentes.spec.ts (10 tests) 1590ms
+
+ Test Files  5 passed (5)
+      Tests  69 passed (69)
+   Start at  17:14:27
+   Duration  2.97s (transform 875ms, setup 0ms, collect 2.33s, tests 4.61s, environment 1ms, prepare 308ms)
+
