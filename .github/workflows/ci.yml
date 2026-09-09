@@ -166,19 +166,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
       - run: npm ci
-      # Mitigacion de un bug conocido de npm con dependencias opcionales
-      # (github.com/npm/cli/issues/4828): `npm ci` en Linux no descarga el binding
-      # nativo especifico de plataforma de un paquete opcional (aqui,
-      # @rolldown/binding-linux-x64-gnu que usa vite/rolldown vía apps/web), aunque
-      # esta declarado correctamente en package-lock.json y el paquete SI existe en
-      # el registro (`npm view @rolldown/binding-linux-x64-gnu@1.2.7 version` ->
-      # 1.2.7, confirmado). Dos mitigaciones mas suaves (`npm install --no-save`
-      # encima de node_modules ya poblado, y despues `rm -rf node_modules && npm
-      # install` completo) NO lo corrigieron -- verificado en CI real, mismo error
-      # exacto ambas veces. Se instala el paquete exacto de forma explicita como
-      # ultimo recurso: no debe cambiar nada mas del arbol de dependencias (mismo
-      # lockfile, misma version, ya declarada como optionalDependency de rolldown).
-      - run: npm install @rolldown/binding-linux-x64-gnu@1.2.7 --no-save
       - run: npm run build
       - uses: actions/upload-artifact@v4
         with:
@@ -197,19 +184,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
       - run: npm ci
-      # Mitigacion de un bug conocido de npm con dependencias opcionales
-      # (github.com/npm/cli/issues/4828): `npm ci` en Linux no descarga el binding
-      # nativo especifico de plataforma de un paquete opcional (aqui,
-      # @rolldown/binding-linux-x64-gnu que usa vite/rolldown vía apps/web), aunque
-      # esta declarado correctamente en package-lock.json y el paquete SI existe en
-      # el registro (`npm view @rolldown/binding-linux-x64-gnu@1.2.7 version` ->
-      # 1.2.7, confirmado). Dos mitigaciones mas suaves (`npm install --no-save`
-      # encima de node_modules ya poblado, y despues `rm -rf node_modules && npm
-      # install` completo) NO lo corrigieron -- verificado en CI real, mismo error
-      # exacto ambas veces. Se instala el paquete exacto de forma explicita como
-      # ultimo recurso: no debe cambiar nada mas del arbol de dependencias (mismo
-      # lockfile, misma version, ya declarada como optionalDependency de rolldown).
-      - run: npm install @rolldown/binding-linux-x64-gnu@1.2.7 --no-save
       - run: npm run build
       # Instala el canal "chrome" real (no solo Chromium genérico) -- mismo canal que
       # tests/e2e usa en desarrollo (`channel: 'chrome'`, docs/runbooks/despliegue.md
