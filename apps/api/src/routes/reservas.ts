@@ -7,9 +7,12 @@
 // POST cancelar (H4, aplica `hotel_cancellation_policy`) + POST procesar-no-show
 // (H4, dispara `jobs/noShow.ts` acotado a este hotel).
 //
-// `channel` (migración 0014) hoy siempre vale 'directo': el rastreo de canal de origen
-// real vía OTA/agente externo (REQ-RES-020) no se construye en H4 -- documentado, no
-// simulado con variedad falsa.
+// `channel` (migración 0014) hoy siempre vale 'directo': ningún escritor de ESTE
+// endpoint produce todavía un valor de OTA/agente externo real (REQ-RES-022/H15-006
+// siguen vigentes) -- documentado, no simulado con variedad falsa. El REPORTE de
+// atribución de comisión/room-nights directas sobre esta columna (REQ-RES-020) SÍ está
+// construido y listo para cuando exista diversidad real de canal: ver
+// routes/atribucionCanal.ts + domain/atribucionCanal.ts.
 import { Hono } from "hono";
 import { z } from "zod";
 import {
@@ -25,6 +28,7 @@ import { withIdempotency } from "../lib/idempotency.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
 import { ADMIN_ROLES, MANAGE_RESERVATIONS_ROLES } from "../domain/roles.ts";
 import { quoteNetAmount } from "../pms/quoteNetAmount.ts";
+import { computeLoyaltyBenefitForNewReservation } from "../domain/clubSegundoViaje.ts";
 import { loadCancellationPolicy } from "../pms/taxConfig.ts";
 import { runNoShowJob } from "../jobs/noShow.ts";
 import { tryOfferWaitlistSlot } from "../pms/waitlistOffer.ts";
@@ -197,12 +201,25 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         // Cotiza ANTES de tocar inventario: min-stay/CTA/CTD se validan contra tarifa
         // real (REQ-RES-002/H07-005) y la reserva se rechaza sin dejar locks a medias
         // si la estadía no cumple la restricción.
-        const totalAmount = await quoteNetAmount(db, {
+        const quotedAmount = await quoteNetAmount(db, {
           hotelId,
           roomTypeId: body.roomTypeId,
           checkInDate: body.checkInDate,
           checkOutDate: body.checkOutDate,
         });
+
+        // REQ-RES-010 (club de segundo viaje): este endpoint SOLO crea reservas con el
+        // `channel` DEFAULT de la columna ('directo', migración 0014) -- por eso
+        // `isDirectChannel: true` es literal, no una lectura de `body` (que no acepta
+        // `channel`). Sin `guestId` (o sin membresía activa/config de descuento) el
+        // beneficio simplemente no aplica -- ver `computeLoyaltyBenefitForNewReservation`.
+        const loyaltyBenefit = await computeLoyaltyBenefitForNewReservation(db, {
+          hotelId,
+          guestId: body.guestId ?? null,
+          isDirectChannel: true,
+          netAmount: quotedAmount,
+        });
+        const totalAmount = loyaltyBenefit.netAmountAfterDiscount;
 
         const nights = nightsBetween(body.checkInDate, body.checkOutDate);
         for (const night of nights) {
@@ -238,12 +255,28 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         await db.query(
           `insert into public.outbox (tenant_id, hotel_id, aggregate_type, aggregate_id, event_type, payload)
            values ($1, $2, 'reservation', $3, 'reservation.created', $4);`,
-          [orgId, hotelId, reservation.id, JSON.stringify({ reservationId: reservation.id, totalAmount })],
+          [orgId, hotelId, reservation.id, JSON.stringify({ reservationId: reservation.id, totalAmount, loyaltyDiscountAmount: loyaltyBenefit.discountAmount })],
         );
 
         await db.query(
           "select public.record_audit_log($1, $2, 'reservation.created', 'reservation', $3, $4);",
-          [orgId, hotelId, reservation.id, JSON.stringify({ totalAmount, checkIn: body.checkInDate, checkOut: body.checkOutDate })],
+          [
+            orgId,
+            hotelId,
+            reservation.id,
+            JSON.stringify({
+              totalAmount,
+              checkIn: body.checkInDate,
+              checkOut: body.checkOutDate,
+              // REQ-RES-010: deja rastro auditable del beneficio SIN una columna
+              // dedicada en `reservation` (mismo criterio que otros derivados que este
+              // repo audita en vez de persistir como columna, ej. penalización de
+              // cancelación en `reservation.canceled`).
+              loyaltyBenefit: loyaltyBenefit.applies
+                ? { discountPct: loyaltyBenefit.discountPct, discountAmount: loyaltyBenefit.discountAmount, netAmountBeforeDiscount: quotedAmount }
+                : null,
+            }),
+          ],
         );
 
         return {
@@ -253,6 +286,9 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
             estado: reservation.status,
             total: totalAmount,
             codigoConfirmacion: reservation.confirmation_code,
+            descuentoClub: loyaltyBenefit.applies
+              ? { pct: loyaltyBenefit.discountPct, monto: loyaltyBenefit.discountAmount }
+              : null,
           },
         };
       },

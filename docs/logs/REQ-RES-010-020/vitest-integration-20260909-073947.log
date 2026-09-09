@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-res-restantes
+
+ ✓ tests/integration/reservas/atribucion-canal.spec.ts (7 tests) 1046ms
+ ✓ tests/integration/reservas/club-segundo-viaje.spec.ts (10 tests) 997ms
+
+ Test Files  2 passed (2)
+      Tests  17 passed (17)
+   Start at  01:39:54
+   Duration  2.78s (transform 342ms, setup 0ms, collect 619ms, tests 2.04s, environment 0ms, prepare 27ms)
+

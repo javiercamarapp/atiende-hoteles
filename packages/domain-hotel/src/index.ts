@@ -226,6 +226,26 @@ export {
   type ReporteMensualDuenoInput,
   type ReporteMensualDueno,
 } from "./pl/reporteMensualDueno.ts";
+export {
+  DIRECT_CHANNEL,
+  isDirectChannel,
+  resolveCommissionPct,
+  assertValidChannelCommissionConfig,
+  buildChannelAttributionReport,
+  type ChannelCommissionConfig,
+  type ReservationAttributionInput,
+  type ChannelAttributionSummary,
+  type ChannelAttributionReport,
+} from "./reservas/atribucionCanal.ts";
+export {
+  LOYALTY_MEMBER_STATUSES,
+  isActiveLoyaltyMember,
+  assertValidLoyaltyDiscountPct,
+  applyLoyaltyBenefit,
+  type LoyaltyMemberStatus,
+  type LoyaltyBenefitInput,
+  type LoyaltyBenefitResult,
+} from "./reservas/clubSegundoViaje.ts";
 // H12c merge (integrador) · 2026-09-08: `./forecast/index.ts` (REQ-AGT-012, commit b1f3d47
 // en origin/main) sí existe con sus 2 archivos completos, pero nunca se re-exportó desde
 // este barrel -- `tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts` importa
