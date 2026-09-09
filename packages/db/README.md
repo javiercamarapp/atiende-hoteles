@@ -191,5 +191,15 @@ grants mínimos otorgados solo al rol `authenticated` (ver `migrations/0010_gran
   fórmula H17 usada). La columna `estimado` la recalcula un TRIGGER a partir de si hay
   `monto_verificado` — nunca se confía en lo que mande la aplicación. Append-only.
   Captura el evento; la lógica de "línea base firmada" que exige REQ-REV-018 para
-  activar un cobro por resultado sobre estos eventos queda pendiente de un hito
-  posterior.
+  activar un cobro por resultado sobre estos eventos vive en `roi_baseline`/
+  `cobro_resultado_activacion` (migración 0112, ver más abajo).
+- `roi_baseline`/`cobro_resultado_activacion`: REQ-REV-018/REQ-GOB-016 (BP-015/BP-131) —
+  línea base por (hotel, agente/módulo), firmable solo dentro de los 7 días ("semana 1")
+  siguientes a su `activado_en` e inmutable una vez firmada (TRIGGER, no la aplicación).
+  `cobro_resultado_activacion` es el punto de activación real de un cobro por
+  resultado: su TRIGGER rechaza el INSERT si no existe una `roi_baseline` FIRMADA para
+  ese mismo (hotel, agente), y exige además (defensa en profundidad, BP-150/GOB-052) una
+  aprobación vigente del fundador para `estructura_de_exito_compartido` (catálogo
+  cerrado de 0081). Ninguna de las dos tablas construye el motor de FACTURACIÓN en sí
+  (cálculo de la cuota periódica, generación del cargo) — eso queda pendiente de un
+  hito posterior.
