@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/gob/cierre-tarea-conventional-commits.spec.ts (46 tests) 383ms
+
+ Test Files  1 passed (1)
+      Tests  46 passed (46)
+   Start at  15:49:51
+   Duration  613ms (transform 27ms, setup 0ms, collect 27ms, tests 383ms, environment 0ms, prepare 37ms)
+

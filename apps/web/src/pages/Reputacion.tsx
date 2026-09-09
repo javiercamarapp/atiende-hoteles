@@ -1,64 +1,31 @@
-import { useQuery } from "@tanstack/react-query";
 import { Star } from "lucide-react";
-import { StatCard, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge } from "@atiende/ui";
+import { EstadoVacio } from "@atiende/ui";
 import { PageHeader } from "../components/PageHeader";
-import { DataState } from "../components/DataState";
-import { useHotel } from "../hooks/useHotel";
-import { listarResenas, type ResenaReputacion } from "../lib/api";
 
+/**
+ * REQ-UX-002 (auditoría propia, mismo patrón ya aplicado en AlimentosBebidas.tsx):
+ * esta pantalla llamaba `GET /hoteles/:hotelId/reputacion` (`listarResenas` en
+ * `lib/api.ts`), una ruta que ningún archivo de `apps/api/src/routes/*.ts` registra
+ * (confirmado: no existe `reputacionRoutes` ni ningún registro de esa ruta en
+ * `apps/api/src/app.ts`, ni tabla de reseñas en `packages/db/migrations/*.sql`) —
+ * 404 siempre — y mostraba "Integración con Google/Booking/TripAdvisor pendiente."
+ * en el StatCard: atribución falsa idéntica a la que ya se corrigió en
+ * AlimentosBebidas.tsx. El 404 no es un bloqueo de credenciales de una integración
+ * ya conectada a medias: el índice de reputación (REQ-CRM-006, panel tipo GRI) es
+ * un módulo que todavía no se construyó en este backend. Mientras no exista, esta
+ * pantalla no hace NINGUNA llamada fantasma: muestra un estado vacío honesto en vez
+ * de simular "pendiente de credenciales" para un módulo que ni siquiera tiene
+ * endpoint.
+ */
 export function Reputacion() {
-  const { hotelActivoId } = useHotel();
-  const query = useQuery({
-    queryKey: ["reputacion", hotelActivoId],
-    queryFn: () => listarResenas(hotelActivoId as string),
-    enabled: Boolean(hotelActivoId),
-    retry: false,
-  });
-
-  const sinResponder = query.data?.filter((r) => !r.respondida).length;
-  const promedio = query.data?.length ? query.data.reduce((acc, r) => acc + r.calificacion, 0) / query.data.length : undefined;
-
   return (
     <div>
       <PageHeader titulo="Reputación" descripcion="Reseñas de Google, Booking y TripAdvisor centralizadas, con estado de respuesta." />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-        <StatCard icon={Star} label="Calificación promedio" value={promedio != null ? promedio.toFixed(1) : "—"} sinDato={promedio == null ? "Integración con Google/Booking/TripAdvisor pendiente." : undefined} />
-        <StatCard icon={Star} label="Sin responder" value={sinResponder != null ? String(sinResponder) : "—"} sinDato={sinResponder == null ? "Integración con Google/Booking/TripAdvisor pendiente." : undefined} />
-      </div>
-
-      <DataState
-        isLoading={query.isLoading}
-        error={query.error}
-        data={query.data}
-        mensajeVacio="No hay reseñas registradas todavía."
-        onReintentar={() => query.refetch()}
-      >
-        {(resenas: ResenaReputacion[]) => (
-          <div className="rounded-xl border border-border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Huésped</TableHead>
-                  <TableHead>Fuente</TableHead>
-                  <TableHead className="text-right">Calificación</TableHead>
-                  <TableHead>Estado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {resenas.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.huesped}</TableCell>
-                    <TableCell>{r.fuente}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.calificacion.toFixed(1)}</TableCell>
-                    <TableCell>{r.respondida ? <Badge variant="secondary">Respondida</Badge> : <Badge variant="destructive">Sin responder</Badge>}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </DataState>
+      <EstadoVacio
+        icon={Star}
+        titulo="Módulo no implementado todavía"
+        mensaje="El índice de reputación (REQ-CRM-006: reseñas de Google/Booking/TripAdvisor, tasa de respuesta, efecto estimado en ADR) no tiene backend construido en este repositorio todavía — no es un problema de credenciales de una integración ya conectada, el módulo en sí no existe aún."
+      />
     </div>
   );
 }

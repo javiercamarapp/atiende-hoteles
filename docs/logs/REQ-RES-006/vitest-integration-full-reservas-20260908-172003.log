@@ -1,0 +1,18 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/integration/reservas/monto-exacto-multi-noche.spec.ts (2 tests) 851ms
+ ✓ tests/integration/reservas/folio-al-confirmar.spec.ts (2 tests) 816ms
+ ✓ tests/integration/reservas/overbooking-controlado.spec.ts (2 tests) 815ms
+ ✓ tests/integration/reservas/lista-espera.spec.ts (4 tests) 869ms
+ ✓ tests/integration/reservas/modificacion-concurrencia.spec.ts (1 test) 838ms
+ ✓ tests/integration/reservas/cancelacion-libera-inventario.spec.ts (3 tests) 879ms
+ ✓ tests/integration/reservas/no-show-idempotente.spec.ts (4 tests) 860ms
+ ✓ tests/integration/reservas/disponibilidad-grid.spec.ts (2 tests) 844ms
+ ✓ tests/adversarial/cancelacion-identidad.spec.ts (4 tests) 812ms
+
+ Test Files  9 passed (9)
+      Tests  24 passed (24)
+   Start at  17:20:06
+   Duration  8.35s (transform 248ms, setup 0ms, collect 635ms, tests 7.58s, environment 0ms, prepare 27ms)
+

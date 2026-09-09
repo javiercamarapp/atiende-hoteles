@@ -1,0 +1,16 @@
+=== node scripts/checks/no-biometria-facial.ts ===
+REQ-HUE-022/REQ-SEG-003 OK: 0 referencias a reconocimiento facial en apps/ y packages/ (24 patrones de SDK/API/función/vendor de reconocimiento facial verificados, comentarios excluidos).
+EXIT: 0
+
+=== npx vitest run tests/adversarial/consentimiento-biometrico.spec.ts ===
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/adversarial/consentimiento-biometrico.spec.ts (5 tests) 1054ms
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  15:39:07
+   Duration  1.58s (transform 221ms, setup 0ms, collect 402ms, tests 1.05s, environment 0ms, prepare 28ms)
+
+EXIT: 0

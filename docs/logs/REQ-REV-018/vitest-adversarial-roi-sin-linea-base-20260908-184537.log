@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/adversarial/roi-sin-linea-base.spec.ts (12 tests) 1123ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  18:45:43
+   Duration  1.41s (transform 36ms, setup 0ms, collect 64ms, tests 1.12s, environment 0ms, prepare 41ms)
+

@@ -1,0 +1,32 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/domain-hotel/attendance.spec.ts (17 tests) 3ms
+ ✓ tests/unit/domain-hotel/cancelacion-policy.spec.ts (6 tests) 3ms
+ ✓ tests/unit/domain-hotel/walk-forward-backtest.spec.ts (15 tests) 6ms
+ ✓ tests/unit/domain-hotel/turnos-lft.spec.ts (23 tests) 7ms
+ ✓ tests/unit/domain-hotel/reputacion-clasificador.spec.ts (42 tests) 13ms
+ ✓ tests/unit/domain-hotel/mrz.spec.ts (13 tests) 6ms
+ ✓ tests/unit/domain-hotel/estado-maquina.spec.ts (9 tests) 5ms
+ ✓ tests/unit/domain-hotel/revenue-engine-gate.spec.ts (28 tests) 6ms
+ ✓ tests/unit/domain-hotel/pricing-source.spec.ts (3 tests) 4ms
+ ✓ tests/unit/domain-hotel/motor-precio-total.spec.ts (7 tests) 5ms
+ ✓ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts (27 tests) 9ms
+ ✓ tests/unit/domain-hotel/fraude-deteccion.spec.ts (20 tests) 4ms
+ ✓ tests/unit/domain-hotel/parity-guard.spec.ts (27 tests) 5ms
+ ✓ tests/unit/domain-hotel/folio-engine.spec.ts (16 tests) 5ms
+ ✓ tests/unit/domain-hotel/payment-free-text-guard.spec.ts (8 tests) 4ms
+ ✓ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts (15 tests) 7ms
+ ✓ tests/unit/domain-hotel/restricciones-estadia.spec.ts (6 tests) 3ms
+ ✓ tests/unit/domain-hotel/checkin-free-text-guard.spec.ts (6 tests) 2ms
+ ✓ tests/unit/domain-hotel/waitlist.spec.ts (7 tests) 3ms
+ ✓ tests/unit/domain-hotel/impuestos-hospedaje.spec.ts (9 tests) 2ms
+ ✓ tests/unit/domain-hotel/overbooking.spec.ts (4 tests) 1ms
+ ✓ tests/integration/crm/clasificacion-tematica.spec.ts (10 tests) 1042ms
+
+ Test Files  22 passed (22)
+      Tests  318 passed (318)
+   Start at  17:41:06
+   Duration  2.45s (transform 1.10s, setup 0ms, collect 3.96s, tests 1.14s, environment 2ms, prepare 948ms)
+
+exit: 0

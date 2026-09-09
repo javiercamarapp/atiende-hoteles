@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { Sidebar, BottomNav, MobileHeader, AtiendeWordmark, type SidebarSection, type BottomNavItem } from "@atiende/ui";
 import { useAuth } from "../hooks/useAuth";
+import { useHotel } from "../hooks/useHotel";
+import { ApiUnavailableError } from "../lib/api";
 import { SelectorHotel } from "../components/SelectorHotel";
 import { AprobacionesBadge } from "../components/AprobacionesBadge";
 import { NotificacionesBell } from "../components/NotificacionesBell";
@@ -80,6 +82,40 @@ const itemsMovil: BottomNavItem[] = [
   { to: "/mensajeria", label: "Mensajes", icon: MessageCircle },
 ];
 
+/**
+ * REQ-UX-002 (hallazgo real, verificado con `tests/e2e/estados-vacios-honestos.spec.ts`):
+ * cuando `GET /hoteles` (useHotel) falla -- API caída, sesión inválida, o SIN
+ * `VITE_API_URL` configurada -- `hotelActivoId` nunca se resuelve, así que TODAS las
+ * queries de cada pantalla (`enabled: Boolean(hotelActivoId)`) se quedan deshabilitadas
+ * para siempre: nunca corren, nunca entran en `isError`, y `DataState` termina
+ * mostrando su `mensajeVacio` genérico ("No hay reservas/huéspedes/tickets registrados
+ * todavía...") -- una atribución falsa, indistinguible de un hotel real vacío, para lo
+ * que en realidad es un bloqueo de credenciales/conexión a nivel de toda la app. Antes
+ * de este fix el único indicio era el badge "Sin hoteles" del selector, con el motivo
+ * real escondido en un `title` (tooltip) que nadie ve sin pasar el mouse. Este banner,
+ * en el layout que envuelve TODAS las pantallas protegidas, hace visible la causa real
+ * una sola vez, arriba del contenido de cada página.
+ */
+function BannerHotelesBloqueado() {
+  const { error, cargando } = useHotel();
+  if (cargando || !error) return null;
+  const err = error instanceof ApiUnavailableError ? error : null;
+
+  return (
+    <div role="alert" className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+      <p className="font-medium">
+        {err?.pendienteCredenciales
+          ? `${err.integracion} está pendiente de credenciales.`
+          : `No se pudo conectar con ${err?.integracion ?? "la API de Atiende Hoteles"}.`}
+      </p>
+      <p className="mt-0.5 text-destructive/90">
+        No se pudo cargar la lista de hoteles de tu organización todavía -- las pantallas de abajo no pueden mostrar
+        datos reales de ningún hotel hasta que esto se resuelva. Esto NO significa que el hotel esté vacío.
+      </p>
+    </div>
+  );
+}
+
 export function AppShell() {
   const { sesion, cerrarSesion } = useAuth();
 
@@ -120,6 +156,7 @@ export function AppShell() {
         </header>
         <main id="contenido-principal" tabIndex={-1} className="flex-1 px-4 py-4 pt-20 pb-24 md:pt-2 md:pb-8 md:px-6">
           <div className="max-w-6xl mx-auto w-full">
+            <BannerHotelesBloqueado />
             <Outlet />
           </div>
         </main>

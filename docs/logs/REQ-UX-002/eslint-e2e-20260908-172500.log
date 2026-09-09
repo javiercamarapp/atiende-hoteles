@@ -1,0 +1,2 @@
+$ npx eslint tests/e2e/estados-vacios-honestos.spec.ts
+exit code: 0

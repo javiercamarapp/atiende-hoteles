@@ -10,6 +10,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
+import { tryOfferWaitlistSlot } from "../pms/waitlistOffer.ts";
 import type { AppDeps, HonoEnvBindings } from "../types.ts";
 
 const cancelacionPublicaSchema = z.object({
@@ -19,6 +20,11 @@ const cancelacionPublicaSchema = z.object({
 
 interface ReservationRow {
   id: string;
+  tenant_id: string;
+  hotel_id: string;
+  room_type_id: string;
+  check_in_date: string;
+  check_out_date: string;
   status: string;
   confirmation_code: string;
   cancellation_penalty_amount: string | null;
@@ -32,15 +38,32 @@ export function cancelacionPublicaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
 
     try {
       const { rows } = await deps.engine.admin.query<ReservationRow>(
-        "select * from public.cancel_reservation_public($1, $2);",
+        `select id, tenant_id, hotel_id, room_type_id,
+                check_in_date::text as check_in_date, check_out_date::text as check_out_date,
+                status, confirmation_code, cancellation_penalty_amount
+         from public.cancel_reservation_public($1, $2);`,
         [body.codigoReserva, body.apellido],
       );
       const reservation = rows[0]!;
+
+      // REQ-RES-006: mismo disparo de oferta automática que la cancelación de staff
+      // (routes/reservas.ts) -- el cliente admin ya bypassa RLS (igual que
+      // `cancel_reservation_public`, SECURITY DEFINER), así que puede tocar
+      // `hotel_waitlist_entry` sin necesitar una sesión de staff.
+      const waitlistOffer = await tryOfferWaitlistSlot(deps.engine.admin, {
+        tenantId: reservation.tenant_id,
+        hotelId: reservation.hotel_id,
+        roomTypeId: reservation.room_type_id,
+        checkInDate: reservation.check_in_date,
+        checkOutDate: reservation.check_out_date,
+      });
+
       return c.json({
         id: reservation.id,
         estado: reservation.status,
         codigoConfirmacion: reservation.confirmation_code,
         montoPenalizacion: reservation.cancellation_penalty_amount != null ? Number(reservation.cancellation_penalty_amount) : 0,
+        listaEsperaOfertada: waitlistOffer.offered,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

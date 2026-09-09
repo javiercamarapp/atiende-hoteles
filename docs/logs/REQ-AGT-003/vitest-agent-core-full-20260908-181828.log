@@ -1,0 +1,32 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/agent-core/tool-schema-strict.spec.ts (9 tests) 4178ms
+   ✓ recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001) > cerrar un ticket con autorizar_gasto_mantenimiento deja una fila de audit_log con timestamp, agente y valor anterior/nuevo reales  2267ms
+   ✓ recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001) > audit_log sigue siendo append-only e inmutable para la fila que dejo la tool (ADR-005/GOB-026)  1903ms
+ ✓ tests/integration/agent-core/postgres-approval-queue.spec.ts (17 tests) 3796ms
+   ✓ PostgresApprovalQueue (persistencia real) > sobrevive un reinicio del PROCESO: el estado vive en Postgres, no en el objeto JS  1596ms
+ ✓ tests/integration/agent-core/journey-checkin-incidencia.spec.ts (6 tests) 1356ms
+ ✓ tests/integration/agent-core/fallback-proveedor.spec.ts (3 tests) 1238ms
+ ✓ tests/integration/agent-core/roi-event-cobertura.spec.ts (4 tests) 1414ms
+ ✓ tests/unit/agent-core/ocr-aislado-sin-internet.spec.ts (9 tests) 38ms
+ ✓ tests/unit/agent-core/runner.spec.ts (33 tests) 8ms
+ ✓ tests/unit/agent-core/no-parallel-tool-money.spec.ts (6 tests) 6ms
+ ✓ tests/unit/agent-core/context.spec.ts (7 tests) 1ms
+ ✓ tests/unit/agent-core/approval.spec.ts (17 tests) 2ms
+ ✓ tests/unit/agent-core/trace.spec.ts (3 tests) 0ms
+ ✓ tests/unit/agent-core/tool.spec.ts (17 tests) 3ms
+ ✓ tests/unit/agent-core/postgres-approval-concurrency.spec.ts (2 tests) 2ms
+ ✓ tests/unit/agent-core/redact.spec.ts (22 tests) 2ms
+ ✓ tests/unit/agent-core/agents.spec.ts (7 tests) 1ms
+ ✓ tests/unit/agent-core/provider.spec.ts (17 tests) 2ms
+ ✓ tests/unit/agent-core/roi-tools.spec.ts (3 tests) 1ms
+ ✓ tests/unit/agent-core/pricing.spec.ts (4 tests) 1ms
+ ✓ tests/unit/agent-core/roles.spec.ts (13 tests) 1ms
+
+ Test Files  19 passed (19)
+      Tests  199 passed (199)
+   Start at  18:18:38
+   Duration  13.28s (transform 403ms, setup 0ms, collect 961ms, tests 12.05s, environment 0ms, prepare 53ms)
+
+exit:0

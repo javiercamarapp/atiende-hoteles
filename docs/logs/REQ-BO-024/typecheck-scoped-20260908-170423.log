@@ -1,0 +1,5 @@
+=== npx tsc --noEmit -p apps/api/tsconfig.json ===
+exit: 0
+
+=== npx tsc --noEmit -p packages/domain-hotel/tsconfig.json ===
+exit: 0

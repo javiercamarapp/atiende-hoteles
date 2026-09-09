@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/integration/reservas/lista-espera.spec.ts (4 tests) 911ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  17:20:04
+   Duration  1.44s (transform 238ms, setup 0ms, collect 413ms, tests 911ms, environment 0ms, prepare 26ms)
+

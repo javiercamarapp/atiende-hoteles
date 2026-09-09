@@ -7,6 +7,7 @@ export * from "./redact.ts";
 export * from "./tool.ts";
 export * from "./approval.ts";
 export * from "./sql.ts";
+export * from "./audit.ts";
 export * from "./postgresApproval.ts";
 export * from "./roles.ts";
 export * from "./agents.ts";

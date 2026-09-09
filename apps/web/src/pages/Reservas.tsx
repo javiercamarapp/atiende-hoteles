@@ -236,6 +236,7 @@ function DialogoNuevaReserva({ hotelId, onCerrar, onCreada }: { hotelId: string;
   const disponibilidadQuery = useQuery({
     queryKey: ["disponibilidad-resumen", hotelId],
     queryFn: () => listarDisponibilidad(hotelId),
+    retry: false,
   });
 
   const [roomTypeId, setRoomTypeId] = useState("");
@@ -283,6 +284,24 @@ function DialogoNuevaReserva({ hotelId, onCerrar, onCreada }: { hotelId: string;
                 </option>
               ))}
             </select>
+            {/* REQ-UX-002: este select no tenía ningún indicio visible cuando
+               `listarDisponibilidad` fallaba o el hotel no tenía tipos de habitación
+               todavía -- quedaba con un solo option deshabilitado sin explicación, un
+               fallo silencioso. Nunca un stack trace ni una lista vacía sin motivo. */}
+            {disponibilidadQuery.isLoading && (
+              <p className="mt-1 text-xs text-muted-foreground">Cargando tipos de habitación…</p>
+            )}
+            {disponibilidadQuery.isError && (
+              <p role="alert" className="mt-1 text-xs text-destructive">
+                {mensajeError(disponibilidadQuery.error)}{" "}
+                <button type="button" className="underline" onClick={() => disponibilidadQuery.refetch()}>
+                  Reintentar
+                </button>
+              </p>
+            )}
+            {!disponibilidadQuery.isLoading && !disponibilidadQuery.isError && disponibilidadQuery.data?.length === 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">Este hotel todavía no tiene tipos de habitación configurados.</p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">

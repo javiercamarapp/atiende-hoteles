@@ -1,0 +1,40 @@
+--- 1) estado limpio (repo real, sin cambios) ---
+$ node scripts/checks/registro-unico-conectores.ts
+REQ-AGT-018 OK: 0 ocurrencias de `if provider === X`/`if pms === X` (ni `switch(provider|pms)`) fuera del registro central de conectores, en apps/api/src, apps/web/src y packages/**.
+exit code: 0
+
+--- 2) violación deliberada inyectada temporalmente en apps/api/src/_violacion-deliberada-req-agt-018.ts ---
+contenido inyectado:
+// Archivo temporal SOLO para verificar que scripts/checks/registro-unico-conectores.ts
+// detecta una violación deliberada -- se borra inmediatamente después. Ver
+// docs/logs/REQ-AGT-018/verificacion.log.
+export function buildConnector(provider: string) {
+  if (provider === "cloudbeds") {
+    return "violacion-deliberada";
+  }
+  return null;
+}
+
+$ node scripts/checks/registro-unico-conectores.ts
+REQ-AGT-018: se encontró bifurcación por proveedor (`if`/`switch` sobre `provider`/`pms`) fuera del registro central de conectores (packages/mcp-servers/pms/src/registry.ts):
+  apps/api/src/_violacion-deliberada-req-agt-018.ts:5 [if]: if (provider === "cloudbeds") {
+exit code: 1
+
+--- 3) violación eliminada, vuelve a estado limpio ---
+$ node scripts/checks/registro-unico-conectores.ts
+REQ-AGT-018 OK: 0 ocurrencias de `if provider === X`/`if pms === X` (ni `switch(provider|pms)`) fuera del registro central de conectores, en apps/api/src, apps/web/src y packages/**.
+exit code: 0
+
+--- 4) suite vitest (registro-unico-conectores.spec.ts), incluida la corrida contra el repo real vía defaults ---
+$ npx vitest run --config vitest.config.ts tests/unit/mcp-servers/pms/registro-unico-conectores.spec.ts
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/mcp-servers/pms/registro-unico-conectores.spec.ts (11 tests) 27ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  14:15:58
+   Duration  248ms (transform 20ms, setup 0ms, collect 20ms, tests 27ms, environment 0ms, prepare 52ms)
+
+exit code: 0

@@ -14,6 +14,7 @@
 
 import { z } from "zod";
 import { defineTool, type ToolDefinition } from "../tool.ts";
+import { recordToolAudit } from "../audit.ts";
 import type { SqlClient } from "../sql.ts";
 
 /** Umbral (MXN) a partir del cual un ticket de mantenimiento se marca como
@@ -195,7 +196,14 @@ export type AuthorizeMaintenanceExpenseInput = z.infer<typeof authorizeMaintenan
  * effect="money" + needsApproval=true (GOB-026, exigido por defineTool()): `run()` SOLO
  * se ejecuta despues de que `AgentRunner` confirme que `ApprovalQueue` devolvio la
  * solicitud como "aprobada" (doble confirmacion, dos roles distintos) -- para cuando este
- * codigo corre, la autorizacion humana ya ocurrio. */
+ * codigo corre, la autorizacion humana ya ocurrio.
+ *
+ * REQ-AGT-001 (tool de ejemplo del criterio de aceptacion): esta es la tool que demuestra
+ * el registro de auditoria con valor anterior/nuevo -- lee el estado COMPLETO del ticket
+ * antes de escribir (no solo las columnas que necesitaba para la logica de negocio) y
+ * llama a `recordToolAudit()` con ese "antes" y el "despues" real que acaba de persistir,
+ * DESPUES del UPDATE (para que el "despues" sea el estado que de verdad quedo en la fila,
+ * no el input crudo del modelo). */
 export function createAuthorizeMaintenanceExpenseTool(
   deps: HousekeepingToolDeps,
 ): ToolDefinition<AuthorizeMaintenanceExpenseInput> {
@@ -206,9 +214,38 @@ export function createAuthorizeMaintenanceExpenseTool(
     inputSchema: authorizeMaintenanceExpenseInput,
     effect: "money",
     needsApproval: true,
+    // REQ-AGT-003 (H17-001/GOB-037): el ÚNICO gasto real que este catálogo puede
+    // autorizar hoy -- `AgentRunner` (runner.ts) llama esto DESPUÉS de `run()`, solo si
+    // `result.ok===true`, para registrar el ROIEvent SIN depender de que el modelo
+    // decida llamar aparte "registrar_evento_roi" (REQ-AGT-003 exige cobertura del
+    // 100%, sin excepción -- una tool opcional que el modelo puede olvidar llamar no la
+    // garantiza). `montoVerificado` (nunca `montoEstimado`): `input.actualCost` es el
+    // costo REAL que el humano ya aprobó al autorizar esta tool (GOB-026, doble
+    // confirmación), no una proyección -- por eso `confianza: 1`. `input.ticketId` ==
+    // `ticket.id` (la query de `run()` ya filtró por ese id + `ctx.hotelId`).
+    deriveRoiEvent: (_ctx, input) => ({
+      tipoEvento: "gasto_mantenimiento_autorizado",
+      montoVerificado: input.actualCost,
+      metodoContrafactual:
+        "Monto real autorizado y verificado al cerrar el ticket de mantenimiento (costo reportado por " +
+        "el técnico/staff tras el diagnóstico, ya confirmado por aprobación humana explícita -- no una " +
+        "estimación).",
+      confianza: 1,
+      referenciaTipo: "tarea",
+      referenciaCodigo: input.ticketId,
+    }),
     run: async (ctx, input) => {
-      const { rows: ticketRows } = await deps.db.query<{ id: string; room_id: string | null; marks_room_out_of_service: boolean }>(
-        "select id, room_id, marks_room_out_of_service from public.maintenance_ticket where id = $1 and hotel_id = $2;",
+      const { rows: ticketRows } = await deps.db.query<{
+        id: string;
+        room_id: string | null;
+        marks_room_out_of_service: boolean;
+        status: string;
+        actual_cost: string | null;
+        part_used: string | null;
+        resolution_note: string | null;
+      }>(
+        `select id, room_id, marks_room_out_of_service, status, actual_cost, part_used, resolution_note
+         from public.maintenance_ticket where id = $1 and hotel_id = $2;`,
         [input.ticketId, ctx.hotelId],
       );
       const ticket = ticketRows[0];
@@ -229,6 +266,31 @@ export function createAuthorizeMaintenanceExpenseTool(
           ticket.room_id,
         ]);
       }
+
+      // REQ-AGT-001: timestamp (created_at, la pone record_audit_log/el trigger) + agente
+      // (ctx.actor, nunca el input del modelo) + valor anterior/nuevo del recurso real.
+      await recordToolAudit({
+        db: deps.db,
+        orgId: ctx.orgId,
+        hotelId: ctx.hotelId,
+        actor: ctx.actor,
+        toolName: AUTHORIZE_MAINTENANCE_EXPENSE_TOOL_NAME,
+        action: "mantenimiento.gasto_autorizado",
+        entityType: "maintenance_ticket",
+        entityId: ticket.id,
+        before: {
+          status: ticket.status,
+          actualCost: ticket.actual_cost,
+          partUsed: ticket.part_used,
+          resolutionNote: ticket.resolution_note,
+        },
+        after: {
+          status: "cerrado",
+          actualCost: input.actualCost,
+          partUsed: input.partUsed ?? null,
+          resolutionNote: input.resolutionNote ?? null,
+        },
+      });
 
       return {
         ok: true,

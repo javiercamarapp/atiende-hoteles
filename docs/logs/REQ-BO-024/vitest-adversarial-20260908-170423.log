@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/adversarial/checador-inalterable.spec.ts (10 tests) 1484ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  17:04:38
+   Duration  2.32s (transform 356ms, setup 0ms, collect 660ms, tests 1.48s, environment 0ms, prepare 39ms)
+

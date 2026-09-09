@@ -1,0 +1,5 @@
+# REQ-GOB-001 -- regresion: typecheck completo tras el cambio en backlogStateMachine.ts
+$ npx tsc --noEmit -p tsconfig.json
+# ejecutado: 2026-09-08T20:22:48Z
+
+EXIT_CODE=0

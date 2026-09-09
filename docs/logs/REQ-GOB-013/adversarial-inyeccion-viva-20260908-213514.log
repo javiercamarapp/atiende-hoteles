@@ -1,0 +1,27 @@
+=== REQ-GOB-013: evidencia adversarial viva -- inyectar una violacion REAL en el arbol del repo, confirmar que el check la detecta (exit 1), luego revertir y confirmar que vuelve a exit 0 ===
+
+--- (a) escritura directa a pms_mirror fuera del conector PMS ---
+$ node scripts/checks/pms-mirror-solo-lectura.ts
+REQ-GOB-013: se encontraron violaciones de solo-lectura de pms_mirror / aislamiento de cerraduras:
+  [escritura-fuera-de-conector-pms] apps/api/src/__demo_gob013__/violacion.ts:3: return db.query("insert into pms_mirror (hotel_id, external_id) values ($1, $2)", [id, id]);
+exit:1
+
+--- (b) invocacion directa de LockPort fuera del paquete de cerraduras ---
+$ node scripts/checks/pms-mirror-solo-lectura.ts
+REQ-GOB-013: se encontraron violaciones de solo-lectura de pms_mirror / aislamiento de cerraduras:
+  [escritura-fuera-de-conector-pms] apps/api/src/__demo_gob013__/violacion.ts:3: return db.query("insert into pms_mirror (hotel_id, external_id) values ($1, $2)", [id, id]);
+  [invocacion-directa-de-cerraduras] apps/api/src/__demo_gob013__/violacion2.ts:2: import type { LockPort } from "@atiende-hoteles/mcp-locks";
+  [invocacion-directa-de-cerraduras] apps/api/src/__demo_gob013__/violacion2.ts:3: export function violacion2(p: LockPort) { return p; }
+exit:1
+
+--- limpieza: se borra el directorio demo y se re-verifica exit 0 ---
+$ node scripts/checks/pms-mirror-solo-lectura.ts
+REQ-GOB-013 OK:
+  (a) 0 escrituras a `pms_mirror` fuera de packages/mcp-servers/pms en apps/**, packages/** --
+      regla vacía honesta: `pms_mirror` todavía no existe como tabla (se crea en H4/H9 con el
+      primer conector PMS certificado, ver docs/ACEPTACION.md hito H1); el check queda listo para
+      congelar la invariante desde el primer commit que la cree.
+  (b) 0 referencias a LockPort/mcp-locks/issueKey/revokeKey/DigitalKey fuera de
+      packages/mcp-servers/locks en apps/**, packages/** -- regla real y ya cumplida hoy (GOB-044,
+      compartida con REQ-BO-029/REQ-SEG-015).
+exit:0

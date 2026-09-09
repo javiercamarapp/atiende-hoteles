@@ -1,0 +1,3 @@
+tests/unit/domain-hotel/parity-guard.spec.ts(169,12): error TS2532: Object is possibly 'undefined'.
+tests/unit/domain-hotel/parity-guard.spec.ts(206,12): error TS2532: Object is possibly 'undefined'.
+exit:2

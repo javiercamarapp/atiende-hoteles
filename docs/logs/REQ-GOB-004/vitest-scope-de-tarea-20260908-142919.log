@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/gob/scope-de-tarea.spec.ts (26 tests) 290ms
+
+ Test Files  1 passed (1)
+      Tests  26 passed (26)
+   Start at  14:29:20
+   Duration  594ms (transform 47ms, setup 0ms, collect 54ms, tests 290ms, environment 0ms, prepare 59ms)
+
+vitest exit=0

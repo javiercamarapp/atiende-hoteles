@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/domain-hotel/waitlist.spec.ts (7 tests) 2ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  17:20:03
+   Duration  261ms (transform 56ms, setup 0ms, collect 94ms, tests 2ms, environment 0ms, prepare 26ms)
+

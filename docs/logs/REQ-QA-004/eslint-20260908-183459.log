@@ -1,0 +1,2 @@
+=== npx eslint tests/integration/gates/money.spec.ts ===
+EXIT: 0

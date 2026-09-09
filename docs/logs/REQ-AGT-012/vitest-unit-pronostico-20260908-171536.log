@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts (27 tests) 7ms
+
+ Test Files  1 passed (1)
+      Tests  27 passed (27)
+   Start at  17:15:45
+   Duration  398ms (transform 117ms, setup 0ms, collect 190ms, tests 7ms, environment 0ms, prepare 30ms)
+
+exit=0

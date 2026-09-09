@@ -1,0 +1,15 @@
+$ npx vitest run tests/adversarial/prompt-injection.spec.ts
+fecha (UTC): 2026-09-08T20:17:14Z
+
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+(node:82399) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ✓ tests/adversarial/prompt-injection.spec.ts (6 tests) 1450ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  14:17:15
+   Duration  2.02s (transform 140ms, setup 0ms, collect 283ms, tests 1.45s, environment 0ms, prepare 53ms)
+

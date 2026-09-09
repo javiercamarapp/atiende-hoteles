@@ -1,0 +1,2 @@
+$ (cd apps/web && npx eslint src/pages/Reputacion.tsx src/pages/Reservas.tsx src/pages/Resumen.tsx src/layouts/AppShell.tsx)
+exit code: 0

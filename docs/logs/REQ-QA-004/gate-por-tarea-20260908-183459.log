@@ -1,0 +1,3 @@
+=== node scripts/checks/gate-por-tarea.ts (REQ-AGT-019, no afectado por este cambio) ===
+REQ-AGT-019 OK: 0 archivos de tarea bajo tasks/ (el backlog de archivos de GOB-045 aún no se materializó en este repo -- docs/PROGRESO.md/docs/BLOQUEOS.md siguen siendo el proceso real hoy) -- nada que verificar.
+EXIT: 0

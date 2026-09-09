@@ -1,0 +1,2 @@
+$ npx tsc --noEmit -p tests/e2e/tsconfig.json
+exit code: 0

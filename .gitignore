@@ -5,6 +5,7 @@ build/
 coverage/
 *.log
 !docs/logs/*.log
+!docs/logs/**/*.log
 .env
 .env.*
 !.env.example

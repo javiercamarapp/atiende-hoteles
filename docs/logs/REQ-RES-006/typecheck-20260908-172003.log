@@ -1,0 +1,7 @@
+
+> atiende-hoteles@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json && tsc --noEmit -p apps/api/tsconfig.json
+
+tests/unit/domain-hotel/parity-guard.spec.ts(169,12): error TS2532: Object is possibly 'undefined'.
+tests/unit/domain-hotel/parity-guard.spec.ts(206,12): error TS2532: Object is possibly 'undefined'.
+tests/unit/domain-hotel/turnos-lft.spec.ts(95,12): error TS2532: Object is possibly 'undefined'.

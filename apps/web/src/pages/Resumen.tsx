@@ -4,7 +4,7 @@ import { Percent, Coins, TrendingUp, CalendarCheck, Sparkles } from "lucide-reac
 import { StatCard, EstadoError, Card, CardHeader, CardTitle, CardContent, Badge, formatMoney } from "@atiende/ui";
 import { PageHeader } from "../components/PageHeader";
 import { useHotel } from "../hooks/useHotel";
-import { obtenerResumen, obtenerRoi } from "../lib/api";
+import { ApiUnavailableError, obtenerResumen, obtenerRoi } from "../lib/api";
 
 /**
  * REQ-UX-002 / observación del orquestador (docs/PROGRESO.md, entrada H3): con la API
@@ -14,10 +14,18 @@ import { obtenerResumen, obtenerRoi } from "../lib/api";
  * (H2, apps/api). Con la API respondiendo pero sin filas reales todavía (hotel nuevo,
  * sin disponibilidad cargada), cada cifra individual muestra "Sin datos todavía" —
  * nunca un cero fabricado.
+ *
+ * REQ-UX-002 (auditoría propia, hallazgo real): el branch de error de arriba SIEMPRE
+ * mostraba "Sin conexión con el API", incluso cuando la causa real era la ausencia de
+ * `VITE_API_URL` (`ApiUnavailableError.pendienteCredenciales === true`, ver
+ * `lib/api.ts`) -- exactamente el caso que ACEPTACION.md §criterio 10 exige declarar
+ * explícitamente como "pendiente de credenciales", no como una caída transitoria de
+ * conexión. Se distingue aquí igual que `DataState` (componente compartido del resto
+ * de pantallas) para no dar un diagnóstico equivocado a quien opere el panel.
  */
 export function Resumen() {
   const { hotelActivoId } = useHotel();
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["resumen", hotelActivoId],
     queryFn: () => obtenerResumen(hotelActivoId as string),
     enabled: Boolean(hotelActivoId),
@@ -31,12 +39,15 @@ export function Resumen() {
   });
 
   if (isError) {
+    const err = error instanceof ApiUnavailableError ? error : null;
     return (
       <div>
         <PageHeader titulo="Resumen" descripcion="Ocupación, tarifa promedio (ADR), RevPAR y reservas del día para el hotel seleccionado." />
         <EstadoError
-          titulo="Sin conexión con el API"
-          mensaje="No se pudo conectar con la API de Atiende Hoteles. Verifica tu conexión e inténtalo de nuevo."
+          titulo={err?.pendienteCredenciales ? undefined : "Sin conexión con el API"}
+          integracion={err?.integracion ?? "API de Atiende Hoteles"}
+          pendienteCredenciales={err?.pendienteCredenciales ?? false}
+          mensaje={err?.pendienteCredenciales ? undefined : "No se pudo conectar con la API de Atiende Hoteles. Verifica tu conexión e inténtalo de nuevo."}
           onReintentar={() => refetch()}
         />
       </div>
