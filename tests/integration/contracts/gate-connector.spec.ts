@@ -46,10 +46,12 @@ describe("REQ-QA-003 · gate `connector` -- PMS (Cloudbeds)", () => {
     it("verifyAndNormalizeWebhook normaliza un webhook firmado a un PmsWebhookEvent válido", async () => {
       const adapter = new FakeCloudbedsAdapter();
       const { rawBody, signature } = FakeCloudbedsAdapter.signWebhookFixture({
-        event_id: "evt-contrato-1",
-        event_type: "reservation.updated",
-        reservation_id: "CB-RES-1001",
-        occurred_at: "2026-09-08T12:00:00.000Z",
+        version: "1.0",
+        event: "reservation/status_changed",
+        timestamp: 1757332800,
+        propertyID: "CB-HOTEL-01",
+        reservationID: "CB-RES-1001",
+        status: "confirmed",
       });
       const event = await adapter.verifyAndNormalizeWebhook(rawBody, signature);
       expect(() => PmsWebhookEvent.parse(event)).not.toThrow();
@@ -87,10 +89,11 @@ describe("REQ-QA-003 · gate `connector` -- PMS (Cloudbeds)", () => {
       const adapter = new FakeCloudbedsAdapter();
       const before = await adapter.getReservation("CB-RES-1001");
       const { rawBody, signature } = FakeCloudbedsAdapter.signWebhookFixture({
-        event_id: "evt-idempotencia-1",
-        event_type: "reservation.canceled",
-        reservation_id: "CB-RES-1001",
-        occurred_at: "2026-09-08T12:00:00.000Z",
+        version: "1.0",
+        event: "reservation/deleted",
+        timestamp: 1757332801,
+        propertyID: "CB-HOTEL-01",
+        reservationID: "CB-RES-1001",
       });
 
       const primero = await procesarWebhookDeCancelacion(adapter, rawBody, signature);

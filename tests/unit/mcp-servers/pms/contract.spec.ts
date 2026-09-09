@@ -97,26 +97,50 @@ describe("CloudbedsAdapter (real) sin credenciales -- declaración honesta", () 
   });
 });
 
+// Forma REAL del payload de webhook (docs/webhooks-1, ver cloudbeds-adapter.ts): un
+// campo `event` combinado ("entidad/accion"), `timestamp` unix (con microsegundos) y
+// SIN id de deduplicación propio -- ya no se usan los campos ficticios
+// `event_id`/`event_type`/`occurred_at` de la versión anterior de este archivo.
 describe("webhook de Cloudbeds -- firma HMAC + replay", () => {
   it("firma válida se acepta y normaliza el evento", async () => {
     const fake = new FakeCloudbedsAdapter();
     const { rawBody, signature } = FakeCloudbedsAdapter.signWebhookFixture({
-      event_id: "evt-cb-1",
-      event_type: "reservation.updated",
-      reservation_id: "CB-RES-1001",
-      occurred_at: new Date().toISOString(),
+      version: "1.0",
+      event: "reservation/status_changed",
+      timestamp: 1735000000.123456,
+      propertyID: "CB-HOTEL-01",
+      reservationID: "CB-RES-1001",
+      status: "confirmed",
     });
     const event = await fake.verifyAndNormalizeWebhook(rawBody, signature);
-    expect(event.eventId).toBe("evt-cb-1");
+    expect(event.eventId).toBe("reservation/status_changed:CB-HOTEL-01:CB-RES-1001:1735000000.123456");
     expect(event.type).toBe("reservation.updated");
+    expect(event.externalReservationId).toBe("CB-RES-1001");
+  });
+
+  it("un evento reservation/status_changed con status=canceled se normaliza a reservation.canceled", async () => {
+    const fake = new FakeCloudbedsAdapter();
+    const { rawBody, signature } = FakeCloudbedsAdapter.signWebhookFixture({
+      version: "1.0",
+      event: "reservation/status_changed",
+      timestamp: 1735000001,
+      propertyID: "CB-HOTEL-01",
+      reservationID: "CB-RES-1002",
+      status: "canceled",
+    });
+    const event = await fake.verifyAndNormalizeWebhook(rawBody, signature);
+    expect(event.type).toBe("reservation.canceled");
   });
 
   it("firma inválida se rechaza (WebhookSignatureError), nunca procesa el payload", async () => {
     const fake = new FakeCloudbedsAdapter();
     const { rawBody } = FakeCloudbedsAdapter.signWebhookFixture({
-      event_id: "evt-cb-2",
-      event_type: "reservation.updated",
-      occurred_at: new Date().toISOString(),
+      version: "1.0",
+      event: "reservation/status_changed",
+      timestamp: 1735000002,
+      propertyID: "CB-HOTEL-01",
+      reservationID: "CB-RES-1001",
+      status: "confirmed",
     });
     await expect(fake.verifyAndNormalizeWebhook(rawBody, "sha256=firma-invalida")).rejects.toBeInstanceOf(
       WebhookSignatureError,
@@ -126,22 +150,39 @@ describe("webhook de Cloudbeds -- firma HMAC + replay", () => {
   it("firma ausente se rechaza", async () => {
     const fake = new FakeCloudbedsAdapter();
     const { rawBody } = FakeCloudbedsAdapter.signWebhookFixture({
-      event_id: "evt-cb-3",
-      event_type: "reservation.updated",
-      occurred_at: new Date().toISOString(),
+      version: "1.0",
+      event: "reservation/status_changed",
+      timestamp: 1735000003,
+      propertyID: "CB-HOTEL-01",
+      reservationID: "CB-RES-1001",
+      status: "confirmed",
     });
     await expect(fake.verifyAndNormalizeWebhook(rawBody, undefined)).rejects.toBeInstanceOf(WebhookSignatureError);
   });
 
-  it("un event_id repetido (replay) se rechaza en el segundo intento", async () => {
+  it("un evento no reconocido por el puerto se rechaza en vez de normalizarse a ciegas", async () => {
     const fake = new FakeCloudbedsAdapter();
     const { rawBody, signature } = FakeCloudbedsAdapter.signWebhookFixture({
-      event_id: "evt-cb-4",
-      event_type: "room.status_changed",
-      room_id: "CB-ROOM-101",
-      occurred_at: new Date().toISOString(),
+      version: "1.0",
+      event: "accounting/transaction",
+      timestamp: 1735000004,
+      propertyID: "CB-HOTEL-01",
     });
-    await fake.verifyAndNormalizeWebhook(rawBody, signature);
+    await expect(fake.verifyAndNormalizeWebhook(rawBody, signature)).rejects.toThrow();
+  });
+
+  it("la misma entrega repetida (mismo evento/entidad/timestamp) se rechaza como replay", async () => {
+    const fake = new FakeCloudbedsAdapter();
+    const { rawBody, signature } = FakeCloudbedsAdapter.signWebhookFixture({
+      version: "1.0",
+      event: "housekeeping/room_condition_changed",
+      timestamp: 1735000005,
+      propertyID: "CB-HOTEL-01",
+      roomId: "CB-ROOM-101",
+    });
+    const first = await fake.verifyAndNormalizeWebhook(rawBody, signature);
+    expect(first.type).toBe("room.status_changed");
+    expect(first.roomExternalId).toBe("CB-ROOM-101");
     await expect(fake.verifyAndNormalizeWebhook(rawBody, signature)).rejects.toBeInstanceOf(WebhookReplayError);
   });
 });

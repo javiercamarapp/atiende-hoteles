@@ -19,6 +19,7 @@ import { startConversationPurgeScheduler } from "./jobs/purgeConversationsSchedu
 import { startTicketEscalationScheduler } from "./jobs/ticketEscalationScheduler.ts";
 import { startEmailOutboxScheduler, resolveEmailPort } from "./emailOutbox/runEmailOutboxWorker.ts";
 import { startPaymentPreauthPurgeScheduler } from "./jobs/purgePaymentPreauthScheduler.ts";
+import { startPmsCloudbedsSyncScheduler } from "./jobs/pmsCloudbedsSyncScheduler.ts";
 
 async function main() {
   // REQ-SEG-013 · antes de leer cualquier secreto de `process.env`, le da a Vault/KMS
@@ -143,6 +144,16 @@ async function main() {
     onError: (err) => logger.error({ err }, "purga de pre-autorizaciones de pago: error en tick"),
   });
 
+  // H15-001/ADR-007 · primer caller real de `@atiende-hoteles/mcp-pms` (auditoria
+  // confirmo 0 antes de esto): sincroniza tarifas de Cloudbeds hacia `rate_plan` para
+  // cada `room_type.cloudbeds_room_type_id` configurado (migracion 0125). Sin las 4
+  // variables OAuth de Cloudbeds en el entorno, cada tick solo registra
+  // `status().reason` -- 0 llamadas de red, ver jobs/pmsCloudbedsSyncScheduler.ts.
+  const pmsCloudbedsSyncScheduler = startPmsCloudbedsSyncScheduler(engine.admin, {
+    onTick: (results) => logger.info({ results }, "sincronizacion de tarifas Cloudbeds: tick"),
+    onError: (err) => logger.error({ err }, "sincronizacion de tarifas Cloudbeds: error en tick"),
+  });
+
   const shutdown = async () => {
     logger.info("apagando apps/api");
     nightAuditScheduler.stop();
@@ -151,6 +162,7 @@ async function main() {
     ticketEscalationScheduler.stop();
     emailOutboxScheduler.stop();
     paymentPreauthPurgeScheduler.stop();
+    pmsCloudbedsSyncScheduler.stop();
     await engine.stop();
     process.exit(0);
   };

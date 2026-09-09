@@ -32,6 +32,7 @@ import {
   type PmsGuestProfile,
   type PmsWebhookEvent,
 } from "../port.ts";
+import { normalizeCloudbedsWebhookPayload, type CloudbedsWebhookPayload } from "./cloudbeds-adapter.ts";
 
 /** Secreto fijo de pruebas -- NUNCA usar en un entorno real. */
 export const FAKE_CLOUDBEDS_WEBHOOK_SECRET = "test-secret-cloudbeds-simulado";
@@ -208,6 +209,15 @@ export class FakeCloudbedsAdapter implements PmsPort {
     return found.guest;
   }
 
+  /**
+   * Igual que `CloudbedsAdapter`: el HMAC de aqui es una convención PROPIA de este
+   * repo (Cloudbeds real no firma sus webhooks, ver el aviso en `cloudbeds-adapter.ts`)
+   * -- pero el PAYLOAD que se normaliza SÍ reproduce la forma real documentada
+   * (`docs/webhooks-1`, campo `event` combinado tipo "reservation/status_changed",
+   * `timestamp` unix, ids con capitalización inconsistente), vía la misma
+   * `normalizeCloudbedsWebhookPayload` que usa el adaptador real -- un fixture firmado
+   * con `signWebhookFixture` prueba el mismo parseo que correría contra Cloudbeds real.
+   */
   async verifyAndNormalizeWebhook(
     rawBody: string,
     signatureHeader: string | undefined,
@@ -215,29 +225,19 @@ export class FakeCloudbedsAdapter implements PmsPort {
     if (!verifyHmacSignature(rawBody, signatureHeader, this.webhookSecret)) {
       throw new WebhookSignatureError("cloudbeds");
     }
-    const payload = JSON.parse(rawBody) as {
-      event_id: string;
-      event_type: PmsWebhookEvent["type"];
-      reservation_id?: string;
-      room_id?: string;
-      occurred_at: string;
-    };
-    if (this.replayGuard.seenBefore(payload.event_id)) {
-      throw new WebhookReplayError("cloudbeds", payload.event_id);
+    const payload = JSON.parse(rawBody) as CloudbedsWebhookPayload;
+    const normalized = normalizeCloudbedsWebhookPayload(payload);
+    if (this.replayGuard.seenBefore(normalized.eventId)) {
+      throw new WebhookReplayError("cloudbeds", normalized.eventId);
     }
-    return {
-      eventId: payload.event_id,
-      type: payload.event_type,
-      externalReservationId: payload.reservation_id,
-      roomExternalId: payload.room_id,
-      occurredAt: payload.occurred_at,
-      raw: payload,
-    };
+    return normalized;
   }
 
-  /** Helper de pruebas: construye un payload de webhook y su firma HMAC válida. */
+  /** Helper de pruebas: construye un payload de webhook (forma real de Cloudbeds,
+   *  ver `CloudbedsWebhookPayload`) y su firma HMAC simulada (convención de este repo,
+   *  no algo que Cloudbeds calcule -- ver aviso en `cloudbeds-adapter.ts`). */
   static signWebhookFixture(
-    payload: Record<string, unknown>,
+    payload: CloudbedsWebhookPayload,
     secret: string = FAKE_CLOUDBEDS_WEBHOOK_SECRET,
   ): { rawBody: string; signature: string } {
     const rawBody = JSON.stringify(payload);
