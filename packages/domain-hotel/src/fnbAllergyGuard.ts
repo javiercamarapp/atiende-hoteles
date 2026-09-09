@@ -26,8 +26,39 @@
 // Se aplica SOBRE TEXTO SIN ACENTOS (ver `stripDiacritics`) para reconocer por igual
 // "alérgico"/"alergico" y "célíaco"/"celiaco" -- un huésped escribiendo desde el
 // teclado de un celular omite acentos con la misma frecuencia con la que los pone.
+//
+// AUDITORÍA (8-sep-2026, REQ-AB-004 P0/GOB): la versión original solo cubría el
+// vocabulario clínico/formal (alerg*/intoleran*/celiac*/anafilax*/hipersensibilidad/
+// "no puedo comer"/restriccion(es) alimentari*) y dejaba pasar SIN marcar frases
+// naturales -- incluso adversariales -- con las que un huésped real describe una
+// alergia sin usar la palabra "alergia", p.ej. "no tolero los mariscos, me hace mal
+// comerlos". Ese hueco permitía que `puedeAsegurarSeguridad` diera `true` y
+// `POST /asegurar-seguridad` devolviera 200 sin confirmación humana de cocina --
+// justo lo que REQ-AB-004 prohíbe. Se amplía a tres frentes, todos con el mismo
+// criterio fail-closed (duda razonable => declarado, nunca al revés):
+//   1. Vocabulario clínico/formal (el original) + sinónimos de anafilaxia/shock
+//      ("choque"/"shock" anafiláctico o alérgico, "riesgo de muerte", "puede
+//      matarme", "se me cierra la garganta", "me cuesta respirar").
+//   2. Verbos coloquiales de reacción adversa a un alimento: "no tolero", "me hace
+//      mal", "me cae mal", "me enferma", "me intoxica", "me da alergia/reacción/
+//      comezón/urticaria/ronchas/hinchazón", "se me hincha", "soy sensible a",
+//      "estoy contraindicado" -- la forma en que la mayoría de huéspedes describe
+//      una alergia/intolerancia en conversación real, sin usar jerga médica.
+//   3. Negación de poder/deber consumir un alimento con causa explícita ("no
+//      puedo/debo comer", y el patrón "no como X porque..." -- cuando el huésped
+//      da una razón para no comer algo, tratarlo como posible restricción de
+//      salud es más seguro que asumir preferencia, y el costo de un falso
+//      positivo sigue siendo solo una confirmación de más).
 const ALLERGY_KEYWORDS_RE =
-  /\b(alerg\w*|intoleran\w*|celiac\w*|anafilax\w*|hipersensibilidad|no\s+puedo\s+comer|restriccion(?:es)?\s+alimentari\w*)\b/i;
+  /\b(alerg\w*|intoleran\w*|celiac\w*|anafilax\w*|anafilact\w*|hipersensib\w*|contraindicad\w*|(?:choque|shock)\s+(?:alergic\w*|anafilactic\w*)|riesgo\s+de\s+(?:muerte|vida)|puede\s+matarme|es\s+mortal\s+para\s+mi|se\s+me\s+cierra\s+la\s+garganta|me\s+cuesta\s+respirar|no\s+tolero|no\s+puedo\s+comer|no\s+debo\s+comer|no\s+deberia\s+comer|restriccion(?:es)?\s+alimentari\w*|dieta\s+especial\s+por|me\s+hace\s+mal|me\s+cae\s+mal|me\s+enferma|me\s+intoxic\w*|soy\s+sensible\b|me\s+da\s+(?:alergia|reaccion|comezon|urticaria|ronchas|picazon|hinchazon)|se\s+me\s+hincha)\b/i;
+
+// Patrón adicional (no capturado arriba por depender de contexto libre entre dos
+// anclas): "no como X porque ..." -- el huésped explica por qué evita un alimento.
+// Requiere la razón explícita ("porque") para no marcar cualquier "no como X" como
+// alergia (ambigüedad real: preferencia vs. salud), pero ante esa ambigüedad se
+// prefiere pedir confirmación de cocina de más -- fail-closed, igual que el resto
+// del módulo.
+const AVOIDANCE_WITH_REASON_RE = /\bno\s+como\b[^.;\n]{0,60}\bporque\b/i;
 
 function stripDiacritics(text: string): string {
   return text.normalize("NFD").replace(/\p{Diacritic}/gu, "");
@@ -36,7 +67,8 @@ function stripDiacritics(text: string): string {
 /** true si `text` PARECE declarar una alergia/restricción alimentaria. */
 export function looksLikeAllergyDeclaration(text: string | null | undefined): boolean {
   if (!text) return false;
-  return ALLERGY_KEYWORDS_RE.test(stripDiacritics(text));
+  const normalized = stripDiacritics(text);
+  return ALLERGY_KEYWORDS_RE.test(normalized) || AVOIDANCE_WITH_REASON_RE.test(normalized);
 }
 
 export type AllergyDeclaredVia = "estructurado" | "texto_libre";

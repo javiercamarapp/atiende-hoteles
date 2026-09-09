@@ -173,4 +173,46 @@ describe("adversarial: pedido de F&B con alergia declarada exige confirmación d
     });
     expect(res.status).toBe(409);
   });
+
+  // AUDITORÍA (8-sep-2026, P0/GOB): confirmado en vivo contra esta misma app que la
+  // frase "no tolero los mariscos, me hace mal comerlos" (sin marcar el campo
+  // estructurado) daba `alergiaDeclarada=false`/`puedeAsegurarSeguridad=true`, y
+  // `POST /asegurar-seguridad` devolvía 200 SIN confirmación humana de cocina --
+  // exactamente lo que REQ-AB-004 prohíbe. Extremo a extremo contra la app Hono real:
+  // nunca debe volver a devolver 200 sin confirmación para esta ni para otras frases
+  // naturales/coloquiales de food-safety.
+  it.each([
+    "no tolero los mariscos, me hace mal comerlos",
+    "me cae mal el camarón, evítenmelo por favor",
+    "soy sensible al gluten",
+    "me da reacción si el platillo lleva cacahuate",
+    "tuve un shock anafiláctico con nueces antes",
+  ])(
+    'red de seguridad (frase natural/adversarial): "%s" en nota libre marca alergia y BLOQUEA asegurar-seguridad sin confirmación',
+    async (nota) => {
+      const pedido = await crearPedido({
+        items: [{ nombre: "Pasta del día", notas: nota }],
+        // alergiaDeclarada NO se marca explícita -- solo va en la nota de texto libre,
+        // igual que reportó la auditoría.
+      });
+      expect(pedido.alergiaDeclarada).toBe(true);
+      expect(pedido.alergiaDetectadaVia).toBe("texto_libre");
+      expect(pedido.puedeAsegurarSeguridad).toBe(false);
+      expect(pedido.mensajeSeguridad).not.toMatch(/es seguro/i);
+
+      const intento = await fixture.app.request(`/hoteles/${hotelId}/pedidos-fnb/${pedido.id}/asegurar-seguridad`, {
+        method: "POST",
+        headers: auth(fnbToken),
+        body: JSON.stringify({}),
+      });
+      // NUNCA un 200 silencioso sin confirmación humana -- debe rechazarse con 409.
+      expect(intento.status).toBe(409);
+
+      const { rows } = await fixture.engine.admin.query<{ safety_assurance_sent_at: string | null }>(
+        "select safety_assurance_sent_at::text as safety_assurance_sent_at from public.fnb_order where id = $1;",
+        [pedido.id],
+      );
+      expect(rows[0]!.safety_assurance_sent_at).toBeNull();
+    },
+  );
 });
