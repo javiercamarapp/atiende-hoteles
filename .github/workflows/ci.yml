@@ -166,6 +166,16 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
       - run: npm ci
+      # Mitigacion de un bug conocido de npm con dependencias opcionales
+      # (github.com/npm/cli/issues/4828): `npm ci` en Linux a veces no descarga el
+      # binding nativo especifico de plataforma de un paquete opcional (aqui,
+      # @rolldown/binding-linux-x64-gnu que usa vite/rolldown vía apps/web), aunque
+      # esta declarado correctamente en package-lock.json -- falla recien al
+      # ejecutar `vite build`, no en la instalacion misma. `npm install` (no solo
+      # `ci`) fuerza una segunda pasada de resolucion que sí lo trae. Encontrado
+      # recien porque el job "test" nunca antes habia pasado en esta rama -- el
+      # job "build" jamas habia llegado a ejecutarse de verdad hasta ahora.
+      - run: npm install --no-save
       - run: npm run build
       - uses: actions/upload-artifact@v4
         with:
@@ -184,6 +194,16 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
       - run: npm ci
+      # Mitigacion de un bug conocido de npm con dependencias opcionales
+      # (github.com/npm/cli/issues/4828): `npm ci` en Linux a veces no descarga el
+      # binding nativo especifico de plataforma de un paquete opcional (aqui,
+      # @rolldown/binding-linux-x64-gnu que usa vite/rolldown vía apps/web), aunque
+      # esta declarado correctamente en package-lock.json -- falla recien al
+      # ejecutar `vite build`, no en la instalacion misma. `npm install` (no solo
+      # `ci`) fuerza una segunda pasada de resolucion que sí lo trae. Encontrado
+      # recien porque el job "test" nunca antes habia pasado en esta rama -- el
+      # job "build" jamas habia llegado a ejecutarse de verdad hasta ahora.
+      - run: npm install --no-save
       - run: npm run build
       # Instala el canal "chrome" real (no solo Chromium genérico) -- mismo canal que
       # tests/e2e usa en desarrollo (`channel: 'chrome'`, docs/runbooks/despliegue.md
