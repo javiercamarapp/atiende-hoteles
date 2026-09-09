@@ -73,6 +73,7 @@ import { sharedWhatsappAdapter } from "../lib/messaging.ts";
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
+import { ADMIN_ROLES } from "../domain/roles.ts";
 import type { HotelRole } from "../domain/roles.ts";
 import type { AppDeps, HonoEnvBindings } from "../types.ts";
 
@@ -307,8 +308,21 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     return c.json(out);
   });
 
+  // BP-016/BP-053/BP-054/GOB-036: única vía de producción para mover el gate
+  // shadow/propone/autopilot de un (hotel, agente) -- reutiliza EXACTAMENTE el mismo
+  // middleware de membresía+rol que el resto de la API (`requireHotelMembership` en
+  // `app.use` de arriba, más `assertRole` aquí con `ADMIN_ROLES`, igual que
+  // tarifas.ts/incidentes.ts/etc.): solo "owner"/"gm" del hotel pueden tocar el gate de
+  // producción de sus propios agentes, nunca housekeeping/frontdesk/reservations aunque
+  // ese rol sí pueda DISPARAR el agente vía /ejecutar. Cada cambio (de-gate/a-gate, y de
+  // techo/a techo) queda en `audit_log` vía `record_audit_log()` -- mismo mecanismo
+  // append-only/hash-encadenado que ya usa cada paso de una corrida de agente
+  // (persistAgentTraceEvents más abajo), así que "quién" (actor_user_id vía auth.uid()
+  // dentro de la función SECURITY DEFINER), "cuándo" (created_at) y "de-qué-a-qué valor"
+  // (payload) quedan en la MISMA bitácora inmutable que el resto del sistema, no en una
+  // tabla nueva de un solo uso.
   app.patch("/hoteles/:hotelId/agentes/:agente/config", async (c) => {
-    assertRole(c, ["owner", "gm"] as HotelRole[]);
+    assertRole(c, ADMIN_ROLES);
     const db = c.get("db");
     const orgId = c.get("orgId");
     const hotelId = c.req.param("hotelId");
@@ -328,6 +342,25 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
        do update set gate = excluded.gate, monthly_ceiling_usd = excluded.monthly_ceiling_usd, updated_at = now();`,
       [orgId, hotelId, def.name, gate, techo],
     );
+
+    // Auditoría del cambio (quién/cuándo vía record_audit_log + auth.uid(), de-qué-a-qué
+    // valor en el payload). Solo se escribe si algo realmente cambió -- un PATCH que deja
+    // gate/techo idénticos a los ya vigentes (ej. body vacío, o re-enviar el mismo valor)
+    // no genera ruido en una bitácora append-only que nunca se puede corregir después.
+    if (gate !== current.gate || techo !== current.monthlyCeilingUsd) {
+      await db.query("select public.record_audit_log($1, $2, 'agent_config.gate_cambiado', 'agent_config', null, $3::jsonb);", [
+        orgId,
+        hotelId,
+        JSON.stringify({
+          agente: def.name,
+          actorRole: c.get("hotelRole"),
+          gateAnterior: current.gate,
+          gateNuevo: gate,
+          techoMensualUsdAnterior: current.monthlyCeilingUsd,
+          techoMensualUsdNuevo: techo,
+        }),
+      ]);
+    }
 
     return c.json({ agente: def.name, gate, techoMensualUsd: techo });
   });
