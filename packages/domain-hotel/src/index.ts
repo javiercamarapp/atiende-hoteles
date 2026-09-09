@@ -240,3 +240,17 @@ export {
   type ResolveAllergyDeclaredResult,
   type FnbOrderSafetyState,
 } from "./fnbAllergyGuard.ts";
+export {
+  FRAUD_PATTERNS,
+  recipientRolesForPattern,
+  detectDiscountOutsidePolicy,
+  detectFolioReopenedAfterAudit,
+  detectUnpostedFnbCharge,
+  detectRefundToDifferentCard,
+  type FraudPattern,
+  type FraudFinding,
+  type DiscountPolicyInput,
+  type FolioReopenInput,
+  type FnbPosReconciliationInput,
+  type RefundCardMismatchInput,
+} from "./fraude/deteccion.ts";

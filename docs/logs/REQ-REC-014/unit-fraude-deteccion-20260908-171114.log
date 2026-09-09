@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/domain-hotel/fraude-deteccion.spec.ts (20 tests) 3ms
+
+ Test Files  1 passed (1)
+      Tests  20 passed (20)
+   Start at  17:11:15
+   Duration  254ms (transform 54ms, setup 0ms, collect 89ms, tests 3ms, environment 0ms, prepare 34ms)
+

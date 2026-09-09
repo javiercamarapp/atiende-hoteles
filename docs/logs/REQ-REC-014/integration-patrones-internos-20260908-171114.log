@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/integration/fraude/patrones-internos.spec.ts (10 tests) 990ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  17:11:15
+   Duration  1.52s (transform 238ms, setup 0ms, collect 418ms, tests 990ms, environment 0ms, prepare 27ms)
+
