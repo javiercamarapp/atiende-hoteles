@@ -5,12 +5,19 @@
 // la máquina de estados (criterio de ACEPTACION.md).
 import { describe, expect, it } from "vitest";
 import {
+  BuildLoopBlockedByAuditError,
+  countClosedTasks,
   createBacklogTask,
   InvalidBacklogTransitionError,
+  isBuildLoopBlockedByAudit,
+  isPeriodicAuditDue,
   parseTaskFile,
+  PERIODIC_AUDIT_INTERVAL_TASKS,
+  type PeriodicAuditRecord,
   recordFailedAttempt,
   renderTaskFile,
   selectNextReadyTask,
+  selectNextTask,
   transitionBacklogTask,
   type BacklogTask,
 } from "../../../packages/agent-core/src/backlog/backlogStateMachine.ts";
@@ -175,6 +182,122 @@ describe("selectNextReadyTask (GOB-001/GOB-046/GOB-049)", () => {
 
   it("sin ninguna tarea ready devuelve null", () => {
     expect(selectNextReadyTask([tareaBase()])).toBeNull();
+  });
+});
+
+describe("REQ-OBS-003/GOB-009: auditoría periódica cada 8 tareas cerradas", () => {
+  it("PERIODIC_AUDIT_INTERVAL_TASKS es 8 (GOB-009: 'cada 8 tareas cerradas')", () => {
+    expect(PERIODIC_AUDIT_INTERVAL_TASKS).toBe(8);
+  });
+
+  describe("countClosedTasks", () => {
+    it("cuenta solo las tareas en done, ignora cualquier otro estado", () => {
+      const done1 = transitionBacklogTask(transitionBacklogTask(tareaBase({ id: "a" }), "ready"), "doing");
+      const doneTask = transitionBacklogTask(transitionBacklogTask(done1, "review"), "done");
+      const enDoing = transitionBacklogTask(tareaBase({ id: "b" }), "ready");
+      expect(countClosedTasks([doneTask, transitionBacklogTask(enDoing, "doing")])).toBe(1);
+    });
+
+    it("0 sobre un backlog vacío", () => {
+      expect(countClosedTasks([])).toBe(0);
+    });
+  });
+
+  describe("isPeriodicAuditDue", () => {
+    it("false con 0 tareas cerradas (0 no cuenta como 'toca ronda')", () => {
+      expect(isPeriodicAuditDue(0)).toBe(false);
+    });
+
+    it("false en conteos que no son múltiplo del intervalo (7, 9, 15)", () => {
+      expect(isPeriodicAuditDue(7)).toBe(false);
+      expect(isPeriodicAuditDue(9)).toBe(false);
+      expect(isPeriodicAuditDue(15)).toBe(false);
+    });
+
+    it("true exactamente en 8, 16, 24 (múltiplos del intervalo real)", () => {
+      expect(isPeriodicAuditDue(8)).toBe(true);
+      expect(isPeriodicAuditDue(16)).toBe(true);
+      expect(isPeriodicAuditDue(24)).toBe(true);
+    });
+
+    it("acepta un intervalo custom (inyectable, no hardcodeado en la firma)", () => {
+      expect(isPeriodicAuditDue(3, 3)).toBe(true);
+      expect(isPeriodicAuditDue(4, 3)).toBe(false);
+    });
+  });
+
+  function auditoria(overrides: Partial<PeriodicAuditRecord> = {}): PeriodicAuditRecord {
+    return {
+      round: 1,
+      date: "2026-09-08",
+      closedTaskCount: 8,
+      verdict: "rojo",
+      resolved: false,
+      documentPath: "docs/auditoria-N/ronda-1.md",
+      ...overrides,
+    };
+  }
+
+  describe("isBuildLoopBlockedByAudit", () => {
+    it("false sin auditoría previa (null/undefined) -- nada que bloquee todavía", () => {
+      expect(isBuildLoopBlockedByAudit(null)).toBe(false);
+      expect(isBuildLoopBlockedByAudit(undefined)).toBe(false);
+    });
+
+    it("false si el último veredicto es verde", () => {
+      expect(isBuildLoopBlockedByAudit(auditoria({ verdict: "verde", resolved: false }))).toBe(false);
+    });
+
+    it("false si el veredicto es rojo pero ya fue marcado resuelto", () => {
+      expect(isBuildLoopBlockedByAudit(auditoria({ verdict: "rojo", resolved: true }))).toBe(false);
+    });
+
+    it("true si el veredicto es rojo y sigue sin resolver", () => {
+      expect(isBuildLoopBlockedByAudit(auditoria({ verdict: "rojo", resolved: false }))).toBe(true);
+    });
+  });
+
+  describe("selectNextTask: el hook de bloqueo real (REQ-OBS-003)", () => {
+    it("sin lastAudit (parámetro omitido), selectNextTask funciona exactamente igual que antes", () => {
+      const t = transitionBacklogTask(tareaBase({ id: "a", orden: 1 }), "ready");
+      const seleccionada = selectNextTask([t], ["REC"]);
+      expect(seleccionada?.id).toBe("a");
+      expect(seleccionada?.status).toBe("doing");
+    });
+
+    it("con un veredicto rojo sin resolver, lanza BuildLoopBlockedByAuditError y NO selecciona ninguna tarea", () => {
+      const t = transitionBacklogTask(tareaBase({ id: "a", orden: 1 }), "ready");
+      const lastAudit = auditoria({ verdict: "rojo", resolved: false });
+      expect(() => selectNextTask([t], ["REC"], lastAudit)).toThrow(BuildLoopBlockedByAuditError);
+      // La tarea original queda intacta (todavía 'ready') -- selectNextTask nunca llegó
+      // a mutarla porque el bloqueo se aplica ANTES de mirar el backlog.
+      expect(t.status).toBe("ready");
+    });
+
+    it("el error lanzado expone el registro de auditoría que bloquea, para poder reportarlo", () => {
+      const t = transitionBacklogTask(tareaBase({ id: "a", orden: 1 }), "ready");
+      const lastAudit = auditoria({ round: 3, verdict: "rojo", resolved: false });
+      try {
+        selectNextTask([t], ["REC"], lastAudit);
+        expect.unreachable();
+      } catch (err) {
+        expect(err).toBeInstanceOf(BuildLoopBlockedByAuditError);
+        expect((err as BuildLoopBlockedByAuditError).audit.round).toBe(3);
+        expect((err as Error).message).toMatch(/REQ-OBS-003/);
+      }
+    });
+
+    it("con un veredicto rojo YA resuelto, selectNextTask vuelve a operar normalmente", () => {
+      const t = transitionBacklogTask(tareaBase({ id: "a", orden: 1 }), "ready");
+      const lastAudit = auditoria({ verdict: "rojo", resolved: true });
+      expect(selectNextTask([t], ["REC"], lastAudit)?.id).toBe("a");
+    });
+
+    it("con el último veredicto verde, selectNextTask opera normalmente", () => {
+      const t = transitionBacklogTask(tareaBase({ id: "a", orden: 1 }), "ready");
+      const lastAudit = auditoria({ verdict: "verde", resolved: false });
+      expect(selectNextTask([t], ["REC"], lastAudit)?.id).toBe("a");
+    });
   });
 });
 

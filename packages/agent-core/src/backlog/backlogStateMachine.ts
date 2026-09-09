@@ -342,16 +342,191 @@ function hasOpenDependencies(task: BacklogTask, tasks: readonly BacklogTask[]): 
   return task.dependencies.some((depId) => tasks.find((t) => t.id === depId)?.status !== "done");
 }
 
+// ---------------------------------------------------------------------------
+// REQ-GOB-014 (GOB-049, BP-136): "Debe existir un archivo de foco (`FOCUS.md`) por
+// fase/línea que fije la fase vigente y los módulos abiertos; el flujo de
+// planificación (REQ-GOB-001/`selectNextTask`, ver más abajo) solo debe abrir tareas
+// del foco vigente."
+//
+// Este módulo sigue siendo de dominio PURO (sin I/O, ver cabecera del archivo):
+// `parseFocusFile` recibe el CONTENIDO ya leído de `docs/FOCUS.md` (igual que
+// `parseTaskFile` recibe el contenido de una tarea, nunca una ruta de disco) y
+// devuelve `{ phase, openModules }` -- exactamente el array `openModules` que
+// `selectNextTask` ya declaraba recibir "resuelto externamente hasta que REQ-GOB-014
+// produzca `FOCUS.md` real" (ver comentario de `selectNextTask`). `renderFocusFile` es
+// el inverso (mismo patrón round-trip que `renderTaskFile`/`parseTaskFile`), para
+// generar/actualizar el archivo real desde código en vez de arriesgar un typo de
+// módulo editándolo a mano.
+// ---------------------------------------------------------------------------
+
+/** Foco vigente de una fase/línea (GOB-049): la fase actual y los módulos que puede
+ *  abrir el flujo de planificación mientras ese foco esté vigente. */
+export interface FocusFile {
+  /** Fase vigente, texto libre corto (p.ej. "cierre-p0", "H4"). Nunca vacío: un
+   *  `FOCUS.md` sin fase declarada no fija nada y `parseFocusFile` lo rechaza. */
+  phase: string;
+  /** Módulos abiertos -- mismos códigos que `BacklogTask.module` (p.ej. "REC", "GOB").
+   *  Único insumo real de `openModules` en `selectNextTask`; nunca vacío (un foco sin
+   *  ningún módulo abierto detendría el loop por completo, y eso se declara con la
+   *  ausencia/blocked de tareas, no con un `FOCUS.md` vacío). */
+  openModules: string[];
+}
+
+export class InvalidFocusFileError extends Error {
+  constructor(reason: string) {
+    super(`focus_file_invalido: ${reason}`);
+    this.name = "InvalidFocusFileError";
+  }
+}
+
+/**
+ * Parsea el contenido de un `FOCUS.md`: frontmatter `---` con `phase:` y
+ * `openModules:` (lista separada por comas), mismo estilo de frontmatter plano que
+ * `parseTaskFile` (sin dependencia de un parser YAML externo). Rechaza (nunca asume un
+ * default en silencio) cuando falta el frontmatter, falta `phase`, falta
+ * `openModules`, o `openModules` queda vacío tras filtrar espacios en blanco.
+ */
+export function parseFocusFile(content: string): FocusFile {
+  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) {
+    throw new InvalidFocusFileError('el archivo no tiene frontmatter "---" con `phase`/`openModules`.');
+  }
+
+  const raw: Record<string, string> = {};
+  for (const line of match[1]!.split("\n")) {
+    const idx = line.indexOf(":");
+    if (idx === -1) continue;
+    raw[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+  }
+
+  const phase = raw.phase?.trim();
+  if (!phase) {
+    throw new InvalidFocusFileError('falta "phase" (la fase vigente) en el frontmatter.');
+  }
+
+  const openModules = (raw.openModules ?? "")
+    .split(",")
+    .map((m) => m.trim())
+    .filter((m) => m.length > 0);
+  if (openModules.length === 0) {
+    throw new InvalidFocusFileError('"openModules" está vacío -- GOB-049 exige al menos un módulo abierto.');
+  }
+
+  return { phase, openModules };
+}
+
+/** Inverso de `parseFocusFile` (round-trip probado en
+ *  `tests/unit/gob/focus-vigente.spec.ts`) -- genera el `FOCUS.md` real desde código,
+ *  con `body` opcional (la sección Markdown libre bajo el frontmatter, p.ej. la
+ *  justificación de qué módulos están abiertos y por qué). */
+export function renderFocusFile(focus: FocusFile, body: string = ""): string {
+  const lines = ["---", `phase: ${focus.phase}`, `openModules: ${focus.openModules.join(", ")}`, "---"];
+  const trimmedBody = body.trim();
+  lines.push("", trimmedBody.length > 0 ? trimmedBody : `# Foco vigente: ${focus.phase}`, "");
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// REQ-OBS-003 (GOB-009, BP-142/BP-143): "cada N tareas cerradas del backlog se ejecuta
+// una auditoría periódica automatizada (checklist del blueprint) que escribe un
+// veredicto fechado en un documento; un veredicto rojo detiene el loop de construcción
+// hasta su resolución." GOB-009 fija N=8 ("cada 8 tareas cerradas").
+//
+// Este módulo es de dominio PURO (sin I/O, ver cabecera del archivo): NO ejecuta el
+// checklist ni escribe/lee el documento del veredicto -- eso vive en
+// `scripts/checks/auditoria-periodica.ts` (el orquestador con I/O real: cuenta tareas
+// `done` bajo `tasks/**`, corre el checklist, escribe `docs/auditoria-N/ronda-<n>.md` y
+// lee el último veredicto). Lo que SÍ vive aquí, como en el resto del archivo, es la
+// regla verificable: dado un conteo de tareas cerradas, ¿toca ronda? Y dado el último
+// veredicto conocido, ¿el loop de construcción debe bloquearse? `selectNextTask` --el
+// único punto real de "el loop toma la siguiente tarea"-- aplica esa regla ANTES de
+// seleccionar nada, para que "un veredicto rojo detiene el loop" sea un invariante
+// verificado (una excepción real que nunca se puede esquivar en silencio), no una
+// promesa de proceso.
+// ---------------------------------------------------------------------------
+
+/** GOB-009: "cada 8 tareas cerradas". Única fuente de verdad del intervalo -- tanto la
+ *  máquina de estados como `scripts/checks/auditoria-periodica.ts` lo importan de aquí. */
+export const PERIODIC_AUDIT_INTERVAL_TASKS = 8;
+
+export type AuditVerdict = "verde" | "rojo";
+
+/** Registro del último veredicto de auditoría periódica conocido, tal como lo produce
+ *  `scripts/checks/auditoria-periodica.ts` a partir del documento fechado real bajo
+ *  `docs/auditoria-N/`. `resolved` es `false` mientras un veredicto `rojo` siga sin
+ *  atenderse (solo `--resolver <ronda>` en ese script, tras corregir la causa, lo pasa
+ *  a `true`); un veredicto `verde` no necesita resolución. */
+export interface PeriodicAuditRecord {
+  round: number;
+  date: string;
+  closedTaskCount: number;
+  verdict: AuditVerdict;
+  resolved: boolean;
+  documentPath: string;
+}
+
+/** ¿El conteo de tareas `done` alcanza el próximo múltiplo del intervalo? `0` tareas
+ *  cerradas NUNCA cuenta como "toca ronda" (una ronda de auditoría sin nada que auditar
+ *  no tiene sentido) -- mismo criterio de "vacío honesto" que el resto del backlog de
+ *  archivos (`tasks/` aún no materializado en este repo, ver `scripts/checks/*.ts`). */
+export function isPeriodicAuditDue(closedTaskCount: number, intervalN: number = PERIODIC_AUDIT_INTERVAL_TASKS): boolean {
+  return closedTaskCount > 0 && closedTaskCount % intervalN === 0;
+}
+
+/** Tareas `done` del backlog dado -- lo que cuenta como "tarea cerrada" para GOB-009. */
+export function countClosedTasks(tasks: readonly BacklogTask[]): number {
+  return tasks.filter((t) => t.status === "done").length;
+}
+
+/** Un veredicto `rojo` sin resolver bloquea el loop -- SIEMPRE, sin importar si ya toca
+ *  una ronda nueva o no (GOB-009: "hasta resolución", no "hasta la próxima ronda"). Sin
+ *  auditoría previa (`null`/`undefined`), o con la última en `verde`, o ya `resolved`,
+ *  el loop sigue libre. */
+export function isBuildLoopBlockedByAudit(lastAudit: PeriodicAuditRecord | null | undefined): boolean {
+  return !!lastAudit && lastAudit.verdict === "rojo" && !lastAudit.resolved;
+}
+
+export class BuildLoopBlockedByAuditError extends Error {
+  readonly audit: PeriodicAuditRecord;
+
+  constructor(audit: PeriodicAuditRecord) {
+    super(
+      `loop_bloqueado_por_auditoria: REQ-OBS-003/GOB-009 -- la ronda de auditoría periódica ` +
+        `#${audit.round} (${audit.date}, ${audit.documentPath}) dio veredicto ROJO y sigue sin resolverse; ` +
+        `el loop de construcción no puede tomar una nueva tarea hasta que se resuelva.`,
+    );
+    this.name = "BuildLoopBlockedByAuditError";
+    this.audit = audit;
+  }
+}
+
 /**
  * REQ-GOB-001 (GOB-001/GOB-046/GOB-049): selección de la siguiente tarea del backlog.
  * Filtra `ready`, sin dependencias abiertas, dentro de `openModules` (los módulos
- * abiertos del `FOCUS.md` vigente -- ese archivo lo produce/lee REQ-GOB-014; aquí se
- * recibe ya resuelto como lista de módulos), por menor `orden` (empate → menor
+ * abiertos del `FOCUS.md` vigente -- REQ-GOB-014/`parseFocusFile` produce ese array a
+ * partir del `FOCUS.md` real de la línea; aquí se recibe ya resuelto como lista de
+ * módulos, nunca leyendo el archivo por sí misma, ver cabecera del archivo sobre
+ * dominio puro), por menor `orden` (empate → menor
  * `estimacionHoras`), y la MUEVE a `doing` (transición real vía
  * `transitionBacklogTask`, nunca una copia con `status` reescrito a mano). Devuelve
  * `null` si ninguna tarea del backlog cumple los 3 filtros.
+ *
+ * `lastAudit` (REQ-OBS-003/GOB-009, opcional -- por defecto `undefined`, sin bloqueo):
+ * si es un veredicto `rojo` sin resolver (`isBuildLoopBlockedByAudit`), esta función
+ * lanza `BuildLoopBlockedByAuditError` ANTES de mirar ninguna tarea -- ninguna selección
+ * ocurre mientras el loop esté bloqueado, sea cual sea el estado del backlog.
  */
-export function selectNextTask(tasks: readonly BacklogTask[], openModules: readonly string[]): BacklogTask | null {
+export function selectNextTask(
+  tasks: readonly BacklogTask[],
+  openModules: readonly string[],
+  lastAudit?: PeriodicAuditRecord | null,
+): BacklogTask | null {
+  if (isBuildLoopBlockedByAudit(lastAudit)) {
+    // `isBuildLoopBlockedByAudit` ya descartó null/undefined -- `lastAudit` es un
+    // `PeriodicAuditRecord` real en este punto.
+    throw new BuildLoopBlockedByAuditError(lastAudit as PeriodicAuditRecord);
+  }
+
   const candidates = tasks.filter(
     (t) => t.status === "ready" && openModules.includes(t.module) && !hasOpenDependencies(t, tasks),
   );

@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/gob/focus-vigente.spec.ts (17 tests) 5ms
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  17:22:46
+   Duration  278ms (transform 37ms, setup 0ms, collect 38ms, tests 5ms, environment 0ms, prepare 57ms)
+
