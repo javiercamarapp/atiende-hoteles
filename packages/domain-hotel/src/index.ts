@@ -366,6 +366,7 @@ export {
   type PriceDirection,
   type PriceRecommendationExplanation,
 } from "./revenue/priceRecommendationExplainer.ts";
+export {
   DEFAULT_WEEKLY_AUDIT_SAMPLE_SIZE,
   CONVERSATION_AUDIT_CATEGORIES,
   ConversationAuditError,

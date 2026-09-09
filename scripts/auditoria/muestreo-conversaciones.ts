@@ -5,7 +5,7 @@
 // (`node scripts/auditoria/muestreo-conversaciones.ts --n=30`) pero que no existía en
 // el repo: genera (o reutiliza, si ya existe) la muestra semanal de CADA hotel del
 // tenant, la persiste en `public.conversation_audit_sample`
-// (packages/db/migrations/0122_auditoria_conversaciones_semanal.sql) exactamente con la
+// (packages/db/migrations/0124_auditoria_conversaciones_semanal.sql) exactamente con la
 // misma lógica determinística que usa la ruta interactiva
 // (`apps/api/src/routes/auditoriaConversaciones.ts` -- ambas llaman a
 // `selectWeeklyAuditSample`, @atiende-hoteles/domain-hotel), y escribe un reporte
