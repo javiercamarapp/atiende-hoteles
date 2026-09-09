@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/adversarial/aislamiento-contexto-prompt.spec.ts (11 tests) 1186ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  15:43:13
+   Duration  1.55s (transform 84ms, setup 0ms, collect 152ms, tests 1.19s, environment 0ms, prepare 42ms)
+
