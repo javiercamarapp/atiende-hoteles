@@ -58,6 +58,108 @@ export type SendWhatsappTemplateInput = z.infer<typeof sendWhatsappTemplateInput
 
 export const SEND_WHATSAPP_TEMPLATE_TOOL_NAME = "enviar_mensaje_whatsapp_plantilla";
 
+// REQ-HUE-021/REQ-SEG-007: "mensaje transaccional (utility) puede enviarse sin opt-in;
+// mensaje de marketing es bloqueado si no existe opt-in registrado (fecha/canal/texto)
+// previo al envío". El error se identifica por el prefijo del mensaje (mismo patrón que
+// el resto de errores de dominio de este repo, ver apps/api/src/lib/errors.ts) para que
+// CUALQUIER capa que llame a `tool.run()` -- la ruta directa (routes/mensajeria.ts), el
+// AgentRunner en vivo, o la ejecución diferida de una aprobación
+// (apps/api/src/lib/aprobacionEjecutor.ts) -- lo mapee al mismo 409, sin filtrar detalle
+// interno.
+export class MarketingOptInRequiredError extends Error {
+  constructor(
+    public readonly guestPhone: string,
+    public readonly templateName: string,
+  ) {
+    super(
+      `opt_in_marketing_requerido: no existe opt-in de marketing registrado (fecha/canal/texto) ` +
+        `para ${guestPhone} -- la plantilla "${templateName}" está clasificada como marketing y ` +
+        `no puede enviarse sin ese opt-in previo.`,
+    );
+    this.name = "MarketingOptInRequiredError";
+  }
+}
+
+export interface MarketingOptInGateParams {
+  readonly db: SqlClient;
+  readonly hotelId: string;
+  readonly templateName: string;
+  readonly guestPhone: string;
+}
+
+/**
+ * REQ-HUE-021/REQ-SEG-007: determina si ESTE envío está bloqueado por falta de opt-in de
+ * marketing. Solo aplica a plantillas que el hotel clasificó explícitamente como
+ * "marketing" (`hotel_messaging_config.marketing_templates`, migración 0099) --
+ * cualquier otra plantilla (transaccional/utility, la mayoría por defecto) nunca exige
+ * opt-in, sin importar si tiene consentimiento registrado o no.
+ *
+ * El opt-in se considera "registrado" cuando existe una fila `consent` (tabla e
+ * infraestructura de la migración 0068 -- fecha=`created_at`, canal=`channel`,
+ * texto=`aviso_version`) con `channel='whatsapp'`, `consent_kind='marketing'` y
+ * `granted=true` para el HUÉSPED dueño de ese teléfono en este hotel. Sin ningún
+ * huésped identificable por ese teléfono, o sin esa fila, el envío se trata como "sin
+ * opt-in" (deny-by-default): nunca se asume consentimiento por ausencia de dato.
+ */
+export async function isMarketingSendBlocked(params: MarketingOptInGateParams): Promise<boolean> {
+  const { rows: configRows } = await params.db.query<{ marketing_templates: string[] }>(
+    "select marketing_templates from public.hotel_messaging_config where hotel_id = $1;",
+    [params.hotelId],
+  );
+  const marketingTemplates = configRows[0]?.marketing_templates ?? [];
+  if (!marketingTemplates.includes(params.templateName)) return false;
+
+  const { rows: optInRows } = await params.db.query<{ opted_in: boolean }>(
+    `select exists (
+       select 1
+       from public.consent co
+       join public.guest g on g.id = co.guest_id
+       where co.hotel_id = $1
+         and g.phone = $2
+         and co.channel = 'whatsapp'
+         and co.consent_kind = 'marketing'
+         and co.granted = true
+     ) as opted_in;`,
+    [params.hotelId, params.guestPhone],
+  );
+  return !(optInRows[0]?.opted_in ?? false);
+}
+
+export interface MarketingTemplateBodyParams {
+  readonly db: SqlClient;
+  readonly hotelId: string;
+  readonly templateName: string;
+}
+
+/**
+ * REQ-SEG-007: "todo mensaje de marketing incluye opción de baja". Si `templateName`
+ * está clasificada como marketing y tiene un texto registrado
+ * (`hotel_messaging_config.marketing_template_bodies`, migración 0111), devuelve ese
+ * texto -- validado por `lintMarketingTemplateBody()` (packages/domain-hotel) ANTES de
+ * poder guardarse, ver `PATCH .../mensajeria/config` -- para que el mensaje REALMENTE
+ * enviado use ese contenido (con su opción de baja) en vez del resumen genérico
+ * `[plantilla:...] parámetros` que usa cualquier plantilla transaccional/utility. `null`
+ * para cualquier plantilla no clasificada como marketing, o (no debería ocurrir: la ruta
+ * de configuración lo exige) clasificada como marketing pero sin texto registrado --
+ * esta función nunca inventa un texto por su cuenta.
+ *
+ * agent-core sigue sin depender de `@atiende-hoteles/domain-hotel` (ver comentario de
+ * archivo, "núcleo puro sin dependencias"): el LINTER vive y corre en la capa de API al
+ * guardar la configuración; aquí solo se LEE el texto ya validado.
+ */
+export async function getMarketingTemplateBody(params: MarketingTemplateBodyParams): Promise<string | null> {
+  const { rows } = await params.db.query<{
+    marketing_templates: string[];
+    marketing_template_bodies: Record<string, string>;
+  }>(
+    "select marketing_templates, marketing_template_bodies from public.hotel_messaging_config where hotel_id = $1;",
+    [params.hotelId],
+  );
+  const row = rows[0];
+  if (!row || !row.marketing_templates.includes(params.templateName)) return null;
+  return row.marketing_template_bodies[params.templateName] ?? null;
+}
+
 /** REQ-HUE-001/002, REQ-HK-002/013/021: envia una plantilla de WhatsApp aprobada a un
  * huesped. effect="external" + needsApproval=true SIEMPRE (GOB-026) -- ver comentario de
  * archivo para como las plantillas transaccionales evitan la espera humana sin violar esa
@@ -70,6 +172,22 @@ export function createSendWhatsappTemplateTool(deps: MessagingToolDeps): ToolDef
     effect: "external",
     needsApproval: true,
     run: async (ctx, input) => {
+      // REQ-HUE-021/REQ-SEG-007: gate de opt-in ANTES de tocar `conversation`/`message`
+      // o llamar al adaptador de mensajería -- ningún envío de marketing sin opt-in dara
+      // como resultado NI UNA fila en `message` ni una llamada a
+      // `deps.messaging.sendTemplateMessage`, sin importar qué capa haya invocado esta
+      // tool (ver comentario de `MarketingOptInRequiredError`).
+      if (
+        await isMarketingSendBlocked({
+          db: deps.db,
+          hotelId: ctx.hotelId,
+          templateName: input.templateName,
+          guestPhone: input.guestPhone,
+        })
+      ) {
+        throw new MarketingOptInRequiredError(input.guestPhone, input.templateName);
+      }
+
       const { rows: conversationRows } = await deps.db.query<{ id: string }>(
         `insert into public.conversation (tenant_id, hotel_id, channel, guest_phone)
          values ($1, $2, 'whatsapp', $3)
@@ -80,6 +198,17 @@ export function createSendWhatsappTemplateTool(deps: MessagingToolDeps): ToolDef
       );
       const conversationId = conversationRows[0]!.id;
 
+      // REQ-SEG-007: si esta plantilla es de marketing, el CUERPO REAL guardado (lo que
+      // el huésped recibió) es el texto que pasó el linter al configurarse -- nunca el
+      // resumen genérico `[plantilla:...] parámetros` -- así el mensaje persistido
+      // demuestra por sí mismo que incluyó la opción de baja, sin depender de leer la
+      // configuración por separado para auditarlo.
+      const marketingBody = await getMarketingTemplateBody({
+        db: deps.db,
+        hotelId: ctx.hotelId,
+        templateName: input.templateName,
+      });
+
       const clientMessageId = `${ctx.requestId}:${input.templateName}:${randomUUID()}`;
       const sent = await deps.messaging.sendTemplateMessage({
         to: input.guestPhone,
@@ -88,6 +217,12 @@ export function createSendWhatsappTemplateTool(deps: MessagingToolDeps): ToolDef
         parameters: input.parameters,
         clientMessageId,
       });
+
+      const messageBody = marketingBody
+        ? input.parameters.length > 0
+          ? `${marketingBody} — ${input.parameters.join(" | ")}`
+          : marketingBody
+        : `[plantilla:${input.templateName}] ${input.parameters.join(" | ")}`.trim();
 
       await deps.db.query(
         `insert into public.message
@@ -99,7 +234,7 @@ export function createSendWhatsappTemplateTool(deps: MessagingToolDeps): ToolDef
           ctx.hotelId,
           conversationId,
           input.templateName,
-          `[plantilla:${input.templateName}] ${input.parameters.join(" | ")}`.trim(),
+          messageBody,
           clientMessageId,
           sent.externalMessageId,
           sent.status,

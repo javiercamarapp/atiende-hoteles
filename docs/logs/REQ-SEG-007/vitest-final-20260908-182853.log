@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/adversarial/opt-in-marketing.spec.ts (11 tests) 2655ms
+ ✓ tests/unit/domain-hotel/marketing-template-linter.spec.ts (7 tests) 1ms
+
+ Test Files  2 passed (2)
+      Tests  18 passed (18)
+   Start at  18:35:30
+   Duration  4.94s (transform 1.03s, setup 0ms, collect 1.93s, tests 2.66s, environment 0ms, prepare 63ms)
+

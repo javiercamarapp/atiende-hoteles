@@ -1,0 +1,17 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/adversarial/checkin-chat-libre.spec.ts (3 tests) 951ms
+ ✓ tests/adversarial/housekeeping-mantenimiento-mensajeria.spec.ts (11 tests) 1013ms
+ ✓ tests/integration/contracts/whatsapp/aprobaciones-boton.spec.ts (9 tests) 966ms
+ ✓ tests/integration/api/mensajeria.spec.ts (9 tests) 869ms
+ ✓ tests/integration/agent-core/journey-checkin-incidencia.spec.ts (6 tests) 916ms
+(node:14405) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ✓ tests/adversarial/prompt-injection.spec.ts (6 tests) 1208ms
+
+ Test Files  6 passed (6)
+      Tests  44 passed (44)
+   Start at  18:30:37
+   Duration  6.66s (transform 283ms, setup 0ms, collect 605ms, tests 5.92s, environment 0ms, prepare 28ms)
+

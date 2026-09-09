@@ -112,6 +112,21 @@ export function toErrorBody(err: unknown, requestId: string): { status: number; 
       body: { code: "conflict", message: "La operación entró en conflicto con el estado actual del recurso.", request_id: requestId },
     };
   }
+  // REQ-HUE-021/REQ-SEG-007 (packages/agent-core `MarketingOptInRequiredError`): una
+  // plantilla de marketing sin opt-in registrado se bloquea en `tool.run()` -- este
+  // mapeo cubre TANTO el rechazo inmediato en routes/mensajeria.ts como la ejecución
+  // diferida de una aprobación ya "aprobada" por un humano que no sabía que faltaba el
+  // opt-in (apps/api/src/lib/aprobacionEjecutor.ts también llama a esta misma tool).
+  if (/opt_in_marketing_requerido/.test(message)) {
+    return {
+      status: 409,
+      body: {
+        code: "opt_in_marketing_requerido",
+        message: "No existe opt-in de marketing registrado para este huésped; el envío fue bloqueado.",
+        request_id: requestId,
+      },
+    };
+  }
 
   return { status: 500, body: { code: "internal_error", message: "Ocurrió un error interno.", request_id: requestId } };
 }

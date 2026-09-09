@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/integration/api/mensajeria.spec.ts (9 tests) 1370ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  18:16:25
+   Duration  2.48s (transform 466ms, setup 0ms, collect 814ms, tests 1.37s, environment 0ms, prepare 55ms)
+

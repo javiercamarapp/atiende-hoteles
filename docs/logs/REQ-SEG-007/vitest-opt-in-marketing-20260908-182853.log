@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/adversarial/opt-in-marketing.spec.ts (11 tests) 923ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  18:30:12
+   Duration  1.50s (transform 254ms, setup 0ms, collect 444ms, tests 923ms, environment 0ms, prepare 34ms)
+
