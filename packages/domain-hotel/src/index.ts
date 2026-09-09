@@ -270,6 +270,24 @@ export {
   type FnbOrderSafetyState,
 } from "./fnbAllergyGuard.ts";
 export {
+  surnameMatchesGuestName,
+  phoneLast4Matches,
+  evaluateRoomChargeIdentity,
+  assertRoomChargeIdentityVerified,
+  RoomChargeIdentityBlockedError,
+  type RoomChargeIdentityClaim,
+  type RoomChargeIdentityOnFile,
+  type RoomChargeIdentityBlockedReason,
+  type RoomChargeIdentityResult,
+  type EvaluateRoomChargeIdentityInput,
+} from "./roomChargeIdentityGuard.ts";
+export {
+  validateFnbOfflineQueueItem,
+  type FnbOfflineOperationType,
+  type FnbOfflineQueueItemInput,
+  type FnbOfflineQueueValidation,
+} from "./fnbOfflineQueueGuard.ts";
+export {
   FRAUD_PATTERNS,
   recipientRolesForPattern,
   detectDiscountOutsidePolicy,

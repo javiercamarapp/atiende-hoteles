@@ -58,12 +58,15 @@ export async function loginAs(app: Hono<HonoEnvBindings>, email: string, passwor
 /** H5 · crea una reserva y la confirma (lo que crea su folio principal, ver
  *  routes/reservas.ts) EXCLUSIVAMENTE por la API real -- devuelve `folioId`, nunca
  *  usa el cliente admin para insertar el folio (mismo principio que
- *  tests/integration/reservas/folio-al-confirmar.spec.ts). */
+ *  tests/integration/reservas/folio-al-confirmar.spec.ts). `guestId` es opcional
+ *  (la reserva puede no tener huésped asociado, `reservation.guest_id is null` --
+ *  ver 0006_reservation.sql) -- REQ-AB-012 exige pasarlo explícitamente para poder
+ *  verificar identidad contra un huésped real. */
 export async function crearFolioConfirmado(
   app: Hono<HonoEnvBindings>,
   token: string,
   hotelId: string,
-  params: { roomTypeId: string; checkInDate: string; checkOutDate: string },
+  params: { roomTypeId: string; checkInDate: string; checkOutDate: string; guestId?: string },
 ): Promise<{ reservationId: string; folioId: string }> {
   const auth = { authorization: `Bearer ${token}`, "content-type": "application/json" };
   const created = await app.request(`/hoteles/${hotelId}/reservas`, {
@@ -83,4 +86,24 @@ export async function crearFolioConfirmado(
   const { folioId } = (await confirmed.json()) as { folioId: string };
 
   return { reservationId, folioId };
+}
+
+/** REQ-AB-012 · crea un huésped real vía la API (`POST /hoteles/:hotelId/huespedes`)
+ *  con nombre y teléfono -- los dos datos contra los que
+ *  `roomChargeIdentityGuard.ts` cruza la doble verificación de identidad al postear
+ *  un cargo de A&B "a habitación". */
+export async function crearHuesped(
+  app: Hono<HonoEnvBindings>,
+  token: string,
+  hotelId: string,
+  params: { nombre: string; telefono: string },
+): Promise<{ id: string }> {
+  const res = await app.request(`/hoteles/${hotelId}/huespedes`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (res.status !== 201) throw new Error(`no se pudo crear el huésped: ${res.status} ${await res.text()}`);
+  const body = (await res.json()) as { id: string };
+  return { id: body.id };
 }

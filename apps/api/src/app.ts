@@ -36,6 +36,7 @@ import { backOfficeRoutes } from "./routes/backOffice.ts";
 import { plUsaliRoutes } from "./routes/plUsali.ts";
 import { fraudeRoutes } from "./routes/fraude.ts";
 import { pedidosFnbRoutes } from "./routes/pedidosFnb.ts";
+import { fnbOfflineQueueRoutes } from "./routes/fnbOfflineQueue.ts";
 import { checkinOnlineRoutes } from "./routes/checkinOnline.ts";
 import { housekeepingRoutes } from "./routes/housekeeping.ts";
 import { mantenimientoRoutes } from "./routes/mantenimiento.ts";
@@ -250,6 +251,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", plUsaliRoutes(deps));
   app.route("/", fraudeRoutes(deps));
   app.route("/", pedidosFnbRoutes(deps));
+  app.route("/", fnbOfflineQueueRoutes(resolvedDeps));
   app.route("/", checkinOnlineRoutes(deps));
   app.route("/", housekeepingRoutes(deps));
   app.route("/", mantenimientoRoutes(deps));

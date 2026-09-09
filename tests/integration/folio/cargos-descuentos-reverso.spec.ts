@@ -3,7 +3,7 @@
 // real, embedded-postgres.
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createApiFixture, crearFolioConfirmado, destroyApiFixture, loginAs, type ApiFixture } from "../../support/api-fixture.ts";
+import { createApiFixture, crearFolioConfirmado, crearHuesped, destroyApiFixture, loginAs, type ApiFixture } from "../../support/api-fixture.ts";
 
 describe("folio: cargos por concepto, descuentos, reverso (H5)", () => {
   let fixture: ApiFixture;
@@ -12,6 +12,10 @@ describe("folio: cargos por concepto, descuentos, reverso (H5)", () => {
   let hotelId: string;
   let roomTypeId: string;
   let gmUserId: string;
+  // REQ-AB-012: un cargo 'ab' exige doble verificación de identidad contra un
+  // huésped real -- este huésped y sus datos son los que los tests de este archivo
+  // declaran al postear.
+  let huespedId: string;
 
   beforeAll(async () => {
     fixture = await createApiFixture();
@@ -21,6 +25,7 @@ describe("folio: cargos por concepto, descuentos, reverso (H5)", () => {
     gmToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "gm")!.email);
     frontdeskToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "frontdesk")!.email);
     gmUserId = hotelA.staff.find((s) => s.role === "gm")!.id;
+    huespedId = (await crearHuesped(fixture.app, gmToken, hotelId, { nombre: "Juan García Pérez", telefono: "9981231234" })).id;
   });
 
   afterAll(async () => {
@@ -36,12 +41,20 @@ describe("folio: cargos por concepto, descuentos, reverso (H5)", () => {
       roomTypeId,
       checkInDate: "2026-09-16",
       checkOutDate: "2026-09-17",
+      guestId: huespedId,
     });
 
     const res = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cargos`, {
       method: "POST",
       headers: { ...auth(gmToken), "idempotency-key": randomUUID() },
-      body: JSON.stringify({ descripcion: "Desayuno buffet", monto: 200, concepto: "ab" }),
+      body: JSON.stringify({
+        descripcion: "Desayuno buffet",
+        monto: 200,
+        concepto: "ab",
+        // REQ-AB-012: doble verificación de identidad -- apellido + últimos 4 del
+        // teléfono, ambos coinciden con el huésped real creado en beforeAll.
+        verificacionIdentidad: { apellidoConfirmado: "García", telefonoUltimos4Confirmado: "1234" },
+      }),
     });
     expect(res.status).toBe(201);
     const body = (await res.json()) as { impuesto: number };

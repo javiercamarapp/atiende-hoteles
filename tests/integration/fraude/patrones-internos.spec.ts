@@ -15,6 +15,7 @@ describe("fraude interno (REQ-REC-014)", () => {
   let accountantToken: string;
   let hotelId: string;
   let roomTypeId: string;
+  let gmUserId: string;
 
   beforeAll(async () => {
     fixture = await createApiFixture();
@@ -25,6 +26,7 @@ describe("fraude interno (REQ-REC-014)", () => {
     frontdeskToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "frontdesk")!.email);
     fnbToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "fnb")!.email);
     accountantToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "accountant")!.email);
+    gmUserId = hotelA.staff.find((s) => s.role === "gm")!.id;
   });
 
   afterAll(async () => {
@@ -209,7 +211,14 @@ describe("fraude interno (REQ-REC-014)", () => {
       const cargoRes = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cargos`, {
         method: "POST",
         headers: { ...auth(fnbToken), "idempotency-key": crypto.randomUUID() },
-        body: JSON.stringify({ descripcion: "Consumo de restaurante", monto: 480, concepto: "ab" }),
+        body: JSON.stringify({
+          descripcion: "Consumo de restaurante",
+          monto: 480,
+          concepto: "ab",
+          // REQ-AB-012: esta reserva sintética no tiene huésped en archivo (`nuevaReserva()`
+          // no pasa guestId) -- válvula de escape administrativa verificada.
+          verificacionIdentidad: { apellidoConfirmado: "N/A", telefonoUltimos4Confirmado: "0000", autorizadoPorUserId: gmUserId },
+        }),
       });
       expect(cargoRes.status).toBe(201);
 

@@ -78,6 +78,12 @@ describe("REQ-BO-010: P&L USALI, punto de equilibrio dinámico, forecast 90d, ow
     roomTypeId = hotelA.roomTypes[0]!.id;
     gmToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "gm")!.email);
     frontdeskToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "frontdesk")!.email);
+    // REQ-AB-012: los cargos 'ab' insertados directo por el admin más abajo (dataset
+    // sintético histórico, no pasan por la ruta HTTP) deben satisfacer igual el CHECK
+    // estructural `charge_ab_requiere_identidad_verificada` (migrations/0122) --
+    // evidencia sintética vía la misma válvula de escape administrativa que usa la API
+    // cuando no hay huésped/teléfono real contra el cual comparar.
+    const gmUserId = hotelA.staff.find((s) => s.role === "gm")!.id;
 
     const admin = fixture.engine.admin;
     const folioIds: string[] = [];
@@ -128,14 +134,18 @@ describe("REQ-BO-010: P&L USALI, punto de equilibrio dinámico, forecast 90d, ow
 
     // --- F&B (2 cargos 'ab'), Otros Departamentos ('extras'), propina EXCLUIDA ------
     await admin.query(
-      `insert into public.charge (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, created_at)
-       values ($1, $2, $3, 'Desayuno', $4, 0, 'ab', $5);`,
-      [orgId, hotelId, folioIds[1], FB_CHARGE_AMOUNT, `${days[2]}T12:00:00.000Z`],
+      `insert into public.charge
+         (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, created_at,
+          identity_verified_at, identity_verified_by, identity_verification_surname_stated, identity_verification_override_by)
+       values ($1, $2, $3, 'Desayuno', $4, 0, 'ab', $5, $5, $6, 'Dataset sintético REQ-BO-010', $6);`,
+      [orgId, hotelId, folioIds[1], FB_CHARGE_AMOUNT, `${days[2]}T12:00:00.000Z`, gmUserId],
     );
     await admin.query(
-      `insert into public.charge (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, created_at)
-       values ($1, $2, $3, 'Cena', $4, 0, 'ab', $5);`,
-      [orgId, hotelId, folioIds[2], FB_CHARGE_AMOUNT, `${days[6]}T12:00:00.000Z`],
+      `insert into public.charge
+         (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, created_at,
+          identity_verified_at, identity_verified_by, identity_verification_surname_stated, identity_verification_override_by)
+       values ($1, $2, $3, 'Cena', $4, 0, 'ab', $5, $5, $6, 'Dataset sintético REQ-BO-010', $6);`,
+      [orgId, hotelId, folioIds[2], FB_CHARGE_AMOUNT, `${days[6]}T12:00:00.000Z`, gmUserId],
     );
     await admin.query(
       `insert into public.charge (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, created_at)

@@ -9,6 +9,7 @@ describe("night audit (REQ-REV-013)", () => {
   let gmToken: string;
   let hotelId: string;
   let roomTypeId: string;
+  let gmUserId: string;
 
   beforeAll(async () => {
     fixture = await createApiFixture();
@@ -16,6 +17,7 @@ describe("night audit (REQ-REV-013)", () => {
     hotelId = hotelA.id;
     roomTypeId = hotelA.roomTypes[0]!.id;
     gmToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "gm")!.email);
+    gmUserId = hotelA.staff.find((s) => s.role === "gm")!.id;
   });
 
   afterAll(async () => {
@@ -151,10 +153,17 @@ describe("night audit (REQ-REV-013)", () => {
     // businessDate) pero 2026-09-12 en cualquier huso America/* (UTC-5 a UTC-8, NO
     // coincide) -- si el fix no convierte a la hora local del hotel, este cargo
     // desaparece del resumen sin importar en qué huso corra la prueba.
+    // REQ-AB-012: este cargo 'ab' se inserta directo (dataset sintético, no pasa por
+    // la ruta HTTP) -- debe satisfacer igual el CHECK estructural
+    // `charge_ab_requiere_identidad_verificada` (migrations/0122), vía la misma
+    // válvula de escape administrativa que usaría la API sin huésped real en archivo.
     await fixture.engine.admin.query(
-      `insert into public.charge (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, created_at)
-       values ($1, $2, $3, 'Consumo tardío de bar', 100, 16, 'ab', '2026-09-12T17:00:00Z');`,
-      [fixture.seed.orgId, hotelId, folioId],
+      `insert into public.charge
+         (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, created_at,
+          identity_verified_at, identity_verified_by, identity_verification_surname_stated, identity_verification_override_by)
+       values ($1, $2, $3, 'Consumo tardío de bar', 100, 16, 'ab', '2026-09-12T17:00:00Z',
+               '2026-09-12T17:00:00Z', $4, 'Dataset sintético REQ-REV-013', $4);`,
+      [fixture.seed.orgId, hotelId, folioId, gmUserId],
     );
 
     const res = await runAudit(businessDate);

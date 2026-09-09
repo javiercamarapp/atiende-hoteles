@@ -15,15 +15,30 @@ import {
   computeChargeAmounts,
   evaluateDiscountAuthorization,
   evaluateFolioClose,
+  assertRoomChargeIdentityVerified,
+  RoomChargeIdentityBlockedError,
   type ChargeConcept,
+  type RoomChargeIdentityOnFile,
 } from "@atiende-hoteles/domain-hotel";
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { withIdempotency } from "../lib/idempotency.ts";
+import { isAdminStaff } from "../lib/staffAuth.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
 import { MONEY_ROLES, ADMIN_ROLES, type HotelRole } from "../domain/roles.ts";
 import { loadHotelMoneyConfig } from "../pms/taxConfig.ts";
 import type { ResolvedAppDeps, HonoEnvBindings } from "../types.ts";
+
+// REQ-AB-012: un cargo de concepto 'ab' (F&B) posteado "a habitación" -- sin tarjeta
+// presente -- exige doble verificación de identidad. `autorizadoPorUserId` es la
+// misma válvula de escape administrativa que `descuentos` (verificada contra
+// `hotel_staff`, nunca confiada del cuerpo de la solicitud) para cuando el huésped no
+// tiene datos en archivo contra los que comparar.
+export const verificacionIdentidadSchema = z.object({
+  apellidoConfirmado: z.string().trim().min(1).max(150),
+  telefonoUltimos4Confirmado: z.string().trim().regex(/^\d{4}$/, "Deben ser exactamente 4 dígitos."),
+  autorizadoPorUserId: z.string().uuid().optional().nullable(),
+});
 
 // "descuento"/"reverso" tienen sus propios endpoints dedicados (con su propia regla
 // de autorización/reverso) -- nunca se crean como un cargo genérico por esta ruta.
@@ -32,6 +47,9 @@ const chargeSchema = z.object({
   monto: z.number().positive(),
   impuesto: z.number().nonnegative().optional(),
   concepto: z.enum(["hospedaje", "ab", "extras", "ajuste", "propina", "otro"]).default("otro"),
+  // Requerido cuando `concepto === "ab"` (validado en el handler, no aquí -- zod no
+  // valida condicionalmente entre campos hermanos con `.default()` de forma legible).
+  verificacionIdentidad: verificacionIdentidadSchema.optional(),
 });
 
 const discountSchema = z.object({
@@ -75,8 +93,26 @@ interface ChargeRow {
   reversed_by: string | null;
   reverses_charge_id: string | null;
   transferred_from_charge_id: string | null;
+  // REQ-AB-012: evidencia de verificación de identidad -- siempre null salvo
+  // concept='ab' (el CHECK estructural `charge_ab_requiere_identidad_verificada` lo
+  // garantiza; ver migrations/0122).
+  identity_verified_at: string | null;
+  identity_verified_by: string | null;
+  identity_verification_surname_stated: string | null;
+  identity_verification_phone_last4_stated: string | null;
+  identity_verification_override_by: string | null;
   created_at: string;
 }
+
+// Lista de columnas compartida por TODAS las consultas de `charge` de este archivo --
+// un cargo de concepto 'ab' transferido/dividido (`.../transferir`, `.../split`) DEBE
+// copiar su evidencia de verificación de identidad al nuevo renglón (nunca re-verificar
+// una identidad ya verificada, pero tampoco perder la evidencia: el CHECK estructural
+// exige que todo renglón 'ab' la tenga).
+const CHARGE_COLUMNS = `id, description, amount, tax_amount, concept, reversed_by, reverses_charge_id,
+       transferred_from_charge_id, identity_verified_at::text as identity_verified_at, identity_verified_by,
+       identity_verification_surname_stated, identity_verification_phone_last4_stated,
+       identity_verification_override_by, created_at`;
 interface PaymentRow {
   id: string;
   amount: string;
@@ -85,7 +121,7 @@ interface PaymentRow {
   external_ref: string | null;
   created_at: string;
 }
-interface FolioRow {
+export interface FolioRow {
   id: string;
   status: string;
   reservation_id: string;
@@ -95,7 +131,7 @@ interface FolioRow {
   close_reason: string | null;
 }
 
-async function loadFolio(db: DbClient, hotelId: string, folioId: string): Promise<FolioRow> {
+export async function loadFolio(db: DbClient, hotelId: string, folioId: string): Promise<FolioRow> {
   const { rows } = await db.query<FolioRow>(
     `select id, status, reservation_id, label, is_primary, closed_at::text as closed_at, close_reason
      from public.folio where id = $1 and hotel_id = $2;`,
@@ -107,12 +143,28 @@ async function loadFolio(db: DbClient, hotelId: string, folioId: string): Promis
 
 async function loadCharges(db: DbClient, folioId: string): Promise<ChargeRow[]> {
   const { rows } = await db.query<ChargeRow>(
-    `select id, description, amount, tax_amount, concept, reversed_by, reverses_charge_id,
-            transferred_from_charge_id, created_at
+    `select ${CHARGE_COLUMNS}
      from public.charge where folio_id = $1 order by created_at asc;`,
     [folioId],
   );
   return rows;
+}
+
+/** REQ-AB-012: datos de identidad del huésped EN ARCHIVO (nuestra propia base, nunca
+ *  el PMS -- ver comentario de módulo de `roomChargeIdentityGuard.ts`) contra los que
+ *  se cruzan los dos reclamos declarados al postear un cargo "a habitación". `null` en
+ *  `guestFullName` cuando la reserva del folio no tiene huésped asociado
+ *  (`reservation.guest_id is null`, posible en este esquema -- ver 0006_reservation.sql). */
+export async function loadGuestForFolio(db: DbClient, folio: Pick<FolioRow, "reservation_id">): Promise<RoomChargeIdentityOnFile> {
+  const { rows } = await db.query<{ full_name: string | null; phone: string | null }>(
+    `select g.full_name, g.phone
+     from public.reservation r
+     left join public.guest g on g.id = r.guest_id
+     where r.id = $1;`,
+    [folio.reservation_id],
+  );
+  const row = rows[0];
+  return { guestFullName: row?.full_name ?? null, guestPhone: row?.phone ?? null };
 }
 
 async function loadPayments(db: DbClient, folioId: string): Promise<PaymentRow[]> {
@@ -152,6 +204,10 @@ function serializeFolio(folio: FolioRow, charges: ChargeRow[], payments: Payment
       revertidoPor: ch.reversed_by,
       reversaDe: ch.reverses_charge_id,
       transferidoDe: ch.transferred_from_charge_id,
+      // REQ-AB-012: siempre null salvo concepto 'ab' (garantizado por CHECK
+      // estructural, migrations/0122).
+      identidadVerificadaEn: ch.identity_verified_at,
+      identidadVerificadaViaAutorizacionAdmin: ch.identity_verification_override_by != null,
       creadoEn: ch.created_at,
     })),
     pagos: payments.map((p) => ({
@@ -166,17 +222,64 @@ function serializeFolio(folio: FolioRow, charges: ChargeRow[], payments: Payment
   };
 }
 
-/** Verifica que `_userId` pertenezca al staff de `hotelId` con un rol administrativo
- *  (owner/gm) -- usado para autorizar un descuento/cuenta-por-cobrar aplicado por OTRO
- *  actor (p.ej. frontdesk trae la autorización de un gm que no está logueado en esta
- *  sesión). Nunca confía en un nombre/rol que venga del cuerpo de la solicitud sin
- *  verificarlo contra `hotel_staff`. */
-async function isAdminStaff(db: DbClient, hotelId: string, userId: string): Promise<boolean> {
-  const { rows } = await db.query<{ role: string }>(
-    "select role from public.hotel_staff where hotel_id = $1 and user_id = $2;",
-    [hotelId, userId],
+export interface ReverseChargeParams {
+  db: DbClient;
+  orgId: string;
+  hotelId: string;
+  folioId: string;
+  chargeId: string;
+  motivo: string;
+}
+export interface ReverseChargeResult {
+  reversalId: string;
+  reversedChargeId: string;
+}
+
+/** H5/REQ-REC-004: reverso de un cargo -- NUNCA borra la fila original, inserta una
+ *  nueva de signo contrario y marca la original vía `mark_charge_reversed()`
+ *  (SECURITY DEFINER, migrations/0030). Extraído del handler de
+ *  `.../cargos/:chargeId/reverso` y exportado para que
+ *  `apps/api/src/routes/fnbOfflineQueue.ts` (REQ-AB-003, reconciliación de un reverso
+ *  capturado offline) use EXACTAMENTE la misma lógica -- un reverso nunca debe tener
+ *  dos implementaciones que puedan divergir. El llamador es responsable de validar que
+ *  el folio esté abierto (aplica igual en línea que reconciliado offline) y de envolver
+ *  esta llamada en `withIdempotency`. */
+export async function reverseCharge(params: ReverseChargeParams): Promise<ReverseChargeResult> {
+  const { db, orgId, hotelId, folioId, chargeId, motivo } = params;
+  const { rows: originalRows } = await db.query<ChargeRow>(
+    `select ${CHARGE_COLUMNS}
+     from public.charge where id = $1 and folio_id = $2 and hotel_id = $3;`,
+    [chargeId, folioId, hotelId],
   );
-  return rows.length > 0 && (ADMIN_ROLES as string[]).includes(rows[0]!.role);
+  const original = originalRows[0];
+  if (!original) throw Errors.notFound("Cargo no encontrado en este folio.");
+  if (original.reversed_by) throw Errors.conflict("Este cargo ya fue reversado anteriormente.");
+  if (original.concept === "reverso") throw Errors.conflict("No se puede reversar un reverso.");
+
+  const { rows: reversalRows } = await db.query<{ id: string }>(
+    `insert into public.charge
+       (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, reverses_charge_id)
+     values ($1, $2, $3, $4, $5, $6, 'reverso', $7)
+     returning id;`,
+    [
+      orgId,
+      hotelId,
+      folioId,
+      `Reverso: ${original.description} (${motivo})`,
+      -Number(original.amount),
+      -Number(original.tax_amount),
+      original.id,
+    ],
+  );
+  const reversalId = reversalRows[0]!.id;
+
+  await db.query("select public.mark_charge_reversed($1, $2);", [original.id, reversalId]);
+  await db.query(
+    "select public.record_audit_log($1, $2, 'charge.reversed', 'charge', $3, $4);",
+    [orgId, hotelId, original.id, JSON.stringify({ reversalId, motivo })],
+  );
+
+  return { reversalId, reversedChargeId: original.id };
 }
 
 export function foliosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
@@ -235,6 +338,14 @@ export function foliosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
     const hotelId = c.req.param("hotelId");
     const folioId = c.req.param("folioId");
     const body = parseBody(chargeSchema, await c.req.json().catch(() => ({})));
+    // REQ-AB-012: un cargo de A&B "a habitación" (sin tarjeta presente) SIEMPRE exige
+    // doble verificación de identidad -- rechazo temprano, antes de tocar el folio, si
+    // el cuerpo ni siquiera trae el bloque.
+    if (body.concepto === "ab" && !body.verificacionIdentidad) {
+      throw Errors.validation(
+        "Un cargo de concepto 'ab' (F&B) a folio requiere 'verificacionIdentidad' (REQ-AB-012): apellidoConfirmado y telefonoUltimos4Confirmado.",
+      );
+    }
 
     const folio = await loadFolio(db, hotelId, folioId);
     if (folio.status !== "abierto") throw Errors.conflict("El folio está cerrado: no admite nuevos cargos.");
@@ -256,15 +367,75 @@ export function foliosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
         }
         const taxAmount = calc.taxAmount;
 
+        // REQ-AB-012: doble verificación de identidad, SOLO para 'ab' -- fail-closed,
+        // ver `roomChargeIdentityGuard.ts` para la política completa (una discrepancia
+        // activa nunca es overridable; solo la ausencia de dato lo es, y solo con
+        // autorización administrativa verificada contra `hotel_staff`).
+        let identityColumns: {
+          verifiedAt: null | true;
+          verifiedBy: string | null;
+          surnameStated: string | null;
+          phoneLast4Stated: string | null;
+          overrideBy: string | null;
+        } = { verifiedAt: null, verifiedBy: null, surnameStated: null, phoneLast4Stated: null, overrideBy: null };
+
+        if (body.concepto === "ab") {
+          const verificacion = body.verificacionIdentidad!;
+          const onFile = await loadGuestForFolio(db, folio);
+          const overrideAuthorizedByAdmin = verificacion.autorizadoPorUserId
+            ? await isAdminStaff(db, hotelId, verificacion.autorizadoPorUserId)
+            : false;
+
+          let identityResult;
+          try {
+            identityResult = assertRoomChargeIdentityVerified({
+              claim: { statedSurname: verificacion.apellidoConfirmado, statedPhoneLast4: verificacion.telefonoUltimos4Confirmado },
+              onFile,
+              overrideAuthorizedByAdmin,
+            });
+          } catch (err) {
+            if (err instanceof RoomChargeIdentityBlockedError) throw Errors.conflict(err.message);
+            throw err;
+          }
+
+          identityColumns = {
+            verifiedAt: true,
+            verifiedBy: c.get("userId"),
+            surnameStated: verificacion.apellidoConfirmado,
+            // Solo se guarda el reclamo cuando SÍ hubo comparación real contra un
+            // teléfono en archivo -- si se concedió por válvula administrativa nunca
+            // hubo un teléfono contra el cual comparar, guardar el dato igual sería
+            // sugerir falsamente que se verificó.
+            phoneLast4Stated: identityResult.viaAdminOverride ? null : verificacion.telefonoUltimos4Confirmado,
+            overrideBy: identityResult.viaAdminOverride ? (verificacion.autorizadoPorUserId ?? null) : null,
+          };
+        }
+
         const { rows } = await db.query<{ id: string }>(
-          `insert into public.charge (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept)
-           values ($1, $2, $3, $4, $5, $6, $7)
+          `insert into public.charge
+             (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept,
+              identity_verified_at, identity_verified_by, identity_verification_surname_stated,
+              identity_verification_phone_last4_stated, identity_verification_override_by)
+           values ($1, $2, $3, $4, $5, $6, $7, case when $8 then now() else null end, $9, $10, $11, $12)
            returning id;`,
-          [orgId, hotelId, folioId, body.descripcion, calc.netAmount, taxAmount, body.concepto],
+          [
+            orgId,
+            hotelId,
+            folioId,
+            body.descripcion,
+            calc.netAmount,
+            taxAmount,
+            body.concepto,
+            identityColumns.verifiedAt === true,
+            identityColumns.verifiedBy,
+            identityColumns.surnameStated,
+            identityColumns.phoneLast4Stated,
+            identityColumns.overrideBy,
+          ],
         );
         await db.query(
           "select public.record_audit_log($1, $2, 'charge.created', 'charge', $3, $4);",
-          [orgId, hotelId, rows[0]!.id, JSON.stringify(body)],
+          [orgId, hotelId, rows[0]!.id, JSON.stringify({ ...body, verificacionIdentidad: body.verificacionIdentidad ? { ...body.verificacionIdentidad, telefonoUltimos4Confirmado: "****" } : undefined })],
         );
         return { status: 201, body: { id: rows[0]!.id, concepto: body.concepto, monto: calc.netAmount, impuesto: taxAmount } };
       },
@@ -349,41 +520,8 @@ export function foliosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
       db,
       { tenantId: orgId, scope: "charge.reverse", key: idempotencyKey, body: { chargeId, ...body } },
       async () => {
-        const { rows: originalRows } = await db.query<ChargeRow>(
-          `select id, description, amount, tax_amount, concept, reversed_by, reverses_charge_id,
-                  transferred_from_charge_id, created_at
-           from public.charge where id = $1 and folio_id = $2;`,
-          [chargeId, folioId],
-        );
-        const original = originalRows[0];
-        if (!original) throw Errors.notFound("Cargo no encontrado en este folio.");
-        if (original.reversed_by) throw Errors.conflict("Este cargo ya fue reversado anteriormente.");
-        if (original.concept === "reverso") throw Errors.conflict("No se puede reversar un reverso.");
-
-        const { rows: reversalRows } = await db.query<{ id: string }>(
-          `insert into public.charge
-             (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, reverses_charge_id)
-           values ($1, $2, $3, $4, $5, $6, 'reverso', $7)
-           returning id;`,
-          [
-            orgId,
-            hotelId,
-            folioId,
-            `Reverso: ${original.description} (${body.motivo})`,
-            -Number(original.amount),
-            -Number(original.tax_amount),
-            original.id,
-          ],
-        );
-        const reversalId = reversalRows[0]!.id;
-
-        await db.query("select public.mark_charge_reversed($1, $2);", [original.id, reversalId]);
-        await db.query(
-          "select public.record_audit_log($1, $2, 'charge.reversed', 'charge', $3, $4);",
-          [orgId, hotelId, original.id, JSON.stringify({ reversalId, motivo: body.motivo })],
-        );
-
-        return { status: 201, body: { id: reversalId, reversaDe: original.id } };
+        const { reversalId, reversedChargeId } = await reverseCharge({ db, orgId, hotelId, folioId, chargeId, motivo: body.motivo });
+        return { status: 201, body: { id: reversalId, reversaDe: reversedChargeId } };
       },
     );
 
@@ -417,8 +555,7 @@ export function foliosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
         if (destination.status !== "abierto") throw Errors.conflict("El folio destino está cerrado.");
 
         const { rows: originalRows } = await db.query<ChargeRow>(
-          `select id, description, amount, tax_amount, concept, reversed_by, reverses_charge_id,
-                  transferred_from_charge_id, created_at
+          `select ${CHARGE_COLUMNS}
            from public.charge where id = $1 and folio_id = $2;`,
           [chargeId, folioId],
         );
@@ -446,12 +583,31 @@ export function foliosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
         );
         await db.query("select public.mark_charge_reversed($1, $2);", [original.id, reversalRows[0]!.id]);
 
+        // REQ-AB-012: un cargo 'ab' YA verificado conserva su evidencia de
+        // verificación al transferirse -- transferir NO es una nueva oportunidad de
+        // postear sin verificar, es el MISMO consumo movido de folio.
         const { rows: newChargeRows } = await db.query<{ id: string }>(
           `insert into public.charge
-             (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, transferred_from_charge_id)
-           values ($1, $2, $3, $4, $5, $6, $7, $8)
+             (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, transferred_from_charge_id,
+              identity_verified_at, identity_verified_by, identity_verification_surname_stated,
+              identity_verification_phone_last4_stated, identity_verification_override_by)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
            returning id;`,
-          [orgId, hotelId, body.folioDestinoId, original.description, original.amount, original.tax_amount, original.concept, original.id],
+          [
+            orgId,
+            hotelId,
+            body.folioDestinoId,
+            original.description,
+            original.amount,
+            original.tax_amount,
+            original.concept,
+            original.id,
+            original.identity_verified_at,
+            original.identity_verified_by,
+            original.identity_verification_surname_stated,
+            original.identity_verification_phone_last4_stated,
+            original.identity_verification_override_by,
+          ],
         );
 
         await db.query(
@@ -502,8 +658,7 @@ export function foliosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
 
         for (const chargeId of body.chargeIds) {
           const { rows: originalRows } = await db.query<ChargeRow>(
-            `select id, description, amount, tax_amount, concept, reversed_by, reverses_charge_id,
-                    transferred_from_charge_id, created_at
+            `select ${CHARGE_COLUMNS}
              from public.charge where id = $1 and folio_id = $2;`,
             [chargeId, folioId],
           );
@@ -523,11 +678,29 @@ export function foliosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
           );
           await db.query("select public.mark_charge_reversed($1, $2);", [original.id, reversalRows[0]!.id]);
 
+          // REQ-AB-012: mismo principio que `.../transferir` -- el split mueve el
+          // consumo ya verificado, no reabre la verificación de identidad.
           await db.query(
             `insert into public.charge
-               (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, transferred_from_charge_id)
-             values ($1, $2, $3, $4, $5, $6, $7, $8);`,
-            [orgId, hotelId, newFolioId, original.description, original.amount, original.tax_amount, original.concept, original.id],
+               (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, transferred_from_charge_id,
+                identity_verified_at, identity_verified_by, identity_verification_surname_stated,
+                identity_verification_phone_last4_stated, identity_verification_override_by)
+             values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`,
+            [
+              orgId,
+              hotelId,
+              newFolioId,
+              original.description,
+              original.amount,
+              original.tax_amount,
+              original.concept,
+              original.id,
+              original.identity_verified_at,
+              original.identity_verified_by,
+              original.identity_verification_surname_stated,
+              original.identity_verification_phone_last4_stated,
+              original.identity_verification_override_by,
+            ],
           );
         }
 

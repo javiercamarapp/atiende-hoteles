@@ -1,0 +1,54 @@
+
+> atiende-hoteles@0.0.0 test:adversarial
+> vitest run --config vitest.config.ts tests/adversarial --pool=forks --poolOptions.forks.singleFork
+
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-ab-restantes-criticos
+
+ ✓ tests/adversarial/reserva-concurrencia-y-limites.spec.ts (5 tests) 2547ms
+ ✓ tests/adversarial/registro-tokens-y-rate-limit.spec.ts (4 tests) 1792ms
+ ✓ tests/adversarial/roles.spec.ts (20 tests) 1357ms
+ ✓ tests/adversarial/auditoria-2-lote-a-seguridad-legal.spec.ts (17 tests) 1422ms
+ ✓ tests/adversarial/guardrails-conversacionales.spec.ts (15 tests) 1273ms
+ ✓ tests/adversarial/aislamiento-contexto-prompt.spec.ts (11 tests) 1061ms
+ ✓ tests/adversarial/checador-inalterable.spec.ts (10 tests) 1106ms
+ ✓ tests/adversarial/tarifas-roles.spec.ts (10 tests) 1050ms
+ ✓ tests/adversarial/facturacion-saas.spec.ts (6 tests) 1063ms
+ ✓ tests/adversarial/notificaciones.spec.ts (4 tests) 1014ms
+ ✓ tests/adversarial/reservas-aislamiento.spec.ts (4 tests) 995ms
+ ✓ tests/adversarial/consentimiento-biometrico.spec.ts (5 tests) 1041ms
+ ✓ tests/adversarial/rpc-security-definer.spec.ts (5 tests) 921ms
+ ✓ tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts (4 tests) 1097ms
+ ✓ tests/adversarial/decisiones-reservadas-fundador.spec.ts (9 tests) 1090ms
+ ✓ tests/adversarial/aislamiento-tenant-hotel.spec.ts (3 tests) 1130ms
+ ✓ tests/adversarial/housekeeping-mantenimiento-mensajeria.spec.ts (11 tests) 975ms
+ ✓ tests/adversarial/correo-cuenta-adversarial.spec.ts (6 tests) 969ms
+ ✓ tests/adversarial/superadmin-consola.spec.ts (6 tests) 961ms
+ ✓ tests/adversarial/cargo-folio-verificacion.spec.ts (4 tests) 916ms
+ ✓ tests/adversarial/alergias-confirmacion.spec.ts (6 tests) 919ms
+ ✓ tests/adversarial/roi-sin-linea-base.spec.ts (12 tests) 1037ms
+ ✓ tests/adversarial/auditoria-1-bd-criticos.spec.ts (9 tests) 883ms
+ ✓ tests/adversarial/agentes-aislamiento.spec.ts (9 tests) 913ms
+ ✓ tests/adversarial/voz-guardrails.spec.ts (4 tests) 882ms
+ ✓ tests/adversarial/boveda-identidad.spec.ts (10 tests) 1027ms
+ ✓ tests/adversarial/cancelacion-identidad.spec.ts (4 tests) 881ms
+ ✓ tests/adversarial/presentacion-sat-aprobacion.spec.ts (4 tests) 860ms
+ ✓ tests/adversarial/checkin-chat-libre.spec.ts (3 tests) 852ms
+ ✓ tests/adversarial/auth-google-oauth.spec.ts (6 tests) 869ms
+ ✓ tests/adversarial/idempotencia-concurrente.spec.ts (2 tests) 858ms
+ ✓ tests/adversarial/disclosure-ia.spec.ts (7 tests) 861ms
+ ✓ tests/adversarial/housekeeping-cfdi-night-audit.spec.ts (3 tests) 809ms
+ ✓ tests/adversarial/pii-redaction-trazas.spec.ts (3 tests) 827ms
+(node:13866) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ✓ tests/adversarial/prompt-injection.spec.ts (6 tests) 877ms
+ ✓ tests/adversarial/opt-in-marketing.spec.ts (11 tests) 889ms
+ ✓ tests/adversarial/llaves-digitales.spec.ts (26 tests) 30ms
+ ✓ tests/adversarial/analytics-sin-pii.spec.ts (6 tests) 1ms
+ ✓ tests/adversarial/benchmark-k-minimo.spec.ts (5 tests) 0ms
+
+ Test Files  39 passed (39)
+      Tests  295 passed (295)
+   Start at  01:51:16
+   Duration  40.15s (transform 460ms, setup 0ms, collect 1.92s, tests 38.06s, environment 0ms, prepare 26ms)
+
