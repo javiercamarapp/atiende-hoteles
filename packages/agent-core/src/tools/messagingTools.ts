@@ -94,12 +94,24 @@ export interface MarketingOptInGateParams {
  * cualquier otra plantilla (transaccional/utility, la mayoría por defecto) nunca exige
  * opt-in, sin importar si tiene consentimiento registrado o no.
  *
- * El opt-in se considera "registrado" cuando existe una fila `consent` (tabla e
+ * El opt-in se considera "vigente" cuando la fila `consent` MÁS RECIENTE (tabla e
  * infraestructura de la migración 0068 -- fecha=`created_at`, canal=`channel`,
- * texto=`aviso_version`) con `channel='whatsapp'`, `consent_kind='marketing'` y
- * `granted=true` para el HUÉSPED dueño de ese teléfono en este hotel. Sin ningún
- * huésped identificable por ese teléfono, o sin esa fila, el envío se trata como "sin
+ * texto=`aviso_version`) con `channel='whatsapp'` y `consent_kind='marketing'` para el
+ * HUÉSPED dueño de ese teléfono en este hotel tiene `granted=true`. Sin ningún huésped
+ * identificable por ese teléfono, o sin ninguna fila, el envío se trata como "sin
  * opt-in" (deny-by-default): nunca se asume consentimiento por ausencia de dato.
+ *
+ * REQ-HUE-024 (fix real encontrado al construir `consentLedger.ts`/
+ * `apps/api/src/routes/consentimiento.ts`, ver `tests/adversarial/consent-ledger.spec.ts`
+ * caso "opt-out posterior"): la versión anterior de este chequeo era
+ * `exists(... granted = true)` -- "¿alguna vez otorgó consentimiento?" -- en vez de "¿la
+ * decisión MÁS RECIENTE fue otorgar?". Eso significaba que un huésped que otorgó
+ * consentimiento una vez y luego se dio de BAJA (una fila `granted=false` posterior,
+ * exactamente lo que REQ-HUE-020 exige registrar) seguía recibiendo marketing: la fila
+ * antigua `granted=true` seguía satisfaciendo el `EXISTS`, sin importar cuántas bajas
+ * vinieran después. `order by created_at desc limit 1` hace que la decisión más
+ * reciente sea la única que cuenta -- el criterio que un huésped esperaría de un botón
+ * de "darte de baja".
  */
 export async function isMarketingSendBlocked(params: MarketingOptInGateParams): Promise<boolean> {
   const { rows: configRows } = await params.db.query<{ marketing_templates: string[] }>(
@@ -109,20 +121,19 @@ export async function isMarketingSendBlocked(params: MarketingOptInGateParams): 
   const marketingTemplates = configRows[0]?.marketing_templates ?? [];
   if (!marketingTemplates.includes(params.templateName)) return false;
 
-  const { rows: optInRows } = await params.db.query<{ opted_in: boolean }>(
-    `select exists (
-       select 1
-       from public.consent co
-       join public.guest g on g.id = co.guest_id
-       where co.hotel_id = $1
-         and g.phone = $2
-         and co.channel = 'whatsapp'
-         and co.consent_kind = 'marketing'
-         and co.granted = true
-     ) as opted_in;`,
+  const { rows: optInRows } = await params.db.query<{ granted: boolean }>(
+    `select co.granted
+     from public.consent co
+     join public.guest g on g.id = co.guest_id
+     where co.hotel_id = $1
+       and g.phone = $2
+       and co.channel = 'whatsapp'
+       and co.consent_kind = 'marketing'
+     order by co.created_at desc
+     limit 1;`,
     [params.hotelId, params.guestPhone],
   );
-  return !(optInRows[0]?.opted_in ?? false);
+  return !(optInRows[0]?.granted ?? false);
 }
 
 export interface MarketingTemplateBodyParams {
