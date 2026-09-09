@@ -88,7 +88,7 @@ async function main() {
     onError: (err) => logger.error({ err }, "purga de conversaciones: error en tick"),
   });
 
-  // H12a · REQ-LAUNCH-013: drena `public.outbox` hacia correos reales (recibo de pago,
+  // H12a · REQ-LAUNCH-043: drena `public.outbox` hacia correos reales (recibo de pago,
   // confirmación de reserva, aviso de CFDI, invitación de staff...) -- mismo `EmailPort`
   // que `deps.emailPort` de arriba (Resend/SMTP/Fake), así que un pago/reserva/CFDI real
   // procesado por esta misma API dispara el correo correspondiente sin depender de un

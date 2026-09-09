@@ -1,6 +1,6 @@
 # @atiende-hoteles/email
 
-Sistema de correo transaccional de Atiende Hoteles (H12a, REQ-LAUNCH-010/011/012): puerto
+Sistema de correo transaccional de Atiende Hoteles (H12a, REQ-LAUNCH-040/041/042): puerto
 `EmailPort` (puerto/adaptador, ADR-007), 3 adaptadores de envío, 12 plantillas HTML+texto
 plano con la marca visual de atiende-restaurantes, y un script de preview con capturas.
 Mismo patrón que el resto del monorepo: se importa el `.ts` fuente directamente vía

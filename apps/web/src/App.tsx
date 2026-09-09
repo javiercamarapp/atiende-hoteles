@@ -1,6 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider, Toaster } from "@atiende/ui";
+import { inicializarAnalitica } from "./lib/analytics";
 import { AuthProvider } from "./hooks/useAuth";
 import { HotelProvider } from "./hooks/useHotel";
 import { RutaProtegida } from "./hooks/useAuth";
@@ -15,6 +17,9 @@ import { NotFound } from "./pages/NotFound";
 import { Privacidad } from "./pages/Privacidad";
 import { CheckinPublico } from "./pages/CheckinPublico";
 import { Terminos } from "./pages/Terminos";
+import { Landing } from "./pages/Landing";
+import { Suscripcion } from "./pages/Suscripcion";
+import { Notificaciones } from "./pages/Notificaciones";
 import { Resumen } from "./pages/Resumen";
 import { Reservas } from "./pages/Reservas";
 import { Disponibilidad } from "./pages/Disponibilidad";
@@ -45,6 +50,13 @@ const queryClient = new QueryClient({
 });
 
 export function App() {
+  // H12c · si ya hubo consentimiento en una visita previa (localStorage), activa el
+  // adaptador real de analítica de inmediato -- nunca antes de eso (ver
+  // components/CookieConsentBanner.tsx y lib/analytics.ts).
+  useEffect(() => {
+    inicializarAnalitica();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -52,7 +64,13 @@ export function App() {
           <HotelProvider>
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Navigate to="/resumen" replace />} />
+                {/* H12c · LAUNCH-025: "/" pasa a ser la landing pública de promoción
+                    (antes redirigía a /resumen) -- el login sigue viviendo en /login
+                    (H12a), aquí solo se ajusta el enrutador. Un usuario con sesión que
+                    visita "/" ve la landing igual que un visitante anónimo (mismo
+                    criterio que la mayoría de SaaS: la home pública no asume intención
+                    de ir al panel); el panel sigue alcanzable en /resumen. */}
+                <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/registro" element={<Registro />} />
                 <Route path="/registro/verificar" element={<VerificarCorreo />} />
@@ -91,6 +109,8 @@ export function App() {
                   <Route path="/back-office" element={<BackOffice />} />
                   <Route path="/aprobaciones" element={<Aprobaciones />} />
                   <Route path="/agentes" element={<Agentes />} />
+                  <Route path="/suscripcion" element={<Suscripcion />} />
+                  <Route path="/notificaciones" element={<Notificaciones />} />
                   <Route path="/configuracion" element={<Configuracion />} />
                 </Route>
 

@@ -93,3 +93,10 @@
 2026-09-06 16:40:51 ciclo=48 evento=LIMPIEZA: shm SysV 30/32 segmentos (causa de shmget en pruebas) + servidor API huérfano pid 9595 (4h) terminado; segmentos huérfanos eliminados=30
 2026-09-06 16:52:16 ciclo=49 evento=merges_B_C_ok push=main siguiente=H12a+H12b cierre
 2026-09-06 16:59:03 ciclo=50 evento=H12b_completo merge_en_curso(#58) H12a,H12c cerrando
+2026-09-06 16:59:57 cron=4fe17d3a evento=disparo_cron bucle_dinamico=activo(17:18) agentes_en_curso=3(integrador H12b, H12a, H12c) accion=solo_latido
+2026-09-06 17:43:34 ciclo=52 evento=VERCEL_PRODUCCION proyecto=atiende-hoteles-web url_publica=https://atiende-hoteles-web.vercel.app (frontend estático, sin API; landing entra tras merge H12c)
+2026-09-06 17:44:10 ciclo=53 evento=latido 17:44 integrador en merges
+2026-09-08 21:01:12 ciclo=54 evento=REANUDACION tras límite semanal; merge H12c en curso (MERGE_HEAD 1ddf552); integrador reanudado
+2026-09-08 21:27:53 ciclo=55 evento=latido 21:27 integrador cerrando H12c
+2026-09-08 22:30:49 ciclo=58 evento=latido 22:56 integrador fresco (#59) cerrando H12c
+2026-09-08 22:44:39 ciclo=56 evento=E2E_VERDE integrador cierra H12c: 4 specs reales verificadas (h6/h7/login-real-y-resumen, desktop+mobile) tras fix ancla de fecha en seed.ts y dismissal de banner de cookies en h6

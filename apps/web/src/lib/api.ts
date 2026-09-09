@@ -1005,3 +1005,137 @@ export async function crearTipoHabitacionOnboarding(
 export async function actualizarZonaHorariaOnboarding(hotelId: string, timezone: string): Promise<{ timezone: string }> {
   return request(`/hoteles/${hotelId}/onboarding/zona-horaria`, { method: "PATCH", body: JSON.stringify({ timezone }) });
 }
+
+// ---- H12c · Facturación SaaS (LAUNCH-015) --------------------------------------
+
+export interface PlanLimites {
+  hoteles: number | null;
+  habitaciones: number | null;
+  agentesActivos: number | null;
+  mensajesMes: number | null;
+}
+
+export interface Plan {
+  id: string;
+  codigo: string;
+  nombre: string;
+  precioMxnCentavos: number | null;
+  moneda: string;
+  ciclo: string;
+  limites: PlanLimites;
+  esPropuesta: boolean;
+}
+
+export interface Suscripcion {
+  id: string;
+  estado: "trial" | "activa" | "vencida" | "cancelada";
+  trialTermina: string;
+  periodoInicio: string;
+  periodoFin: string;
+  moneda: string;
+  proveedor: string;
+  cancelaAlFinDelPeriodo: boolean;
+  plan: Plan | null;
+  uso: {
+    hoteles: number;
+    habitaciones: number;
+    agentesActivos: number;
+    mensajesMes: number;
+  };
+}
+
+export interface FacturaSaas {
+  id: string;
+  periodoInicio: string;
+  periodoFin: string;
+  montoMxnCentavos: number;
+  moneda: string;
+  estado: "borrador" | "emitida" | "pagada" | "cancelada";
+  cfdiUuid: string | null;
+  creadaEn: string;
+  pagadaEn: string | null;
+}
+
+export async function listarPlanes(): Promise<Plan[]> {
+  return request<Plan[]>("/planes");
+}
+
+export async function obtenerSuscripcion(hotelId: string): Promise<Suscripcion | null> {
+  try {
+    return await request<Suscripcion>(`/hoteles/${hotelId}/suscripcion`);
+  } catch (err) {
+    // "Esta organización aún no tiene una suscripción" (404, apps/api/src/routes/
+    // suscripcion.ts) es un estado válido de negocio (hotel recién dado de alta antes de
+    // que corra el alta automática de trial), no un error de conexión -- se traduce a
+    // `null`, nunca a un EstadoError genérico.
+    if (err instanceof ApiUnavailableError && /aún no tiene una suscripción/i.test(err.message)) return null;
+    throw err;
+  }
+}
+
+export async function listarFacturasSaas(hotelId: string): Promise<FacturaSaas[]> {
+  return request<FacturaSaas[]>(`/hoteles/${hotelId}/suscripcion/facturas`);
+}
+
+export async function crearCheckoutSuscripcion(
+  hotelId: string,
+  input: { planCode: string; successUrl: string; cancelUrl: string },
+): Promise<{ checkoutUrl: string }> {
+  return request(`/hoteles/${hotelId}/suscripcion/checkout`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function crearPortalSuscripcion(hotelId: string, input: { returnUrl: string }): Promise<{ portalUrl: string }> {
+  return request(`/hoteles/${hotelId}/suscripcion/portal`, { method: "POST", body: JSON.stringify(input) });
+}
+
+// ---- H12c · Notificaciones in-app (LAUNCH-017) ---------------------------------
+
+export type TipoNotificacion =
+  | "reserva_nueva"
+  | "aprobacion_pendiente"
+  | "ticket_urgente"
+  | "night_audit_cerrado"
+  | "limite_plan"
+  | "sistema";
+
+export interface Notificacion {
+  id: string;
+  hotelId: string | null;
+  tipo: TipoNotificacion;
+  titulo: string;
+  cuerpo: string;
+  enlace: string | null;
+  leidaEn: string | null;
+  creadaEn: string;
+}
+
+export async function listarNotificaciones(hotelId: string, soloNoLeidas = false): Promise<Notificacion[]> {
+  return request<Notificacion[]>(`/hoteles/${hotelId}/notificaciones${soloNoLeidas ? "?no_leidas=true" : ""}`);
+}
+
+export async function contarNotificacionesNoLeidas(hotelId: string): Promise<number> {
+  const { conteo } = await request<{ conteo: number }>(`/hoteles/${hotelId}/notificaciones/no-leidas/conteo`);
+  return conteo;
+}
+
+export async function marcarNotificacionLeida(hotelId: string, id: string): Promise<void> {
+  await request(`/hoteles/${hotelId}/notificaciones/${id}/leer`, { method: "PATCH" });
+}
+
+export async function marcarTodasNotificacionesLeidas(hotelId: string): Promise<number> {
+  const { marcadas } = await request<{ marcadas: number }>(`/hoteles/${hotelId}/notificaciones/marcar-todo-leido`, { method: "POST" });
+  return marcadas;
+}
+
+export interface PreferenciaNotificacion {
+  tipo: TipoNotificacion;
+  activa: boolean;
+}
+
+export async function listarPreferenciasNotificacion(): Promise<PreferenciaNotificacion[]> {
+  return request<PreferenciaNotificacion[]>("/notificaciones/preferencias");
+}
+
+export async function actualizarPreferenciaNotificacion(tipo: TipoNotificacion, enabled: boolean): Promise<void> {
+  await request("/notificaciones/preferencias", { method: "PUT", body: JSON.stringify({ type: tipo, enabled }) });
+}

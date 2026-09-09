@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  H12b · LAUNCH-028: sitemap mínimo con las ÚNICAS dos rutas de este SPA que se dejan
-  indexar (ver apps/web/public/robots.txt y apps/web/src/hooks/useSeoRobots.ts). El resto
-  del panel es "noindex, nofollow" y no pertenece aquí.
+  Merge H12b+H12c→main (integrador), REQ-LAUNCH-060/058: faltaba "/" -- H12c construyó
+  la landing pública de venta en esa ruta (Landing.tsx) DESPUÉS de que H12b escribiera
+  este sitemap asumiendo que ese contenido viviría en otro proyecto/host (ver el
+  comentario que se retiró de apps/web/public/robots.txt). "/" es ahora la página más
+  importante para indexar de las tres.
 
   PENDIENTE (D-006/LAUNCH-010, dominio aún no decidido): las URLs de abajo usan
   "https://app.atiendehoteles.com" como placeholder -- actualizar a mano cuando el
@@ -10,6 +12,11 @@
   deploy/README.md "Dominio").
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://app.atiendehoteles.com/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
   <url>
     <loc>https://app.atiendehoteles.com/terminos</loc>
     <changefreq>monthly</changefreq>

@@ -1,0 +1,23 @@
+
+> atiende-hoteles@0.0.0 build
+> npm run build --workspaces --if-present
+
+
+> @atiende-hoteles/api@0.0.0 build
+> tsc --noEmit -p tsconfig.json
+
+
+> @atiende/web@0.0.0 build
+> tsc --noEmit && vite build
+
+5:01:37 PM [vite] warning: `esbuild` option was specified by "vite:react-swc" plugin. This option is deprecated, please use `oxc` instead.
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 1763 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   3.23 kB │ gzip:   1.30 kB
+dist/assets/index-CdixG8i1.css   44.72 kB │ gzip:   9.36 kB
+dist/assets/index-vr_6ez2P.js   554.59 kB │ gzip: 162.26 kB
+
+✓ built in 848ms

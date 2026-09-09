@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@atiende/ui": "*",
+    "@atiende-hoteles/analytics": "*",
     "@tanstack/react-query": "5.83.0",
     "lucide-react": "0.462.0",
     "react": "18.3.1",

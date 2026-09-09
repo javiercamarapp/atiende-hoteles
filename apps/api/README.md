@@ -415,23 +415,18 @@ funcionando**: el botón "Continuar con Google" se declara honestamente deshabil
   probado end-to-end contra un servidor OAuth FALSO real (`tests/support/
   fakeGoogleOAuth.ts`, clave RSA de prueba) en `tests/integration/api/auth-google.spec.ts`
   y `tests/adversarial/auth-google-oauth.spec.ts` — nunca se ha ejercitado contra Google
-  real, así que no se declara `hecho` en `docs/REQUISITOS.md` (REQ-LAUNCH-001).
+  real, así que no se declara `hecho` en `docs/REQUISITOS.md` (REQ-LAUNCH-031).
 - **PENDIENTE DE CREDENCIALES (Resend o SMTP)**: ver `packages/email/README.md`. Sin
   ellas, todo correo transaccional (verificación, invitación, reset, recibo, etc.) se
   guarda en `email_outbox` con `provider: "fake"`, nunca se envía de verdad.
-- **PENDIENTE-COORDINACIÓN (lote B, `routes/reservas.ts`/`routes/cfdi.ts`)**: los
-  disparadores de correo `reservation.confirmed`→confirmación y `cfdi.emitted`→aviso
-  tienen su handler completo y probado (`apps/api/src/emailOutbox/
-  buildEmailOutboxHandlers.ts`) pero esos dos archivos (fuera de alcance de este agente)
-  todavía no insertan el evento correspondiente en `public.outbox` — el disparador
-  `payment.recorded`→recibo SÍ está conectado de verdad (ese evento ya lo emite
-  `routes/folios.ts`).
-- **PENDIENTE-COORDINACIÓN (lote A, `server.ts`)**: arrancar el worker de correo por
-  outbox (`apps/api/src/emailOutbox/runEmailOutboxWorker.ts`) junto a los demás
-  planificadores del proceso, y construir un `EmailPort` real a partir de
-  `RESEND_*`/`SMTP_*` para pasarlo a `AppDeps.emailPort` (hoy `createApp()` siempre usa
-  `FakeEmailAdapter` salvo que algo externo construya y pase `emailPort` explícito) —
-  ambas requieren tocar `server.ts`, fuera del alcance de este agente.
+- **CERRADO por el integrador (merge H12a→main)**: los 3 disparadores de correo
+  (`payment.recorded`→recibo, `reservation.confirmed`→confirmación,
+  `cfdi.emitted`→aviso) están conectados de verdad — `routes/reservas.ts` inserta el
+  evento al confirmar una reserva, `routes/cfdi.ts` tras timbrar (hospedaje y pago),
+  ambos en `apps/api/src/emailOutbox/buildEmailOutboxHandlers.ts`. `server.ts` arranca
+  `startEmailOutboxScheduler()` junto a los demás planificadores y construye el
+  `EmailPort` real (Resend > SMTP > `FakeEmailAdapter`) vía `resolveEmailPort()` para
+  `AppDeps.emailPort`. Ver `tests/integration/api/email-outbox-handlers.spec.ts` (5/5).
 - `staff_user.email_verified_at`/`created_via` (migración 0093): solo las cuentas
   `registro_autoservicio` exigen correo verificado antes de `POST /auth/login` (403
   honesto si no lo está) — las sembradas/invitadas/por Google nunca se ven afectadas.

@@ -1,0 +1,955 @@
+
+> atiende-hoteles@0.0.0 test:e2e
+> npm run e2e --workspace=apps/web --workers=1
+
+npm warn Unknown cli config "--workers". This will stop working in the next major version of npm.
+
+> @atiende/web@0.0.0 e2e
+> playwright test -c playwright.config.ts
+
+
+Running 68 tests using 5 workers
+
+(node:70745) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:70746) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:70749) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:70748) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:70747) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   5 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: landing sin violaciones serias/críticas (2.6s)
+  ✓   4 [desktop] › ../../tests/e2e/h12c-landing.spec.ts:13:1 › landing pública (/): renderiza, sin scroll horizontal, capturas 1280/390 guardadas (2.8s)
+  ✓   7 [desktop] › ../../tests/e2e/h12c-landing.spec.ts:45:1 › landing pública (/): CTA a /registro y a /login presentes; footer con enlaces legales (878ms)
+  ✓   6 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: login sin violaciones serias/críticas (2.1s)
+  ✓   8 [desktop] › ../../tests/e2e/h12c-landing.spec.ts:57:1 › banner de cookies: aparece sin decisión previa, desaparece tras aceptar, y persiste la decisión (1.7s)
+  ✓   9 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: resumen sin violaciones serias/críticas (2.5s)
+  ✓  11 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: reservas sin violaciones serias/críticas (2.9s)
+  ✓  12 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: recepcion sin violaciones serias/críticas (3.1s)
+  ✓   3 [desktop] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:159:3 › H12a · registro → verificación → onboarding → Google › 1. registro: formulario → revisa tu correo (7.2s)
+  ✓  14 [desktop] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:178:3 › H12a · registro → verificación → onboarding → Google › 2. verificación de correo (token leído de la base, simulando el correo capturado por el proveedor fake) (2.1s)
+  ✓  13 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: disponibilidad sin violaciones serias/críticas (2.6s)
+  ✓   2 [desktop] › ../../tests/e2e/h4-reserva-real-desde-ui.spec.ts:72:1 › crear una reserva real desde /reservas (seeds reales) y verla en la tabla y en la grid de /disponibilidad (16.4s)
+  ✓   1 [desktop] › ../../tests/e2e/h5-cargo-y-pago-desde-ui.spec.ts:70:1 › cargar un cargo y un pago sobre el folio de una reserva desde /recepcion (UI real) (17.1s)
+  ✓  16 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: configuracion sin violaciones serias/críticas (2.8s)
+  ✓  19 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: housekeeping sin violaciones serias/críticas (2.8s)
+  ✓  15 [desktop] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:191:3 › H12a · registro → verificación → onboarding → Google › 3. onboarding: login → tipo de habitación → zona horaria → invitar equipo (6.3s)
+  ✓  20 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: mantenimiento sin violaciones serias/críticas (2.7s)
+  ✓  21 [desktop] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:220:3 › H12a · registro → verificación → onboarding → Google › 4. login con Google (servidor falso): recorre TODA la cadena de redirecciones hasta /resumen (2.4s)
+  ✓  22 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: mensajeria sin violaciones serias/críticas (2.6s)
+  ✓  23 [desktop] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:229:3 › H12a · registro → verificación → onboarding → Google › 5. login con Google, correo no verificado: termina en /login con el error humano (3.0s)
+  ✓  10 [desktop] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) (22.9s)
+  ✓  26 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:144:3 › Paridad visual — capturas hoteles › login (963ms)
+  ✓  24 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: aprobaciones sin violaciones serias/críticas (2.6s)
+  ✓  27 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:151:3 › Paridad visual — capturas hoteles › resumen (1.7s)
+  ✘  28 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: agentes sin violaciones serias/críticas (2.1s)
+  ✘  29 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:159:3 › Paridad visual — capturas hoteles › reservas (671ms)
+(node:71867) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  18 [desktop] › ../../tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API (16.2s)
+  ✓  17 [desktop] › ../../tests/e2e/h7-agentes.spec.ts:64:1 › agentes: gate/techo, demo determinista (FakeProvider) y tarjeta de ROI en Resumen -- recorrido real desde la UI (seeds reales) (16.9s)
+(node:71875) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  25 [desktop] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura) (6.5s)
+(node:71891) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  30 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: suscripcion sin violaciones serias/críticas (624ms)
+  ✘  31 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:173:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › login de Atiende Hoteles: tokens/tipografía/logo/botón == fixture de Restaurantes (547ms)
+(node:71925) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:71932) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:71931) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  32 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: landing sin violaciones serias/críticas (590ms)
+  ✘  34 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:180:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › resumen de Atiende Hoteles: la tipografía base (--font-body) sigue siendo Inter (530ms)
+  ✘  35 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: notificaciones sin violaciones serias/críticas (507ms)
+(node:72006) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:72023) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:72022) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  36 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: login sin violaciones serias/críticas (652ms)
+(node:72159) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:72157) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  39 [mobile] › ../../tests/e2e/h12c-landing.spec.ts:13:1 › landing pública (/): renderiza, sin scroll horizontal, capturas 1280/390 guardadas (664ms)
+  ✘  40 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: resumen sin violaciones serias/críticas (560ms)
+  ✓  38 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:243:1 › paridad viva: el render real de atiende-restaurantes coincide con el fixture usado arriba (3.8s)
+(node:72357) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:72358) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:72362) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  33 [mobile] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:159:3 › H12a · registro → verificación → onboarding → Google › 1. registro: formulario → revisa tu correo (2.3s)
+  ✘  41 [mobile] › ../../tests/e2e/h12c-landing.spec.ts:45:1 › landing pública (/): CTA a /registro y a /login presentes; footer con enlaces legales (843ms)
+  ✘  42 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: reservas sin violaciones serias/críticas (1.1s)
+  ✓  43 [mobile] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:178:3 › H12a · registro → verificación → onboarding → Google › 2. verificación de correo (token leído de la base, simulando el correo capturado por el proveedor fake) (1.4s)
+(node:72427) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:72444) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  37 [mobile] › ../../tests/e2e/h4-reserva-real-desde-ui.spec.ts:72:1 › crear una reserva real desde /reservas (seeds reales) y verla en la tabla y en la grid de /disponibilidad (8.1s)
+  ✘  46 [mobile] › ../../tests/e2e/h12c-landing.spec.ts:57:1 › banner de cookies: aparece sin decisión previa, desaparece tras aceptar, y persiste la decisión (811ms)
+  ✘  47 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: recepcion sin violaciones serias/críticas (564ms)
+(node:72522) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:72546) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  45 [mobile] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:191:3 › H12a · registro → verificación → onboarding → Google › 3. onboarding: login → tipo de habitación → zona horaria → invitar equipo (3.5s)
+  ✘  50 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: disponibilidad sin violaciones serias/críticas (602ms)
+  ✓  51 [mobile] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:220:3 › H12a · registro → verificación → onboarding → Google › 4. login con Google (servidor falso): recorre TODA la cadena de redirecciones hasta /resumen (1.1s)
+(node:72721) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  52 [mobile] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:229:3 › H12a · registro → verificación → onboarding → Google › 5. login con Google, correo no verificado: termina en /login con el error humano (1.0s)
+  -  54 [mobile] › ../../tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API
+  ✘  53 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: configuracion sin violaciones serias/críticas (495ms)
+  -  55 [mobile] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura)
+(node:72834) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  56 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:144:3 › Paridad visual — capturas hoteles › login (457ms)
+(node:72843) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  57 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: housekeeping sin violaciones serias/críticas (528ms)
+(node:72937) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  58 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:151:3 › Paridad visual — capturas hoteles › resumen (571ms)
+  ✓  44 [mobile] › ../../tests/e2e/h5-cargo-y-pago-desde-ui.spec.ts:70:1 › cargar un cargo y un pago sobre el folio de una reserva desde /recepcion (UI real) (9.9s)
+(node:72941) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  59 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: mantenimiento sin violaciones serias/críticas (688ms)
+  ✘  60 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:159:3 › Paridad visual — capturas hoteles › reservas (514ms)
+(node:72998) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73002) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  49 [mobile] › ../../tests/e2e/h7-agentes.spec.ts:64:1 › agentes: gate/techo, demo determinista (FakeProvider) y tarjeta de ROI en Resumen -- recorrido real desde la UI (seeds reales) (9.6s)
+  ✘  61 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: mensajeria sin violaciones serias/críticas (718ms)
+  ✘  62 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:173:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › login de Atiende Hoteles: tokens/tipografía/logo/botón == fixture de Restaurantes (700ms)
+(node:73112) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73113) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  64 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:180:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › resumen de Atiende Hoteles: la tipografía base (--font-body) sigue siendo Inter (439ms)
+  ✘  63 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: aprobaciones sin violaciones serias/críticas (431ms)
+(node:73150) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73149) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  -  65 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:243:1 › paridad viva: el render real de atiende-restaurantes coincide con el fixture usado arriba
+  ✘  66 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: agentes sin violaciones serias/críticas (333ms)
+(node:73181) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  67 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: suscripcion sin violaciones serias/críticas (301ms)
+(node:73196) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  68 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: notificaciones sin violaciones serias/críticas (342ms)
+  ✘  48 [mobile] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) (3.0m)
+
+
+  1) [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: agentes sin violaciones serias/críticas 
+
+    Error: browserContext.close: ENOENT: no such file or directory, open '/Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/.playwright-results/.playwright-artifacts-0/traces/f79f6200f881e1fa372f-3dd4ec00b3143b63975c-recording22.trace'
+
+    Error: ENOENT: no such file or directory, open '/Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/.playwright-results/.playwright-artifacts-0/47fa7a6c886c12652e8d6f7faa2145b7.zip'
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-agen-5f9e3-violaciones-serias-críticas-desktop/error-context.md
+
+  2) [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: suscripcion sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/suscripcion
+    Call log:
+      - navigating to "http://localhost:4173/suscripcion", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-susc-71755-violaciones-serias-críticas-desktop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-susc-71755-violaciones-serias-críticas-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-susc-71755-violaciones-serias-críticas-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: notificaciones sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/notificaciones
+    Call log:
+      - navigating to "http://localhost:4173/notificaciones", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-noti-d91a7-violaciones-serias-críticas-desktop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-noti-d91a7-violaciones-serias-críticas-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-noti-d91a7-violaciones-serias-críticas-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [desktop] › ../../tests/e2e/paridad-visual.spec.ts:159:3 › Paridad visual — capturas hoteles › reservas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/reservas
+    Call log:
+      - navigating to "http://localhost:4173/reservas", waiting until "load"
+
+
+      159 |   test("reservas", async ({ page }, testInfo) => {
+      160 |     await sembrarSesionFalsa(page);
+    > 161 |     await page.goto("/reservas");
+          |                ^
+      162 |     await expect(page.getByRole("heading", { name: "Reservas" })).toBeVisible();
+      163 |     const vp = testInfo.project.use.viewport;
+      164 |     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, `hoteles-reservas-${vp?.width}x${vp?.height}.png`), fullPage: true });
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/paridad-visual.spec.ts:161:16
+
+    Error Context: ../../tests/e2e/.playwright-results/paridad-visual-Paridad-visual-—-capturas-hoteles-reservas-desktop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/paridad-visual-Paridad-visual-—-capturas-hoteles-reservas-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/paridad-visual-Paridad-visual-—-capturas-hoteles-reservas-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [desktop] › ../../tests/e2e/paridad-visual.spec.ts:173:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › login de Atiende Hoteles: tokens/tipografía/logo/botón == fixture de Restaurantes 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/login
+    Call log:
+      - navigating to "http://localhost:4173/login", waiting until "load"
+
+
+      173 |   test("login de Atiende Hoteles: tokens/tipografía/logo/botón == fixture de Restaurantes", async ({ page }) => {
+      174 |     const referencia = cargarFixture();
+    > 175 |     await page.goto("/login");
+          |                ^
+      176 |     await expect(page.getByRole("heading", { name: /bienvenido a atiende hoteles/i })).toBeVisible();
+      177 |     await compararContraReferencia(page, referencia);
+      178 |   });
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/paridad-visual.spec.ts:175:16
+
+    Error Context: ../../tests/e2e/.playwright-results/paridad-visual-Paridad-vis-25c3d-tón-fixture-de-Restaurantes-desktop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/paridad-visual-Paridad-vis-25c3d-tón-fixture-de-Restaurantes-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/paridad-visual-Paridad-vis-25c3d-tón-fixture-de-Restaurantes-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [desktop] › ../../tests/e2e/paridad-visual.spec.ts:180:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › resumen de Atiende Hoteles: la tipografía base (--font-body) sigue siendo Inter 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/resumen
+    Call log:
+      - navigating to "http://localhost:4173/resumen", waiting until "load"
+
+
+      181 |     const referencia = cargarFixture();
+      182 |     await sembrarSesionFalsa(page);
+    > 183 |     await page.goto("/resumen");
+          |                ^
+      184 |     await expect(page.getByRole("heading", { name: "Resumen" })).toBeVisible();
+      185 |     const body = await fontFamilyDe(page, "body");
+      186 |     expect(body, "fuente base de la app (font-body)").toContain(referencia.fuentesTipograficas.body);
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/paridad-visual.spec.ts:183:16
+
+    Error Context: ../../tests/e2e/.playwright-results/paridad-visual-Paridad-vis-242dc-ont-body-sigue-siendo-Inter-desktop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/paridad-visual-Paridad-vis-242dc-ont-body-sigue-siendo-Inter-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/paridad-visual-Paridad-vis-242dc-ont-body-sigue-siendo-Inter-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: landing sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/
+    Call log:
+      - navigating to "http://localhost:4173/", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-land-5c116-violaciones-serias-críticas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-land-5c116-violaciones-serias-críticas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-land-5c116-violaciones-serias-críticas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: login sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/login
+    Call log:
+      - navigating to "http://localhost:4173/login", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-login-sin-violaciones-serias-críticas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-login-sin-violaciones-serias-críticas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-login-sin-violaciones-serias-críticas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: resumen sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/resumen
+    Call log:
+      - navigating to "http://localhost:4173/resumen", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-resu-884cf-violaciones-serias-críticas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-resu-884cf-violaciones-serias-críticas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-resu-884cf-violaciones-serias-críticas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: reservas sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/reservas
+    Call log:
+      - navigating to "http://localhost:4173/reservas", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-rese-7eedb-violaciones-serias-críticas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-rese-7eedb-violaciones-serias-críticas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-rese-7eedb-violaciones-serias-críticas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  11) [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: recepcion sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/recepcion
+    Call log:
+      - navigating to "http://localhost:4173/recepcion", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-rece-0c4de-violaciones-serias-críticas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-rece-0c4de-violaciones-serias-críticas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-rece-0c4de-violaciones-serias-críticas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12) [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: disponibilidad sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/disponibilidad
+    Call log:
+      - navigating to "http://localhost:4173/disponibilidad", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-disp-7edd4-violaciones-serias-críticas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-disp-7edd4-violaciones-serias-críticas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-disp-7edd4-violaciones-serias-críticas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  13) [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: configuracion sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/configuracion
+    Call log:
+      - navigating to "http://localhost:4173/configuracion", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-conf-27638-violaciones-serias-críticas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-conf-27638-violaciones-serias-críticas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-conf-27638-violaciones-serias-críticas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  14) [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: housekeeping sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/housekeeping
+    Call log:
+      - navigating to "http://localhost:4173/housekeeping", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-hous-5f381-violaciones-serias-críticas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-hous-5f381-violaciones-serias-críticas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-hous-5f381-violaciones-serias-críticas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  15) [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: mantenimiento sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/mantenimiento
+    Call log:
+      - navigating to "http://localhost:4173/mantenimiento", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-mant-73a84-violaciones-serias-críticas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-mant-73a84-violaciones-serias-críticas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-mant-73a84-violaciones-serias-críticas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  16) [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: mensajeria sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/mensajeria
+    Call log:
+      - navigating to "http://localhost:4173/mensajeria", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-mens-8a46b-violaciones-serias-críticas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-mens-8a46b-violaciones-serias-críticas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-mens-8a46b-violaciones-serias-críticas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  17) [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: aprobaciones sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/aprobaciones
+    Call log:
+      - navigating to "http://localhost:4173/aprobaciones", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-apro-caa0a-violaciones-serias-críticas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-apro-caa0a-violaciones-serias-críticas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-apro-caa0a-violaciones-serias-críticas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  18) [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: agentes sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/agentes
+    Call log:
+      - navigating to "http://localhost:4173/agentes", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-agen-5f9e3-violaciones-serias-críticas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-agen-5f9e3-violaciones-serias-críticas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-agen-5f9e3-violaciones-serias-críticas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  19) [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: suscripcion sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/suscripcion
+    Call log:
+      - navigating to "http://localhost:4173/suscripcion", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-susc-71755-violaciones-serias-críticas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-susc-71755-violaciones-serias-críticas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-susc-71755-violaciones-serias-críticas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  20) [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: notificaciones sin violaciones serias/críticas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/notificaciones
+    Call log:
+      - navigating to "http://localhost:4173/notificaciones", waiting until "load"
+
+
+      40 |   test(`axe: ${nombre} sin violaciones serias/críticas`, async ({ page }) => {
+      41 |     if (protegida) await sembrarSesionFalsa(page);
+    > 42 |     await page.goto(ruta);
+         |                ^
+      43 |     await page.waitForLoadState("networkidle");
+      44 |
+      45 |     const resultados = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/axe-accesibilidad.spec.ts:42:16
+
+    Error Context: ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-noti-d91a7-violaciones-serias-críticas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-noti-d91a7-violaciones-serias-críticas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/axe-accesibilidad-axe-noti-d91a7-violaciones-serias-críticas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  21) [mobile] › ../../tests/e2e/h12c-landing.spec.ts:13:1 › landing pública (/): renderiza, sin scroll horizontal, capturas 1280/390 guardadas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/
+    Call log:
+      - navigating to "http://localhost:4173/", waiting until "load"
+
+
+      13 | test("landing pública (/): renderiza, sin scroll horizontal, capturas 1280/390 guardadas", async ({ page }, testInfo) => {
+      14 |   await page.emulateMedia({ reducedMotion: "reduce" });
+    > 15 |   await page.goto("/");
+         |              ^
+      16 |   await page.waitForLoadState("networkidle");
+      17 |
+      18 |   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/h12c-landing.spec.ts:15:14
+
+    Error Context: ../../tests/e2e/.playwright-results/h12c-landing-landing-públi-9228c-capturas-1280-390-guardadas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/h12c-landing-landing-públi-9228c-capturas-1280-390-guardadas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/h12c-landing-landing-públi-9228c-capturas-1280-390-guardadas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  22) [mobile] › ../../tests/e2e/h12c-landing.spec.ts:45:1 › landing pública (/): CTA a /registro y a /login presentes; footer con enlaces legales 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/
+    Call log:
+      - navigating to "http://localhost:4173/", waiting until "load"
+
+
+      44 |
+      45 | test("landing pública (/): CTA a /registro y a /login presentes; footer con enlaces legales", async ({ page }) => {
+    > 46 |   await page.goto("/");
+         |              ^
+      47 |   await expect(page.getByRole("link", { name: /iniciar sesión/i })).toHaveAttribute("href", "/login");
+      48 |   await expect(page.getByRole("link", { name: /prueba gratis|prueba gratuita/i }).first()).toHaveAttribute("href", "/registro");
+      49 |   // Se acota al footer (getByRole("contentinfo")): el banner de cookies TAMBIÉN enlaza
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/h12c-landing.spec.ts:46:14
+
+    Error Context: ../../tests/e2e/.playwright-results/h12c-landing-landing-públi-38490--footer-con-enlaces-legales-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/h12c-landing-landing-públi-38490--footer-con-enlaces-legales-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/h12c-landing-landing-públi-38490--footer-con-enlaces-legales-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  23) [mobile] › ../../tests/e2e/h12c-landing.spec.ts:57:1 › banner de cookies: aparece sin decisión previa, desaparece tras aceptar, y persiste la decisión 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/
+    Call log:
+      - navigating to "http://localhost:4173/", waiting until "load"
+
+
+      56 |
+      57 | test("banner de cookies: aparece sin decisión previa, desaparece tras aceptar, y persiste la decisión", async ({ page }) => {
+    > 58 |   await page.goto("/");
+         |              ^
+      59 |   const banner = page.getByRole("region", { name: /consentimiento de cookies/i });
+      60 |   await expect(banner).toBeVisible();
+      61 |
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/h12c-landing.spec.ts:58:14
+
+    Error Context: ../../tests/e2e/.playwright-results/h12c-landing-banner-de-coo-3705a-ptar-y-persiste-la-decisión-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/h12c-landing-banner-de-coo-3705a-ptar-y-persiste-la-decisión-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/h12c-landing-banner-de-coo-3705a-ptar-y-persiste-la-decisión-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  24) [mobile] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) 
+
+    Test timeout of 180000ms exceeded.
+
+    Error: locator.click: Test timeout of 180000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: /cerrar con costo/i }).first()
+        - locator resolved to <button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold tracking-[0.005em] ring-offset-background transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-border bg-card text-foreground hover:border-[color-mix(in_srgb,hsl(var(--foreground))_26%,…>Cerrar con costo</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <p class="text-sm text-muted-foreground flex-1">…</p> from <div role="region" aria-label="Consentimiento de cookies y analítica" class="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4 flex justify-center">…</div> subtree intercepts pointer events
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <p class="text-sm text-muted-foreground flex-1">…</p> from <div role="region" aria-label="Consentimiento de cookies y analítica" class="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4 flex justify-center">…</div> subtree intercepts pointer events
+        - retrying click action
+          - waiting 100ms
+        331 × waiting for element to be visible, enabled and stable
+            - element is visible, enabled and stable
+            - scrolling into view if needed
+            - done scrolling
+            - <p class="text-sm text-muted-foreground flex-1">…</p> from <div role="region" aria-label="Consentimiento de cookies y analítica" class="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4 flex justify-center">…</div> subtree intercepts pointer events
+          - retrying click action
+            - waiting 500ms
+
+
+      146 |     // Cerrar con costo: abre una solicitud de aprobación (dinero, doble confirmación) --
+      147 |     // NO cierra directo.
+    > 148 |     await page.getByRole("button", { name: /cerrar con costo/i }).first().click();
+          |                                                                           ^
+      149 |     await expect(page.getByRole("heading", { name: /cerrar ".*" con costo/i })).toBeVisible();
+      150 |     await page.getByLabel("Costo real (MXN)").fill("2500");
+      151 |     await page.getByRole("button", { name: "Solicitar autorización" }).click();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:148:75
+
+    Error Context: ../../tests/e2e/.playwright-results/h6-housekeeping-mantenimie-8fdbe-l-desde-la-UI-seeds-reales--mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/h6-housekeeping-mantenimie-8fdbe-l-desde-la-UI-seeds-reales--mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/h6-housekeeping-mantenimie-8fdbe-l-desde-la-UI-seeds-reales--mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  25) [mobile] › ../../tests/e2e/paridad-visual.spec.ts:144:3 › Paridad visual — capturas hoteles › login 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/login
+    Call log:
+      - navigating to "http://localhost:4173/login", waiting until "load"
+
+
+      143 |
+      144 |   test("login", async ({ page }, testInfo) => {
+    > 145 |     await page.goto("/login");
+          |                ^
+      146 |     await expect(page.getByRole("heading", { name: /bienvenido a atiende hoteles/i })).toBeVisible();
+      147 |     const vp = testInfo.project.use.viewport;
+      148 |     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, `hoteles-login-${vp?.width}x${vp?.height}.png`), fullPage: true });
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/paridad-visual.spec.ts:145:16
+
+    Error Context: ../../tests/e2e/.playwright-results/paridad-visual-Paridad-visual-—-capturas-hoteles-login-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/paridad-visual-Paridad-visual-—-capturas-hoteles-login-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/paridad-visual-Paridad-visual-—-capturas-hoteles-login-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  26) [mobile] › ../../tests/e2e/paridad-visual.spec.ts:151:3 › Paridad visual — capturas hoteles › resumen 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/resumen
+    Call log:
+      - navigating to "http://localhost:4173/resumen", waiting until "load"
+
+
+      151 |   test("resumen", async ({ page }, testInfo) => {
+      152 |     await sembrarSesionFalsa(page);
+    > 153 |     await page.goto("/resumen");
+          |                ^
+      154 |     await expect(page.getByRole("heading", { name: "Resumen" })).toBeVisible();
+      155 |     const vp = testInfo.project.use.viewport;
+      156 |     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, `hoteles-resumen-${vp?.width}x${vp?.height}.png`), fullPage: true });
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/paridad-visual.spec.ts:153:16
+
+    Error Context: ../../tests/e2e/.playwright-results/paridad-visual-Paridad-visual-—-capturas-hoteles-resumen-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/paridad-visual-Paridad-visual-—-capturas-hoteles-resumen-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/paridad-visual-Paridad-visual-—-capturas-hoteles-resumen-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  27) [mobile] › ../../tests/e2e/paridad-visual.spec.ts:159:3 › Paridad visual — capturas hoteles › reservas 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/reservas
+    Call log:
+      - navigating to "http://localhost:4173/reservas", waiting until "load"
+
+
+      159 |   test("reservas", async ({ page }, testInfo) => {
+      160 |     await sembrarSesionFalsa(page);
+    > 161 |     await page.goto("/reservas");
+          |                ^
+      162 |     await expect(page.getByRole("heading", { name: "Reservas" })).toBeVisible();
+      163 |     const vp = testInfo.project.use.viewport;
+      164 |     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, `hoteles-reservas-${vp?.width}x${vp?.height}.png`), fullPage: true });
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/paridad-visual.spec.ts:161:16
+
+    Error Context: ../../tests/e2e/.playwright-results/paridad-visual-Paridad-visual-—-capturas-hoteles-reservas-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/paridad-visual-Paridad-visual-—-capturas-hoteles-reservas-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/paridad-visual-Paridad-visual-—-capturas-hoteles-reservas-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  28) [mobile] › ../../tests/e2e/paridad-visual.spec.ts:173:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › login de Atiende Hoteles: tokens/tipografía/logo/botón == fixture de Restaurantes 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/login
+    Call log:
+      - navigating to "http://localhost:4173/login", waiting until "load"
+
+
+      173 |   test("login de Atiende Hoteles: tokens/tipografía/logo/botón == fixture de Restaurantes", async ({ page }) => {
+      174 |     const referencia = cargarFixture();
+    > 175 |     await page.goto("/login");
+          |                ^
+      176 |     await expect(page.getByRole("heading", { name: /bienvenido a atiende hoteles/i })).toBeVisible();
+      177 |     await compararContraReferencia(page, referencia);
+      178 |   });
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/paridad-visual.spec.ts:175:16
+
+    Error Context: ../../tests/e2e/.playwright-results/paridad-visual-Paridad-vis-25c3d-tón-fixture-de-Restaurantes-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/paridad-visual-Paridad-vis-25c3d-tón-fixture-de-Restaurantes-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/paridad-visual-Paridad-vis-25c3d-tón-fixture-de-Restaurantes-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  29) [mobile] › ../../tests/e2e/paridad-visual.spec.ts:180:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › resumen de Atiende Hoteles: la tipografía base (--font-body) sigue siendo Inter 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:4173/resumen
+    Call log:
+      - navigating to "http://localhost:4173/resumen", waiting until "load"
+
+
+      181 |     const referencia = cargarFixture();
+      182 |     await sembrarSesionFalsa(page);
+    > 183 |     await page.goto("/resumen");
+          |                ^
+      184 |     await expect(page.getByRole("heading", { name: "Resumen" })).toBeVisible();
+      185 |     const body = await fontFamilyDe(page, "body");
+      186 |     expect(body, "fuente base de la app (font-body)").toContain(referencia.fuentesTipograficas.body);
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/paridad-visual.spec.ts:183:16
+
+    Error Context: ../../tests/e2e/.playwright-results/paridad-visual-Paridad-vis-242dc-ont-body-sigue-siendo-Inter-mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/paridad-visual-Paridad-vis-242dc-ont-body-sigue-siendo-Inter-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/paridad-visual-Paridad-vis-242dc-ont-body-sigue-siendo-Inter-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  29 failed
+    [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: agentes sin violaciones serias/críticas 
+    [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: suscripcion sin violaciones serias/críticas 
+    [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: notificaciones sin violaciones serias/críticas 
+    [desktop] › ../../tests/e2e/paridad-visual.spec.ts:159:3 › Paridad visual — capturas hoteles › reservas 
+    [desktop] › ../../tests/e2e/paridad-visual.spec.ts:173:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › login de Atiende Hoteles: tokens/tipografía/logo/botón == fixture de Restaurantes 
+    [desktop] › ../../tests/e2e/paridad-visual.spec.ts:180:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › resumen de Atiende Hoteles: la tipografía base (--font-body) sigue siendo Inter 
+    [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: landing sin violaciones serias/críticas 
+    [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: login sin violaciones serias/críticas 
+    [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: resumen sin violaciones serias/críticas 
+    [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: reservas sin violaciones serias/críticas 
+    [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: recepcion sin violaciones serias/críticas 
+    [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: disponibilidad sin violaciones serias/críticas 
+    [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: configuracion sin violaciones serias/críticas 
+    [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: housekeeping sin violaciones serias/críticas 
+    [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: mantenimiento sin violaciones serias/críticas 
+    [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: mensajeria sin violaciones serias/críticas 
+    [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: aprobaciones sin violaciones serias/críticas 
+    [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: agentes sin violaciones serias/críticas 
+    [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: suscripcion sin violaciones serias/críticas 
+    [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: notificaciones sin violaciones serias/críticas 
+    [mobile] › ../../tests/e2e/h12c-landing.spec.ts:13:1 › landing pública (/): renderiza, sin scroll horizontal, capturas 1280/390 guardadas 
+    [mobile] › ../../tests/e2e/h12c-landing.spec.ts:45:1 › landing pública (/): CTA a /registro y a /login presentes; footer con enlaces legales 
+    [mobile] › ../../tests/e2e/h12c-landing.spec.ts:57:1 › banner de cookies: aparece sin decisión previa, desaparece tras aceptar, y persiste la decisión 
+    [mobile] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) 
+    [mobile] › ../../tests/e2e/paridad-visual.spec.ts:144:3 › Paridad visual — capturas hoteles › login 
+    [mobile] › ../../tests/e2e/paridad-visual.spec.ts:151:3 › Paridad visual — capturas hoteles › resumen 
+    [mobile] › ../../tests/e2e/paridad-visual.spec.ts:159:3 › Paridad visual — capturas hoteles › reservas 
+    [mobile] › ../../tests/e2e/paridad-visual.spec.ts:173:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › login de Atiende Hoteles: tokens/tipografía/logo/botón == fixture de Restaurantes 
+    [mobile] › ../../tests/e2e/paridad-visual.spec.ts:180:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › resumen de Atiende Hoteles: la tipografía base (--font-body) sigue siendo Inter 
+  3 skipped
+  36 passed (3.8m)
+npm error Lifecycle script `e2e` failed with error:
+npm error code 1
+npm error path /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/apps/web
+npm error workspace @atiende/web@0.0.0
+npm error location /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/apps/web
+npm error command failed
+npm error command sh -c playwright test -c playwright.config.ts
+E2E_EXIT=1
