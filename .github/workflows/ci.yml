@@ -179,8 +179,7 @@ jobs:
       # confirmado en CI real que instalar rolldown solo no basta, @swc/core falla
       # despues en la misma corrida.
       - run: |
-          npm install @rolldown/binding-linux-x64-gnu@1.2.7 --no-save
-          npm install @swc/core-linux-x64-gnu@1.16.2 --no-save
+          npm install @rolldown/binding-linux-x64-gnu@1.2.7 @swc/core-linux-x64-gnu@1.16.2 --no-save
       - run: npm run build
       - uses: actions/upload-artifact@v4
         with:
@@ -212,8 +211,7 @@ jobs:
       # confirmado en CI real que instalar rolldown solo no basta, @swc/core falla
       # despues en la misma corrida.
       - run: |
-          npm install @rolldown/binding-linux-x64-gnu@1.2.7 --no-save
-          npm install @swc/core-linux-x64-gnu@1.16.2 --no-save
+          npm install @rolldown/binding-linux-x64-gnu@1.2.7 @swc/core-linux-x64-gnu@1.16.2 --no-save
       - run: npm run build
       # Instala el canal "chrome" real (no solo Chromium genérico) -- mismo canal que
       # tests/e2e usa en desarrollo (`channel: 'chrome'`, docs/runbooks/despliegue.md
