@@ -1,0 +1,12 @@
+=== npx vitest run tests/integration/gates/money.spec.ts (comando literal de docs/ACEPTACION.md REQ-QA-004) ===
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/integration/gates/money.spec.ts (7 tests) 2180ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  18:35:00
+   Duration  4.30s (transform 918ms, setup 0ms, collect 1.72s, tests 2.18s, environment 0ms, prepare 141ms)
+
+EXIT: 0

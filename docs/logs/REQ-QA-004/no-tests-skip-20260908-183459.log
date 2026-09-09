@@ -1,0 +1,9 @@
+=== node scripts/checks/no-tests-skip.ts (REQ-QA-002, no afectado por este cambio) ===
+REQ-QA-002 OK: 0 `xit(`/`xdescribe(`/`it.skip(`/`describe.skip(` en tests/, y 0 `test.skip(` sin motivo documentado fuera de tests/e2e/.
+  5 skip(s) condicional(es) documentados permitidos en tests/e2e/ (Playwright, con motivo explícito):
+    tests/e2e/login-real-y-resumen.spec.ts:63: motivo = "Basta una corrida; el flujo no depende del viewport."
+    tests/e2e/paridad-restaurantes-login.spec.ts:63: motivo = "Una sola captura de referencia basta; se corre solo en el proyecto desktop."
+    tests/e2e/paridad-restaurantes-login.spec.ts:111: motivo = motivoFallo
+    tests/e2e/paridad-visual.spec.ts:244: motivo = "Una sola corrida basta; se hace en el proyecto desktop."
+    tests/e2e/paridad-visual.spec.ts:288: motivo = motivoFallo
+EXIT: 0
