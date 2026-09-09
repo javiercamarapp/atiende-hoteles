@@ -117,6 +117,15 @@ test("housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde 
     await page.emulateMedia({ reducedMotion: "reduce" });
     const vp = testInfo.project.use.viewport;
 
+    // Pre-otorga el consentimiento de cookies/analítica (mismo localStorage que
+    // CookieConsentBanner.tsx lee) antes de que la app monte -- en viewport móvil
+    // el banner fijo al fondo tapa botones reales de la UI (ej. "Cerrar con costo"),
+    // y este test no está probando el banner de cookies en sí (eso ya lo cubre su
+    // propio test unitario/e2e dedicado).
+    await page.addInitScript(() => {
+      window.localStorage.setItem("atiende_hoteles_consentimiento_analitica", "otorgado");
+    });
+
     // Login real como gerencia (gm) del "Hotel Demo Centro" -- puede operar
     // housekeeping/mantenimiento/mensajería/aprobaciones (ADMIN_ROLES).
     await page.goto(`http://localhost:${webPort}/login`);

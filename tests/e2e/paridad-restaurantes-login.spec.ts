@@ -61,6 +61,10 @@ function matarProceso(proc: ChildProcess) {
 
 test("paridad: login real de atiende-restaurantes (referencia, solo lectura)", async ({ page, browser }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "Una sola captura de referencia basta; se corre solo en el proyecto desktop.");
+  // Este test compara contra un checkout LOCAL de atiende-restaurantes en la máquina
+  // de desarrollo -- no existe (ni debería, es un repo hermano privado aparte) en el
+  // runner de CI. Fuera de la máquina de Javier, no hay nada real que comparar.
+  test.skip(!fs.existsSync(REF_DIR), `REF_DIR no existe en este entorno (${REF_DIR}) -- este test de paridad visual solo corre en la máquina de desarrollo con ambos repos hermanos presentes.`);
   test.setTimeout(120_000);
 
   const puerto = await puertoLibre();

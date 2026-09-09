@@ -242,6 +242,9 @@ function matarProceso(proc: ChildProcess) {
 
 test("paridad viva: el render real de atiende-restaurantes coincide con el fixture usado arriba", async ({ browser }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "Una sola corrida basta; se hace en el proyecto desktop.");
+  // Compara contra un checkout LOCAL de atiende-restaurantes -- no existe en el runner
+  // de CI (repo hermano privado, aparte). Solo corre en la máquina de desarrollo.
+  test.skip(!fs.existsSync(REF_DIR), `REF_DIR no existe en este entorno (${REF_DIR}) -- este test de paridad visual solo corre en la máquina de desarrollo con ambos repos hermanos presentes.`);
   test.setTimeout(120_000);
 
   const referencia = cargarFixture();

@@ -201,6 +201,9 @@ test.describe("Paridad visual en vivo — Atiende Hoteles vs. atiende-restaurant
   // eslint-disable-next-line no-empty-pattern -- Playwright exige la firma (fixtures, testInfo); no se usa ningún fixture aquí.
   test("logo/tokens/tipografía: mismo Chrome, mismos flags --force-prefers-reduced-motion", async ({}, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "Una sola corrida basta; se hace en el proyecto desktop.");
+    // Compara contra un checkout LOCAL de atiende-restaurantes -- no existe en el
+    // runner de CI (repo hermano privado, aparte).
+    test.skip(!fs.existsSync(REF_DIR), `REF_DIR no existe en este entorno (${REF_DIR}) -- solo corre en la máquina de desarrollo con ambos repos hermanos presentes.`);
     test.setTimeout(120_000);
 
     let procesoRestaurantes: ChildProcess | null = null;
@@ -329,6 +332,9 @@ test.describe("Paridad visual en vivo — Atiende Hoteles vs. atiende-restaurant
   // eslint-disable-next-line no-empty-pattern -- Playwright exige la firma (fixtures, testInfo); no se usa ningún fixture aquí.
   test("sidebar: mismo patrón (acordeón/colapso/bloque de cuenta) — marcadores de fuente + render real", async ({}, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "Una sola corrida basta; se hace en el proyecto desktop.");
+    // Lee el código fuente de un checkout LOCAL de atiende-restaurantes -- no existe
+    // en el runner de CI (repo hermano privado, aparte).
+    test.skip(!fs.existsSync(REF_DIR), `REF_DIR no existe en este entorno (${REF_DIR}) -- solo corre en la máquina de desarrollo con ambos repos hermanos presentes.`);
 
     // (a) Marcadores estructurales presentes HOY en el código fuente de
     // ambos Sidebar (lectura directa, no un fixture congelado) — el mismo
