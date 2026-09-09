@@ -382,13 +382,21 @@ stack trace. Ver `src/lib/errors.ts` (`ApiError` + mapeo de errores de dominio d
 - `housekeeping_task`/`maintenance_ticket` no tienen columna de "piso": el tablero de
   `/housekeeping` ordena por código de habitación, no agrupa por piso (el esquema de
   `room`, H1, no modela ese dato) — documentado, no fabricado en el frontend.
-- **H7 (runtime de agentes)**: `POST /hoteles/:hotelId/agentes/:agente/ejecutar` sin
-  `demo:true` usa `EnvProvider` (`@atiende-hoteles/agent-core`) — sin `ANTHROPIC_API_KEY`/
-  `OPENROUTER_API_KEY` en el entorno (ADR-007, sigue igual que H6a) se declara
-  `no_configurado` de forma honesta; NINGUNA llamada real a un proveedor LLM ocurre en
-  este hito, ni siquiera con credenciales presentes (la integración real queda
-  pendiente, ver README de `packages/agent-core`). `demo:true` es la ÚNICA forma de ver
-  una corrida completa hoy, y siempre etiquetada `simulado:true` en la respuesta.
+- **H7 (runtime de agentes, fix/llm-openrouter-real)**: `POST
+  /hoteles/:hotelId/agentes/:agente/ejecutar` sin `demo:true` usa `EnvProvider`
+  (`@atiende-hoteles/agent-core`), que SI llama de verdad a OpenRouter cuando
+  `OPENROUTER_API_KEY` esta presente en el entorno (decision de negocio: OpenRouter,
+  nunca un SDK de un solo proveedor — ver README de `packages/agent-core` §6). Sin esa
+  credencial se declara `no_configurado` de forma honesta, igual que antes. Primario y
+  respaldo (canales conversacionales) comparten la misma `OPENROUTER_API_KEY` y se
+  diferencian por MODELO (failover cruzado dentro de la misma cuenta), no por
+  credencial — ya no existe una ruta que use `ANTHROPIC_API_KEY` directamente. La
+  integracion esta probada contra un simulador HTTP local fiel al contrato de
+  OpenRouter, pero **nunca contra el servicio real** en este entorno
+  (`OPENROUTER_INTEGRATION_VERIFIED_AGAINST_REAL_API = false`, ver `packages/agent-core/src/provider.ts`
+  para los pasos exactos de la primera prueba real). `demo:true` sigue siendo la forma
+  de ver una corrida determinista SIN credenciales/red, siempre etiquetada
+  `simulado:true` en la respuesta.
 - **H7 (ROI/línea base, REQ-REV-018)**: `GET /hoteles/:hotelId/roi` expone los eventos
   capturados (`roi_event`, REQ-AGT-003) con su `supuestoVersion`, pero la lógica de
   "línea base firmada" y activación de cobro por resultado sobre esos eventos NO está

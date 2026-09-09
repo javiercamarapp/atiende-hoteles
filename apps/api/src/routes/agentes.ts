@@ -51,6 +51,7 @@ import {
   createTransactionalTemplateApprovalQueue,
   getAgentDefinition,
   listAgentDefinitions,
+  mapModelSlugToOpenRouterModel,
   resolveModelForRole,
   transactionalTemplateCheckFromDb,
   type AgentDefinition,
@@ -497,6 +498,20 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     //  (b) falla a MITAD de una llamada ya en curso (`ProviderTransientError`) --
     //      `AgentRunner.fallbackProvider` (runner.ts) reintenta la MISMA ronda con el
     //      MISMO proveedor de respaldo y deja rastro en la traza (`provider_fallback`).
+    //
+    // fix/llm-openrouter-real: decision de negocio (docs/referencia/01-blueprint-y-
+    // decision-llm.md) -- el agente habla SIEMPRE con OpenRouter, nunca con un SDK de
+    // un solo proveedor. `EnvProvider` (agent-core provider.ts) ya NO acepta
+    // `ANTHROPIC_API_KEY` como credencial utilizable (esa variable no autentica contra
+    // OpenRouter) -- las dos instancias de abajo comparten la MISMA
+    // `OPENROUTER_API_KEY`, y se diferencian por MODELO: la primaria usa el modelo del
+    // rol en curso (`modelSlug`, resuelto arriba), la de respaldo fuerza el modelo mas
+    // barato/ligero del sistema (`enrutador`, típicamente Haiku) -- failover CRUZADO DE
+    // MODELO dentro de la misma cuenta de OpenRouter (si el modelo primario falla a
+    // mitad de una corrida, se seguir respondiendo con uno mas modesto en vez de
+    // cortar la conversacion en seco). `modelSlugOverride` en la de respaldo es lo que
+    // permite que `estimateCostUsd` (pricing.ts) le cobre al hotel el precio del modelo
+    // que EN REALIDAD respondio, no el que el run pidio originalmente.
     const esCanalConversacional = def.role !== "batch_nocturno";
     let fallbackProvider: LlmProvider | undefined;
     if (body.demo) {
@@ -507,12 +522,21 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       // VENDIBLE real como fuera de servicio si el gate del hotel ya no era "shadow".
       provider = new FakeProvider(buildDemoScript(def.name, "DEMO-101"), modelSlug);
     } else {
-      // Sin credenciales reales en este entorno: se declara `no_configurado` de forma
+      // Sin `OPENROUTER_API_KEY` en este entorno: se declara `no_configurado` de forma
       // honesta (ver agent-core provider.ts) -- nunca una respuesta simulada haciéndose
-      // pasar por real.
-      const primario = new EnvProvider({ id: "anthropic-primario", envKeys: ["ANTHROPIC_API_KEY"] });
+      // pasar por real. Con la credencial presente, `EnvProvider.complete()` SI llama
+      // de verdad a OpenRouter (fix/llm-openrouter-real) -- ver
+      // `OPENROUTER_INTEGRATION_VERIFIED_AGAINST_REAL_API` en provider.ts: probado
+      // contra un simulador local fiel al contrato, NUNCA contra el servicio real de
+      // openrouter.ai en este entorno.
+      const primario = new EnvProvider({ id: "openrouter-primario" });
       if (esCanalConversacional) {
-        const respaldo = new EnvProvider({ id: "openrouter-respaldo", envKeys: ["OPENROUTER_API_KEY"] });
+        const modeloRespaldoSlug = resolveModelForRole("enrutador");
+        const respaldo = new EnvProvider({
+          id: "openrouter-respaldo",
+          model: mapModelSlugToOpenRouterModel(modeloRespaldoSlug),
+          modelSlugOverride: modeloRespaldoSlug,
+        });
         provider = new ProviderRouter({ providers: [primario, respaldo] });
         fallbackProvider = respaldo;
       } else {

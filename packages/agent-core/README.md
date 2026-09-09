@@ -167,16 +167,52 @@ omision (BP-016/BP-053).
 - `FakeProvider`: determinista, reproduce un guion fijo de pasos (`tool_calls`,
   `final`, `truncated`, `transient_error`) -- usado en todas las pruebas de este
   paquete, sin red.
-- `EnvProvider`: lee credenciales de entorno (`envKeys`, default
-  `ANTHROPIC_API_KEY`/`OPENROUTER_API_KEY`); `id` es configurable (`EnvProviderOptions`)
-  para poder registrar dos instancias distintas (una por variable) ante `ProviderRouter`.
+- `EnvProvider` (fix/llm-openrouter-real): decision de negocio -- el agente habla con
+  [OpenRouter](https://openrouter.ai) (`POST /api/v1/chat/completions`, compatible
+  OpenAI Chat Completions), NUNCA con un SDK de un solo proveedor. `complete()` hace la
+  llamada HTTP real: traduce `LlmCompleteParams` (system/messages/toolNames/
+  temperature/maxOutputTokens/disableParallelToolUse/effort) al formato de OpenRouter y
+  traduce la respuesta de vuelta (texto, `tool_calls`, usage, truncado por
+  `finish_reason:"length"`).
+  - Credencial: SOLO `OPENROUTER_API_KEY` por default (`envKeys` configurable, pero
+    OpenRouter es el UNICO endpoint al que este `complete()` sabe llamar -- una
+    credencial de otro proveedor ahi produciria un 401 real).
+  - Modelo: `EnvProviderOptions.model` (prioridad maxima) > `env.OPENROUTER_MODEL` >
+    mapeo por defecto desde `LlmCompleteParams.modelSlug` (`claude-*` ->
+    `anthropic/claude-*`, el mismo slug que `roles.ts` `DEFAULT_MODEL_BY_ROLE` ya
+    resuelve por rol). `modelSlugOverride` permite que una instancia reporte, para
+    efectos de costo/traza (`pricing.ts`), un `modelSlug` distinto al que le llego en
+    `params` -- necesario cuando esa instancia en realidad llama a OTRO modelo (ver
+    proveedor de respaldo en `apps/api/src/routes/agentes.ts`).
   - Sin credenciales: `isAvailable()` es `false` y `complete()` lanza
-    `ProviderUnavailableError` ("agente de IA no configurado en este entorno").
-  - Con credenciales: `complete()` lanza `ProviderNotImplementedError` -- la llamada
-    real al proveedor esta pendiente de integracion (ver ADR-007, "PENDIENTE DE
-    CREDENCIALES"/adaptador real); **nunca** se fabrica una respuesta para aparentar que
-    la integracion funciona. Este hito (H6a) es nucleo puro, sin llamadas reales a
-    proveedores de LLM.
+    `ProviderUnavailableError` ("agente de IA no configurado en este entorno") --
+    **nunca** toca la red.
+  - Errores HTTP: 429/5xx/timeout/fallo de red -> `ProviderTransientError` (apto para
+    fallback cross-provider); cualquier otro 4xx (401 credencial invalida, 400 request
+    mal formado, 404 modelo inexistente en la cuenta...) -> `ProviderHttpError`
+    (`status` expuesto, NUNCA dispara fallback -- necesita revision humana de
+    configuracion). Nunca se fabrica una respuesta para aparentar que la llamada
+    funciono.
+  - **`OPENROUTER_INTEGRATION_VERIFIED_AGAINST_REAL_API = false`** (provider.ts,
+    "esqueleto honesto" ADR-006/ADR-007, mismo patron que `SATSubmitter` del repo
+    hermano de facturacion): el contrato HTTP esta probado de verdad contra un
+    simulador local fiel (`tests/support/openRouterSimulator.ts`,
+    `tests/unit/agent-core/env-provider-openrouter.spec.ts` -- sin tools, con
+    `tool_calls`, truncado, 401, 429, timeout), pero **nunca** se ha ejercitado contra
+    `https://openrouter.ai` real -- sin credenciales reales en este entorno. Pasos
+    exactos para la primera prueba real (ver el docstring de la constante en
+    provider.ts): (1) cuenta + API key en openrouter.ai, (2) saldo cargado (cobra
+    prepago), (3) `OPENROUTER_API_KEY` real en el entorno de `apps/api`, (4) opcional
+    `OPENROUTER_MODEL` si el default no esta habilitado en esa cuenta, (5) correr un
+    `AgentRunner.run()` real sin `demo:true` y verificar a mano.
+  - **Limitacion conocida, no oculta**: `LlmCompleteParams.toolNames` solo lleva
+    nombres de tool (no el JSON Schema `strict:true` que `tool.ts`
+    `toStrictToolSchema()` ya sabe generar por tool, pero que `runner.ts` todavia no le
+    pasa a `complete()`) -- `EnvProvider` declara cada tool con `parameters` vacio/
+    permisivo, asi que el modelo real tiene que adivinar la forma de los argumentos
+    solo por el nombre y el system prompt. Corregirlo de raiz exige extender
+    `LlmCompleteParams`/`AgentRunner` para propagar el schema real, un cambio de
+    interfaz deliberadamente fuera de alcance de fix/llm-openrouter-real.
 - `ProviderRouter` (REQ-AGT-011/LLM-022): router propio de fallback de proveedor,
   implementado -- YA NO es solo la aspiración descrita en versiones previas de este
   README. Recibe una lista de `LlmProvider` en orden de prioridad; `complete()` llama al

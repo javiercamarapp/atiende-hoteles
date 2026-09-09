@@ -1,12 +1,14 @@
 // LlmProvider abstracto: FakeProvider es determinista para pruebas; EnvProvider se
-// declara honestamente "sin configurar" cuando faltan credenciales, y nunca fabrica una
-// respuesta cuando SI hay credenciales pero la integracion real no esta implementada
-// en este hito (ADR-006/ADR-007, sin llamadas reales a proveedores de LLM).
+// declara honestamente "sin configurar" cuando faltan credenciales (ADR-006/ADR-007).
+// fix/llm-openrouter-real: EnvProvider ahora SI habla con OpenRouter de verdad -- las
+// pruebas de contrato HTTP (sin tools, con tool_calls, truncado, 401, rate-limit,
+// timeout) contra un simulador local viven en
+// tests/unit/agent-core/env-provider-openrouter.spec.ts; este archivo solo cubre la
+// semántica local de disponibilidad/credenciales que NO requiere red.
 import { describe, expect, it } from "vitest";
 import {
   EnvProvider,
   FakeProvider,
-  ProviderNotImplementedError,
   ProviderRouter,
   ProviderTransientError,
   ProviderUnavailableError,
@@ -66,15 +68,19 @@ describe("EnvProvider", () => {
     await expect(provider.complete(baseParams)).rejects.toThrow(ProviderUnavailableError);
   });
 
-  it("isAvailable() es true con ANTHROPIC_API_KEY presente", () => {
-    const provider = new EnvProvider({ env: { ANTHROPIC_API_KEY: "sk-test-123" } });
+  it("isAvailable() es true con OPENROUTER_API_KEY presente", () => {
+    const provider = new EnvProvider({ env: { OPENROUTER_API_KEY: "sk-or-test-123" } });
     expect(provider.isAvailable()).toBe(true);
   });
 
-  it("complete() con credenciales presentes lanza ProviderNotImplementedError, NUNCA fabrica una respuesta", async () => {
-    const provider = new EnvProvider({ env: { ANTHROPIC_API_KEY: "sk-test-123" } });
-    await expect(provider.complete(baseParams)).rejects.toThrow(ProviderNotImplementedError);
+  it("isAvailable() es false con ANTHROPIC_API_KEY presente pero sin OPENROUTER_API_KEY -- OpenRouter es la unica credencial que este complete() sabe usar", () => {
+    const provider = new EnvProvider({ env: { ANTHROPIC_API_KEY: "sk-ant-test-123" } });
+    expect(provider.isAvailable()).toBe(false);
   });
+
+  // El contrato HTTP real (llamada, traduccion request/response, tool_calls, truncado,
+  // 401/429/timeout) se prueba contra un simulador local en
+  // env-provider-openrouter.spec.ts -- no se duplica aqui.
 });
 
 // REQ-AGT-011/LLM-022: router propio de fallback de proveedor -- garantiza continuidad
