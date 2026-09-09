@@ -1,0 +1,33 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/adversarial/auditoria-2-lote-a-seguridad-legal.spec.ts (17 tests) 1486ms
+(node:36379) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ✓ tests/adversarial/prompt-injection.spec.ts (6 tests) 866ms
+ ✓ tests/adversarial/decisiones-reservadas-fundador.spec.ts (9 tests) 999ms
+ ✓ tests/adversarial/consentimiento-biometrico.spec.ts (5 tests) 960ms
+ ✓ tests/adversarial/boveda-identidad.spec.ts (8 tests) 958ms
+ ✓ tests/adversarial/housekeeping-mantenimiento-mensajeria.spec.ts (11 tests) 946ms
+ ✓ tests/adversarial/auditoria-1-bd-criticos.spec.ts (9 tests) 877ms
+ ✓ tests/adversarial/rpc-security-definer.spec.ts (5 tests) 881ms
+ ✓ tests/adversarial/reserva-concurrencia-y-limites.spec.ts (5 tests) 2589ms
+ ✓ tests/adversarial/presentacion-sat-aprobacion.spec.ts (4 tests) 888ms
+ ✓ tests/adversarial/idempotencia-concurrente.spec.ts (2 tests) 918ms
+ ✓ tests/adversarial/agentes-aislamiento.spec.ts (9 tests) 907ms
+ ✓ tests/adversarial/roles.spec.ts (20 tests) 1336ms
+ ✓ tests/adversarial/cancelacion-identidad.spec.ts (4 tests) 825ms
+ ✓ tests/adversarial/checkin-chat-libre.spec.ts (3 tests) 814ms
+ ✓ tests/adversarial/tarifas-roles.spec.ts (10 tests) 1043ms
+ ✓ tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts (4 tests) 968ms
+ ✓ tests/adversarial/cargo-folio-verificacion.spec.ts (4 tests) 909ms
+ ✓ tests/adversarial/reservas-aislamiento.spec.ts (4 tests) 950ms
+ ✓ tests/adversarial/aislamiento-tenant-hotel.spec.ts (3 tests) 896ms
+ ✓ tests/adversarial/housekeeping-cfdi-night-audit.spec.ts (3 tests) 785ms
+ ✓ tests/adversarial/benchmark-k-minimo.spec.ts (5 tests) 0ms
+
+ Test Files  22 passed (22)
+      Tests  150 passed (150)
+   Start at  15:38:39
+   Duration  22.81s (transform 263ms, setup 0ms, collect 857ms, tests 21.80s, environment 0ms, prepare 28ms)
+
