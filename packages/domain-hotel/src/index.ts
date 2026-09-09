@@ -254,3 +254,16 @@ export {
   type FnbPosReconciliationInput,
   type RefundCardMismatchInput,
 } from "./fraude/deteccion.ts";
+export {
+  PARITY_MODES,
+  ParityGuardError,
+  assertValidParityChannelConfig,
+  assertValidParityGuardConfig,
+  computeParityFloor,
+  evaluateParityGuard,
+  type ParityMode,
+  type ParityChannelConfig,
+  type ParityGuardConfig,
+  type ParityChannelViolation,
+  type ParityCheckResult,
+} from "./revenue/parity-guard.ts";

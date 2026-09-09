@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/domain-hotel/parity-guard.spec.ts (27 tests) 7ms
+
+ Test Files  1 passed (1)
+      Tests  27 passed (27)
+   Start at  17:03:31
+   Duration  582ms (transform 154ms, setup 0ms, collect 240ms, tests 7ms, environment 0ms, prepare 69ms)
+
