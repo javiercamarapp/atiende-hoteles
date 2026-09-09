@@ -228,3 +228,15 @@ export {
   type CobroPorResultadoActivationParams,
   type CobroPorResultadoActivationCheck,
 } from "./roi/roiBaseline.ts";
+export {
+  looksLikeAllergyDeclaration,
+  resolveAllergyDeclared,
+  canAssureDishIsSafe,
+  AllergySafetyAssuranceBlockedError,
+  assertCanAssureDishIsSafe,
+  describeSafetyAssuranceMessage,
+  type AllergyDeclaredVia,
+  type ResolveAllergyDeclaredInput,
+  type ResolveAllergyDeclaredResult,
+  type FnbOrderSafetyState,
+} from "./fnbAllergyGuard.ts";

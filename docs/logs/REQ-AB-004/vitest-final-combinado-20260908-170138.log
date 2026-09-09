@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/adversarial/alergias-confirmacion.spec.ts (6 tests) 4231ms
+ ✓ tests/unit/domain-hotel/fnb-allergy-guard.spec.ts (15 tests) 4ms
+
+ Test Files  2 passed (2)
+      Tests  21 passed (21)
+   Start at  17:01:40
+   Duration  7.97s (transform 1.67s, setup 0ms, collect 3.13s, tests 4.23s, environment 0ms, prepare 121ms)
+

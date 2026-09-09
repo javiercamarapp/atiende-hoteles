@@ -1,0 +1,7 @@
+
+> atiende-hoteles@0.0.0 check:migraciones
+> node --experimental-strip-types scripts/check-migraciones.ts
+
+check-migraciones: FALLÓ (REQ-QA-007, expand-only)
+
+ - 2 migraciones distintas reclaman el mismo prefijo numérico: 0082_fraude_alerta.sql, 0082_revenue_engine_gate.sql -- dos líneas de trabajo en paralelo asignaron el mismo número; renumera una de las dos antes de fusionar a main (packages/db/src/runner.ts las aplicaría en orden alfabético completo del nombre, no en el orden que cada línea asumió).

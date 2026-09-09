@@ -1,0 +1,50 @@
+
+> atiende-hoteles@0.0.0 test:adversarial
+> vitest run --config vitest.config.ts tests/adversarial --pool=forks --poolOptions.forks.singleFork
+
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/adversarial/reserva-concurrencia-y-limites.spec.ts (5 tests) 5686ms
+ ✓ tests/adversarial/boveda-identidad.spec.ts (10 tests) 2924ms
+ ✓ tests/adversarial/aislamiento-contexto-prompt.spec.ts (11 tests) 2396ms
+ ✓ tests/adversarial/roles.spec.ts (20 tests) 4184ms
+ ✓ tests/adversarial/auditoria-2-lote-a-seguridad-legal.spec.ts (17 tests) 4587ms
+   ✓ auditoria-2 lote A: seguridad multi-tenant + legal/privacidad > [D3 CRÍTICO] un folio cerrado ya no admite un cargo colado por una carrera cargo-vs-cierre > 10 repeticiones: cargo + cierre saldo_cero en paralelo NUNCA dejan un folio 'cerrado' con un cargo sin cuadrar  652ms
+ ✓ tests/adversarial/tarifas-roles.spec.ts (10 tests) 3646ms
+ ✓ tests/adversarial/housekeeping-mantenimiento-mensajeria.spec.ts (11 tests) 5041ms
+ ✓ tests/adversarial/reservas-aislamiento.spec.ts (4 tests) 5431ms
+   ✓ adversarial: aislamiento de reservas entre hoteles > staff del hotel B no puede cancelar ni modificar la reserva del hotel A  424ms
+ ✓ tests/adversarial/presentacion-sat-aprobacion.spec.ts (4 tests) 5934ms
+ ✓ tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts (4 tests) 8048ms
+   ✓ adversarial: tarifas restringidas por rol + aislamiento de reservas entre hoteles > staff de hotel B tampoco puede leer una reserva puntual de hotel A por id (403)  494ms
+ ✓ tests/adversarial/cargo-folio-verificacion.spec.ts (4 tests) 9683ms
+   ✓ adversarial: descuento sobre el umbral requiere autorización real verificada (REQ-REC-012 estilo) > (a) frontdesk sin autorización, descuento sobre el umbral: 0 descuentos aplicados  490ms
+ ✓ tests/adversarial/decisiones-reservadas-fundador.spec.ts (9 tests) 7983ms
+   ✓ adversarial: catálogo cerrado de decisiones reservadas al fundador (REQ-GOB-012) > categoría "retencion_identidad_mayor_30_dias": extender la retención a 45 días se bloquea sin aprobación del fundador, y se permite una vez registrada  404ms
+   ✓ adversarial: catálogo cerrado de decisiones reservadas al fundador (REQ-GOB-012) > categoría "cambio_proveedor_modelo_telefonia_bd" (alcance plataforma): bloqueado sin aprobación (incluso para el fundador) y bloqueado para el owner incluso YA con aprobación  650ms
+ ✓ tests/adversarial/consentimiento-biometrico.spec.ts (5 tests) 9626ms
+   ✓ REQ-HUE-022/REQ-SEG-003: consentimiento diferenciado de dato biométrico en check-in online > control positivo: la búsqueda SÍ encuentra un valor real persistido (RFC legítimo en checkin_submission) -- confirma que el mecanismo de búsqueda funciona, para que un '0' más abajo no sea un falso negativo por una query rota  657ms
+   ✓ REQ-HUE-022/REQ-SEG-003: consentimiento diferenciado de dato biométrico en check-in online > un intento de colar captura biométrica (plantilla facial / huella / vector de reconocimiento) en el body del check-in público NO queda persistido en ninguna tabla, aun cuando el check-in se completa con éxito usando SOLO el aviso general de privacidad (no existe ni se pide un consentimiento biométrico diferenciado)  325ms
+   ✓ REQ-HUE-022/REQ-SEG-003: consentimiento diferenciado de dato biométrico en check-in online > completar el check-in SIN aceptar ni siquiera el aviso general de privacidad es rechazado (400) -- el aviso general sigue siendo obligatorio aunque no exista captura biométrica  417ms
+(node:86358) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ✓ tests/adversarial/prompt-injection.spec.ts (6 tests) 6222ms
+ ✓ tests/adversarial/aislamiento-tenant-hotel.spec.ts (3 tests) 5953ms
+   ✓ adversarial: aislamiento de tenant (org) y de hotel dentro del mismo tenant > un usuario de una ORG completamente distinta (tenant real ajeno) no ve el hotel del tenant demo  384ms
+ ✓ tests/adversarial/idempotencia-concurrente.spec.ts (2 tests) 5716ms
+ ✓ tests/adversarial/rpc-security-definer.spec.ts (5 tests) 5988ms
+   ✓ adversarial: RPC SECURITY DEFINER de pedido público ignora precio del cliente (REQ-TEN-004) > body con precio/total alterado (0.01) es ignorado: el cargo posteado usa el precio del catálogo, nunca el enviado  319ms
+ ✓ tests/adversarial/checkin-chat-libre.spec.ts (3 tests) 5948ms
+ ✓ tests/adversarial/cancelacion-identidad.spec.ts (4 tests) 7451ms
+ ✓ tests/adversarial/agentes-aislamiento.spec.ts (9 tests) 6434ms
+ ✓ tests/adversarial/auditoria-1-bd-criticos.spec.ts (9 tests) 6787ms
+ ✓ tests/adversarial/housekeeping-cfdi-night-audit.spec.ts (3 tests) 4567ms
+ ✓ tests/adversarial/alergias-confirmacion.spec.ts (6 tests) 4332ms
+ ✓ tests/adversarial/benchmark-k-minimo.spec.ts (5 tests) 2ms
+
+ Test Files  24 passed (24)
+      Tests  169 passed (169)
+   Start at  16:57:40
+   Duration  145.98s (transform 1.29s, setup 0ms, collect 10.89s, tests 134.57s, environment 0ms, prepare 68ms)
+

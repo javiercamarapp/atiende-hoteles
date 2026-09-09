@@ -1,0 +1,7 @@
+
+> atiende-hoteles@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json && tsc --noEmit -p apps/api/tsconfig.json
+
+scripts/checks/auditoria-periodica.ts(328,30): error TS2339: Property 'round' does not exist on type 'never'.
+scripts/checks/auditoria-periodica.ts(335,78): error TS2339: Property 'documentPath' does not exist on type 'never'.
+scripts/checks/auditoria-periodica.ts(335,116): error TS2339: Property 'verdict' does not exist on type 'never'.
