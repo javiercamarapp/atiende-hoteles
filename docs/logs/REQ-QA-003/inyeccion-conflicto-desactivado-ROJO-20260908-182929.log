@@ -1,0 +1,59 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ❯ tests/integration/contracts/gate-connector.spec.ts (8 tests | 1 failed) 9ms
+   ✓ REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 1) contract test contra fixture/sandbox > getReservation retorna una reserva que cumple el esquema público PmsReservation 2ms
+   ✓ REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 1) contract test contra fixture/sandbox > verifyAndNormalizeWebhook normaliza un webhook firmado a un PmsWebhookEvent válido 1ms
+   ✓ REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 2) idempotencia: 2 webhooks idénticos -> 1 efecto > el mismo event_id procesado 2 veces produce 1 solo efecto: la 2a es rechazada como replay ANTES de aplicarse 0ms
+   × REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 3) conflicto de escritura -> 409 (PortConflictError) > applyReservationUpdate con `expectedVersion` desactualizada lanza PortConflictError y NO muta el registro 4ms
+     → promise resolved "{ …(10) }" instead of rejecting
+   ✓ REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 3) conflicto de escritura -> 409 (PortConflictError) > applyReservationUpdate con `expectedVersion` vigente SÍ aplica y avanza la versión (contraste del camino feliz) 0ms
+   ✓ REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 3) conflicto de escritura -> 409 (PortConflictError) > applyReservationUpdate contra una reserva inexistente lanza PortNotFoundError, no un conflicto silencioso 0ms
+   ✓ REQ-QA-003 · gate `connector` -- WhatsApp (Meta) > 1) contract test contra fixture/sandbox > verifyAndNormalizeWebhook normaliza un webhook firmado a un WhatsappWebhookEvent válido 1ms
+   ✓ REQ-QA-003 · gate `connector` -- WhatsApp (Meta) > 2) idempotencia: 2 webhooks idénticos -> 1 efecto > el mismo event_id de un clic de botón procesado 2 veces solo cuenta 1 vez: la 2a se rechaza como replay 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/contracts/gate-connector.spec.ts > REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 3) conflicto de escritura -> 409 (PortConflictError) > applyReservationUpdate con `expectedVersion` desactualizada lanza PortConflictError y NO muta el registro
+AssertionError: promise resolved "{ …(10) }" instead of rejecting
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Error {[39m
+[32m-   "message": "rejected promise",[39m
+[31m+ {[39m
+[31m+   "checkInDate": "2026-09-10",[39m
+[31m+   "checkOutDate": "2026-09-13",[39m
+[31m+   "currency": "MXN",[39m
+[31m+   "externalReservationId": "CB-RES-1001",[39m
+[31m+   "externalVersion": "v-nueva",[39m
+[31m+   "guest": {[39m
+[31m+     "email": "renata.solis@example.com",[39m
+[31m+     "externalGuestId": "CB-GUEST-500",[39m
+[31m+     "firstName": "Renata",[39m
+[31m+     "lastName": "Solis",[39m
+[31m+     "phone": "+5219981234567",[39m
+[31m+   },[39m
+[31m+   "hotelExternalId": "CB-HOTEL-01",[39m
+[31m+   "roomTypeExternalId": "CB-RT-STD",[39m
+[31m+   "status": "cancelada",[39m
+[31m+   "totalAmount": 4500,[39m
+[2m  }[22m
+
+ ❯ tests/integration/contracts/gate-connector.spec.ts:122:57
+    120|       };
+    121| 
+    122|       await expect(adapter.applyReservationUpdate(input)).rejects.toMa…
+       |                                                         ^
+    123|         code: "port_conflict",
+    124|         expectedVersion: "version-obsoleta-que-ya-no-existe",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 7 passed (8)
+   Start at  18:29:29
+   Duration  278ms (transform 47ms, setup 0ms, collect 81ms, tests 9ms, environment 0ms, prepare 29ms)
+

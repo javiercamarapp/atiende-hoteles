@@ -1,0 +1,13 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/gob/gate-por-tarea.spec.ts (15 tests) 16ms
+ ✓ tests/unit/mcp-servers/whatsapp/contract.spec.ts (10 tests) 4ms
+ ✓ tests/unit/mcp-servers/pms/contract.spec.ts (14 tests | 1 skipped) 7ms
+ ✓ tests/integration/contracts/gate-connector.spec.ts (8 tests) 7ms
+
+ Test Files  4 passed (4)
+      Tests  46 passed | 1 skipped (47)
+   Start at  18:30:43
+   Duration  383ms (transform 176ms, setup 0ms, collect 454ms, tests 34ms, environment 0ms, prepare 248ms)
+

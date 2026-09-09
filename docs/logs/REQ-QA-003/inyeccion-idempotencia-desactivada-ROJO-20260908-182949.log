@@ -1,0 +1,41 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ❯ tests/integration/contracts/gate-connector.spec.ts (8 tests | 1 failed) 9ms
+   ✓ REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 1) contract test contra fixture/sandbox > getReservation retorna una reserva que cumple el esquema público PmsReservation 2ms
+   ✓ REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 1) contract test contra fixture/sandbox > verifyAndNormalizeWebhook normaliza un webhook firmado a un PmsWebhookEvent válido 1ms
+   × REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 2) idempotencia: 2 webhooks idénticos -> 1 efecto > el mismo event_id procesado 2 veces produce 1 solo efecto: la 2a es rechazada como replay ANTES de aplicarse 3ms
+     → expected true to be false // Object.is equality
+   ✓ REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 3) conflicto de escritura -> 409 (PortConflictError) > applyReservationUpdate con `expectedVersion` desactualizada lanza PortConflictError y NO muta el registro 1ms
+   ✓ REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 3) conflicto de escritura -> 409 (PortConflictError) > applyReservationUpdate con `expectedVersion` vigente SÍ aplica y avanza la versión (contraste del camino feliz) 0ms
+   ✓ REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 3) conflicto de escritura -> 409 (PortConflictError) > applyReservationUpdate contra una reserva inexistente lanza PortNotFoundError, no un conflicto silencioso 0ms
+   ✓ REQ-QA-003 · gate `connector` -- WhatsApp (Meta) > 1) contract test contra fixture/sandbox > verifyAndNormalizeWebhook normaliza un webhook firmado a un WhatsappWebhookEvent válido 1ms
+   ✓ REQ-QA-003 · gate `connector` -- WhatsApp (Meta) > 2) idempotencia: 2 webhooks idénticos -> 1 efecto > el mismo event_id de un clic de botón procesado 2 veces solo cuenta 1 vez: la 2a se rechaza como replay 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/contracts/gate-connector.spec.ts > REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 2) idempotencia: 2 webhooks idénticos -> 1 efecto > el mismo event_id procesado 2 veces produce 1 solo efecto: la 2a es rechazada como replay ANTES de aplicarse
+AssertionError: expected true to be false // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+ ❯ tests/integration/contracts/gate-connector.spec.ts:100:32
+     98| 
+     99|       expect(primero.aplicado).toBe(true);
+    100|       expect(segundo.aplicado).toBe(false);
+       |                                ^
+    101|       expect(segundo.error).toBeInstanceOf(WebhookReplayError);
+    102| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 7 passed (8)
+   Start at  18:29:49
+   Duration  297ms (transform 55ms, setup 0ms, collect 98ms, tests 9ms, environment 0ms, prepare 34ms)
+

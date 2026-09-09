@@ -13,6 +13,12 @@
 // declarados en la tarea") -- lista separada por comas de rutas relativas al repo que
 // la tarea modifica.
 //
+// REQ-QA-003 (BP-133): para las categorías de gate `connector` que son conectores
+// externos reales (PMS/WhatsApp), el catálogo de abajo exige ADEMÁS
+// `tests/integration/contracts/gate-connector.spec.ts` -- la suite que verifica
+// literalmente las 3 pruebas del criterio (contrato contra fixture/sandbox,
+// idempotencia de 2 webhooks iguales, conflicto 409) antes de mergear.
+//
 // Este check cruza esos `paths` contra un catálogo de categorías sensibles
 // (agentes/precios/dinero/control físico -> gate connector/money/physical) y exige:
 //   1. Toda tarea declara un `gate` válido del catálogo cerrado.
@@ -65,14 +71,25 @@ export const DEFAULT_CATEGORY_RULES: CategoryRule[] = [
     label: "agentes: conector PMS",
     gate: "connector",
     pattern: /^packages\/mcp-servers\/pms\//,
-    requiredTests: ["tests/unit/mcp-servers/pms/contract.spec.ts"],
+    // REQ-QA-003: además del contract test propio del paquete, TODA tarea de gate
+    // `connector` sobre un conector externo (PMS/WhatsApp) exige la suite compartida
+    // que verifica las 3 pruebas del criterio -- contrato contra fixture/sandbox,
+    // idempotencia (2 webhooks iguales -> 1 efecto) y conflicto 409 -- antes de mergear.
+    requiredTests: [
+      "tests/unit/mcp-servers/pms/contract.spec.ts",
+      "tests/integration/contracts/gate-connector.spec.ts",
+    ],
   },
   {
     id: "connector-whatsapp",
     label: "agentes: conector WhatsApp",
     gate: "connector",
     pattern: /^packages\/mcp-servers\/whatsapp\//,
-    requiredTests: ["tests/unit/mcp-servers/whatsapp/contract.spec.ts"],
+    // REQ-QA-003: ver nota en "connector-pms" -- misma suite compartida.
+    requiredTests: [
+      "tests/unit/mcp-servers/whatsapp/contract.spec.ts",
+      "tests/integration/contracts/gate-connector.spec.ts",
+    ],
   },
   {
     id: "connector-agent-core-tools",

@@ -6,6 +6,7 @@
  * una grabación real de producción -- señalado como tal en README.md.
  */
 import {
+  PortConflictError,
   PortNotFoundError,
   WebhookSignatureError,
   WebhookReplayError,
@@ -18,10 +19,12 @@ import {
 import {
   mapCloudbedsStatusToDomain,
   mapCloudbedsRoomStatusToDomain,
+  mapDomainStatusToCloudbeds,
   mapDomainRoomStatusToCloudbeds,
   type PmsPort,
   type PmsReservation,
   type PmsRatePlan,
+  type ApplyReservationUpdateInput,
   type CreateChargeInput,
   type PmsCharge,
   type UpdateHousekeepingInput,
@@ -162,6 +165,29 @@ export class FakeCloudbedsAdapter implements PmsPort {
     };
     this.chargeIdempotency.set(input.idempotencyKey, charge);
     return charge;
+  }
+
+  /**
+   * REQ-QA-003: concurrencia optimista real (no simulada por un flag) -- compara
+   * `input.expectedVersion` contra `record.externalVersion` guardado en el mapa; si no
+   * coinciden lanza `PortConflictError` (409) SIN tocar el registro. Si coinciden,
+   * aplica el nuevo estado y avanza a `input.newVersion` -- el mismo camino que seguiría
+   * un webhook de Cloudbeds ya verificado (ver `verifyAndNormalizeWebhook`).
+   */
+  async applyReservationUpdate(input: ApplyReservationUpdateInput): Promise<PmsReservation> {
+    const record = this.reservations.get(input.externalReservationId);
+    if (!record) throw new PortNotFoundError("cloudbeds", `reservation ${input.externalReservationId}`);
+    if (record.externalVersion !== input.expectedVersion) {
+      throw new PortConflictError(
+        "cloudbeds",
+        `reservation ${input.externalReservationId}`,
+        input.expectedVersion,
+        record.externalVersion,
+      );
+    }
+    record.status = mapDomainStatusToCloudbeds(input.status);
+    record.externalVersion = input.newVersion;
+    return this.getReservation(input.externalReservationId);
   }
 
   async updateHousekeepingStatus(input: UpdateHousekeepingInput): Promise<PmsRoomStatus> {

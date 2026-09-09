@@ -23,12 +23,14 @@ import {
 } from "@atiende-hoteles/mcp-shared";
 import {
   mapCloudbedsStatusToDomain,
+  mapDomainStatusToCloudbeds,
   mapDomainRoomStatusToCloudbeds,
   CloudbedsReservationStatus,
   CloudbedsRoomStatus,
   type PmsPort,
   type PmsReservation,
   type PmsRatePlan,
+  type ApplyReservationUpdateInput,
   type CreateChargeInput,
   type PmsCharge,
   type UpdateHousekeepingInput,
@@ -140,6 +142,17 @@ export class CloudbedsAdapter implements PmsPort {
     // para el comportamiento observable en pruebas.
     void input;
     void this.idempotency;
+    throw new PortUnavailableError("cloudbeds", "sin credenciales verificadas en este entorno");
+  }
+
+  async applyReservationUpdate(input: ApplyReservationUpdateInput): Promise<PmsReservation> {
+    this.assertAvailable();
+    // Esqueleto real: PUT/PATCH de la reserva contra Cloudbeds enviando
+    // `expectedVersion` como precondición (p.ej. If-Match), mapeando un 409/412 del
+    // proveedor a `PortConflictError` -- ver FakeCloudbedsAdapter para el comportamiento
+    // observable en pruebas (REQ-QA-003).
+    void input;
+    void mapDomainStatusToCloudbeds;
     throw new PortUnavailableError("cloudbeds", "sin credenciales verificadas en este entorno");
   }
 

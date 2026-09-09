@@ -177,6 +177,22 @@ export const PmsCharge = z.object({
 });
 export type PmsCharge = z.infer<typeof PmsCharge>;
 
+/**
+ * REQ-QA-003 (gate `connector`): entrada de una escritura de reserva con concurrencia
+ * optimista sobre `externalVersion` -- el llamador declara qué versión CREE vigente
+ * (`expectedVersion`, típicamente la última que leyó/recibió por webhook) y qué versión
+ * nueva asigna (`newVersion`). Si `expectedVersion` no coincide con la registrada en el
+ * conector, `applyReservationUpdate` lanza `PortConflictError` (409) en vez de
+ * sobreescribir en silencio -- ver ADR-007.
+ */
+export const ApplyReservationUpdateInput = z.object({
+  externalReservationId: z.string().min(1),
+  status: DomainReservationStatus,
+  expectedVersion: z.string().min(1),
+  newVersion: z.string().min(1),
+});
+export type ApplyReservationUpdateInput = z.infer<typeof ApplyReservationUpdateInput>;
+
 export const UpdateHousekeepingInput = z.object({
   roomExternalId: z.string().min(1),
   status: RoomHousekeepingStatus,
@@ -218,6 +234,15 @@ export interface PmsPort {
 
   /** Idempotente por `input.idempotencyKey`: una segunda llamada con la misma clave no duplica el cargo. */
   createCharge(input: CreateChargeInput): Promise<PmsCharge>;
+
+  /**
+   * REQ-QA-003 (gate `connector`): aplica una actualización de estado de reserva
+   * (típicamente derivada de un webhook ya verificado) con concurrencia optimista sobre
+   * `externalVersion`. Lanza `PortConflictError` de `@atiende-hoteles/mcp-shared` (409)
+   * si `input.expectedVersion` no coincide con la versión vigente -- nunca sobreescribe
+   * en silencio un estado más nuevo que el que el llamador cree tener.
+   */
+  applyReservationUpdate(input: ApplyReservationUpdateInput): Promise<PmsReservation>;
 
   updateHousekeepingStatus(input: UpdateHousekeepingInput): Promise<PmsRoomStatus>;
 

@@ -119,6 +119,34 @@ export class WebhookReplayError extends PortError {
 }
 
 /**
+ * REQ-QA-003 (gate `connector`): la escritura llegó con una versión/`externalVersion`
+ * distinta a la que el conector tiene registrada para ese recurso -- alguien más lo
+ * modificó mientras tanto (ADR-007: "resolución de conflictos, last-write-wins
+ * documentado, no silencioso"). Se lanza EN VEZ de sobreescribir a ciegas; quien llama
+ * decide si reintenta con la versión vigente o escala. Equivalente semántico de un HTTP
+ * 409 en la capa de puerto (nunca se sobreescribe en silencio un estado más nuevo).
+ */
+export class PortConflictError extends PortError {
+  readonly code = "port_conflict";
+  readonly integration: string;
+  readonly resource: string;
+  readonly expectedVersion: string;
+  readonly actualVersion: string;
+
+  constructor(integration: string, resource: string, expectedVersion: string, actualVersion: string) {
+    super(
+      `${integration}: conflicto de versión en ${resource} (esperada "${expectedVersion}", ` +
+        `vigente "${actualVersion}") -- alguien más lo modificó, no se sobreescribe en silencio`,
+    );
+    this.name = "PortConflictError";
+    this.integration = integration;
+    this.resource = resource;
+    this.expectedVersion = expectedVersion;
+    this.actualVersion = actualVersion;
+  }
+}
+
+/**
  * Una acción exige aprobación humana previa (`needsApproval`, patrón ADR-006) y no la
  * tiene, o la tiene incompleta (p.ej. una sola confirmación cuando se exigen dos).
  * Ninguna acción física (HVAC fuera de guarda, llave digital) ocurre sin este chequeo.

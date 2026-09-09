@@ -1,0 +1,53 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ❯ tests/integration/contracts/gate-connector.spec.ts (8 tests | 1 failed) 10ms
+   × REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 1) contract test contra fixture/sandbox > getReservation retorna una reserva que cumple el esquema público PmsReservation 6ms
+     → expected [Function] to not throw an error but '[\n  {\n    "origin": "string",\n    …' was thrown
+   ✓ REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 1) contract test contra fixture/sandbox > verifyAndNormalizeWebhook normaliza un webhook firmado a un PmsWebhookEvent válido 1ms
+   ✓ REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 2) idempotencia: 2 webhooks idénticos -> 1 efecto > el mismo event_id procesado 2 veces produce 1 solo efecto: la 2a es rechazada como replay ANTES de aplicarse 0ms
+   ✓ REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 3) conflicto de escritura -> 409 (PortConflictError) > applyReservationUpdate con `expectedVersion` desactualizada lanza PortConflictError y NO muta el registro 1ms
+   ✓ REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 3) conflicto de escritura -> 409 (PortConflictError) > applyReservationUpdate con `expectedVersion` vigente SÍ aplica y avanza la versión (contraste del camino feliz) 0ms
+   ✓ REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 3) conflicto de escritura -> 409 (PortConflictError) > applyReservationUpdate contra una reserva inexistente lanza PortNotFoundError, no un conflicto silencioso 0ms
+   ✓ REQ-QA-003 · gate `connector` -- WhatsApp (Meta) > 1) contract test contra fixture/sandbox > verifyAndNormalizeWebhook normaliza un webhook firmado a un WhatsappWebhookEvent válido 1ms
+   ✓ REQ-QA-003 · gate `connector` -- WhatsApp (Meta) > 2) idempotencia: 2 webhooks idénticos -> 1 efecto > el mismo event_id de un clic de botón procesado 2 veces solo cuenta 1 vez: la 2a se rechaza como replay 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/contracts/gate-connector.spec.ts > REQ-QA-003 · gate `connector` -- PMS (Cloudbeds) > 1) contract test contra fixture/sandbox > getReservation retorna una reserva que cumple el esquema público PmsReservation
+AssertionError: expected [Function] to not throw an error but '[\n  {\n    "origin": "string",\n    …' was thrown
+
+[32m- Expected:[39m 
+undefined
+
+[31m+ Received:[39m 
+"[
+  {
+    \"origin\": \"string\",
+    \"code\": \"too_small\",
+    \"minimum\": 3,
+    \"inclusive\": true,
+    \"exact\": true,
+    \"path\": [
+      \"currency\"
+    ],
+    \"message\": \"Too small: expected string to have exactly 3 characters\"
+  }
+]"
+
+ ❯ tests/integration/contracts/gate-connector.spec.ts:43:59
+     41|       const adapter = new FakeCloudbedsAdapter();
+     42|       const reservation = await adapter.getReservation("CB-RES-1001");
+     43|       expect(() => PmsReservation.parse(reservation)).not.toThrow();
+       |                                                           ^
+     44|     });
+     45| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 7 passed (8)
+   Start at  18:30:09
+   Duration  245ms (transform 44ms, setup 0ms, collect 75ms, tests 10ms, environment 0ms, prepare 39ms)
+
