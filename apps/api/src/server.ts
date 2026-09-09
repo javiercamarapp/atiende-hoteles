@@ -13,6 +13,7 @@ import type { AppDeps } from "./types.ts";
 import { startNightAuditScheduler } from "./jobs/nightAuditScheduler.ts";
 import { startIdentityVaultPurgeScheduler } from "./jobs/purgeIdentityVaultScheduler.ts";
 import { startConversationPurgeScheduler } from "./jobs/purgeConversationsScheduler.ts";
+import { startTicketEscalationScheduler } from "./jobs/ticketEscalationScheduler.ts";
 
 async function main() {
   const env = loadEnv();
@@ -63,11 +64,20 @@ async function main() {
     onError: (err) => logger.error({ err }, "purga de conversaciones: error en tick"),
   });
 
+  // REQ-HUE-014 · escalación automática de `guest_ticket` cuyo SLA ya venció (lock por
+  // hotel, ver jobs/ticketEscalationScheduler.ts) -- también ejecutable de forma
+  // independiente vía `node scripts/run-ticket-escalation-scheduler.ts`.
+  const ticketEscalationScheduler = startTicketEscalationScheduler(engine.admin, {
+    onTick: (results) => logger.info({ results }, "escalación de tickets: tick"),
+    onError: (err) => logger.error({ err }, "escalación de tickets: error en tick"),
+  });
+
   const shutdown = async () => {
     logger.info("apagando apps/api");
     nightAuditScheduler.stop();
     identityVaultPurgeScheduler.stop();
     conversationPurgeScheduler.stop();
+    ticketEscalationScheduler.stop();
     await engine.stop();
     process.exit(0);
   };

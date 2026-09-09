@@ -32,6 +32,7 @@ import { plUsaliRoutes } from "./routes/plUsali.ts";
 import { checkinOnlineRoutes } from "./routes/checkinOnline.ts";
 import { housekeepingRoutes } from "./routes/housekeeping.ts";
 import { mantenimientoRoutes } from "./routes/mantenimiento.ts";
+import { ticketsRoutes } from "./routes/tickets.ts";
 import { reputacionRoutes } from "./routes/reputacion.ts";
 import { asistenciaRoutes } from "./routes/asistencia.ts";
 import { aprobacionesRoutes } from "./routes/aprobaciones.ts";
@@ -211,6 +212,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", checkinOnlineRoutes(deps));
   app.route("/", housekeepingRoutes(deps));
   app.route("/", mantenimientoRoutes(deps));
+  app.route("/", ticketsRoutes(deps));
   app.route("/", reputacionRoutes(deps));
   app.route("/", asistenciaRoutes(deps));
   // REQ-UX-006: webhook público (sin sesión de staff) montado ANTES de la ruta

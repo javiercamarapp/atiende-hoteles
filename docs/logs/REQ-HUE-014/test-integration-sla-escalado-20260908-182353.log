@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/integration/tickets/sla-escalado.spec.ts (9 tests) 1920ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  18:23:54
+   Duration  3.51s (transform 741ms, setup 0ms, collect 1.33s, tests 1.92s, environment 0ms, prepare 55ms)
+

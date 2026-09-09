@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/domain-hotel/ticket-sla-policy.spec.ts (20 tests) 7ms
+
+ Test Files  1 passed (1)
+      Tests  20 passed (20)
+   Start at  18:24:07
+   Duration  864ms (transform 304ms, setup 0ms, collect 504ms, tests 7ms, environment 0ms, prepare 94ms)
+
