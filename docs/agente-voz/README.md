@@ -8,7 +8,7 @@ Twilio+STT/TTS por separado). Rama: `fix/voz-elevenlabs`.
 ## Índice
 
 1. `system-prompt.md` — el prompt real para pegar en el dashboard de ElevenLabs, el
-   contrato de las 4 tools (URL/headers/body), y los límites duros del agente.
+   contrato de las 5 tools (URL/headers/body), y los límites duros del agente.
 2. `configuracion-agente.md` — cómo se adaptó el mecanismo de autenticación/config de
    `agent-config`/`agent-config-auth.ts` de restaurantes a este stack (Hono/Node +
    Postgres/RLS en vez de Supabase Edge Functions/Vault), y qué se adaptó DISTINTO
@@ -23,7 +23,7 @@ Twilio+STT/TTS por separado). Rama: `fix/voz-elevenlabs`.
 
 Todo lo implementado en `apps/api/src/routes/vozElevenlabs.ts` es la llamada HTTP REAL
 que ElevenLabs necesita para invocar tools durante una llamada — no un stub. Se pudo
-probar de extremo a extremo (`tests/integration/api/voz-elevenlabs.spec.ts`, 13 casos,
+probar de extremo a extremo (`tests/integration/api/voz-elevenlabs.spec.ts`, 16 casos,
 contra una base de datos real) porque en esta dirección **nosotros somos el servidor**.
 Lo que NO se pudo probar es el lado de ElevenLabs (no hay cuenta real en este entorno) —
 eso queda explícito en `webhook-contrato.md` y como checklist en
@@ -57,9 +57,9 @@ existe todavía en este repo (pendiente-hardware)".
   hotel con secreto de webhook, `elevenlabs_agent_id` (bookkeeping) y flag `enabled`
   (BP-016, apagado por default).
 - `apps/api/src/routes/vozElevenlabs.ts`: el webhook público que ElevenLabs invoca
-  (`POST /hoteles/:hotelId/voz/webhook/:toolName`) para las 4 tools ya existentes de
+  (`POST /hoteles/:hotelId/voz/webhook/:toolName`) para las 5 tools ya existentes de
   `recepcion_virtual`, más los 3 endpoints de configuración (staff autenticado).
-- `tests/integration/api/voz-elevenlabs.spec.ts`: 13 casos contra una BD real.
+- `tests/integration/api/voz-elevenlabs.spec.ts`: 16 casos contra una BD real.
 - `scripts/voz-elevenlabs-webhook-simulator.ts`: simulador local (contra `npm run dev`
   de este repo, NUNCA contra ElevenLabs real) del flujo completo llamada→tool→respuesta.
 

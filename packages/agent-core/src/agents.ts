@@ -50,13 +50,15 @@ export const AGENT_DEFINITIONS: Readonly<Record<string, AgentDefinition>> = {
     name: RECEPCION_VIRTUAL,
     label: "Recepción virtual",
     description:
-      "Atiende al huésped por WhatsApp/voz/web durante check-in/estancia: crea tareas de housekeeping y " +
-      "tickets de mantenimiento, envía confirmaciones por WhatsApp y registra el valor económico generado.",
+      "Atiende al huésped por WhatsApp/voz/web durante check-in/estancia: crea tareas de housekeeping, " +
+      "tickets de mantenimiento y tickets de huésped (room service/F&B y otras solicitudes), envía " +
+      "confirmaciones por WhatsApp y registra el valor económico generado.",
     role: "canal",
     allowedStaffRoles: ["owner", "gm", "frontdesk", "reservations"],
     toolNames: [
       "crear_tarea_housekeeping",
       "crear_ticket_mantenimiento",
+      "crear_ticket_huesped",
       "enviar_mensaje_whatsapp_plantilla",
       "registrar_evento_roi",
     ],

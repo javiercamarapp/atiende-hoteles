@@ -28,6 +28,7 @@ import {
   RECEPCION_VIRTUAL,
   ToolRegistry,
   buildToolContext,
+  createGuestTicketTool,
   createHousekeepingTaskTool,
   createMaintenanceTicketTool,
   createRegistrarEventoRoiTool,
@@ -113,13 +114,13 @@ afterEach(async () => {
   await engine.admin.exec(
     `truncate table public.agent_approval_confirmation, public.agent_approval,
        public.message, public.conversation, public.maintenance_ticket, public.housekeeping_task,
-       public.roi_event
+       public.guest_ticket, public.roi_event
      restart identity cascade;`,
   );
 });
 
 /** Arma el ToolRegistry de "recepcion_virtual" EXACTAMENTE con el catálogo declarado en
- * `AGENT_DEFINITIONS` (agents.ts) -- las mismas 4 tools que `apps/api/routes/agentes.ts`
+ * `AGENT_DEFINITIONS` (agents.ts) -- las mismas 5 tools que `apps/api/routes/agentes.ts`
  * registraría para este agente, ni una más. Si `agents.ts` alguna vez agrega un nombre de
  * tool sin fábrica aquí, esta función falla fuerte en vez de dejarlo pasar en silencio. */
 function buildRecepcionVirtualRegistry(db: DbClient, messaging: FakeWhatsappAdapter): ToolRegistryType {
@@ -132,6 +133,9 @@ function buildRecepcionVirtualRegistry(db: DbClient, messaging: FakeWhatsappAdap
         break;
       case "crear_ticket_mantenimiento":
         registry.register(createMaintenanceTicketTool({ db }));
+        break;
+      case "crear_ticket_huesped":
+        registry.register(createGuestTicketTool({ db }));
         break;
       case "enviar_mensaje_whatsapp_plantilla":
         registry.register(createSendWhatsappTemplateTool({ db, messaging, simulated: true }));
