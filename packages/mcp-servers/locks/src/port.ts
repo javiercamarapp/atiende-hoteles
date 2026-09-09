@@ -99,6 +99,61 @@ export class PmsEvidenceMissingError extends Error {
   }
 }
 
+/**
+ * REQ-SEG-015/REQ-REC-009 -- rechazo fail-closed cuando `input`/`confirmations` no
+ * cumplen el contrato exacto de este puerto en RUNTIME, no solo en tiempo de
+ * compilación. `LockCommandOrigin` excluye "voz"/"regla_automatica_energia" del tipo,
+ * pero un tipo de TypeScript no protege contra un llamador que no pase por el
+ * compilador (JSON crudo de un webhook, un `as any`, un caller en JS puro) -- sin esta
+ * validación, ese llamador podría colar un origin arbitrario porque ni
+ * `SimulatedLockAdapter` ni `SeamAdapter` reconstruían el schema en runtime. Cualquier
+ * `input`/`confirmations` que no valide contra el schema Zod se rechaza aquí, ANTES de
+ * revisar doble confirmación o evidencia del PMS -- 0 llaves emitidas/revocadas cuando
+ * la forma del comando es inválida, sin importar qué tan "cerca" esté de ser válida.
+ */
+export class InvalidLockCommandError extends Error {
+  readonly code = "invalid_lock_command";
+  constructor(readonly detail: string) {
+    super(`comando de llave inválido, rechazado (fail-closed): ${detail}`);
+    this.name = "InvalidLockCommandError";
+  }
+}
+
+const ConfirmationPair = z.tuple([LockConfirmation, LockConfirmation]);
+
+/** Usado por los adaptadores (`SimulatedLockAdapter`, `SeamAdapter`) como PRIMERA línea
+ *  de `issueKey`: valida `input` en runtime contra `IssueKeyInput` (incluyendo que
+ *  `origin` sea `"guest_app" | "front_desk_staff"`, nunca `"voz"` ni
+ *  `"regla_automatica_energia"`) y `confirmations` contra el par exigido. */
+export function assertValidIssueKeyCommand(
+  input: unknown,
+  confirmations: unknown,
+): asserts input is IssueKeyInput {
+  const parsedInput = IssueKeyInput.safeParse(input);
+  if (!parsedInput.success) {
+    throw new InvalidLockCommandError(`issueKey.input -- ${parsedInput.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}`);
+  }
+  const parsedConfirmations = ConfirmationPair.safeParse(confirmations);
+  if (!parsedConfirmations.success) {
+    throw new InvalidLockCommandError(`issueKey.confirmations -- ${parsedConfirmations.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}`);
+  }
+}
+
+/** Misma validación que `assertValidIssueKeyCommand`, para `revokeKey`. */
+export function assertValidRevokeKeyCommand(
+  input: unknown,
+  confirmations: unknown,
+): asserts input is RevokeKeyInput {
+  const parsedInput = RevokeKeyInput.safeParse(input);
+  if (!parsedInput.success) {
+    throw new InvalidLockCommandError(`revokeKey.input -- ${parsedInput.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}`);
+  }
+  const parsedConfirmations = ConfirmationPair.safeParse(confirmations);
+  if (!parsedConfirmations.success) {
+    throw new InvalidLockCommandError(`revokeKey.confirmations -- ${parsedConfirmations.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}`);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Puerto
 // ---------------------------------------------------------------------------
