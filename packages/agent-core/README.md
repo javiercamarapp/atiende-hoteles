@@ -208,11 +208,20 @@ Mecanismo minimo dentro de agent-core: `ServerSession.isFirstTurn` (resuelto por
 capa de sesion externa, que es quien sabe si ya existia una conversacion previa) se
 copia a `ToolContext.isFirstTurn`; si `AgentRunnerOptions.disclosureMessage` esta
 configurado y `ctx.isFirstTurn` es `true`, `AgentRunner.run()` antepone ese texto al
-`message` de cierre -- en CUALQUIER desenlace de la corrida, no solo "completado". El
-resto del disclosure engine completo (deteccion de conversacion nueva por canal,
-copy legal final aprobado, respuesta fija a "¿eres humano?") vive fuera de este
-paquete (session/API) y queda **pendiente** -- ver
-`docs/auditoria-1/correccion-agent-core.md`.
+`message` de cierre -- en CUALQUIER desenlace de la corrida, no solo "completado".
+
+`src/disclosure.ts` agrega la mitad que antes vivia "pendiente fuera de este paquete":
+`WHATSAPP_DISCLOSURE_MESSAGE` (reexporta `AGENT_DEFINITIONS.recepcion_virtual.disclosureMessage`,
+una sola fuente de verdad) y `esPreguntaSiEsHumano()` + `RESPUESTA_FIJA_ES_HUMANO` (deteccion
+deterministica y respuesta FIJA, nunca generada por el modelo). La deteccion real de
+"conversacion nueva por canal" sigue siendo responsabilidad de cada canal (agent-core no
+tiene estado de conversacion) -- `apps/api/src/routes/mensajeria.ts` (webhook de WhatsApp,
+el UNICO punto real de este repo que procesa un mensaje entrante) ya la usa: 0 mensajes
+previos en `public.message` para la conversacion dispara el disclosure antes de cualquier
+otra respuesta automatica. **Pendiente real** (no de este paquete): el canal de voz, que
+depende de una integracion de telefonia/PBX (Telnyx) que este repo todavia no tiene en
+ninguna forma, ni el copy legal FINAL aprobado (el texto actual es un borrador funcional) --
+ver `docs/REQUISITOS.md` (fila REQ-HUE-006) y `tests/adversarial/disclosure-ia.spec.ts`.
 
 ## Limites explicitos de este hito (H6a)
 

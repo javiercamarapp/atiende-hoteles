@@ -33,6 +33,13 @@
 // texto ya verificado como cuerpo del mensaje persistido (`getMarketingTemplateBody`,
 // packages/agent-core), así el propio `message.body` guardado demuestra que incluyó la
 // opción de baja.
+//
+// REQ-HUE-006/GOB-034 (disclosure de IA): este webhook es el ÚNICO punto real de este
+// repo que procesa un mensaje entrante de huésped, así que es donde vive la detección
+// de "primer turno" del disclosure engine (agent-core `disclosure.ts`) -- 0 mensajes
+// previos en `public.message` para la conversación dispara el disclosure de IA antes
+// de cualquier otra respuesta automática; independientemente del turno, una pregunta
+// tipo "¿eres humano?" recibe la respuesta FIJA no generativa del mismo módulo.
 import { randomUUID } from "node:crypto";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -43,8 +50,11 @@ import {
   createSendWhatsappTemplateTool,
   createTransactionalTemplateApprovalQueue,
   isMarketingSendBlocked,
+  esPreguntaSiEsHumano,
   PostgresApprovalQueue,
+  RESPUESTA_FIJA_ES_HUMANO,
   transactionalTemplateCheckFromDb,
+  WHATSAPP_DISCLOSURE_MESSAGE,
   type SendWhatsappTemplateInput,
 } from "@atiende-hoteles/agent-core";
 import { FakeWhatsappAdapter } from "@atiende-hoteles/mcp-whatsapp";
@@ -189,6 +199,25 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
          returning id;`,
         [configRows[0].tenant_id, hotelId, event.from],
       );
+
+      // REQ-HUE-006/GOB-034 (disclosure engine, agent-core disclosure.ts): "primer
+      // turno" de ESTA conversación se decide aquí, en el ÚNICO punto real de entrada
+      // de un mensaje de WhatsApp (antes de insertar el mensaje entrante actual) --
+      // 0 mensajes previos en `public.message` para esta `conversation_id` es la señal
+      // (la capa de sesión que agent-core README.md §8 dejaba pendiente). Antes de este
+      // fix, nada en apps/api llamaba a este disclosure engine: `AgentRunner`
+      // (runner.ts) SÍ antepone `disclosureMessage` cuando `ctx.isFirstTurn===true`,
+      // pero el único punto real de construcción de `AgentRunner`
+      // (routes/agentes.ts) nunca invoca al huésped por WhatsApp, y este webhook --el
+      // único código que procesa un mensaje entrante real-- nunca llamaba a
+      // `AgentRunner` ni fijaba `isFirstTurn`: el disclosure quedaba implementado pero
+      // desconectado del flujo real, igual que REQ-AB-004 antes de conectar su tool.
+      const { rows: previosRows } = await deps.engine.admin.query<{ count: string }>(
+        `select count(*)::text as count from public.message where conversation_id = $1;`,
+        [convRows[0]!.id],
+      );
+      const esPrimerTurno = Number(previosRows[0]?.count ?? 0) === 0;
+
       // L-tarjeta (auditoria-2 legal CRÍTICO, REQ-HUE-010/H09-027): un huésped
       // confundido puede escribir su número de tarjeta por WhatsApp -- se detecta
       // (Luhn real) y se guarda SIEMPRE la versión redactada, nunca el dato crudo, sin
@@ -203,6 +232,42 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
          values ($1, $2, $3, 'entrante', 'whatsapp', $4, $5, 'entregado', true, $6);`,
         [configRows[0].tenant_id, hotelId, convRows[0]!.id, bodyParaGuardar, event.externalMessageId ?? null, pago.containsSensitiveData],
       );
+
+      // REQ-HUE-006: disclosure de IA en el PRIMER mensaje del hilo -- se envía antes
+      // de cualquier otra respuesta automática (tarjeta/check-in de abajo) para que sea
+      // lo primero que el huésped recibe de vuelta en la conversación.
+      if (esPrimerTurno) {
+        const disclosure = await sharedWhatsappAdapter.sendTemplateMessage({
+          to: event.from,
+          templateName: "disclosure_ia",
+          languageCode: "es_MX",
+          parameters: [],
+          clientMessageId: `disclosure-ia-${event.eventId}`,
+        });
+        await deps.engine.admin.query(
+          `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, template_name, body, external_message_id, delivery_status, simulated)
+           values ($1, $2, $3, 'saliente', 'whatsapp', 'disclosure_ia', $4, $5, $6, true);`,
+          [configRows[0].tenant_id, hotelId, convRows[0]!.id, WHATSAPP_DISCLOSURE_MESSAGE, disclosure.externalMessageId, disclosure.status],
+        );
+      }
+
+      // REQ-HUE-006: respuesta FIJA (no generativa) a "¿eres humano?" y variantes --
+      // independiente de si es el primer turno, se aplica en cualquier punto de la
+      // conversación en que el huésped pregunte directamente.
+      if (esPreguntaSiEsHumano(event.textBody)) {
+        const respuesta = await sharedWhatsappAdapter.sendTemplateMessage({
+          to: event.from,
+          templateName: "respuesta_es_humano",
+          languageCode: "es_MX",
+          parameters: [],
+          clientMessageId: `es-humano-${event.eventId}`,
+        });
+        await deps.engine.admin.query(
+          `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, template_name, body, external_message_id, delivery_status, simulated)
+           values ($1, $2, $3, 'saliente', 'whatsapp', 'respuesta_es_humano', $4, $5, $6, true);`,
+          [configRows[0].tenant_id, hotelId, convRows[0]!.id, RESPUESTA_FIJA_ES_HUMANO, respuesta.externalMessageId, respuesta.status],
+        );
+      }
 
       if (pago.containsCardNumber) {
         const aviso = await sharedWhatsappAdapter.sendTemplateMessage({

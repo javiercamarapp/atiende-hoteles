@@ -11,6 +11,7 @@ export * from "./audit.ts";
 export * from "./postgresApproval.ts";
 export * from "./roles.ts";
 export * from "./agents.ts";
+export * from "./disclosure.ts";
 export * from "./pricing.ts";
 export * from "./provider.ts";
 export * from "./trace.ts";

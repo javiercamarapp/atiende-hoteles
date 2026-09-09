@@ -87,11 +87,17 @@ describe("adversarial: check-in por chat libre es rechazado y redirigido (REQ-RE
       "select id from public.conversation where hotel_id = $1 and guest_phone = $2;",
       [hotelId, from],
     );
-    const { rows: mensajes } = await fixture.engine.admin.query<{ direction: string }>(
-      "select direction from public.message where conversation_id = $1;",
+    const { rows: mensajes } = await fixture.engine.admin.query<{ direction: string; template_name: string | null }>(
+      "select direction, template_name from public.message where conversation_id = $1;",
       [conv[0]!.id],
     );
-    expect(mensajes.filter((m) => m.direction === "saliente")).toHaveLength(0);
+    // Alcance de ESTE REQ (RES-016): ningún mensaje de redirección de check-in. El
+    // único saliente esperado aquí es el disclosure de IA de REQ-HUE-006 (primer turno
+    // de esta conversación nueva) -- no relacionado con check-in, cubierto y contado
+    // aparte por tests/adversarial/disclosure-ia.spec.ts.
+    expect(mensajes.some((m) => m.direction === "saliente" && m.template_name === "checkin_enlace_estructurado")).toBe(false);
+    expect(mensajes.filter((m) => m.direction === "saliente")).toHaveLength(1);
+    expect(mensajes.find((m) => m.direction === "saliente")!.template_name).toBe("disclosure_ia");
   });
 
   it("estructural: NINGÚN mensaje de chat libre, sin importar su contenido, crea una fila en identity_vault", async () => {
