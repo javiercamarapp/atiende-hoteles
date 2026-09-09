@@ -1,0 +1,11 @@
+=== Comando exacto de docs/ACEPTACION.md ===
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/agent-core/no-parallel-tool-money.spec.ts (6 tests) 8ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  15:44:59
+   Duration  334ms (transform 83ms, setup 0ms, collect 138ms, tests 8ms, environment 0ms, prepare 37ms)
+

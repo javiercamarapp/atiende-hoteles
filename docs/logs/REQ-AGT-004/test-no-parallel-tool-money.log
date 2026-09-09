@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/agent-core/no-parallel-tool-money.spec.ts (6 tests) 8ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  15:41:25
+   Duration  290ms (transform 78ms, setup 0ms, collect 123ms, tests 8ms, environment 0ms, prepare 37ms)
+
