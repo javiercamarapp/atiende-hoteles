@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/integration/revenue/revenue-engine-gate.spec.ts (12 tests) 4641ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  17:01:40
+   Duration  6.03s (transform 102ms, setup 0ms, collect 351ms, tests 4.64s, environment 0ms, prepare 310ms)
+

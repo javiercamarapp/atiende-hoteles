@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/domain-hotel/revenue-engine-gate.spec.ts (28 tests) 6ms
+ ✓ tests/unit/domain-hotel/walk-forward-backtest.spec.ts (15 tests) 9ms
+
+ Test Files  2 passed (2)
+      Tests  43 passed (43)
+   Start at  17:01:29
+   Duration  1.61s (transform 229ms, setup 0ms, collect 883ms, tests 16ms, environment 0ms, prepare 350ms)
+

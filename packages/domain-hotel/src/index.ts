@@ -267,3 +267,33 @@ export {
   type ParityChannelViolation,
   type ParityCheckResult,
 } from "./revenue/parity-guard.ts";
+export {
+  REVENUE_GATE_STATES,
+  MIN_SHADOW_DAYS,
+  PROPONE_VARIATION_PCT_MIN,
+  PROPONE_VARIATION_PCT_MAX,
+  RevenueGateError,
+  daysElapsed,
+  hasMetMinimumShadowPeriod,
+  isPromotion,
+  isDemotion,
+  evaluateGateTransition,
+  assertValidProponeVariationPct,
+  isPriceChangeWithinProponeLimit,
+  evaluateRevenueProposal,
+  type RevenueGateState,
+  type PromotionContext,
+  type GateTransitionEvaluation,
+  type RevenueProposalCheck,
+} from "./revenue/revenueEngineGate.ts";
+export {
+  buildWalkForwardWindows,
+  evaluateWalkForwardBacktest,
+  type CounterfactualMethod,
+  type DailyPricingRecord,
+  type WalkForwardWindowSpec,
+  type WalkForwardWindow,
+  type WindowEvaluation,
+  type WalkForwardBacktestInput,
+  type WalkForwardBacktestResult,
+} from "./revenue/walkForwardBacktest.ts";
