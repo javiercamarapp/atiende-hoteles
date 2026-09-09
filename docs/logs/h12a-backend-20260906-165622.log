@@ -1,0 +1,182 @@
+exit:0
+=== tsc apps/api ===
+exit:0
+=== eslint root ===
+
+/Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/.claude/worktrees/agent-a2d02cb802a33a660/tests/e2e/paridad-restaurantes-login.spec.ts
+  62:89  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 1 problem (0 errors, 1 warning)
+
+exit:0
+=== vitest unit+integration+adversarial ===
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/.claude/worktrees/agent-a2d02cb802a33a660
+
+ ✓ tests/unit/reservation-state-machine.spec.ts (5 tests) 10222ms
+   ✓ maquina de estados de reservation > una reserva nueva arranca en 'cotizada' y queda registrada en el evento inicial  2660ms
+   ✓ maquina de estados de reservation > permite la cadena de transiciones valida completa  1948ms
+   ✓ maquina de estados de reservation > rechaza un salto invalido (cotizada -> en_estancia, saltandose confirmada/check_in)  2218ms
+   ✓ maquina de estados de reservation > rechaza reabrir una reserva cerrada (estado terminal)  1414ms
+   ✓ maquina de estados de reservation > rechaza confirmar una reserva ya cancelada  1981ms
+ ✓ tests/unit/api/outbox-worker.spec.ts (8 tests) 6610ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un handler exitoso marca el evento 'enviado' y no lo vuelve a drenar  1015ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un handler que falla incrementa attempts y pospone available_at con backoff exponencial  1023ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > tras maxAttempts fallos consecutivos, el evento se marca 'fallido' (dead-letter) y deja de reintentarse  921ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > auditoria-1/backend [ALTO]: la causa real del error queda persistida en outbox.last_error, no descartada por un catch{} mudo  869ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > auditoria-1/backend [ALTO]: el dead-letter final también conserva la causa real del último intento  1044ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > auditoria-1/backend [ALTO]: un handler colgado (nunca resuelve) se trata como fallo por timeout sin bloquear el resto del batch  954ms
+   ✓ drainOutboxOnce: reintentos y dead-letter > un event_type sin handler registrado se trata como fallo (nunca se marca 'enviado' silenciosamente)  783ms
+ ✓ tests/unit/audit-log.spec.ts (5 tests) 4004ms
+   ✓ audit_log: append-only + cadena de hash > cada fila referencia el hash de la fila anterior del mismo tenant y el primero no tiene prev_hash  800ms
+   ✓ audit_log: append-only + cadena de hash > el hash almacenado es verificable de forma independiente (recalculado desde las columnas persistidas coincide)  785ms
+   ✓ audit_log: append-only + cadena de hash > una alteracion manual del payload rompe la verificacion del hash (detectada, no silenciosa)  759ms
+   ✓ audit_log: append-only + cadena de hash > rechaza UPDATE incluso ejecutado con el rol admin/propietario  853ms
+   ✓ audit_log: append-only + cadena de hash > rechaza DELETE incluso ejecutado con el rol admin/propietario  807ms
+ ✓ tests/unit/rls/org-isolation.spec.ts (4 tests) 3137ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org compartido del fixture no ve nada del org independiente  785ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org independiente tampoco ve el org compartido del fixture  788ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > current_tenant_ids() del usuario del org independiente NO incluye el org del fixture  769ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > INSERT: rechazado al intentar escribir en el hotel de otro org  794ms
+ ✓ tests/unit/rls/money-role.spec.ts (4 tests) 3099ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer folio  751ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer charge ni payment  819ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede insertar un payment  786ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > gm (rol con acceso a dinero) si puede leer folio/charge/payment de su hotel  742ms
+ ✓ tests/unit/migrations.spec.ts (4 tests) 3145ms
+   ✓ runner de migraciones (PGlite) > aplica todas las migraciones desde una base vacia  719ms
+   ✓ runner de migraciones (PGlite) > es idempotente: correrlo dos veces no reaplica nada la segunda vez  719ms
+   ✓ runner de migraciones (PGlite) > rechaza continuar si una migracion ya aplicada fue editada (expand-only)  746ms
+   ✓ runner de migraciones (PGlite) > db:reset (dropAllMigratedObjects) deja la base lista para re-aplicar desde cero  962ms
+ ✓ tests/integration/audit-log-concurrencia.spec.ts (4 tests) 4758ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > SIN el arreglo: dos record_audit_log() concurrentes del mismo tenant producen dos filas con prev_hash null (cadena bifurcada)  1512ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > CON el arreglo (packages/db/migrations/0015, audit_log_chain_head + SELECT FOR UPDATE): dos escrituras concurrentes SIEMPRE forman una cadena de un solo enlace  1001ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > CON el arreglo, 20 escrituras concurrentes reales (sin ningún pg_sleep inyectado) nunca bifurcan la cadena, repetido 8 veces para descartar suerte de scheduling  1260ms
+   ✓ audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO) > dos tenants distintos escribiendo concurrentemente no se bloquean entre sí (el lock de la cabeza de cadena es por tenant, no global)  984ms
+ ✓ tests/unit/rls/tenant-isolation.spec.ts (4 tests) 6513ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > SELECT: solo devuelve filas del hotel del usuario  2070ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > INSERT: rechazado con violacion de politica al escribir en el hotel ajeno  1351ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > UPDATE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  1406ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > DELETE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  1686ms
+ ✓ tests/adversarial/reserva-concurrencia-y-limites.spec.ts (5 tests) 4092ms
+ ✓ tests/unit/idempotency-key.spec.ts (3 tests) 4219ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > un INSERT plano con la misma clave dos veces es rechazado por el constraint UNIQUE  1149ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > INSERT ... ON CONFLICT DO NOTHING con la misma clave no duplica la fila (patron real de la app)  1576ms
+   ✓ idempotency_key: unicidad por (tenant_id, scope, key) > la misma clave en dos tenants distintos NO colisiona (unicidad es por tenant)  1493ms
+ ✓ tests/integration/agent-core/postgres-approval-queue.spec.ts (15 tests) 3031ms
+   ✓ PostgresApprovalQueue (persistencia real) > sobrevive un reinicio del PROCESO: el estado vive en Postgres, no en el objeto JS  1572ms
+ ✓ tests/integration/api/auth-google.spec.ts (3 tests) 2677ms
+   ✓ GET /auth/google/iniciar -- sin configurar > responde 503 no_configurado cuando faltan credenciales de Google  1255ms
+ ✓ tests/adversarial/registro-tokens-y-rate-limit.spec.ts (4 tests) 3105ms
+ ✓ tests/unit/schema/hotel-timezone.spec.ts (4 tests) 1335ms
+ ✓ tests/integration/api/correo-cuenta.spec.ts (5 tests) 1789ms
+ ✓ tests/integration/cfdi/idempotencia-timbrado.spec.ts (4 tests) 1591ms
+ ✓ tests/integration/folio/split-transferencia-cierre.spec.ts (5 tests) 1638ms
+ ✓ tests/adversarial/roles.spec.ts (20 tests) 2347ms
+ ✓ tests/integration/api/email-outbox-handlers.spec.ts (3 tests) 1406ms
+ ✓ tests/integration/contracts/cfdi/hospedaje.spec.ts (7 tests) 1641ms
+ ✓ tests/integration/checkin-online.spec.ts (5 tests) 1265ms
+ ✓ tests/unit/schema/dinero-numeric.spec.ts (6 tests) 1139ms
+ ✓ tests/integration/pool-sin-fuga-de-claims.spec.ts (2 tests) 2640ms
+   ✓ pool de conexiones: set_config por transacción no filtra claims entre requests reciclados (auditoria-1/backend MEDIO) > con poolMax=1 (misma conexión física forzada), el claim de la sesión A nunca es visible en la sesión B  1271ms
+   ✓ pool de conexiones: set_config por transacción no filtra claims entre requests reciclados (auditoria-1/backend MEDIO) > una sesión sin userId (claim vacío) tras una sesión CON userId, en la misma conexión reciclada, queda anónima (auth.uid() null) — nunca hereda al actor anterior  1369ms
+ ✓ tests/integration/revenue/night-audit.spec.ts (5 tests) 1738ms
+ ✓ tests/integration/api/reservas-y-folios.spec.ts (8 tests) 1829ms
+ ✓ tests/adversarial/auditoria-2-lote-a-seguridad-legal.spec.ts (17 tests) 2697ms
+   ✓ auditoria-2 lote A: seguridad multi-tenant + legal/privacidad > [D3 CRÍTICO] un folio cerrado ya no admite un cargo colado por una carrera cargo-vs-cierre > 10 repeticiones: cargo + cierre saldo_cero en paralelo NUNCA dejan un folio 'cerrado' con un cargo sin cuadrar  359ms
+ ✓ tests/integration/folio/cargos-descuentos-reverso.spec.ts (7 tests) 1645ms
+ ✓ tests/adversarial/tarifas-roles.spec.ts (10 tests) 1967ms
+ ✓ tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts (4 tests) 1547ms
+ ✓ tests/integration/api/auth-y-resumen.spec.ts (8 tests) 1631ms
+ ✓ tests/adversarial/reservas-aislamiento.spec.ts (4 tests) 1388ms
+ ✓ tests/adversarial/housekeeping-mantenimiento-mensajeria.spec.ts (11 tests) 1619ms
+ ✓ tests/adversarial/boveda-identidad.spec.ts (8 tests) 1819ms
+ ✓ tests/integration/api/registro.spec.ts (3 tests) 1533ms
+ ✓ tests/adversarial/correo-cuenta-adversarial.spec.ts (6 tests) 1511ms
+ ✓ tests/adversarial/cargo-folio-verificacion.spec.ts (4 tests) 1851ms
+ ✓ tests/integration/api/housekeeping-mantenimiento.spec.ts (6 tests) 1604ms
+ ✓ tests/adversarial/aislamiento-tenant-hotel.spec.ts (3 tests) 1374ms
+ ✓ tests/integration/reservas/cancelacion-libera-inventario.spec.ts (3 tests) 1416ms
+ ✓ tests/adversarial/agentes-aislamiento.spec.ts (9 tests) 1525ms
+ ✓ tests/integration/conocimiento-local/latencia.spec.ts (5 tests) 1597ms
+ ✓ tests/integration/contracts/whatsapp/aprobaciones-boton.spec.ts (8 tests) 1497ms
+ ✓ tests/adversarial/rpc-security-definer.spec.ts (5 tests) 1497ms
+ ✓ tests/integration/folio/pago-concurrente.spec.ts (2 tests) 1396ms
+ ✓ tests/integration/api/agentes.spec.ts (7 tests) 1548ms
+ ✓ tests/integration/api/registro-onboarding.spec.ts (4 tests) 1689ms
+ ✓ tests/integration/reservas/folio-al-confirmar.spec.ts (2 tests) 1537ms
+ ✓ tests/adversarial/idempotencia-concurrente.spec.ts (2 tests) 1767ms
+ ✓ tests/integration/api/back-office-cobros.spec.ts (4 tests) 1575ms
+ ✓ tests/integration/reservas/modificacion-concurrencia.spec.ts (1 test) 1748ms
+ ✓ tests/adversarial/auth-google-oauth.spec.ts (6 tests) 1664ms
+ ✓ tests/adversarial/auditoria-1-bd-criticos.spec.ts (9 tests) 1399ms
+ ✓ tests/integration/outbox-worker-indice.spec.ts (1 test) 1354ms
+ ✓ tests/adversarial/cancelacion-identidad.spec.ts (4 tests) 1561ms
+ ✓ tests/integration/folio/event-sourcing.spec.ts (1 test) 1345ms
+ ✓ tests/integration/reservas/no-show-idempotente.spec.ts (3 tests) 1351ms
+ ✓ tests/integration/api/mensajeria.spec.ts (7 tests) 1378ms
+ ✓ tests/integration/reservas/overbooking-controlado.spec.ts (2 tests) 1346ms
+ ✓ tests/integration/idempotency-ttl.spec.ts (3 tests) 1314ms
+ ✓ tests/integration/api/observabilidad.spec.ts (15 tests) 1387ms
+ ✓ tests/adversarial/checkin-chat-libre.spec.ts (3 tests) 1203ms
+ ✓ tests/integration/reservas/monto-exacto-multi-noche.spec.ts (2 tests) 1278ms
+ ✓ tests/adversarial/presentacion-sat-aprobacion.spec.ts (4 tests) 1280ms
+ ✓ tests/integration/reservas/disponibilidad-grid.spec.ts (2 tests) 1175ms
+ ✓ tests/integration/agent-core/journey-checkin-incidencia.spec.ts (4 tests) 1475ms
+ ✓ tests/integration/availability-concurrency.spec.ts (1 test) 1322ms
+ ✓ tests/integration/fiscal/calendario-fiscal.spec.ts (2 tests) 1298ms
+ ✓ tests/integration/outbox-atomicity.spec.ts (2 tests) 1280ms
+ ✓ tests/adversarial/housekeeping-cfdi-night-audit.spec.ts (3 tests) 1365ms
+ ✓ tests/integration/revenue/night-audit-scheduler.spec.ts (8 tests) 1575ms
+ ✓ tests/integration/idempotency-purga-por-lote.spec.ts (3 tests) 1346ms
+ ✓ tests/unit/email/adaptadores.spec.ts (4 tests) 7ms
+ ✓ tests/unit/mcp-servers/architecture/lock-isolation.spec.ts (7 tests) 23ms
+ ✓ tests/unit/agent-core/runner.spec.ts (30 tests) 8ms
+ ✓ tests/unit/check-migraciones.spec.ts (9 tests) 8ms
+ ✓ tests/unit/gob/no-comandos-destructivos-agente.spec.ts (7 tests) 8ms
+ ✓ tests/unit/email/plantillas.spec.ts (12 tests) 4ms
+ ✓ tests/unit/api/rate-limiter.spec.ts (4 tests) 3ms
+ ✓ tests/unit/mcp-servers/pms/contract.spec.ts (14 tests | 1 skipped) 4ms
+ ✓ tests/unit/agent-core/tool.spec.ts (17 tests) 2ms
+ ✓ tests/unit/agent-core/approval.spec.ts (15 tests) 3ms
+ ✓ tests/unit/gob/backlog-state-machine.spec.ts (21 tests) 1ms
+ ✓ tests/unit/mcp-servers/energy/contract.spec.ts (15 tests) 3ms
+ ✓ tests/unit/mcp-servers/payments/adapter-swap.spec.ts (16 tests) 3ms
+ ✓ tests/unit/mcp-servers/cfdi/pac-doble.spec.ts (13 tests) 3ms
+ ✓ tests/unit/mcp-servers/whatsapp/contract.spec.ts (10 tests) 2ms
+ ✓ tests/unit/api/logger-redact.spec.ts (4 tests) 2ms
+ ✓ tests/unit/domain-hotel/pricing-source.spec.ts (3 tests) 2ms
+ ✓ tests/unit/mcp-servers/locks/contract.spec.ts (11 tests) 2ms
+ ✓ tests/unit/domain-hotel/mrz.spec.ts (13 tests) 3ms
+ ✓ tests/unit/api/identity-encryption.spec.ts (8 tests) 5ms
+ ✓ tests/unit/mcp-servers/shared/backoff.spec.ts (7 tests) 2ms
+ ✓ tests/unit/email/sanitizacion.spec.ts (3 tests) 1ms
+ ✓ tests/unit/domain-hotel/motor-precio-total.spec.ts (7 tests) 1ms
+ ✓ tests/unit/domain-hotel/folio-engine.spec.ts (15 tests) 1ms
+ ✓ tests/unit/domain-hotel/impuestos-hospedaje.spec.ts (9 tests) 1ms
+ ✓ tests/unit/agent-core/redact.spec.ts (16 tests) 1ms
+ ✓ tests/unit/agent-core/roles.spec.ts (13 tests) 1ms
+ ✓ tests/unit/agent-core/provider.spec.ts (8 tests) 2ms
+ ✓ tests/unit/domain-hotel/estado-maquina.spec.ts (9 tests) 2ms
+ ✓ tests/unit/agent-core/agents.spec.ts (7 tests) 1ms
+ ✓ tests/unit/agent-core/context.spec.ts (7 tests) 3ms
+ ✓ tests/unit/domain-hotel/restricciones-estadia.spec.ts (6 tests) 1ms
+ ✓ tests/unit/agent-core/roi-tools.spec.ts (3 tests) 1ms
+ ✓ tests/unit/mcp-servers/shared/hmac.spec.ts (10 tests) 1ms
+ ✓ tests/unit/mcp-servers/shared/idempotency.spec.ts (3 tests) 2ms
+ ✓ tests/adversarial/benchmark-k-minimo.spec.ts (5 tests) 0ms
+ ✓ tests/unit/domain-hotel/cancelacion-policy.spec.ts (6 tests) 0ms
+ ✓ tests/unit/domain-hotel/overbooking.spec.ts (4 tests) 1ms
+ ✓ tests/unit/mcp-servers/shared/rate-limiter.spec.ts (3 tests) 1ms
+ ✓ tests/unit/mcp-servers/pms/registro-conectores.spec.ts (4 tests) 1ms
+ ✓ tests/unit/mcp-servers/shared/credentials.spec.ts (3 tests) 1ms
+ ✓ tests/unit/agent-core/trace.spec.ts (3 tests) 0ms
+ ✓ tests/unit/domain-hotel/checkin-free-text-guard.spec.ts (6 tests) 1ms
+ ✓ tests/unit/agent-core/pricing.spec.ts (4 tests) 1ms
+
+ Test Files  115 passed (115)
+      Tests  763 passed | 1 skipped (764)
+   Start at  16:57:12
+   Duration  159.82s (transform 1.56s, setup 0ms, collect 10.14s, tests 148.76s, environment 0ms, prepare 61ms)
+
+exit:0

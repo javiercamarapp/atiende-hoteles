@@ -45,6 +45,10 @@ export const Errors = {
     ),
   rateLimited: (retryAfterSeconds: number, message = "Límite de solicitudes excedido. Intenta de nuevo en unos segundos.") =>
     new ApiError(429, "rate_limited", message, { "Retry-After": String(Math.max(0, Math.ceil(retryAfterSeconds))) }),
+  // H12c · LAUNCH-015: 402 explícito (nunca un bloqueo silencioso, REQ-UX-002) cuando
+  // una acción excedería el límite del plan de la organización -- ver
+  // apps/api/src/lib/entitlement.ts y public.check_entitlement() (0111).
+  entitlementExceeded: (message: string) => new ApiError(402, "entitlement_exceeded", message),
   internal: (message = "Ocurrió un error interno.") => new ApiError(500, "internal_error", message),
 };
 
@@ -87,7 +91,10 @@ export function toErrorBody(err: unknown, requestId: string): { status: number; 
   // (nunca contra un parametro que el llamador podria inventar) levantan estos
   // errcodes 42501 con un mensaje propio -- se mapean a 403 igual que la RLS nativa,
   // sin filtrar detalle interno.
-  if (/tenant_no_autorizado|hotel_no_autorizado|rol_no_autorizado|acceso_boveda_no_autorizado/.test(message)) {
+  // H12b · LAUNCH-007: `admin_negocio()`/`admin_reintentar_outbox()` (0100) levantan
+  // `no_autorizado` cuando `is_platform_admin()` es falso -- backstop de la función SQL
+  // detrás del 403 explícito que ya pone `requirePlatformAdmin` en routes/admin.ts.
+  if (/tenant_no_autorizado|hotel_no_autorizado|rol_no_autorizado|acceso_boveda_no_autorizado|no_autorizado/.test(message)) {
     return {
       status: 403,
       body: { code: "forbidden", message: "No tienes permiso para realizar esta acción.", request_id: requestId },
@@ -123,6 +130,20 @@ export function toErrorBody(err: unknown, requestId: string): { status: number; 
       body: {
         code: "opt_in_marketing_requerido",
         message: "No existe opt-in de marketing registrado para este huésped; el envío fue bloqueado.",
+        request_id: requestId,
+      },
+    };
+  }
+  // H12c · public.check_entitlement() (0111) lanza `entitlement_exceeded:<recurso>` o
+  // `entitlement_exceeded:suscripcion_inactiva`/`entitlement_exceeded:sin_suscripcion` --
+  // se traduce a 402 con el detalle real (hint de la excepción), nunca a un 500 genérico.
+  const entitlementMatch = /entitlement_exceeded:(\w+)/.exec(message);
+  if (entitlementMatch) {
+    return {
+      status: 402,
+      body: {
+        code: "entitlement_exceeded",
+        message: `Se alcanzó el límite del plan (${entitlementMatch[1]}). Mejora tu plan en /suscripcion para continuar.`,
         request_id: requestId,
       },
     };

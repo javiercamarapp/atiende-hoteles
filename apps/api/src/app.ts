@@ -8,7 +8,12 @@ import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 import { FakeStripeAdapter } from "@atiende-hoteles/mcp-payments";
 import { DualPacCfdiPort, FakeFinkokAdapter, FakeSwSapienAdapter } from "@atiende-hoteles/mcp-cfdi";
+import { FakeEmailAdapter, dbEmailOutboxSink } from "@atiende-hoteles/email";
+import { FakeBillingAdapter } from "@atiende-hoteles/mcp-billing";
 import { authRoutes } from "./routes/auth.ts";
+import { authGoogleRoutes } from "./routes/auth-google.ts";
+import { registroRoutes } from "./routes/registro.ts";
+import { correoRoutes } from "./routes/correo.ts";
 import { healthRoutes } from "./routes/health.ts";
 import { metricsRoutes } from "./routes/metrics.ts";
 import { hotelesRoutes } from "./routes/hoteles.ts";
@@ -43,6 +48,9 @@ import { mensajeriaRoutes } from "./routes/mensajeria.ts";
 import { agentesRoutes } from "./routes/agentes.ts";
 import { roiRoutes } from "./routes/roi.ts";
 import { privacidadRoutes } from "./routes/privacidad.ts";
+import { adminRoutes } from "./routes/admin.ts";
+import { suscripcionRoutes } from "./routes/suscripcion.ts";
+import { notificacionesRoutes } from "./routes/notificaciones.ts";
 import { toErrorBody } from "./lib/errors.ts";
 import {
   buildMoneyAlertLog,
@@ -74,10 +82,19 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   // vive en memoria -- crear uno nuevo por request rompería esa garantía) etiquetado
   // `simulated: true` (ver `status()` de cada adaptador) -- nunca se fabrica un
   // resultado "real" para aparentar que la integración está completa.
+  // H12a · REQ-LAUNCH: sin `RESEND_API_KEY`/`SMTP_HOST` reales, `createApp` instancia
+  // un `FakeEmailAdapter` respaldado por la tabla `email_outbox` (migración 0094) --
+  // mismo mecanismo de conmutación honesta que `payments`/`cfdi` arriba (nunca se
+  // finge un correo enviado; `FakeEmailAdapter` etiqueta cada mensaje `simulated: true`).
   const resolvedDeps: ResolvedAppDeps = {
     ...deps,
     payments: deps.payments ?? new FakeStripeAdapter(),
     cfdi: deps.cfdi ?? new DualPacCfdiPort(new FakeFinkokAdapter(), new FakeSwSapienAdapter()),
+    emailPort: deps.emailPort ?? new FakeEmailAdapter(dbEmailOutboxSink(deps.engine.admin)),
+    // H12c · REQ-LAUNCH-047: sin credenciales de Stripe/Conekta Billing, `FakeBillingAdapter`
+    // único por proceso (misma razón que payments/cfdi arriba: su idempotencia/replay
+    // guard de webhook vive en memoria).
+    billing: deps.billing ?? new FakeBillingAdapter(),
   };
 
   // REQ-SEG (auditoria-1/seguridad.md [MEDIO] CORS): lista blanca explícita por
@@ -94,17 +111,32 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
     }),
   );
 
-  // Cabeceras de seguridad (auditoria-1/seguridad.md): HSTS solo en producción (nunca
-  // en dev/test sobre HTTP plano, donde el navegador la ignoraría pero declararla es
-  // información falsa), X-Content-Type-Options siempre, frame-ancestors 'none' (esta
-  // API nunca sirve HTML embebible en un iframe de otro origen).
+  // Cabeceras de seguridad (auditoria-1/seguridad.md, H12b LAUNCH-021 "completar CSP"):
+  // HSTS solo en producción (nunca en dev/test sobre HTTP plano, donde el navegador la
+  // ignoraría pero declararla es información falsa), X-Content-Type-Options siempre.
+  //
+  // CSP completa siguiendo el patrón de `likida/next.config.ts` §"/api/:path*": esta
+  // API NUNCA sirve HTML (solo JSON, y los tres webhooks públicos -- mensajeria.ts,
+  // aprobacionesWhatsapp.ts, cancelacionPublica.ts -- tampoco devuelven HTML), así que
+  // `default-src 'none'` no tiene nada legítimo que romper: cero script, cero estilo,
+  // cero imagen que un navegador pudiera intentar cargar desde una respuesta de esta
+  // API. Sin `unsafe-inline`/`unsafe-eval` en ninguna directiva (no hace falta: no hay
+  // HTML que ejecute nada). `frame-ancestors`/`base-uri`/`form-action` en 'none' porque
+  // nada de esto se sirve para incrustarse ni sirve de base de un formulario.
   app.use(
     "*",
     secureHeaders({
       strictTransportSecurity: deps.env.nodeEnv === "production" ? "max-age=15552000; includeSubDomains" : false,
       xContentTypeOptions: true,
-      contentSecurityPolicy: { frameAncestors: ["'none'"] },
+      contentSecurityPolicy: {
+        defaultSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'none'"],
+        formAction: ["'none'"],
+      },
       xFrameOptions: "DENY",
+      referrerPolicy: "strict-origin-when-cross-origin",
+      permissionsPolicy: { geolocation: [], microphone: [], camera: [] },
     }),
   );
 
@@ -193,6 +225,11 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", healthRoutes(deps));
   app.route("/", metricsRoutes(deps));
   app.route("/", authRoutes(deps));
+  // H12a · REQ-LAUNCH: Google OAuth + alta autoservicio + correo transaccional --
+  // rutas nuevas, no tocan ninguna existente (ver docs/logs/h12a-*.log).
+  app.route("/", authGoogleRoutes(resolvedDeps));
+  app.route("/", registroRoutes(resolvedDeps));
+  app.route("/", correoRoutes(resolvedDeps));
   app.route("/", hotelesRoutes(deps));
   app.route("/", resumenRoutes(deps));
   app.route("/", reservasRoutes(deps));
@@ -227,6 +264,9 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", agentesRoutes(deps));
   app.route("/", roiRoutes(deps));
   app.route("/", privacidadRoutes(deps));
+  app.route("/", adminRoutes(deps));
+  app.route("/", suscripcionRoutes(resolvedDeps));
+  app.route("/", notificacionesRoutes(deps));
 
   return app;
 }

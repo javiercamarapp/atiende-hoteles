@@ -397,3 +397,36 @@ stack trace. Ver `src/lib/errors.ts` (`ApiError` + mapeo de errores de dominio d
   injection en CI (REQ-AGT-009, requiere su propio simulador de huéspedes, fuera de
   alcance de este hito); sin flujo de aprobación de e.firma para presentación SAT
   (REQ-BO-006, dominio fiscal distinto, no tocado aquí).
+
+## H12a — Google OAuth, alta autoservicio, correo transaccional (REQ-LAUNCH)
+
+Rutas nuevas: `routes/auth-google.ts` (`GET /auth/google/iniciar|callback`),
+`routes/registro.ts` (`POST /registro`, `/registro/verificar`,
+`/registro/reenviar-verificacion`, `/hoteles/:hotelId/onboarding/*`), `routes/correo.ts`
+(invitación de staff, "olvidé mi contraseña", cambio de correo). Variables de entorno
+exactas (Google Cloud Console, Resend/SMTP) documentadas en `.env.example` de este
+paquete y en `packages/email/README.md` — **sin rellenarlas, el sistema sigue
+funcionando**: el botón "Continuar con Google" se declara honestamente deshabilitado
+(503 `no_configurado`) y el correo usa `FakeEmailAdapter` (tabla `email_outbox`).
+
+- **PENDIENTE DE CREDENCIALES (Google Cloud Console)**: `GOOGLE_CLIENT_ID`/
+  `GOOGLE_CLIENT_SECRET`/`GOOGLE_REDIRECT_URI` reales. El flujo completo (Authorization
+  Code + PKCE, verificación de `id_token` vía JWKS con `jose`, nonce/email_verified) está
+  probado end-to-end contra un servidor OAuth FALSO real (`tests/support/
+  fakeGoogleOAuth.ts`, clave RSA de prueba) en `tests/integration/api/auth-google.spec.ts`
+  y `tests/adversarial/auth-google-oauth.spec.ts` — nunca se ha ejercitado contra Google
+  real, así que no se declara `hecho` en `docs/REQUISITOS.md` (REQ-LAUNCH-031).
+- **PENDIENTE DE CREDENCIALES (Resend o SMTP)**: ver `packages/email/README.md`. Sin
+  ellas, todo correo transaccional (verificación, invitación, reset, recibo, etc.) se
+  guarda en `email_outbox` con `provider: "fake"`, nunca se envía de verdad.
+- **CERRADO por el integrador (merge H12a→main)**: los 3 disparadores de correo
+  (`payment.recorded`→recibo, `reservation.confirmed`→confirmación,
+  `cfdi.emitted`→aviso) están conectados de verdad — `routes/reservas.ts` inserta el
+  evento al confirmar una reserva, `routes/cfdi.ts` tras timbrar (hospedaje y pago),
+  ambos en `apps/api/src/emailOutbox/buildEmailOutboxHandlers.ts`. `server.ts` arranca
+  `startEmailOutboxScheduler()` junto a los demás planificadores y construye el
+  `EmailPort` real (Resend > SMTP > `FakeEmailAdapter`) vía `resolveEmailPort()` para
+  `AppDeps.emailPort`. Ver `tests/integration/api/email-outbox-handlers.spec.ts` (5/5).
+- `staff_user.email_verified_at`/`created_via` (migración 0093): solo las cuentas
+  `registro_autoservicio` exigen correo verificado antes de `POST /auth/login` (403
+  honesto si no lo está) — las sembradas/invitadas/por Google nunca se ven afectadas.

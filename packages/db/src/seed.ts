@@ -27,8 +27,22 @@ function slugify(input: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-function isoDate(daysFromNow: number): string {
-  const d = new Date();
+/** Merge H12c→main (integrador), bug real encontrado al re-ejecutar los E2E dos días
+ *  después de escribirlos: `daysFromNow` se sumaba sobre `new Date()` (reloj de Node,
+ *  `setUTCDate`/`toISOString` => fecha UTC) mientras que `apps/api/src/domain/resumen.ts`
+ *  filtra `availability`/`rate_plan`/`reservation` contra `current_date` de POSTGRES (sin
+ *  `TimeZone` configurado explícito en `openEmbeddedPostgres`, resuelve la fecha LOCAL del
+ *  proceso, no UTC). Cualquier hora del día en la que UTC ya cruzó medianoche pero la hora
+ *  local todavía no (ej. después de las ~18:00 en México, UTC-6) hacía que `isoDate(0)`
+ *  sembrara "mañana" según Postgres, dejando el día de HOY sin disponibilidad/tarifa
+ *  sembrada -- Ocupación/ADR/RevPAR se leían `null` ("Sin datos todavía") de forma
+ *  intermitente según la hora, reproducido en `tests/e2e/login-real-y-resumen.spec.ts`
+ *  (esperaba "$1,850 MXN" de ADR y no aparecía). Arreglo: anclar el offset a la fecha que
+ *  la MISMA conexión de Postgres reporta como `current_date` (una sola vez por corrida de
+ *  seed), nunca al reloj de Node -- ambos lados de la comparación quedan sincronizados por
+ *  construcción, sin depender de que las dos zonas horarias coincidan por casualidad. */
+function isoDate(anchor: Date, daysFromNow: number): string {
+  const d = new Date(anchor);
   d.setUTCDate(d.getUTCDate() + daysFromNow);
   const parts = d.toISOString().split("T");
   return parts[0] as string;
@@ -44,6 +58,12 @@ export const DEV_SEED_PASSWORD = "atiende-dev-2026";
 /** Inserta los datos de desarrollo. Debe correr con un cliente admin (superusuario del
  *  motor, ver engines.ts) para no depender de RLS/roles durante el seed. */
 export async function seedDev(db: DbClient): Promise<SeedResult> {
+  // Ancla de fechas de este seed a la MISMA `current_date` que usarán las consultas de
+  // `apps/api/src/domain/resumen.ts` sobre esta conexión -- ver comentario de `isoDate()`
+  // más abajo (bug real de zona horaria, corregido en el merge H12c→main).
+  const { rows: hoyRows } = await db.query<{ hoy: string }>("select current_date::text as hoy;");
+  const hoyAnchor = new Date(`${hoyRows[0]!.hoy}T00:00:00.000Z`);
+
   const orgRes = await db.query<{ id: string }>(
     "insert into public.org (name) values ($1) returning id;",
     ["Grupo Demo Atiende Hoteles"],
@@ -103,7 +123,7 @@ export async function seedDev(db: DbClient): Promise<SeedResult> {
       }
 
       for (let day = 0; day < AVAILABILITY_HORIZON_DAYS; day += 1) {
-        const date = isoDate(day);
+        const date = isoDate(hoyAnchor, day);
         await db.query(
           "insert into public.rate_plan (tenant_id, hotel_id, room_type_id, date, price) values ($1, $2, $3, $4, $5);",
           [orgId, hotelId, roomTypeId, date, rt.price],
@@ -148,6 +168,22 @@ export async function seedDev(db: DbClient): Promise<SeedResult> {
     );
 
     hotels.push({ id: hotelId, name: hotelDef.name, roomTypes, staff });
+  }
+
+  // H12c · REQ-LAUNCH (facturación SaaS): el org demo arranca con una suscripción de
+  // prueba en el plan "pro" (2 hoteles/40 habitaciones caben dentro de sus límites,
+  // ver packages/db/migrations/0110) -- sin esta fila, /suscripcion mostraría
+  // "sin suscripción" para el tenant de desarrollo, que no es el estado real que un
+  // hotel recién dado de alta tendría (siempre nace con trial, ver routes/registro
+  // de H12a). Precio/límites son PROPUESTA pendiente de aprobación del fundador
+  // (docs/BLOQUEOS.md D-007), no una decisión de precio de lista tomada aquí.
+  const planRes = await db.query<{ id: string }>("select id from public.plan where code = 'pro';");
+  if (planRes.rows[0]) {
+    await db.query(
+      `insert into public.subscription (org_id, plan_id, status)
+       values ($1, $2, 'trial');`,
+      [orgId, planRes.rows[0].id],
+    );
   }
 
   return { orgId, hotels };

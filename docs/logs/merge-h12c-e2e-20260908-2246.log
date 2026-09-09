@@ -1,0 +1,21 @@
+[WebServer] (node:19543) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] 10:41:41 PM [vite] warning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-swc" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] You or a plugin you are using have set `optimizeDeps.esbuildOptions` but this option is now deprecated. Vite now uses Rolldown to optimize the dependencies. Please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] `esbuild` option is set to false, but `oxc` option was not set to false. `esbuild: false` does not have effect any more. If you want to disable the default transformation, which is now handled by Oxc, please set `oxc: false` instead.
+
+Running 6 tests using 1 worker
+
+(node:19550) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [desktop] › tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) (43.1s)
+  ✓  2 [desktop] › tests/e2e/h7-agentes.spec.ts:64:1 › agentes: gate/techo, demo determinista (FakeProvider) y tarjeta de ROI en Resumen -- recorrido real desde la UI (seeds reales) (16.0s)
+  ✓  3 [desktop] › tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API (10.4s)
+(node:20207) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  4 [mobile] › tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) (20.6s)
+  ✓  5 [mobile] › tests/e2e/h7-agentes.spec.ts:64:1 › agentes: gate/techo, demo determinista (FakeProvider) y tarjeta de ROI en Resumen -- recorrido real desde la UI (seeds reales) (37.4s)
+  -  6 [mobile] › tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API
+
+  1 skipped
+  5 passed (2.7m)

@@ -1,0 +1,37 @@
+# Merge H12b+H12c→main (integrador), REQ-LAUNCH-060/058: H12b asumía que la landing
+# pública de venta viviría en OTRO proyecto/host (comentario original de abajo, ya
+# obsoleto) y por eso bloqueaba TODO este SPA (`Disallow: /`) salvo /terminos/privacidad.
+# H12c construyó la landing pública DENTRO de este mismo apps/web, en "/" (Landing.tsx) --
+# con el `Disallow: /` original, ningún crawler podía siquiera OBTENER esa página para
+# indexarla (el `<meta name="robots" content="index, follow">` de index.html no sirve de
+# nada si robots.txt bloquea la petición antes de llegar a leerlo). Se permite "/" y las
+# páginas legales; se bloquea explícitamente el panel operativo autenticado (redirige a
+# /login de todos modos para un crawler sin sesión, pero no vale la pena que lo intente).
+User-agent: *
+Allow: /$
+Allow: /terminos
+Allow: /privacidad
+Allow: /login
+Allow: /registro
+Disallow: /resumen
+Disallow: /reservas
+Disallow: /disponibilidad
+Disallow: /huespedes
+Disallow: /recepcion
+Disallow: /housekeeping
+Disallow: /mantenimiento
+Disallow: /alimentos-bebidas
+Disallow: /mensajeria
+Disallow: /reputacion
+Disallow: /back-office
+Disallow: /aprobaciones
+Disallow: /agentes
+Disallow: /suscripcion
+Disallow: /notificaciones
+Disallow: /configuracion
+Disallow: /admin
+Disallow: /onboarding
+Disallow: /checkin-publico/
+Disallow: /auth/
+
+Sitemap: https://app.atiendehoteles.com/sitemap.xml

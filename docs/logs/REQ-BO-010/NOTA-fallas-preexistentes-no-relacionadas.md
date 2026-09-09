@@ -61,7 +61,7 @@ Evidencia de que esto NO afecta a REQ-BO-010 en sí:
 - `docs/logs/REQ-BO-010/vitest-regresion-adyacente-20260908-182729.log`: 76/76 pruebas
   verdes en `tests/unit/rls`, `tests/adversarial/roles.spec.ts`,
   `tests/integration/schema`, `tests/integration/folio`, `tests/integration/reservas`
-  -- ninguna regresión causada por la migración `0110_pl_usali.sql` ni por el nuevo
+  -- ninguna regresión causada por la migración `0115_pl_usali.sql` ni por el nuevo
   registro de rutas en `apps/api/src/app.ts`.
 - `docs/logs/REQ-BO-010/check-migraciones-20260908-182729.log`: `scripts/check-migraciones.ts`
   OK (71 migraciones verificadas, 0 DROP/ALTER destructivo sin aprobar).

@@ -298,6 +298,19 @@ export function cfdiRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
           [orgId, hotelId, cfdiId ?? null, JSON.stringify({ folioId, uuid: timbrado.uuid, total })],
         );
 
+        // H12a/H12b pendiente-coordinación cerrada por el integrador: dispara el aviso
+        // de CFDI disponible (handler ya listo en emailOutbox/buildEmailOutboxHandlers.ts
+        // desde H12a). Solo se emite cuando el timbrado REALMENTE ocurrió (uuid_fiscal
+        // real, `insertedRows.length > 0` evita reemitir en un reintento idempotente que
+        // pegó en el `on conflict do nothing` de arriba).
+        if (cfdiId && insertedRows.length > 0 && timbrado.status === "timbrado") {
+          await db.query(
+            `insert into public.outbox (tenant_id, hotel_id, aggregate_type, aggregate_id, event_type, payload)
+             values ($1, $2, 'cfdi_emision', $3, 'cfdi.emitted', $4);`,
+            [orgId, hotelId, cfdiId, JSON.stringify({ folioId, uuid: timbrado.uuid })],
+          );
+        }
+
         return { status: 201, body: { id: cfdiId, uuidFiscal: timbrado.uuid, estado: timbrado.status, pac: timbrado.pac, total } };
       },
     );
@@ -396,6 +409,17 @@ export function cfdiRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
           "select public.record_audit_log($1, $2, 'cfdi.pago_timbrado', 'cfdi_emision', $3, $4);",
           [orgId, hotelId, cfdiId ?? null, JSON.stringify({ folioId, paymentId: body.paymentId, uuid: timbrado.uuid })],
         );
+
+        // H12a/H12b pendiente-coordinación cerrada por el integrador: mismo aviso de
+        // CFDI disponible que el timbrado de hospedaje de arriba -- el handler no
+        // distingue `tipo` ('hospedaje'/'pago'), solo lee `cfdi_emision` por id.
+        if (cfdiId && insertedRows.length > 0 && timbrado.status === "timbrado") {
+          await db.query(
+            `insert into public.outbox (tenant_id, hotel_id, aggregate_type, aggregate_id, event_type, payload)
+             values ($1, $2, 'cfdi_emision', $3, 'cfdi.emitted', $4);`,
+            [orgId, hotelId, cfdiId, JSON.stringify({ folioId, paymentId: body.paymentId, uuid: timbrado.uuid })],
+          );
+        }
 
         return { status: 201, body: { id: cfdiId, uuidFiscal: timbrado.uuid, estado: timbrado.status, total } };
       },

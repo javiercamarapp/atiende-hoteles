@@ -125,6 +125,17 @@ test("housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde 
     await page.getByRole("button", { name: /entrar/i }).click();
     await page.waitForURL(/\/resumen$/, { timeout: 15_000 });
 
+    // H12c: el banner de cookies/analítica se muestra en CUALQUIER pantalla (pública o
+    // del panel) sin decisión previa y queda fijo al fondo del viewport -- en móvil
+    // (390x844) esto intercepta el click de "Cerrar con costo" más abajo porque ese
+    // botón cae en la franja inferior tras crear el ticket. Se acepta una sola vez aquí,
+    // como haría una persona real, antes de seguir el flujo.
+    const bannerCookies = page.getByRole("region", { name: /consentimiento de cookies/i });
+    if (await bannerCookies.isVisible().catch(() => false)) {
+      await bannerCookies.getByRole("button", { name: /aceptar analítica/i }).click();
+      await expect(bannerCookies).toBeHidden();
+    }
+
     // ---- /housekeeping: tablero real, crear una tarea ----
     await page.goto(`http://localhost:${webPort}/housekeeping`);
     await expect(page.getByRole("heading", { name: "Housekeeping" })).toBeVisible();

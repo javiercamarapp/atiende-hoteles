@@ -310,6 +310,17 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
           [orgId, hotelId, folioId, JSON.stringify({ reservationId })],
         );
       }
+
+      // H12a/H12b pendiente-coordinación cerrada por el integrador: dispara el correo
+      // de confirmación de reserva (apps/api/src/emailOutbox/buildEmailOutboxHandlers.ts
+      // ya traía el handler listo desde H12a, solo faltaba esta emisión). El `dedupeKey`
+      // del propio EmailPort (`confirmacion-reserva:<reservationId>`) evita reenvíos si
+      // esta transición se repite sobre la misma reserva.
+      await db.query(
+        `insert into public.outbox (tenant_id, hotel_id, aggregate_type, aggregate_id, event_type, payload)
+         values ($1, $2, 'reservation', $3, 'reservation.confirmed', $4);`,
+        [orgId, hotelId, reservationId, JSON.stringify({ reservationId })],
+      );
     }
     if (folioId == null) {
       const { rows: existing } = await db.query<{ id: string }>(

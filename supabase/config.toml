@@ -1,0 +1,93 @@
+# H12b · LAUNCH-009 (D-001: producción sigue siendo Supabase, docs/BLOQUEOS.md). Este
+# archivo se activa hasta que el fundador ejecute `supabase init`/`supabase link` en un
+# proyecto real (docs/runbooks/migracion-a-supabase.md, GOB-058: `supabase link`/`db push`
+# los corre el USUARIO, nunca este agente). Se deja preparado y documentado; `project_id`
+# queda vacío a propósito -- rellenar con el que `supabase link` genere.
+project_id = ""
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "auth"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AUTH — email+contraseña (Hoteles ya tiene su propio JWT/scrypt en apps/api/src/routes/
+# auth.ts, ADR-004) + Google OAuth (H12a). Site URL y redirects van POR ENTORNO, nunca
+# hardcodeados: `supabase/config.toml` los toma de variables de entorno con el prefijo
+# `env(...)` (soportado por la CLI de Supabase desde v1.60+) para que `supabase link`
+# funcione igual en preview/producción sin editar este archivo a mano.
+# ─────────────────────────────────────────────────────────────────────────────
+[auth]
+enabled = true
+# Dominio de la app (apps/web) para ESTE entorno -- ver deploy/env-matrix.md
+# "VITE_API_URL/SITE_URL por entorno". Ejemplo de valor real (no secreto):
+# https://app.atiendehoteles.com (producción) / https://<preview>.vercel.app (preview).
+site_url = "env(SUPABASE_AUTH_SITE_URL)"
+# Único patrón de retorno autorizado por entorno (mismo criterio que
+# atiende-restaurantes/docs/deployment-domains.md: "el único retorno autorizado de
+# Google/enlaces de correo es <dominio>/admin/login") -- aquí es /login.
+additional_redirect_urls = ["env(SUPABASE_AUTH_REDIRECT_URL)"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+
+[auth.email]
+enable_signup = false
+double_confirm_changes = true
+enable_confirmations = true
+# H12a construye el login por email+contraseña sobre el propio backend Hono (auth.ts) --
+# Supabase Auth aquí NO es la fuente de verdad de esas cuentas de staff todavía (ver
+# docs/runbooks/migracion-a-supabase.md "qué NO migra en el primer corte"); esta sección
+# queda preparada para el día en que se decida consolidar auth en GoTrue.
+enable_confirmations_email_change = true
+
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
+redirect_uri = "env(SUPABASE_AUTH_GOOGLE_REDIRECT_URI)"
+
+# Plantillas de correo de Auth (magic link, invitación, cambio de correo, recuperación):
+# apuntan a las plantillas de marca de `packages/email` (H12a) SI existen en el momento de
+# vincular el proyecto -- ver docs/runbooks/migracion-a-supabase.md paso "Plantillas de
+# correo". Si `packages/email` todavía no existe cuando se ejecute `supabase link`, se usan
+# las plantillas por defecto de Supabase (inglés, sin marca) como fallback documentado,
+# NUNCA se bloquea la vinculación por esto.
+[auth.email.template.invite]
+subject = "Te invitaron a Atiende Hoteles"
+content_path = "./templates/invite.html"
+
+[auth.email.template.confirmation]
+subject = "Confirma tu correo — Atiende Hoteles"
+content_path = "./templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Recupera tu acceso — Atiende Hoteles"
+content_path = "./templates/recovery.html"
+
+[auth.email.template.email_change]
+subject = "Confirma tu nuevo correo — Atiende Hoteles"
+content_path = "./templates/email_change.html"
+
+[auth.email.template.magic_link]
+subject = "Tu enlace de acceso — Atiende Hoteles"
+content_path = "./templates/magic_link.html"
+
+[storage]
+enabled = false
+
+[realtime]
+enabled = false
+
+[analytics]
+enabled = false

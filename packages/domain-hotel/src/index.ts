@@ -128,6 +128,15 @@ export {
   type ValidateTurnosLftInput,
   type ValidateTurnosLftResult,
 } from "./housekeeping/turnos-lft.ts";
+// Merge de reconciliación (2026-09-08): la sesión H12c había retirado estos 6 bloques
+// `export { … } from` (`./voiceGuardrails.ts`, `./pl/usaliPL.ts`, `./tickets/slaPolicy.ts`,
+// `./marketingTemplateLinter.ts`, `./conversationalGuardrails.ts`,
+// `./guestContactChangeOtp.ts`) porque en SU rama esos 6 archivos nunca existieron
+// (introducidos únicamente en la rama local de ronda 4/REQ-HUE-014/REQ-HUE-021/REQ-BO-010/
+// REQ-HUE-023, sin pushear todavía en ese momento). Los 6 archivos SÍ existen completos con
+// pruebas propias (tests/unit/domain-hotel/{voice-guardrails,usali-pl,ticket-sla-policy,
+// conversational-guardrails,guest-contact-change-otp}.spec.ts) -- se restauran los exports
+// tras confirmar con `npm run typecheck`/`npx vitest run` que compilan y pasan de verdad.
 export {
   classifyVoiceGuardrailRefusal,
   looksLikeCardPaymentByVoice,
@@ -168,17 +177,6 @@ export {
   type OwnersReport,
 } from "./pl/usaliPL.ts";
 export {
-  WAITLIST_STATUSES,
-  WAITLIST_OFFER_WINDOW_HOURS,
-  matchesWaitlistRequest,
-  selectNextWaitlistCandidate,
-  computeOfferExpiresAt,
-  isOfferExpired,
-  type WaitlistStatus,
-  type WaitlistCandidate,
-  type WaitlistMatchCriteria,
-} from "./reservas/waitlist.ts";
-export {
   GUEST_TICKET_DEPARTMENTS,
   GUEST_TICKET_PRIORITIES,
   DEFAULT_SLA_MINUTES_BY_PRIORITY,
@@ -212,11 +210,42 @@ export {
   type EvaluateOtpConfirmationResult,
 } from "./guestContactChangeOtp.ts";
 export {
+  WAITLIST_STATUSES,
+  WAITLIST_OFFER_WINDOW_HOURS,
+  matchesWaitlistRequest,
+  selectNextWaitlistCandidate,
+  computeOfferExpiresAt,
+  isOfferExpired,
+  type WaitlistStatus,
+  type WaitlistCandidate,
+  type WaitlistMatchCriteria,
+} from "./reservas/waitlist.ts";
+export {
   buildReporteMensualDueno,
   type RoiEventoMensual,
   type ReporteMensualDuenoInput,
   type ReporteMensualDueno,
 } from "./pl/reporteMensualDueno.ts";
+// H12c merge (integrador) · 2026-09-08: `./forecast/index.ts` (REQ-AGT-012, commit b1f3d47
+// en origin/main) sí existe con sus 2 archivos completos, pero nunca se re-exportó desde
+// este barrel -- `tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts` importa
+// `forecastExponentialSmoothing`/`forecastPickup`/`TimeSeriesPoint` de
+// `@atiende-hoteles/domain-hotel` (el paquete completo) y fallaba en typecheck por el
+// mismo patrón que los 6 bloques retirados arriba: código real ya escrito, sin cablear al
+// punto de entrada del paquete. A diferencia de esos 6, aquí sí basta con re-exportar --
+// el archivo fuente existe y está completo.
+export {
+  forecastExponentialSmoothing,
+  forecastPickup,
+  type ForecastKind,
+  type TimeSeriesPoint,
+  type ExponentialSmoothingOptions,
+  type ForecastPoint,
+  type ExponentialSmoothingResult,
+  type PickupCurvePoint,
+  type PickupForecastInput,
+  type PickupForecastResult,
+} from "./forecast/index.ts";
 export {
   BASELINE_SIGNING_WINDOW_DAYS,
   daysBetween as daysBetweenRoiBaseline,

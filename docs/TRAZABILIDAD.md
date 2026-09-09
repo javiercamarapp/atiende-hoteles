@@ -128,7 +128,7 @@ en caso contrario.
 | REQ-AGT-006 | parcial | Parcial (construcción en curso) | Reclasificado 2026-09-08: dos de tres cláusulas cerradas con evidencia real contra `embedded-postgres`. (1) PII redactada antes de persistir traza de observabilidad -- gap real encontrado (`agent_run.message` se insertaba SIN pasar por `redact()`, a diferencia del mismo texto en el evento `run_finished` de `audit_log`, que sí redactaba) y cerrado en `apps/api/src/lib/agentObservability.ts`; `tests/adversarial/pii-redaction-trazas.spec.ts` (3/3) prueba una corrida real con PII sintética y confirma 0 PII persistida. (2) 0 voiceprint/reconocimiento facial -- `scripts/checks/no-voiceprint-facial.ts`, exit 0. (3) Audio retenido 30-90 días -- NO aplica todavía: no existe canal de ingesta/almacenamiento de audio en el repo (voz/telefonía pendiente de credenciales, REQ-AGT-016/REQ-HUE-011), así que no hay tabla de audio sobre la cual fijar una ventana de retención. Evidencia: `docs/logs/REQ-AGT-006/`. |
 | REQ-AGT-008 | pendiente | Pendiente sin razón | Excluido explícitamente del pase de cierre P0 (frente H7 en paralelo). |
 | REQ-AGT-009 | pendiente | Pendiente sin razón | Excluido explícitamente del pase de cierre P0 (frente H7 en paralelo); además requiere su propio simulador de huéspedes (red-teaming en CI), no construido. |
-| REQ-AGT-013 | pendiente-decisión | Decisión del usuario | Reclasificado 2026-09-08 (lectura más profunda, exactamente el caso que §8 de este documento dejaba como trabajo futuro explícito): `docs/ARQUITECTURA.md` "Resolución de las 10 contradicciones" #10 cita LLM-023 exigiendo confirmación separada del fundador antes de desplegar un motor de OCR de origen chino (PaddleOCR-VL/GLM-OCR/Qwen3-Embedding) en producción, distinta de la aprobación de la Opción C — ver `docs/BLOQUEOS.md` D-006. El guardrail estático que sí es verificable sin esa decisión se construyó y quedó en verde: `scripts/checks/ocr-aislado-sin-internet.ts` (0 llamadas a LLM de canal/endpoint chino para OCR) + `tests/unit/agent-core/ocr-aislado-sin-internet.spec.ts` (9/9, adversarial) · `docs/logs/REQ-AGT-013/`. |
+| REQ-AGT-013 | pendiente-decisión | Decisión del usuario | Reclasificado 2026-09-08 (lectura más profunda, exactamente el caso que §8 de este documento dejaba como trabajo futuro explícito): `docs/ARQUITECTURA.md` "Resolución de las 10 contradicciones" #10 cita LLM-023 exigiendo confirmación separada del fundador antes de desplegar un motor de OCR de origen chino (PaddleOCR-VL/GLM-OCR/Qwen3-Embedding) en producción, distinta de la aprobación de la Opción C — ver `docs/BLOQUEOS.md` D-008. El guardrail estático que sí es verificable sin esa decisión se construyó y quedó en verde: `scripts/checks/ocr-aislado-sin-internet.ts` (0 llamadas a LLM de canal/endpoint chino para OCR) + `tests/unit/agent-core/ocr-aislado-sin-internet.spec.ts` (9/9, adversarial) · `docs/logs/REQ-AGT-013/`. |
 | REQ-AGT-015 | pendiente | Pendiente sin razón | Excluido explícitamente del pase de cierre P0 (frente H7 en paralelo). |
 | REQ-AGT-016 | pendiente-credenciales | Credenciales | pendiente — depende de: telefonía/voz |
 | REQ-AGT-018 | pendiente | Pendiente sin razón | Excluido explícitamente del pase de cierre P0 (frente H7 en paralelo). |
@@ -138,7 +138,7 @@ en caso contrario.
 | REQ-BO-002 | pendiente-credenciales | Credenciales | Offline (PAC simulado): `tests/integration/cfdi/idempotencia-timbrado.spec.ts` (4/4) · `docs/logs/h5-test-integration-20260906-082126.log`. PAC real: pendiente de credenciales — degradado de "hecho" a `pendiente-credenciales`. |
 | REQ-BO-006 | pendiente-credenciales | Credenciales | Offline (a nivel de BD): `tests/adversarial/presentacion-sat-aprobacion.spec.ts` (4/4) · `docs/logs/h5-test-adversarial-20260906-082126.log`. Presentación real ante el SAT con e.firma real: pendiente — degradado de "hecho" a `pendiente-credenciales`. |
 | REQ-BO-008 | parcial | Parcial (construcción en curso) | 2/2 tests de integración sobre `fiscal_obligation` · `docs/logs/h5-test-integration-20260906-082126.log`. Sin endpoint de API CRUD todavía (pendiente de back-office posterior, no de credenciales). |
-| REQ-BO-010 | hecho | Hecho | P&L USALI 12ª ed. (resumen) por departamento (`packages/domain-hotel/src/pl/usaliPL.ts` + agregación real en `apps/api/src/domain/plUsali.ts`, migración `0110_pl_usali.sql` con `expense_entry`), forecast de 90 días (reutiliza `forecastExponentialSmoothing`), punto de equilibrio dinámico, owner's report y proyección de caja a 13 semanas, expuestos en `GET/POST /hoteles/:hotelId/back-office/{pl-usali,gastos}` · `tests/integration/bo/pl-usali.spec.ts` (4/4 contra embedded-postgres, dataset sintético de un periodo cerrado), `tests/unit/domain-hotel/usali-pl.spec.ts` (10/10) · `docs/logs/REQ-BO-010/`. |
+| REQ-BO-010 | hecho | Hecho | P&L USALI 12ª ed. (resumen) por departamento (`packages/domain-hotel/src/pl/usaliPL.ts` + agregación real en `apps/api/src/domain/plUsali.ts`, migración `0115_pl_usali.sql` con `expense_entry`), forecast de 90 días (reutiliza `forecastExponentialSmoothing`), punto de equilibrio dinámico, owner's report y proyección de caja a 13 semanas, expuestos en `GET/POST /hoteles/:hotelId/back-office/{pl-usali,gastos}` · `tests/integration/bo/pl-usali.spec.ts` (4/4 contra embedded-postgres, dataset sintético de un periodo cerrado), `tests/unit/domain-hotel/usali-pl.spec.ts` (10/10) · `docs/logs/REQ-BO-010/`. |
 | REQ-BO-011 | pendiente-credenciales | Credenciales | pendiente — depende de: WhatsApp |
 | REQ-BO-014 | pendiente-credenciales | Credenciales | pendiente — depende de: canal/credencial real (WhatsApp/voz), ver `docs/cierre-p0/inventario.md` §2 |
 | REQ-BO-024 | hecho | Hecho | Checador append-only (`attendance_log`, migración 0091, hash encadenado por empleado + cabeza de cadena FOR UPDATE, patrón de `audit_log`/0015) + horario programado (`staff_schedule`, migración 0090) + cruce/alerta de horas extra no autorizadas (`packages/domain-hotel/src/attendance.ts`) + API (`apps/api/src/routes/asistencia.ts`, incluida exportación CSV para STPS) · `tests/unit/domain-hotel/attendance.spec.ts` (17/17), `tests/unit/attendance-log.spec.ts` (13/13), `tests/adversarial/checador-inalterable.spec.ts` (10/10) · `docs/logs/REQ-BO-024/`. |
@@ -390,3 +390,91 @@ grep -c '^| REQ-' docs/ACEPTACION.md
   cada evidencia citada contra su log ya guardado (o, en 2 casos de scripts de revisión
   estática, se re-ejecutó el script puntual), consistente con el alcance de "trazabilidad"
   y no de "re-auditoría técnica completa".
+
+## 9. Renumeración REQ-LAUNCH (merge H12a+H12b+H12c→main, integrador)
+
+H12a, H12b y H12c se trabajaron en worktrees paralelos, cada uno sin ver el trabajo de
+los otros dos. Los tres numeraron requisitos nuevos como `REQ-LAUNCH-nnn`, pero con
+convenciones distintas: H12b intentó alinear sus IDs con el `LAUNCH-nnn` canónico de
+`docs/referencia/08-inventario-punta-a-punta.md` §3 (huecos LAUNCH-001..029); H12a y
+H12c, en cambio, numeraron secuencialmente desde 001 sin atarse a ese inventario. Al
+fusionar los tres al mismo `main`, esto produjo colisiones reales: `REQ-LAUNCH-007`,
+`REQ-LAUNCH-009` y `REQ-LAUNCH-010` cada uno tenía DOS requisitos distintos con el mismo
+ID (H12a y H12b), y `REQ-LAUNCH-001` a `REQ-LAUNCH-015` tenía hasta TRES candidatos
+distintos por número (H12a, H12c, y en algunos casos también H12b).
+
+**Criterio de resolución (integrador, merge de H12c a `main`):**
+1. Se conservan sin cambio los 4 IDs de H12b que ya coincidían 1:1 con el `LAUNCH-nnn`
+   canónico del inventario: `REQ-LAUNCH-007` (superadmin), `REQ-LAUNCH-009` (export
+   Supabase), `REQ-LAUNCH-010` (despliegue), `REQ-LAUNCH-021` (CSP) — renombrarlos habría
+   tocado más archivos de código/tests que dejarlos.
+2. El `REQ-LAUNCH-028` que H12b había usado para SEO/PWA se renumera a `REQ-LAUNCH-060`:
+   colisionaba con el `LAUNCH-028` REAL del inventario ("simulador de demo end-to-end",
+   sin cubrir todavía por ningún hito) — el trabajo de SEO/PWA de H12b no corresponde a
+   ningún `LAUNCH-nnn` dedicado del inventario (cita "filas 28 y 30" de la tabla, no IDs).
+3. Los 14 requisitos de H12a (antes `REQ-LAUNCH-001..014`, numeración secuencial propia)
+   se renumeran a `REQ-LAUNCH-031..044`.
+4. Los 15 requisitos de H12c (antes `REQ-LAUNCH-001..015`, numeración secuencial propia)
+   se renumeran a `REQ-LAUNCH-045..059`.
+5. Ningún ID nuevo colisiona entre sí ni con los 4+1 de H12b conservados/renumerados
+   (verificado: `grep -o 'REQ-LAUNCH-[0-9]*' docs/REQUISITOS.md | sort | uniq -c` sin
+   ninguna fila con conteo > 1).
+
+### Tabla de mapeo (ID antiguo por hito → ID canónico)
+
+| Hito | ID antiguo | ID canónico | Requisito (resumen) |
+|---|---|---|---|
+| H12a | REQ-LAUNCH-001 | REQ-LAUNCH-031 | Login/vinculación Google OAuth (Authorization Code+PKCE) |
+| H12a | REQ-LAUNCH-002 | REQ-LAUNCH-032 | `hotel_staff_identity` con RLS |
+| H12a | REQ-LAUNCH-003 | REQ-LAUNCH-033 | 503 `no_configurado` sin credenciales Google |
+| H12a | REQ-LAUNCH-004 | REQ-LAUNCH-034 | `POST /registro` atómico + verificación de correo |
+| H12a | REQ-LAUNCH-005 | REQ-LAUNCH-035 | Rate limit dedicado de `/registro` |
+| H12a | REQ-LAUNCH-006 | REQ-LAUNCH-036 | Onboarding guiado (tipos de habitación, zona horaria, invitar equipo) |
+| H12a | REQ-LAUNCH-007 | REQ-LAUNCH-037 | Invitación de staff por correo (token de un solo uso) |
+| H12a | REQ-LAUNCH-008 | REQ-LAUNCH-038 | "Olvidé mi contraseña" |
+| H12a | REQ-LAUNCH-009 | REQ-LAUNCH-039 | Cambio de correo con token a la dirección nueva |
+| H12a | REQ-LAUNCH-010 | REQ-LAUNCH-040 | `packages/email`: `EmailPort` + adaptadores Resend/SMTP/Fake |
+| H12a | REQ-LAUNCH-011 | REQ-LAUNCH-041 | 12 plantillas HTML de correo |
+| H12a | REQ-LAUNCH-012 | REQ-LAUNCH-042 | `npm run email:preview` |
+| H12a | REQ-LAUNCH-013 | REQ-LAUNCH-043 | Disparadores de correo por `public.outbox` |
+| H12a | REQ-LAUNCH-014 | REQ-LAUNCH-044 | Batería adversarial de OAuth/cuenta |
+| H12c | REQ-LAUNCH-001 | REQ-LAUNCH-045 | SaaS al hotel: planes Starter/Pro/Enterprise, trial 14 días |
+| H12c | REQ-LAUNCH-002 | REQ-LAUNCH-046 | Precios marcados `es_propuesta = true` |
+| H12c | REQ-LAUNCH-003 | REQ-LAUNCH-047 | `BillingProviderPort` intercambiable |
+| H12c | REQ-LAUNCH-004 | REQ-LAUNCH-048 | Webhook de facturación HMAC + idempotente |
+| H12c | REQ-LAUNCH-005 | REQ-LAUNCH-049 | `check_entitlement()`/límites de plan fail-closed |
+| H12c | REQ-LAUNCH-006 | REQ-LAUNCH-050 | Aislamiento por tenant de suscripción/facturas |
+| H12c | REQ-LAUNCH-007 | REQ-LAUNCH-051 | CFDI del SaaS (Atiende facturando al hotel) |
+| H12c | REQ-LAUNCH-008 | REQ-LAUNCH-052 | Centro de notificaciones in-app |
+| H12c | REQ-LAUNCH-009 | REQ-LAUNCH-053 | Campana de notificaciones con contador real |
+| H12c | REQ-LAUNCH-010 | REQ-LAUNCH-054 | Aislamiento de notificaciones por destinatario/tenant |
+| H12c | REQ-LAUNCH-011 | REQ-LAUNCH-055 | Preferencia de notificación por usuario |
+| H12c | REQ-LAUNCH-012 | REQ-LAUNCH-056 | `AnalyticsPort`/`ErrorReporterPort` con opt-in |
+| H12c | REQ-LAUNCH-013 | REQ-LAUNCH-057 | Catálogo cerrado de eventos de producto |
+| H12c | REQ-LAUNCH-014 | REQ-LAUNCH-058 | Landing pública indexable en `/` |
+| H12c | REQ-LAUNCH-015 | REQ-LAUNCH-059 | Banner de cookies/analítica con opt-in |
+| H12b | REQ-LAUNCH-028 | REQ-LAUNCH-060 | `robots.txt`/`sitemap.xml`/PWA (SEO), sin `LAUNCH-nnn` dedicado |
+| H12b | REQ-LAUNCH-007 | REQ-LAUNCH-007 (sin cambio) | Consola superadmin cross-tenant |
+| H12b | REQ-LAUNCH-009 | REQ-LAUNCH-009 (sin cambio) | Export de migraciones a Supabase |
+| H12b | REQ-LAUNCH-010 | REQ-LAUNCH-010 (sin cambio) | Configuración de despliegue (Vercel/Docker+Fly) |
+| H12b | REQ-LAUNCH-021 | REQ-LAUNCH-021 (sin cambio) | CSP completa API+web |
+
+**Arreglo real encontrado durante el merge (no solo renumeración):** el `robots.txt`/
+`sitemap.xml` de H12b (REQ-LAUNCH-060) bloqueaban con `Disallow: /` TODO el sitio salvo
+`/terminos`/`/privacidad`, bajo el supuesto de que la landing pública de venta viviría en
+otro proyecto/host (comentario explícito en el `robots.txt` original). H12c construyó esa
+landing DENTRO del mismo `apps/web`, en `/` (`Landing.tsx`, REQ-LAUNCH-058) — con el
+`robots.txt` sin corregir, ningún crawler podía siquiera obtener esa página para
+indexarla, contradiciendo directamente el propio REQ-LAUNCH-058 ("landing pública ...
+indexable"). Corregido en el mismo merge: `robots.txt` permite `/` y las páginas legales,
+bloquea el panel operativo autenticado; `sitemap.xml` ahora incluye `/`.
+
+**Otro cierre real en el mismo merge:** `REQ-LAUNCH-043` (disparadores de correo por
+outbox, H12a) estaba `parcial` porque `routes/reservas.ts`/`routes/cfdi.ts` (fuera del
+alcance de H12a) no emitían los eventos `reservation.confirmed`/`cfdi.emitted` — ambos se
+cablearon en el merge de H12a a `main` (antes de que existiera H12c), con prueba nueva en
+`tests/integration/api/email-outbox-handlers.spec.ts`; el estado pasó a `hecho`.
+
+Verificación tras la renumeración: `diff` de IDs `REQ-LAUNCH-*` entre `docs/REQUISITOS.md`
+y `docs/ACEPTACION.md` vacío (mismo conjunto de IDs en ambos documentos); ningún
+`REQ-LAUNCH-nnn` duplicado en ninguno de los dos archivos.

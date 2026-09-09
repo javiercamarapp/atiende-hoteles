@@ -14,6 +14,7 @@ import {
   Settings,
   ShieldCheck,
   Bot,
+  CreditCard,
 } from "lucide-react";
 import { Sidebar, BottomNav, MobileHeader, AtiendeWordmark, type SidebarSection, type BottomNavItem } from "@atiende/ui";
 import { useAuth } from "../hooks/useAuth";
@@ -21,6 +22,8 @@ import { useHotel } from "../hooks/useHotel";
 import { ApiUnavailableError } from "../lib/api";
 import { SelectorHotel } from "../components/SelectorHotel";
 import { AprobacionesBadge } from "../components/AprobacionesBadge";
+import { NotificacionesBell } from "../components/NotificacionesBell";
+import { CookieConsentBanner } from "../components/CookieConsentBanner";
 
 // Mapa de navegación hotelero (docs/referencia/05-frontend-restaurantes.md
 // §5) — misma anatomía de acordeón/colapso que AdminSidebar de Restaurantes,
@@ -61,6 +64,7 @@ const sections: SidebarSection[] = [
       { to: "/aprobaciones", label: "Aprobaciones", icon: ShieldCheck },
       { to: "/agentes", label: "Agentes", icon: Bot },
       { to: "/back-office", label: "Back office", icon: Building2 },
+      { to: "/suscripcion", label: "Suscripción", icon: CreditCard },
       { to: "/configuracion", label: "Configuración", icon: Settings },
     ],
   },
@@ -137,6 +141,7 @@ export function AppShell() {
         title={<AtiendeWordmark className="scale-90 origin-left" />}
         action={
           <div className="flex items-center gap-2">
+            <NotificacionesBell />
             <AprobacionesBadge />
             <SelectorHotel />
           </div>
@@ -145,6 +150,7 @@ export function AppShell() {
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="hidden md:flex items-center justify-end gap-3 px-6 py-3">
+          <NotificacionesBell />
           <AprobacionesBadge />
           <span className="text-sm text-muted-foreground">{sesion?.email}</span>
         </header>
@@ -157,6 +163,7 @@ export function AppShell() {
       </div>
 
       <BottomNav items={itemsMovil} />
+      <CookieConsentBanner />
     </div>
   );
 }

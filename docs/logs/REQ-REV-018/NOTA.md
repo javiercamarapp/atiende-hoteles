@@ -102,7 +102,7 @@ archivo (ver "fuera de alcance" abajo).
 - `node scripts/check-migraciones.ts` → OK, 73 migraciones verificadas, 0 destructivo sin
   aprobar (`check-migraciones-20260908-184537.log`). Nota: una corrida ANTERIOR (antes de
   crear mi migración) reportó una colisión de numeración preexistente y ajena entre
-  `0111_guardrails_conversacionales.sql`/`0111_marketing_template_linter.sql` (dos
+  `0111_guardrails_conversacionales.sql`/`0116_marketing_template_linter.sql` (dos
   sesiones concurrentes); esa colisión desapareció sola entre mis dos corridas (otra
   sesión renumeró su archivo) — mi migración 0112 nunca colisionó con nada.
 - `npm run typecheck --workspace=@atiende-hoteles/domain-hotel` → 0 errores

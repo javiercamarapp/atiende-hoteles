@@ -1,0 +1,17 @@
+-- H12b · LAUNCH-010/D-006: `GET /ready` (apps/api/src/routes/health.ts) lee
+-- `public.schema_migrations` para confirmar que hay migraciones aplicadas. Contra
+-- `embedded-postgres` local, `deps.engine.admin` es el superusuario del cluster
+-- (`postgres`) y no necesita ningún GRANT explícito -- pero el motor de producción
+-- gestionado (`openManagedPostgres`, packages/db/src/engines.ts, para Supabase/otro
+-- Postgres gestionado) usa deliberadamente el rol de mínimo privilegio `atiende_app`
+-- también para el `admin` de solo lectura de salud (nunca embebe una credencial de
+-- superusuario en el runtime de la API, ver deploy/README.md "Por qué `admin` de
+-- producción no es superusuario"). Sin este GRANT, `/ready` fallaría con
+-- "permission denied for table schema_migrations" en producción.
+--
+-- `schema_migrations` la crea `ensureSchemaMigrationsTable()` (packages/db/src/
+-- runner.ts) con el cliente admin/superusuario ANTES de que exista ninguna migración
+-- versionada -- por eso el GRANT vive aquí, en una migración normal, en vez de en el
+-- runner (que no puede depender de que la tabla de negocio "atiende_app" ya exista en
+-- ese punto de arranque).
+grant select on public.schema_migrations to atiende_app, authenticated;

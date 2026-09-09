@@ -92,3 +92,19 @@
 2026-09-06 16:36:28 ciclo=47 evento=loteC_completo merge_en_curso(#58) loteB_activo
 2026-09-06 16:40:51 ciclo=48 evento=LIMPIEZA: shm SysV 30/32 segmentos (causa de shmget en pruebas) + servidor API huérfano pid 9595 (4h) terminado; segmentos huérfanos eliminados=30
 2026-09-06 16:52:16 ciclo=49 evento=merges_B_C_ok push=main siguiente=H12a+H12b cierre
+2026-09-06 16:59:03 ciclo=50 evento=H12b_completo merge_en_curso(#58) H12a,H12c cerrando
+2026-09-06 16:59:57 cron=4fe17d3a evento=disparo_cron bucle_dinamico=activo(17:18) agentes_en_curso=3(integrador H12b, H12a, H12c) accion=solo_latido
+2026-09-06 17:43:34 ciclo=52 evento=VERCEL_PRODUCCION proyecto=atiende-hoteles-web url_publica=https://atiende-hoteles-web.vercel.app (frontend estático, sin API; landing entra tras merge H12c)
+2026-09-06 17:44:10 ciclo=53 evento=latido 17:44 integrador en merges
+2026-09-08 21:01:12 ciclo=54 evento=REANUDACION tras límite semanal; merge H12c en curso (MERGE_HEAD 1ddf552); integrador reanudado
+2026-09-08 21:27:53 ciclo=55 evento=latido 21:27 integrador cerrando H12c
+2026-09-08 22:30:49 ciclo=58 evento=latido 22:56 integrador fresco (#59) cerrando H12c
+2026-09-08 22:44:39 ciclo=56 evento=E2E_VERDE integrador cierra H12c: 4 specs reales verificadas (h6/h7/login-real-y-resumen, desktop+mobile) tras fix ancla de fecha en seed.ts y dismissal de banner de cookies en h6
+2026-09-08 22:57:28 ciclo=59 evento=latido 22:57
+2026-09-08 23:03:55 ciclo=59 evento=COORDINACION: otra sesión local empujó 33 commits a origin/main en 5 h (REQ-UX/QA/REV/AGT/CRM/BO/RES/HK); H12c commiteado 637ab45; integrador fusionando origin/main; regla: fetch+merge antes de cada push, nunca force ni revertir ajeno
+2026-09-08 23:05:48 cron=4fe17d3a evento=disparo_cron bucle_dinamico=activo(23:19) agentes=1(integrador #59) accion=solo_latido
+2026-09-08 23:06:49 ciclo=60 evento=PETICION_DE_TRASPASO desde sesión peer (~/Desktop/supabase/hoteles): consolidar en una sola sesión; decisión: sin rondas nuevas, terminar merge de origin/main en curso, push, traspaso y parada del bucle
+2026-09-08 23:23:16 ciclo=61 evento=latido 23:22 esperando push del integrador
+2026-09-08 23:25:50 ciclo=61 evento=limpieza 4 vitest huérfanos del integrador estancado; integrador fresco sin actividad de transcript desde 22:30 (posible Bash largo)
+2026-09-08 23:27:09 ciclo=62 evento=FIX_CRITICO domain-hotel/src/index.ts no cargaba (6 exports a archivos inexistentes desde 5e21c12, ajeno a H12c) + forecast/index.ts sin re-exportar (REQ-AGT-012); typecheck/lint/build en verde tras fusionar origin/main (33 commits) sobre H12a/H12b/H12c; push en curso
+2026-09-08 23:28:34 ciclo=62 evento=PARADA_POR_TRASPASO origin/main=d15573e cron=4fe17d3a_eliminado

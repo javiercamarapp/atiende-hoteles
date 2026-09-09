@@ -1,0 +1,277 @@
+
+> atiende-hoteles@0.0.0 test:e2e
+> npm run e2e --workspace=apps/web
+
+
+> @atiende/web@0.0.0 e2e
+> playwright test -c playwright.config.ts
+
+[WebServer] (node:6820) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] 9:02:25 PM [vite] warning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-swc" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] You or a plugin you are using have set `optimizeDeps.esbuildOptions` but this option is now deprecated. Vite now uses Rolldown to optimize the dependencies. Please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] `esbuild` option is set to false, but `oxc` option was not set to false. `esbuild: false` does not have effect any more. If you want to disable the default transformation, which is now handled by Oxc, please set `oxc: false` instead.
+
+Running 68 tests using 5 workers
+
+(node:6828) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:6825) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:6827) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:6826) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:6829) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   4 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: landing sin violaciones serias/críticas (3.2s)
+  ✓   2 [desktop] › ../../tests/e2e/h12c-landing.spec.ts:13:1 › landing pública (/): renderiza, sin scroll horizontal, capturas 1280/390 guardadas (3.2s)
+  ✓   3 [desktop] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:159:3 › H12a · registro → verificación → onboarding → Google › 1. registro: formulario → revisa tu correo (3.8s)
+  ✓   7 [desktop] › ../../tests/e2e/h12c-landing.spec.ts:45:1 › landing pública (/): CTA a /registro y a /login presentes; footer con enlaces legales (650ms)
+  ✓   6 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: login sin violaciones serias/críticas (1.8s)
+  ✓   8 [desktop] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:178:3 › H12a · registro → verificación → onboarding → Google › 2. verificación de correo (token leído de la base, simulando el correo capturado por el proveedor fake) (1.2s)
+  ✓   9 [desktop] › ../../tests/e2e/h12c-landing.spec.ts:57:1 › banner de cookies: aparece sin decisión previa, desaparece tras aceptar, y persiste la decisión (1.1s)
+  ✓  10 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: resumen sin violaciones serias/críticas (2.3s)
+  ✓  11 [desktop] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:191:3 › H12a · registro → verificación → onboarding → Google › 3. onboarding: login → tipo de habitación → zona horaria → invitar equipo (2.9s)
+  ✓  14 [desktop] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:220:3 › H12a · registro → verificación → onboarding → Google › 4. login con Google (servidor falso): recorre TODA la cadena de redirecciones hasta /resumen (1.4s)
+  ✓  13 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: reservas sin violaciones serias/críticas (2.4s)
+  ✓  15 [desktop] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:229:3 › H12a · registro → verificación → onboarding → Google › 5. login con Google, correo no verificado: termina en /login con el error humano (2.0s)
+  ✓  16 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: recepcion sin violaciones serias/críticas (2.5s)
+  ✓   1 [desktop] › ../../tests/e2e/h4-reserva-real-desde-ui.spec.ts:72:1 › crear una reserva real desde /reservas (seeds reales) y verla en la tabla y en la grid de /disponibilidad (13.7s)
+  ✓   5 [desktop] › ../../tests/e2e/h5-cargo-y-pago-desde-ui.spec.ts:70:1 › cargar un cargo y un pago sobre el folio de una reserva desde /recepcion (UI real) (13.9s)
+  ✓  18 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: disponibilidad sin violaciones serias/críticas (2.1s)
+  ✓  21 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: configuracion sin violaciones serias/críticas (1.9s)
+  ✓  22 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: housekeeping sin violaciones serias/críticas (5.1s)
+  ✓  12 [desktop] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) (16.8s)
+  ✓  24 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:144:3 › Paridad visual — capturas hoteles › login (3.1s)
+  ✓  20 [desktop] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura) (11.2s)
+  ✓  23 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: mantenimiento sin violaciones serias/críticas (5.5s)
+  ✓  25 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:151:3 › Paridad visual — capturas hoteles › resumen (3.7s)
+  ✓  26 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: mensajeria sin violaciones serias/críticas (4.9s)
+  ✓  27 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:159:3 › Paridad visual — capturas hoteles › reservas (3.1s)
+  ✓  29 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:173:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › login de Atiende Hoteles: tokens/tipografía/logo/botón == fixture de Restaurantes (2.1s)
+  ✓  28 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: aprobaciones sin violaciones serias/críticas (4.5s)
+  ✓  30 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:180:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › resumen de Atiende Hoteles: la tipografía base (--font-body) sigue siendo Inter (2.5s)
+  ✓  31 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: agentes sin violaciones serias/críticas (2.7s)
+  ✓  33 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: suscripcion sin violaciones serias/críticas (3.8s)
+  ✓  34 [desktop] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: notificaciones sin violaciones serias/críticas (4.2s)
+  ✓  32 [desktop] › ../../tests/e2e/paridad-visual.spec.ts:243:1 › paridad viva: el render real de atiende-restaurantes coincide con el fixture usado arriba (11.0s)
+(node:8207) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  35 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: landing sin violaciones serias/críticas (2.7s)
+  ✓  36 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: login sin violaciones serias/críticas (2.3s)
+  ✓  37 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: resumen sin violaciones serias/críticas (2.6s)
+  ✘  17 [desktop] › ../../tests/e2e/h7-agentes.spec.ts:64:1 › agentes: gate/techo, demo determinista (FakeProvider) y tarjeta de ROI en Resumen -- recorrido real desde la UI (seeds reales) (26.6s)
+  ✓  38 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: reservas sin violaciones serias/críticas (2.7s)
+(node:8287) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  39 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: recepcion sin violaciones serias/críticas (1.9s)
+  ✓  41 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: disponibilidad sin violaciones serias/críticas (2.8s)
+  ✘  19 [desktop] › ../../tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API (29.5s)
+(node:8351) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  42 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: configuracion sin violaciones serias/críticas (2.2s)
+(node:8469) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  44 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: housekeeping sin violaciones serias/críticas (2.4s)
+(node:8473) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  45 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: mantenimiento sin violaciones serias/críticas (2.1s)
+  ✓  46 [mobile] › ../../tests/e2e/h12c-landing.spec.ts:13:1 › landing pública (/): renderiza, sin scroll horizontal, capturas 1280/390 guardadas (2.3s)
+  ✓  49 [mobile] › ../../tests/e2e/h12c-landing.spec.ts:45:1 › landing pública (/): CTA a /registro y a /login presentes; footer con enlaces legales (1.0s)
+  ✓  48 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: mensajeria sin violaciones serias/críticas (2.6s)
+  ✓  50 [mobile] › ../../tests/e2e/h12c-landing.spec.ts:57:1 › banner de cookies: aparece sin decisión previa, desaparece tras aceptar, y persiste la decisión (1.7s)
+  ✓  40 [mobile] › ../../tests/e2e/h4-reserva-real-desde-ui.spec.ts:72:1 › crear una reserva real desde /reservas (seeds reales) y verla en la tabla y en la grid de /disponibilidad (14.8s)
+  ✓  51 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: aprobaciones sin violaciones serias/críticas (5.3s)
+  ✓  54 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: agentes sin violaciones serias/críticas (2.2s)
+  ✓  43 [mobile] › ../../tests/e2e/h5-cargo-y-pago-desde-ui.spec.ts:70:1 › cargar un cargo y un pago sobre el folio de una reserva desde /recepcion (UI real) (15.7s)
+  -  56 [mobile] › ../../tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API
+  -  57 [mobile] › ../../tests/e2e/paridad-restaurantes-login.spec.ts:62:1 › paridad: login real de atiende-restaurantes (referencia, solo lectura)
+  ✓  55 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: suscripcion sin violaciones serias/críticas (2.6s)
+  ✓  58 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:144:3 › Paridad visual — capturas hoteles › login (1.2s)
+  ✓  47 [mobile] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:159:3 › H12a · registro → verificación → onboarding → Google › 1. registro: formulario → revisa tu correo (4.3s)
+  ✓  60 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:151:3 › Paridad visual — capturas hoteles › resumen (1.3s)
+  ✓  62 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:159:3 › Paridad visual — capturas hoteles › reservas (1.3s)
+  ✓  61 [mobile] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:178:3 › H12a · registro → verificación → onboarding → Google › 2. verificación de correo (token leído de la base, simulando el correo capturado por el proveedor fake) (2.0s)
+  ✓  59 [mobile] › ../../tests/e2e/axe-accesibilidad.spec.ts:40:3 › axe: notificaciones sin violaciones serias/críticas (3.6s)
+  ✓  63 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:173:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › login de Atiende Hoteles: tokens/tipografía/logo/botón == fixture de Restaurantes (1.3s)
+  ✓  65 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:180:3 › Paridad visual — comparación real vs. Restaurantes (fixture) › resumen de Atiende Hoteles: la tipografía base (--font-body) sigue siendo Inter (1.2s)
+  -  66 [mobile] › ../../tests/e2e/paridad-visual.spec.ts:243:1 › paridad viva: el render real de atiende-restaurantes coincide con el fixture usado arriba
+  ✓  64 [mobile] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:191:3 › H12a · registro → verificación → onboarding → Google › 3. onboarding: login → tipo de habitación → zona horaria → invitar equipo (7.8s)
+  ✓  67 [mobile] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:220:3 › H12a · registro → verificación → onboarding → Google › 4. login con Google (servidor falso): recorre TODA la cadena de redirecciones hasta /resumen (1.4s)
+  ✘  53 [mobile] › ../../tests/e2e/h7-agentes.spec.ts:64:1 › agentes: gate/techo, demo determinista (FakeProvider) y tarjeta de ROI en Resumen -- recorrido real desde la UI (seeds reales) (18.7s)
+  ✓  68 [mobile] › ../../tests/e2e/h12a-registro-onboarding-google.spec.ts:229:3 › H12a · registro → verificación → onboarding → Google › 5. login con Google, correo no verificado: termina en /login con el error humano (1.2s)
+  ✘  52 [mobile] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) (3.0m)
+
+
+  1) [desktop] › ../../tests/e2e/h7-agentes.spec.ts:64:1 › agentes: gate/techo, demo determinista (FakeProvider) y tarjeta de ROI en Resumen -- recorrido real desde la UI (seeds reales) 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/sin datos todavía/i)
+    Expected: visible
+    Error: strict mode violation: getByText(/sin datos todavía/i) resolved to 4 elements:
+        1) <p class="text-[11px] text-muted-foreground">Sin datos todavía.</p> aka getByText('Sin datos todavía.').first()
+        2) <p class="text-[11px] text-muted-foreground">Sin datos todavía.</p> aka getByText('Sin datos todavía.').nth(1)
+        3) <p class="text-[11px] text-muted-foreground">Sin datos todavía.</p> aka getByText('Sin datos todavía.').nth(2)
+        4) <p class="text-sm text-muted-foreground">Sin datos todavía: ningún agente ha registrado un…</p> aka getByText('Sin datos todavía: ningún')
+
+    Call log:
+      - Expect "toBeVisible" getByText(/sin datos todavía/i) with timeout 15000ms
+      - waiting for getByText(/sin datos todavía/i)
+
+
+      147 |     // ejecuta en shadow (AgentRunner omite toda tool write/external/money) -- la tarjeta
+      148 |     // debe mostrar "sin datos todavía" de forma honesta, nunca un cero fabricado.
+    > 149 |     await expect(page.getByText(/sin datos todavía/i)).toBeVisible({ timeout: 15_000 });
+          |                                                        ^
+      150 |     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, `h7-resumen-roi-${vp?.width}x${vp?.height}.png`), fullPage: true });
+      151 |   } finally {
+      152 |     matarProceso(apiProc);
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/h7-agentes.spec.ts:149:56
+
+    Error Context: ../../tests/e2e/.playwright-results/h7-agentes-agentes-gate-te-34b8a-l-desde-la-UI-seeds-reales--desktop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/h7-agentes-agentes-gate-te-34b8a-l-desde-la-UI-seeds-reales--desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/h7-agentes-agentes-gate-te-34b8a-l-desde-la-UI-seeds-reales--desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [desktop] › ../../tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('$1,850 MXN')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('$1,850 MXN') with timeout 5000ms
+      - waiting for getByText('$1,850 MXN')
+
+
+      130 |     // auditoria-2/frontend [BAJO], corregido: "$1,850 MXN" con separador de miles
+      131 |     // (formatMoney compartido, packages/ui) -- antes se leía "$1850 MXN" sin separador.
+    > 132 |     await expect(page.getByText("$1,850 MXN")).toBeVisible();
+          |                                                ^
+      133 |   } finally {
+      134 |     matarProceso(apiProc);
+      135 |     matarProceso(webProc);
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/login-real-y-resumen.spec.ts:132:48
+
+    Error Context: ../../tests/e2e/.playwright-results/login-real-y-resumen-login-8a6dc-eales-calculadas-por-la-API-desktop/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/login-real-y-resumen-login-8a6dc-eales-calculadas-por-la-API-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/login-real-y-resumen-login-8a6dc-eales-calculadas-por-la-API-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [mobile] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) 
+
+    Test timeout of 180000ms exceeded.
+
+    Error: locator.click: Test timeout of 180000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: /cerrar con costo/i }).first()
+        - locator resolved to <button class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold tracking-[0.005em] ring-offset-background transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-border bg-card text-foreground hover:border-[color-mix(in_srgb,hsl(var(--foreground))_26%,…>Cerrar con costo</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <p class="text-sm text-muted-foreground flex-1">…</p> from <div role="region" aria-label="Consentimiento de cookies y analítica" class="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4 flex justify-center">…</div> subtree intercepts pointer events
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <p class="text-sm text-muted-foreground flex-1">…</p> from <div role="region" aria-label="Consentimiento de cookies y analítica" class="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4 flex justify-center">…</div> subtree intercepts pointer events
+        - retrying click action
+          - waiting 100ms
+        314 × waiting for element to be visible, enabled and stable
+            - element is visible, enabled and stable
+            - scrolling into view if needed
+            - done scrolling
+            - <p class="text-sm text-muted-foreground flex-1">…</p> from <div role="region" aria-label="Consentimiento de cookies y analítica" class="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4 flex justify-center">…</div> subtree intercepts pointer events
+          - retrying click action
+            - waiting 500ms
+
+
+      146 |     // Cerrar con costo: abre una solicitud de aprobación (dinero, doble confirmación) --
+      147 |     // NO cierra directo.
+    > 148 |     await page.getByRole("button", { name: /cerrar con costo/i }).first().click();
+          |                                                                           ^
+      149 |     await expect(page.getByRole("heading", { name: /cerrar ".*" con costo/i })).toBeVisible();
+      150 |     await page.getByLabel("Costo real (MXN)").fill("2500");
+      151 |     await page.getByRole("button", { name: "Solicitar autorización" }).click();
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:148:75
+
+    Error Context: ../../tests/e2e/.playwright-results/h6-housekeeping-mantenimie-8fdbe-l-desde-la-UI-seeds-reales--mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/h6-housekeeping-mantenimie-8fdbe-l-desde-la-UI-seeds-reales--mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/h6-housekeeping-mantenimie-8fdbe-l-desde-la-UI-seeds-reales--mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [mobile] › ../../tests/e2e/h7-agentes.spec.ts:64:1 › agentes: gate/techo, demo determinista (FakeProvider) y tarjeta de ROI en Resumen -- recorrido real desde la UI (seeds reales) 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/sin datos todavía/i)
+    Expected: visible
+    Error: strict mode violation: getByText(/sin datos todavía/i) resolved to 4 elements:
+        1) <p class="text-[11px] text-muted-foreground">Sin datos todavía.</p> aka getByText('Sin datos todavía.').first()
+        2) <p class="text-[11px] text-muted-foreground">Sin datos todavía.</p> aka getByText('Sin datos todavía.').nth(1)
+        3) <p class="text-[11px] text-muted-foreground">Sin datos todavía.</p> aka getByText('Sin datos todavía.').nth(2)
+        4) <p class="text-sm text-muted-foreground">Sin datos todavía: ningún agente ha registrado un…</p> aka getByText('Sin datos todavía: ningún')
+
+    Call log:
+      - Expect "toBeVisible" getByText(/sin datos todavía/i) with timeout 15000ms
+      - waiting for getByText(/sin datos todavía/i)
+
+
+      147 |     // ejecuta en shadow (AgentRunner omite toda tool write/external/money) -- la tarjeta
+      148 |     // debe mostrar "sin datos todavía" de forma honesta, nunca un cero fabricado.
+    > 149 |     await expect(page.getByText(/sin datos todavía/i)).toBeVisible({ timeout: 15_000 });
+          |                                                        ^
+      150 |     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, `h7-resumen-roi-${vp?.width}x${vp?.height}.png`), fullPage: true });
+      151 |   } finally {
+      152 |     matarProceso(apiProc);
+        at /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/tests/e2e/h7-agentes.spec.ts:149:56
+
+    Error Context: ../../tests/e2e/.playwright-results/h7-agentes-agentes-gate-te-34b8a-l-desde-la-UI-seeds-reales--mobile/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../tests/e2e/.playwright-results/h7-agentes-agentes-gate-te-34b8a-l-desde-la-UI-seeds-reales--mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../tests/e2e/.playwright-results/h7-agentes-agentes-gate-te-34b8a-l-desde-la-UI-seeds-reales--mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4 failed
+    [desktop] › ../../tests/e2e/h7-agentes.spec.ts:64:1 › agentes: gate/techo, demo determinista (FakeProvider) y tarjeta de ROI en Resumen -- recorrido real desde la UI (seeds reales) 
+    [desktop] › ../../tests/e2e/login-real-y-resumen.spec.ts:62:1 › login real (credenciales de la seed) → Resumen con cifras reales calculadas por la API 
+    [mobile] › ../../tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:64:1 › housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde la UI (seeds reales) 
+    [mobile] › ../../tests/e2e/h7-agentes.spec.ts:64:1 › agentes: gate/techo, demo determinista (FakeProvider) y tarjeta de ROI en Resumen -- recorrido real desde la UI (seeds reales) 
+  3 skipped
+  61 passed (4.5m)
+npm error Lifecycle script `e2e` failed with error:
+npm error code 1
+npm error path /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/apps/web
+npm error workspace @atiende/web@0.0.0
+npm error location /Users/javiercamaraportepetit/Documents/Codex/atiende-hoteles-staging/apps/web
+npm error command failed
+npm error command sh -c playwright test -c playwright.config.ts
+E2E_EXIT=1
