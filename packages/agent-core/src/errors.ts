@@ -86,6 +86,24 @@ export class ProviderNotImplementedError extends AgentCoreError {
   }
 }
 
+/** El proveedor respondio con un error HTTP NO transitorio (4xx salvo 429: credencial
+ * invalida/revocada, request mal formado, modelo inexistente en la cuenta, etc.).
+ * Deliberadamente distinto de `ProviderTransientError` (provider.ts): esta clase NUNCA
+ * dispara el fallback cross-provider de `AgentRunner`/`ProviderRouter` -- un 401 o un
+ * 400 no se arreglan reintentando con otro proveedor, necesitan revision humana de
+ * configuracion (credencial, nombre de modelo). `status` queda disponible para quien
+ * necesite distinguir el motivo exacto sin parsear el mensaje. */
+export class ProviderHttpError extends AgentCoreError {
+  readonly providerId: string;
+  readonly status: number;
+
+  constructor(providerId: string, status: number, message: string) {
+    super(message, "provider_http_error");
+    this.providerId = providerId;
+    this.status = status;
+  }
+}
+
 /** Operacion invalida sobre la cola de aprobacion (expirada, ya resuelta, doble voto, etc.). */
 export class ApprovalError extends AgentCoreError {
   constructor(message: string) {

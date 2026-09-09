@@ -666,14 +666,25 @@ describe("AgentRunner", () => {
     expect(result.status).toBe("error_proveedor");
   });
 
-  it("el mensaje de 'error_proveedor' NUNCA expone detalle interno (nombre de variable de " +
-    "entorno, hito H6a, etc.) al canal del humano/huesped (aud-1 tool-calling.md MEDIO #6)", async () => {
-    const provider = new EnvProvider({ env: { ANTHROPIC_API_KEY: "sk-test-123" } });
+  it("el mensaje de 'error_proveedor' NUNCA expone detalle interno (credencial, id de " +
+    "proveedor, endpoint) al canal del humano/huesped (aud-1 tool-calling.md MEDIO #6) -- " +
+    "fix/llm-openrouter-real: ahora con EnvProvider REAL, un fallo de red (puerto cerrado) " +
+    "cae en la misma rama generica del catch-all, sin fallbackProvider configurado", async () => {
+    const provider = new EnvProvider({
+      id: "openrouter-primario-secreto",
+      env: { OPENROUTER_API_KEY: "sk-secreta-de-prueba-123" },
+      // Puerto cerrado en loopback: falla la conexion de inmediato (ECONNREFUSED), sin
+      // esperar el timeout completo -- ProviderTransientError, y sin fallbackProvider
+      // configurado en este runner cae en la misma rama generica "error_proveedor".
+      baseUrl: "http://127.0.0.1:1/api/v1/chat/completions",
+      timeoutMs: 2_000,
+    });
     const runner = new AgentRunner(baseOptions({ provider }));
     const result = await runner.run(ctxFor(), "hola");
     expect(result.status).toBe("error_proveedor");
-    expect(result.message).not.toMatch(/ANTHROPIC_API_KEY/);
-    expect(result.message).not.toMatch(/H6a/);
+    expect(result.message).not.toMatch(/sk-secreta-de-prueba-123/);
+    expect(result.message).not.toMatch(/openrouter-primario-secreto/);
+    expect(result.message).not.toMatch(/127\.0\.0\.1/);
     expect(result.message).not.toMatch(/agent-core/);
   });
 
