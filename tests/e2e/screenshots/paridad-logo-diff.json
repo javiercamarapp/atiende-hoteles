@@ -1,0 +1,59 @@
+{
+  "capturadoEl": "2026-09-09T00:57:43.161Z",
+  "diffPixeles": {
+    "diffRatio": 0,
+    "totalPixeles": 12544,
+    "width": 392,
+    "height": 32
+  },
+  "tokensHoteles": {
+    "--background": "210 40% 98%",
+    "--foreground": "216 50% 12%",
+    "--primary": "224 76% 48%",
+    "--primary-foreground": "0 0% 100%",
+    "--secondary": "224 76% 48%",
+    "--muted": "210 30% 95%",
+    "--accent": "224 76% 48%",
+    "--destructive": "352 83% 41%",
+    "--border": "214 32% 91%",
+    "--input": "214 32% 91%",
+    "--ring": "224 76% 48%",
+    "--radius": ".75rem",
+    "--sidebar-background": "0 0% 100%",
+    "--sidebar-foreground": "216 50% 12%",
+    "--sidebar-primary": "224 76% 48%",
+    "--sidebar-accent": "210 30% 95%",
+    "--sidebar-accent-foreground": "224 76% 48%",
+    "--sidebar-border": "214 32% 91%",
+    "--sidebar-ring": "199 89% 48%"
+  },
+  "tokensRestaurantes": {
+    "--background": "210 40% 98%",
+    "--foreground": "216 50% 12%",
+    "--primary": "224 76% 48%",
+    "--primary-foreground": "0 0% 100%",
+    "--secondary": "224 76% 48%",
+    "--muted": "210 30% 95%",
+    "--accent": "224 76% 48%",
+    "--destructive": "352 83% 41%",
+    "--border": "214 32% 91%",
+    "--input": "214 32% 91%",
+    "--ring": "224 76% 48%",
+    "--radius": "0.75rem",
+    "--sidebar-background": "0 0% 100%",
+    "--sidebar-foreground": "216 50% 12%",
+    "--sidebar-primary": "224 76% 48%",
+    "--sidebar-accent": "210 30% 95%",
+    "--sidebar-accent-foreground": "224 76% 48%",
+    "--sidebar-border": "214 32% 91%",
+    "--sidebar-ring": "199 89% 48%"
+  },
+  "tipografia": {
+    "displayHoteles": "\"Inter Tight\", sans-serif",
+    "displayRestaurantes": "\"Inter Tight\", sans-serif",
+    "bodyHoteles": "Inter, sans-serif",
+    "bodyRestaurantes": "Inter, sans-serif",
+    "monoHoteles": "\"IBM Plex Mono\", ui-monospace, monospace",
+    "monoRestaurantes": "\"IBM Plex Mono\", ui-monospace, monospace"
+  }
+}

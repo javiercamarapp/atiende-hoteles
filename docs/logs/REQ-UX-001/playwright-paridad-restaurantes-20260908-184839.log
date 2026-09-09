@@ -1,0 +1,13 @@
+[WebServer] 6:53:03 p.m. [vite] warning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-swc" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] You or a plugin you are using have set `optimizeDeps.esbuildOptions` but this option is now deprecated. Vite now uses Rolldown to optimize the dependencies. Please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] `esbuild` option is set to false, but `oxc` option was not set to false. `esbuild: false` does not have effect any more. If you want to disable the default transformation, which is now handled by Oxc, please set `oxc: false` instead.
+
+Running 4 tests using 2 workers
+
+  -  1 [mobile] › ../../tests/e2e/visual/paridad-restaurantes.spec.ts:202:3 › Paridad visual en vivo — Atiende Hoteles vs. atiende-restaurantes (REQ-UX-001) › logo/tokens/tipografía: mismo Chrome, mismos flags --force-prefers-reduced-motion
+  -  3 [mobile] › ../../tests/e2e/visual/paridad-restaurantes.spec.ts:330:3 › Paridad visual en vivo — Atiende Hoteles vs. atiende-restaurantes (REQ-UX-001) › sidebar: mismo patrón (acordeón/colapso/bloque de cuenta) — marcadores de fuente + render real
+  ✓  2 [desktop] › ../../tests/e2e/visual/paridad-restaurantes.spec.ts:202:3 › Paridad visual en vivo — Atiende Hoteles vs. atiende-restaurantes (REQ-UX-001) › logo/tokens/tipografía: mismo Chrome, mismos flags --force-prefers-reduced-motion (4.3s)
+  ✓  4 [desktop] › ../../tests/e2e/visual/paridad-restaurantes.spec.ts:330:3 › Paridad visual en vivo — Atiende Hoteles vs. atiende-restaurantes (REQ-UX-001) › sidebar: mismo patrón (acordeón/colapso/bloque de cuenta) — marcadores de fuente + render real (1.9s)
+
+  2 skipped
+  2 passed (6.8s)
