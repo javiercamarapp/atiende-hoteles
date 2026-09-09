@@ -41,6 +41,8 @@ export {
   computeNoShowPenaltyAmounts,
   evaluateDiscountAuthorization,
   evaluateFolioClose,
+  ROOM_CHARGE_CONCEPTS_REQUIRING_IDENTITY,
+  assertRoomChargeIdentityVerified,
   type ChargeConcept,
   type ChargeCalcInput,
   type ChargeCalcResult,
@@ -49,6 +51,9 @@ export {
   type FolioCloseReason,
   type FolioCloseInput,
   type FolioCloseResult,
+  type RoomChargeIdentityClaim,
+  type RoomChargeIdentityVerificationInput,
+  type RoomChargeIdentityVerificationResult,
 } from "./folioEngine.ts";
 export { looksLikeCheckinDataInFreeText } from "./checkinFreeTextGuard.ts";
 export {

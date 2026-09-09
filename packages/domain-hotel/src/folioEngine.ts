@@ -117,6 +117,90 @@ export function evaluateDiscountAuthorization(input: DiscountAuthorizationInput)
 }
 
 // ---------------------------------------------------------------------------
+// REQ-AB-012 (P1/NF): doble verificación de identidad para un cargo que representa
+// "un rol de dinero afirma que EL HUÉSPED de esta habitación consumió/solicitó algo"
+// (fraude clásico: "cárguelo al 304" sin ser huésped de esa habitación) -- SIN
+// tarjeta presente y SIN ninguna otra autorización estructural propia.
+//
+// LECCIÓN DE DOS INTENTOS FALLIDOS ANTERIORES (2026-09-09): la primera versión de
+// este control solo se activaba cuando el cargo se declaraba con concept='ab', y un
+// segundo intento de arreglo solo protegió ese mismo valor del enum de forma más
+// estrecha -- en ambos casos, declarar CUALQUIER OTRO concepto (`extras`, u omitirlo
+// -> `otro`) para el MISMO hecho económico evadía el control por completo, porque
+// `concept` lo elige libremente el mismo actor que hace la petición. La guarda NUNCA
+// debe depender de qué concepto se declaró -- debe aplicarse por el HECHO ECONÓMICO
+// (¿es un cargo de consumo/servicio genérico sin tarjeta presente y sin su propia
+// autorización?), evaluado ANTES de mirar el campo `concepto`.
+export const ROOM_CHARGE_CONCEPTS_REQUIRING_IDENTITY: ReadonlySet<ChargeConcept> = new Set(["ab", "extras", "otro"]);
+
+export interface RoomChargeIdentityClaim {
+  /** Apellido declarado por quien pide el cargo (nunca el nombre completo -- basta
+   *  con que coincida CON el apellido real del huésped en archivo). */
+  readonly declaredLastName: string;
+  /** Últimos 4 dígitos del teléfono declarado. */
+  readonly declaredPhoneLast4: string;
+}
+
+export interface RoomChargeIdentityVerificationInput {
+  readonly concept: ChargeConcept;
+  /** Reclamo de identidad presentado por quien pide el cargo, o `null` si no se
+   *  presentó ninguno (nunca se infiere/adivina). */
+  readonly claim: RoomChargeIdentityClaim | null;
+  /** Datos reales del huésped titular de la reserva de este folio, o `null` si el
+   *  folio no tiene huésped identificado todavía. */
+  readonly guestLastName: string | null;
+  readonly guestPhoneLast4: string | null;
+  /** true si el actor de la petición tiene rol administrativo (owner/gm) -- puede
+   *  autorizar la excepción cuando falta el reclamo, NUNCA cuando el reclamo
+   *  presentado no coincide (una discrepancia activa jamás es overridable). */
+  readonly actorHasAdminRole: boolean;
+  readonly authorizedByAdminUserId?: string | null;
+}
+
+export interface RoomChargeIdentityVerificationResult {
+  readonly allowed: boolean;
+  readonly reason?: string;
+}
+
+function normalizeForCompare(value: string): string {
+  return value.trim().toLocaleLowerCase("es-MX").normalize("NFD").replace(/\p{Diacritic}/gu, "");
+}
+
+/** Fail-closed real: una DISCREPANCIA activa (el apellido o teléfono declarado NO
+ *  coincide con el del huésped real) nunca es overridable por ningún rol -- es la
+ *  señal más fuerte de que quien pide el cargo no es el huésped. La AUSENCIA de
+ *  reclamo (nadie lo presentó) o de dato del huésped (folio sin huésped aún) solo se
+ *  supera con autorización administrativa YA verificada por el llamador contra
+ *  `hotel_staff` (mismo patrón que `evaluateDiscountAuthorization`) -- este motor
+ *  nunca decide identidad de staff, solo aplica la regla con la autorización dada. */
+export function assertRoomChargeIdentityVerified(
+  input: RoomChargeIdentityVerificationInput,
+): RoomChargeIdentityVerificationResult {
+  if (!ROOM_CHARGE_CONCEPTS_REQUIRING_IDENTITY.has(input.concept)) return { allowed: true };
+
+  const hasAdminOverride = input.actorHasAdminRole || Boolean(input.authorizedByAdminUserId);
+
+  if (input.claim && input.guestLastName != null && input.guestPhoneLast4 != null) {
+    const lastNameMatches = normalizeForCompare(input.claim.declaredLastName) === normalizeForCompare(input.guestLastName);
+    const phoneMatches = input.claim.declaredPhoneLast4.trim() === input.guestPhoneLast4.trim();
+    if (lastNameMatches && phoneMatches) return { allowed: true };
+    return {
+      allowed: false,
+      reason: "El apellido/teléfono declarado no coincide con el huésped titular de esta habitación -- discrepancia activa, nunca overridable.",
+    };
+  }
+
+  if (hasAdminOverride) return { allowed: true };
+
+  return {
+    allowed: false,
+    reason:
+      "Este cargo representa un consumo/servicio sin tarjeta presente cobrado a la habitación de un huésped -- " +
+      "requiere verificar apellido+teléfono contra el huésped titular, o autorización de un rol administrativo (owner/gm).",
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Cierre de folio: saldo cero (tolerancia de redondeo) o cuenta por cobrar
 // autorizada por un rol administrativo.
 // ---------------------------------------------------------------------------

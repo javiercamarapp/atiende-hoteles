@@ -15,6 +15,8 @@ import {
   computeChargeAmounts,
   evaluateDiscountAuthorization,
   evaluateFolioClose,
+  assertRoomChargeIdentityVerified,
+  ROOM_CHARGE_CONCEPTS_REQUIRING_IDENTITY,
   type ChargeConcept,
 } from "@atiende-hoteles/domain-hotel";
 import { Errors } from "../lib/errors.ts";
@@ -32,6 +34,20 @@ const chargeSchema = z.object({
   monto: z.number().positive(),
   impuesto: z.number().nonnegative().optional(),
   concepto: z.enum(["hospedaje", "ab", "extras", "ajuste", "propina", "otro"]).default("otro"),
+  // REQ-AB-012: reclamo de identidad de quien pide el cargo (nunca del huésped mismo
+  // -- lo aporta el rol de dinero que atiende la solicitud). Se exige/verifica según
+  // el CONCEPTO real (ver ROOM_CHARGE_CONCEPTS_REQUIRING_IDENTITY), nunca depende de
+  // que el cliente lo declare voluntariamente.
+  verificacionIdentidad: z
+    .object({
+      apellido: z.string().trim().min(1).max(120),
+      telefonoUlt4: z.string().trim().length(4),
+    })
+    .optional()
+    .nullable(),
+  // Solo válido si autorizadoPorUserId resuelve a un rol admin (owner/gm) real,
+  // verificado contra hotel_staff -- mismo patrón que discountSchema.
+  autorizacionIdentidadPorUserId: z.string().uuid().optional().nullable(),
 });
 
 const discountSchema = z.object({
@@ -171,6 +187,32 @@ function serializeFolio(folio: FolioRow, charges: ChargeRow[], payments: Payment
  *  actor (p.ej. frontdesk trae la autorización de un gm que no está logueado en esta
  *  sesión). Nunca confía en un nombre/rol que venga del cuerpo de la solicitud sin
  *  verificarlo contra `hotel_staff`. */
+/** REQ-AB-012: apellido/teléfono REALES del huésped titular de la reserva de este
+ *  folio -- nunca se infieren del cargo ni del cliente, siempre de la reserva ya
+ *  registrada. `null` si el folio no tiene huésped identificado todavía (ej. folio
+ *  de cortesía/interno). Se extrae el "apellido" de forma simple (última palabra de
+ *  `full_name`) porque `guest` no separa nombre/apellido en columnas -- documentado
+ *  aquí para que quien lo lea no asuma que hay parsing más sofisticado. */
+async function loadFolioGuestIdentity(
+  db: DbClient,
+  folio: FolioRow,
+): Promise<{ lastName: string | null; phoneLast4: string | null }> {
+  if (folio.reservation_id == null) return { lastName: null, phoneLast4: null };
+  const { rows } = await db.query<{ full_name: string | null; phone: string | null }>(
+    `select g.full_name, g.phone
+     from public.reservation r
+     join public.guest g on g.id = r.guest_id
+     where r.id = $1;`,
+    [folio.reservation_id],
+  );
+  const row = rows[0];
+  if (!row) return { lastName: null, phoneLast4: null };
+  const nameParts = (row.full_name ?? "").trim().split(/\s+/).filter(Boolean);
+  const lastName = nameParts.length > 0 ? nameParts[nameParts.length - 1]! : null;
+  const phoneLast4 = row.phone && row.phone.length >= 4 ? row.phone.slice(-4) : null;
+  return { lastName, phoneLast4 };
+}
+
 async function isAdminStaff(db: DbClient, hotelId: string, userId: string): Promise<boolean> {
   const { rows } = await db.query<{ role: string }>(
     "select role from public.hotel_staff where hotel_id = $1 and user_id = $2;",
@@ -234,6 +276,7 @@ export function foliosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
     const orgId = c.get("orgId");
     const hotelId = c.req.param("hotelId");
     const folioId = c.req.param("folioId");
+    const role = c.get("hotelRole") as HotelRole;
     const body = parseBody(chargeSchema, await c.req.json().catch(() => ({})));
 
     const folio = await loadFolio(db, hotelId, folioId);
@@ -243,6 +286,29 @@ export function foliosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
       db,
       { tenantId: orgId, scope: "charge.create", key: idempotencyKey, body },
       async () => {
+        // REQ-AB-012: la verificación corre por el CONCEPTO REAL del cargo, nunca
+        // condicionada a que el cliente haya elegido declararla -- ver el comentario
+        // de assertRoomChargeIdentityVerified sobre los dos intentos previos que
+        // fallaron por depender del valor de `concepto` para decidir si aplicar el
+        // control.
+        if (ROOM_CHARGE_CONCEPTS_REQUIRING_IDENTITY.has(body.concepto)) {
+          const guest = await loadFolioGuestIdentity(db, folio);
+          const authorizedByAdmin = body.autorizacionIdentidadPorUserId
+            ? await isAdminStaff(db, hotelId, body.autorizacionIdentidadPorUserId)
+            : false;
+          const verification = assertRoomChargeIdentityVerified({
+            concept: body.concepto,
+            claim: body.verificacionIdentidad
+              ? { declaredLastName: body.verificacionIdentidad.apellido, declaredPhoneLast4: body.verificacionIdentidad.telefonoUlt4 }
+              : null,
+            guestLastName: guest.lastName,
+            guestPhoneLast4: guest.phoneLast4,
+            actorHasAdminRole: (ADMIN_ROLES as string[]).includes(role),
+            authorizedByAdminUserId: authorizedByAdmin ? body.autorizacionIdentidadPorUserId : null,
+          });
+          if (!verification.allowed) throw Errors.forbidden(verification.reason);
+        }
+
         const taxConfig = await loadHotelMoneyConfig(db, hotelId);
         // F1/REQ-BO-001: el impuesto SIEMPRE lo calcula el motor determinista desde
         // `hotel_tax_config` -- un cliente (incluido un rol de dinero como frontdesk)
