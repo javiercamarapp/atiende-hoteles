@@ -141,6 +141,13 @@ function looksLikeRealSecretValue(value: string): boolean {
   // ya no pasaría por aquí porque no es un único literal de 16+ caracteres).
   if (/^\d+$/.test(value)) return false;
   if (/^https?:\/\//i.test(value)) return false;
+  // `ASSIGNMENT_PATTERN` acepta comillas simples/dobles/backtick por igual, así que
+  // captura el texto CRUDO de un template literal con interpolación (ej.
+  // `sim-access-${randomUUID()}`) como si fuera un literal estático -- su longitud de
+  // fuente puede superar 16 caracteres sin que el valor en tiempo de ejecución sea
+  // nunca el mismo dos veces. Un `${...}` real (no texto casual) nunca es un secreto
+  // hardcodeado por definición -- se calcula distinto en cada ejecución.
+  if (/\$\{[^}]+\}/.test(value)) return false;
   return true;
 }
 
