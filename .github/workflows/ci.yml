@@ -126,6 +126,17 @@ jobs:
       # este repo, REQ-GOB-004), este paso además la hace fallar rápido contra el
       # backlog real, antes de la suite completa (ADR-009).
       - run: node scripts/checks/cierre-tarea-conventional-commits.ts
+      # REQ-SEG-013 (GOB-041): falla si aparece un `.env` real (no `.env.example`)
+      # trackeado por git, si un `.env.example` trae un valor no vacío para una clave
+      # de nombre sensible (`*_SECRET`/`*_TOKEN`/`*_KEY`/`*_PASSWORD`), o si aparece un
+      # literal de aspecto real asignado a un nombre sensible en `apps/*/src` o
+      # `packages/*/src` (sin contar los `FAKE_*`/`DEV_*` ya documentados como
+      # simulados/de desarrollo) -- ver scripts/checks/env-sin-secretos-reales.ts. Este
+      # script SOLO cubre la mitad estática de REQ-SEG-013; la capa de Vault/KMS en
+      # producción (apps/api/src/lib/secretsProvider.ts) sigue sin credenciales/
+      # infraestructura real para probarse de extremo a extremo (ver
+      # docs/REQUISITOS.md).
+      - run: node scripts/checks/env-sin-secretos-reales.ts
       - run: npm test
       - name: Guardar logs de prueba como artifact (si algo falló)
         if: failure()

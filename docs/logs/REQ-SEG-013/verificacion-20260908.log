@@ -1,0 +1,39 @@
+=== REQ-SEG-013 — evidencia (2026-09-08) ===
+
+--- node --experimental-strip-types scripts/checks/env-sin-secretos-reales.ts ---
+REQ-SEG-013 OK: 0 `.env` real trackeado, 0 valor real en `.env.example`, 0 secreto hardcodeado detectado en apps/**/src ni packages/**/src.
+exit=0
+
+--- npx vitest run --config vitest.config.ts tests/unit/api/secrets-provider.spec.ts ---
+
+ RUN  v3.2.7 /private/tmp/hoteles-fix-secrets-management
+
+ ✓ tests/unit/api/secrets-provider.spec.ts (13 tests) 7ms
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  23:03:49
+   Duration  293ms (transform 28ms, setup 0ms, collect 27ms, tests 7ms, environment 0ms, prepare 35ms)
+
+
+--- npx eslint apps/api/src/lib/secretsProvider.ts apps/api/src/server.ts tests/unit/api/secrets-provider.spec.ts scripts/checks/env-sin-secretos-reales.ts ---
+exit=0
+
+--- Nota honesta sobre alcance de esta verificación ---
+`npx vitest run tests/unit` (suite completa) se corrió también como sanity check: 622
+tests pasaron, 2 fallaron y 19 suites completas fallaron al importar
+`packages/domain-hotel/src/index.ts` (referencia a `./voiceGuardrails.ts` y otros 5
+archivos que NO existen en este árbol de trabajo, checkout limpio de
+`origin/main` @ e8a3c0f). Confirmado con `git stash` que estas 21 fallas son
+IDÉNTICAS sin ninguno de los cambios de esta tarea -- son una condición preexistente
+de `origin/main`, no introducida por REQ-SEG-013, y fuera de alcance de esta tarea
+(no se intentó reconstruir esos archivos: equivaldría a inventar la implementación de
+otros requisitos sin base real). Por el mismo motivo, tampoco fue posible arrancar
+`apps/api/src/server.ts` como proceso real de extremo a extremo en esta máquina: el
+Node instalado (v26.7.0) ya no expone el flag `--experimental-transform-types` que
+`apps/api/package.json`/README documentan como necesario para las *parameter
+properties* de `packages/mcp-servers/payments/src/port.ts` (y otros) -- confirmado
+también idéntico sin los cambios de esta tarea. La verificación de REQ-SEG-013 en
+esta entrega se apoya en: unit tests aislados de `secretsProvider.ts` (import directo
+del archivo, sin pasar por el índice roto de `apps/api`), el script estático nuevo, y
+typecheck/lint aislados de los archivos tocados (ambos limpios).
