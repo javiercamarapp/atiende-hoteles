@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/integration/schema/location.spec.ts (7 tests) 807ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  15:33:15
+   Duration  980ms (transform 30ms, setup 0ms, collect 55ms, tests 807ms, environment 0ms, prepare 30ms)
+

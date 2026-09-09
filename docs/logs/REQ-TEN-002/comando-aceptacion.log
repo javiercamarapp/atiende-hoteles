@@ -1,0 +1,12 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/integration/schema/location.spec.ts (7 tests) 819ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  15:33:16
+   Duration  1.01s (transform 35ms, setup 0ms, collect 63ms, tests 819ms, environment 0ms, prepare 31ms)
+
+REQ-TEN-002 OK: `hotel` existe una sola vez y es una extensión 1:1 de `location` (id → location(id)).
+exit=0
