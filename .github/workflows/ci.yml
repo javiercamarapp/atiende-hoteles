@@ -207,3 +207,24 @@ jobs:
       # docs/auditoria-1/dependencias.md, nunca silenciadas sin registro.
       - run: npm audit --audit-level=high
 
+  secret-scan:
+    name: secret-scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # REQ-SEG-012 (GOB-014/GOB-040): "nunca debe persistirse PAN, CVV, e.firma
+      # (.cer/.key/.pfx/.p12), tokens de API ni contraseñas en código, logs, fixtures,
+      # prompts o commits; CI debe ejecutar escaneo de secretos en cada PR" -- este job
+      # corre gitleaks (reglas por defecto + `.gitleaks.toml`, ver ese archivo para el
+      # detalle de reglas propias PAN/CVV/e.firma y los allowlists documentados de datos
+      # de PRUEBA nunca reales) contra el historial completo (`fetch-depth: 0`) en cada
+      # push/PR, y falla el job (bloqueante) si encuentra un hallazgo real. Verificación
+      # manual previa (repo real, 0 hallazgos; y que SÍ bloquea un secreto de prueba
+      # inyectado): docs/logs/REQ-SEG-012/.
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_CONFIG: .gitleaks.toml
+

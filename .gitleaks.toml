@@ -1,0 +1,77 @@
+title = "gitleaks — atiende-hoteles (REQ-SEG-012)"
+
+# REQ-SEG-012 (GOB-014, GOB-040): nunca debe persistirse PAN, CVV, e.firma
+# (.cer/.key/.pfx/.p12), tokens de API ni contraseñas en código, logs, fixtures,
+# prompts o commits. Este archivo extiende el conjunto de reglas por defecto de
+# gitleaks (~180 reglas: AWS, GCP, Slack, Stripe, JWT, claves privadas PEM,
+# contraseñas/tokens genéricos, etc. — cubren "tokens de API"/"contraseñas") con
+# reglas propias para lo que el default de gitleaks no cubre en este dominio: PAN,
+# CVV y archivos de e.firma del SAT.
+#
+# Ejecución: `gitleaks detect --source . --config .gitleaks.toml -v` (ver job
+# `secret-scan` en .github/workflows/ci.yml). Evidencia y metodología de
+# verificación: docs/logs/REQ-SEG-012/.
+
+[extend]
+useDefault = true
+
+# --- Reglas propias ---------------------------------------------------------
+
+[[rules]]
+id = "pan-tarjeta"
+description = "Número de tarjeta (PAN) completo de una marca reconocida (Visa/Mastercard/Amex/Discover)."
+regex = '''\b(?:4[0-9]{3}[ ]?[0-9]{4}[ ]?[0-9]{4}[ ]?[0-9]{1,4}|5[1-5][0-9]{2}[ ]?[0-9]{4}[ ]?[0-9]{4}[ ]?[0-9]{4}|3[47][0-9]{2}[ ]?[0-9]{6}[ ]?[0-9]{5}|6(?:011|5[0-9]{2})[ ]?[0-9]{4}[ ]?[0-9]{4}[ ]?[0-9]{4})\b'''
+keywords = ["4", "5", "3", "6"]
+# Nota: sin "-" como separador válido (a diferencia de un formato de tarjeta real con
+# guiones, que es raro en el código/fixtures de este repo) para no confundir un PAN
+# con un UUID (p.ej. "11111111-2222-3333-4444-555555555555") -- verificado
+# (docs/logs/REQ-SEG-012/).
+
+[rules.allowlist]
+description = "Números de tarjeta de prueba universales de las pasarelas (nunca un PAN real), usados solo para probar la redacción de datos de pago en texto libre."
+regexes = [
+  '''4111[ -]?1111[ -]?1111[ -]?1111''',
+  '''4242[ -]?4242[ -]?4242[ -]?4242''',
+  '''5555[ -]?5555[ -]?5555[ -]?4444''',
+  '''3782[ -]?822463[ -]?10005''',
+  '''6011[ -]?1111[ -]?1111[ -]?1117''',
+]
+paths = [
+  '''tests/unit/domain-hotel/payment-free-text-guard\.spec\.ts''',
+  '''tests/integration/api/mensajeria\.spec\.ts''',
+]
+
+[[rules]]
+id = "cvv-con-contexto"
+description = "CVV/CVC de tarjeta junto a su etiqueta."
+regex = '''(?i)\bcvv2?\b\D{0,10}[0-9]{3,4}\b'''
+keywords = ["cvv", "cvc"]
+
+[rules.allowlist]
+description = "CVV de prueba (acompaña al PAN de prueba de la misma fixture) — nunca un CVV real."
+regexes = ['''(?i)cvv\D{0,10}123\b''']
+paths = [
+  '''tests/unit/domain-hotel/payment-free-text-guard\.spec\.ts''',
+  '''tests/integration/api/mensajeria\.spec\.ts''',
+]
+
+[[rules]]
+id = "e-firma-archivo"
+description = "Archivo de e.firma del SAT (certificado/llave .cer/.key/.pfx/.p12) — nunca debe comitearse un archivo de e.firma real."
+regex = '''.'''
+path = '''(?i)\.(cer|key|pfx|p12)$'''
+
+# --- Falsos positivos conocidos del default de gitleaks ---------------------
+
+[allowlist]
+description = "Falsos positivos verificados manualmente: no son secretos."
+paths = [
+  # Manifiesto de checksums SHA-256 de archivos de migración (alta entropía, no
+  # secretos) — scripts/check-migraciones.ts es quien los genera y verifica.
+  '''scripts/checks/migraciones-checksums\.json''',
+]
+regexes = [
+  # Secreto JWT fijo para levantar el servidor de prueba en e2e — nombre explícito
+  # "no-usar-en-produccion", usado únicamente dentro de tests/e2e.
+  '''e2e-test-jwt-secret-no-usar-en-produccion''',
+]

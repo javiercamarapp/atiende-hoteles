@@ -1,0 +1,65 @@
+
+    ○
+    │╲
+    │ ○
+    ○ ░
+    ░    gitleaks
+
+Finding:     "0001_extensions_and_auth.sql": "[1;3;m81e0641e8a823cc5035cba401e3ec7862af4a23ac7cba2506cde06da23268ceb[0m"
+Secret:      [1;3;m81e0641e8a823cc5035cba401e3ec7862af4a23ac7cba2506cde06da23268ceb[0m
+RuleID:      generic-api-key
+Entropy:     3.747982
+File:        scripts/checks/migraciones-checksums.json
+Line:        2
+Fingerprint: scripts/checks/migraciones-checksums.json:generic-api-key:2
+
+Finding:     "0022_idempotency_key_ttl.sql": "[1;3;m83faedf4d4e613c5612806cf16475828b853555b40497a13ca9140ecc6130557[0m"
+Secret:      [1;3;m83faedf4d4e613c5612806cf16475828b853555b40497a13ca9140ecc6130557[0m
+RuleID:      generic-api-key
+Entropy:     3.867537
+File:        scripts/checks/migraciones-checksums.json
+Line:        23
+Fingerprint: scripts/checks/migraciones-checksums.json:generic-api-key:23
+
+Finding:     JWT_SECRET: "[1;3;me2e-test-jwt-secret-no-usar-en-produccion[0m"
+Secret:      [1;3;me2e-test-jwt-secret-no-usar-en-produccion[0m
+RuleID:      generic-api-key
+Entropy:     3.676193
+File:        tests/e2e/h4-reserva-real-desde-ui.spec.ts
+Line:        93
+Fingerprint: tests/e2e/h4-reserva-real-desde-ui.spec.ts:generic-api-key:93
+
+Finding:     JWT_SECRET: "[1;3;me2e-test-jwt-secret-no-usar-en-produccion[0m"
+Secret:      [1;3;me2e-test-jwt-secret-no-usar-en-produccion[0m
+RuleID:      generic-api-key
+Entropy:     3.676193
+File:        tests/e2e/h5-cargo-y-pago-desde-ui.spec.ts
+Line:        91
+Fingerprint: tests/e2e/h5-cargo-y-pago-desde-ui.spec.ts:generic-api-key:91
+
+Finding:     JWT_SECRET: "[1;3;me2e-test-jwt-secret-no-usar-en-produccion[0m"
+Secret:      [1;3;me2e-test-jwt-secret-no-usar-en-produccion[0m
+RuleID:      generic-api-key
+Entropy:     3.676193
+File:        tests/e2e/h7-agentes.spec.ts
+Line:        85
+Fingerprint: tests/e2e/h7-agentes.spec.ts:generic-api-key:85
+
+Finding:     JWT_SECRET: "[1;3;me2e-test-jwt-secret-no-usar-en-produccion[0m"
+Secret:      [1;3;me2e-test-jwt-secret-no-usar-en-produccion[0m
+RuleID:      generic-api-key
+Entropy:     3.676193
+File:        tests/e2e/login-real-y-resumen.spec.ts
+Line:        84
+Fingerprint: tests/e2e/login-real-y-resumen.spec.ts:generic-api-key:84
+
+Finding:     JWT_SECRET: "[1;3;me2e-test-jwt-secret-no-usar-en-produccion[0m"
+Secret:      [1;3;me2e-test-jwt-secret-no-usar-en-produccion[0m
+RuleID:      generic-api-key
+Entropy:     3.676193
+File:        tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts
+Line:        90
+Fingerprint: tests/e2e/h6-housekeeping-mantenimiento-mensajeria.spec.ts:generic-api-key:90
+
+[90m3:37PM[0m [32mINF[0m [1mscanned ~5218175 bytes (5.22 MB) in 685ms[0m
+[90m3:37PM[0m [33mWRN[0m [1mleaks found: 7[0m

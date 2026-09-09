@@ -1,0 +1,13 @@
+Comando: git ls-files | grep -E '(^|/)\.env($|\.)'
+(confirma que ningun .env real esta versionado -- solo .env.example)
+
+apps/api/.env.example
+apps/web/.env.example
+
+Archivos .env.example versionados (correcto, son plantillas sin secretos):
+apps/api/.env.example
+apps/web/.env.example
+
+.gitignore (fragmento relevante):
+9:.env
+10:.env.*

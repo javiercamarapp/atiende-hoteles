@@ -1,0 +1,16 @@
+Comando real de CI (job secret-scan, .github/workflows/ci.yml):
+  gitleaks detect --source . --config .gitleaks.toml -v --redact
+gitleaks version: 8.30.1
+
+
+    ○
+    │╲
+    │ ○
+    ○ ░
+    ░    gitleaks
+
+3:42PM INF 10 commits scanned.
+3:42PM INF scanned ~5030250 bytes (5.03 MB) in 708ms
+3:42PM INF no leaks found
+
+EXIT=0 (0 => sin hallazgos, no bloquea)

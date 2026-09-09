@@ -17,3 +17,4 @@ tests/**/screenshots/*.tmp.png
 *.tsbuildinfo
 .claude/
 .vercel/
+.gstack/
