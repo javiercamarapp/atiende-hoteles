@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-rev-restantes
+
+ ✓ tests/integration/revenue/revenue-engine-gate.spec.ts (12 tests) 3695ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  01:27:56
+   Duration  4.52s (transform 136ms, setup 0ms, collect 271ms, tests 3.70s, environment 0ms, prepare 240ms)
+

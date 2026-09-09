@@ -346,3 +346,18 @@ export {
   type WalkForwardBacktestInput,
   type WalkForwardBacktestResult,
 } from "./revenue/walkForwardBacktest.ts";
+export {
+  PriceExplanationError,
+  assertValidPriceRecommendationInput,
+  explainPriceRecommendation,
+  type PriceFactorKind,
+  type PickupFactor,
+  type CompsetFactor,
+  type EventoFactor,
+  type TipoCambioFactor,
+  type PriceFactor,
+  type PriceRecommendationInput,
+  type ExplainedFactor,
+  type PriceDirection,
+  type PriceRecommendationExplanation,
+} from "./revenue/priceRecommendationExplainer.ts";
