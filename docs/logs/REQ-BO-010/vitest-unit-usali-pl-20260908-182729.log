@@ -1,0 +1,12 @@
+=== npx vitest run tests/unit/domain-hotel/usali-pl.spec.ts ===
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/domain-hotel/usali-pl.spec.ts (10 tests) 9ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  18:27:50
+   Duration  656ms (transform 157ms, setup 0ms, collect 288ms, tests 9ms, environment 0ms, prepare 77ms)
+
+exit code: 0

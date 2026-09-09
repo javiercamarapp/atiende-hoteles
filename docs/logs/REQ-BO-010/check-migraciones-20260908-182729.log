@@ -1,0 +1,3 @@
+=== node --experimental-strip-types scripts/check-migraciones.ts ===
+check-migraciones: OK (71 migración(es) verificadas contra el manifiesto base, 0 DROP/ALTER destructivo sin aprobar).
+exit code: 0

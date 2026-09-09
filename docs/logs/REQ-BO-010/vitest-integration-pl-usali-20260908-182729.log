@@ -1,0 +1,14 @@
+=== npx vitest run tests/integration/bo/pl-usali.spec.ts  (comando de ACEPTACION.md) ===
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+(node:7749) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ✓ tests/integration/bo/pl-usali.spec.ts (4 tests) 1447ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  18:27:58
+   Duration  2.43s (transform 398ms, setup 0ms, collect 708ms, tests 1.45s, environment 0ms, prepare 48ms)
+
+exit code: 0

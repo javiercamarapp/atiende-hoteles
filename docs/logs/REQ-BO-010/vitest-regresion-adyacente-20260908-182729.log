@@ -1,0 +1,40 @@
+=== npx vitest run tests que ejercitan el esquema/roles no relacionados (regresion) ===
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/integration/reservas/modificacion-concurrencia.spec.ts (1 test) 2733ms
+ ✓ tests/integration/reservas/cancelacion-libera-inventario.spec.ts (3 tests) 2778ms
+ ✓ tests/integration/reservas/folio-al-confirmar.spec.ts (2 tests) 2868ms
+ ✓ tests/adversarial/roles.spec.ts (20 tests) 4479ms
+ ✓ tests/integration/reservas/monto-exacto-multi-noche.spec.ts (2 tests) 2482ms
+ ✓ tests/integration/reservas/no-show-idempotente.spec.ts (4 tests) 2467ms
+ ✓ tests/integration/folio/cargos-descuentos-reverso.spec.ts (9 tests) 2966ms
+ ✓ tests/integration/folio/split-transferencia-cierre.spec.ts (5 tests) 3024ms
+ ✓ tests/integration/folio/pago-concurrente.spec.ts (2 tests) 2643ms
+ ✓ tests/integration/reservas/lista-espera.spec.ts (4 tests) 2727ms
+ ✓ tests/integration/reservas/overbooking-controlado.spec.ts (2 tests) 2486ms
+ ✓ tests/integration/reservas/disponibilidad-grid.spec.ts (2 tests) 2940ms
+ ✓ tests/integration/schema/location.spec.ts (7 tests) 2341ms
+ ✓ tests/integration/folio/event-sourcing.spec.ts (1 test) 2287ms
+ ✓ tests/unit/rls/org-isolation.spec.ts (4 tests) 15075ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org compartido del fixture no ve nada del org independiente  5157ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > SELECT: un usuario del org independiente tampoco ve el org compartido del fixture  3847ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > current_tenant_ids() del usuario del org independiente NO incluye el org del fixture  3455ms
+   ✓ aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org > INSERT: rechazado al intentar escribir en el hotel de otro org  2612ms
+ ✓ tests/unit/rls/tenant-isolation.spec.ts (4 tests) 15100ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > SELECT: solo devuelve filas del hotel del usuario  5305ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > INSERT: rechazado con violacion de politica al escribir en el hotel ajeno  3802ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > UPDATE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  3534ms
+   ✓ aislamiento de tenant entre hoteles (RLS, room_type) > DELETE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion)  2459ms
+ ✓ tests/unit/rls/money-role.spec.ts (4 tests) 15195ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer folio  5253ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede leer charge ni payment  3911ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > housekeeping no puede insertar un payment  3532ms
+   ✓ acceso a dinero restringido por rol (folio/charge/payment) > gm (rol con acceso a dinero) si puede leer folio/charge/payment de su hotel  2498ms
+
+ Test Files  17 passed (17)
+      Tests  76 passed (76)
+   Start at  18:28:08
+   Duration  15.68s (transform 1.33s, setup 0ms, collect 13.83s, tests 84.59s, environment 2ms, prepare 1.38s)
+
+exit code: 0

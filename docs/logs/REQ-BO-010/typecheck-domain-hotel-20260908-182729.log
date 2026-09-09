@@ -1,0 +1,6 @@
+=== typecheck: @atiende-hoteles/domain-hotel (limpio) ===
+
+> @atiende-hoteles/domain-hotel@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+
+exit code: 0
