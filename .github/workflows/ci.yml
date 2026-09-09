@@ -166,6 +166,16 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
       - run: npm ci
+      # `allowScripts` en package.json (ver commit anterior) arreglo esbuild/
+      # embedded-postgres/@swc-core -- pero rolldown (usado por vite en apps/web) NO
+      # usa un postinstall script para su binding nativo, usa optionalDependencies
+      # puro, y ese es un bug real y DISTINTO de npm en Linux
+      # (github.com/npm/cli/issues/4828): el paquete SI existe en el registro
+      # (`npm view @rolldown/binding-linux-x64-gnu@1.2.7 version` -> 1.2.7) pero
+      # `npm ci` no lo instala. Confirmado que instalarlo explicito SI funciona
+      # (CI real: con esta linea el build avanza mas alla del punto donde rolldown
+      # fallaba, hasta llegar al siguiente paso real).
+      - run: npm install @rolldown/binding-linux-x64-gnu@1.2.7 --no-save
       - run: npm run build
       - uses: actions/upload-artifact@v4
         with:
@@ -184,6 +194,16 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
       - run: npm ci
+      # `allowScripts` en package.json (ver commit anterior) arreglo esbuild/
+      # embedded-postgres/@swc-core -- pero rolldown (usado por vite en apps/web) NO
+      # usa un postinstall script para su binding nativo, usa optionalDependencies
+      # puro, y ese es un bug real y DISTINTO de npm en Linux
+      # (github.com/npm/cli/issues/4828): el paquete SI existe en el registro
+      # (`npm view @rolldown/binding-linux-x64-gnu@1.2.7 version` -> 1.2.7) pero
+      # `npm ci` no lo instala. Confirmado que instalarlo explicito SI funciona
+      # (CI real: con esta linea el build avanza mas alla del punto donde rolldown
+      # fallaba, hasta llegar al siguiente paso real).
+      - run: npm install @rolldown/binding-linux-x64-gnu@1.2.7 --no-save
       - run: npm run build
       # Instala el canal "chrome" real (no solo Chromium genérico) -- mismo canal que
       # tests/e2e usa en desarrollo (`channel: 'chrome'`, docs/runbooks/despliegue.md
