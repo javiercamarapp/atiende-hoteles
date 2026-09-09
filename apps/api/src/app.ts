@@ -28,6 +28,7 @@ import { experienciasPublicasRoutes } from "./routes/experienciasPublicas.ts";
 import { identidadRoutes } from "./routes/identidad.ts";
 import { conocimientoLocalRoutes } from "./routes/conocimientoLocal.ts";
 import { backOfficeRoutes } from "./routes/backOffice.ts";
+import { pedidosFnbRoutes } from "./routes/pedidosFnb.ts";
 import { checkinOnlineRoutes } from "./routes/checkinOnline.ts";
 import { housekeepingRoutes } from "./routes/housekeeping.ts";
 import { mantenimientoRoutes } from "./routes/mantenimiento.ts";
@@ -206,6 +207,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", identidadRoutes(deps));
   app.route("/", conocimientoLocalRoutes(deps));
   app.route("/", backOfficeRoutes(deps));
+  app.route("/", pedidosFnbRoutes(deps));
   app.route("/", checkinOnlineRoutes(deps));
   app.route("/", housekeepingRoutes(deps));
   app.route("/", mantenimientoRoutes(deps));
