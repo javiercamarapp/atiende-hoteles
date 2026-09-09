@@ -2,7 +2,7 @@
 // "El sistema debe registrar, para cada agente/módulo con impacto económico, una línea
 // base firmada en la semana 1 ...; ningún cobro por resultado se activa sin línea base
 // firmada." Verificado aquí contra Postgres REAL (embedded-postgres, ADR-003) --
-// `packages/db/migrations/0112_roi_baseline_cobro_resultado.sql` es la autoridad de
+// `packages/db/migrations/0120_roi_baseline_cobro_resultado.sql` es la autoridad de
 // verdad, no la aplicación: ninguna sesión (ni siquiera owner/gm, que sí puede escribir
 // la fila por RLS) puede activar un cobro por resultado sin una línea base FIRMADA, ni
 // firmar una línea base fuera de la ventana de "semana 1" (7 días desde que el

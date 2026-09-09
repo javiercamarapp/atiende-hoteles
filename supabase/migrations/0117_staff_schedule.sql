@@ -1,4 +1,4 @@
--- ORIGEN: packages/db/migrations/0090_staff_schedule.sql sha256:e3a5333504e99af25cf452e3e4b9711b09a651bc9d2b40770c169ad995f86cb4
+-- ORIGEN: packages/db/migrations/0117_staff_schedule.sql sha256:e3a5333504e99af25cf452e3e4b9711b09a651bc9d2b40770c169ad995f86cb4
 -- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
 -- nuevo el script tras cambiar la migración fuente.
 

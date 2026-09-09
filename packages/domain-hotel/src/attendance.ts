@@ -1,6 +1,6 @@
 // REQ-BO-024 (P0/GOB, LFT art.132 fr.XXXIV): cruce puro (sin I/O) de lo REALMENTE
 // trabajado (eventos `entrada`/`salida` del checador, `attendance_log` en
-// packages/db/migrations/0091_attendance_log.sql) contra el horario programado
+// packages/db/migrations/0118_attendance_log.sql) contra el horario programado
 // (`staff_schedule`, migracion 0090), para marcar horas extra NO autorizadas. Espejo de
 // la regla de negocio para que apps/api y el frontend puedan explicar/probar el cálculo
 // sin depender de Postgres, siguiendo el mismo criterio que `overbooking.ts`/`taxes.ts`.

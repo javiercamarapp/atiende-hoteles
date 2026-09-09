@@ -3,7 +3,7 @@
 // (estricto FIFO), a precio directo sin comisión. Este módulo es la contraparte
 // determinista/sin I/O de `apps/api/src/pms/waitlistOffer.ts` (que hace la lectura
 // real de `public.hotel_waitlist_entry` bajo advisory row lock) y de la migración
-// `packages/db/migrations/0096_waitlist.sql` -- mismo principio de "el motor de
+// `packages/db/migrations/0119_waitlist.sql` -- mismo principio de "el motor de
 // dominio es puro" que packages/domain-hotel/src/overbooking.ts/cancellationPolicy.ts.
 //
 // "Precio directo sin comisión": este sistema NUNCA modela una tarifa de OTA/canal

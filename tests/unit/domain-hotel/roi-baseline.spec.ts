@@ -1,5 +1,5 @@
 // REQ-REV-018 (P0/OBS-GOB, BP-015/BP-131): espejo puro de la máquina de estados real de
-// `packages/db/migrations/0112_roi_baseline_cobro_resultado.sql` (ver
+// `packages/db/migrations/0120_roi_baseline_cobro_resultado.sql` (ver
 // tests/adversarial/roi-sin-linea-base.spec.ts para la verificación contra Postgres
 // real) -- mismo criterio que tests/unit/domain-hotel/revenue-engine-gate.spec.ts frente
 // a su contraparte de integración.

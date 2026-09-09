@@ -2,7 +2,7 @@
 // la cola FIFO por room_type + rango exacto de fechas (POST), listado ordenado por
 // llegada a la cola (GET) y aceptación de una oferta activa (POST .../aceptar), que
 // crea la reserva real al precio directo congelado en la oferta (nunca recalculado —
-// ver comentario de `offer_amount` en packages/db/migrations/0096_waitlist.sql). La
+// ver comentario de `offer_amount` en packages/db/migrations/0119_waitlist.sql). La
 // oferta AUTOMÁTICA en sí (qué contacto se marca 'ofertada' y con qué monto) se
 // dispara desde las dos rutas de cancelación (routes/reservas.ts POST .../cancelar y
 // routes/cancelacionPublica.ts) vía `apps/api/src/pms/waitlistOffer.ts` — este archivo

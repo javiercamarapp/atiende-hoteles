@@ -1,4 +1,4 @@
--- ORIGEN: packages/db/migrations/0091_attendance_log.sql sha256:897345cdaf6eb906322c6834aa2034d636f6bc84a9263870995c1dcd20a1f0dc
+-- ORIGEN: packages/db/migrations/0118_attendance_log.sql sha256:897345cdaf6eb906322c6834aa2034d636f6bc84a9263870995c1dcd20a1f0dc
 -- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
 -- nuevo el script tras cambiar la migración fuente.
 

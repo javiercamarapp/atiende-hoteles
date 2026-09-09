@@ -1,4 +1,4 @@
--- ORIGEN: packages/db/migrations/0096_waitlist.sql sha256:df41a0f61ce9803f7174779bad8f2a440069ffd7c17784df081cc1c3f56b3d02
+-- ORIGEN: packages/db/migrations/0119_waitlist.sql sha256:df41a0f61ce9803f7174779bad8f2a440069ffd7c17784df081cc1c3f56b3d02
 -- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
 -- nuevo el script tras cambiar la migración fuente.
 

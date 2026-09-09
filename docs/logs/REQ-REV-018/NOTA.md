@@ -18,7 +18,7 @@ posterior"*. Confirmado con `grep -rniE "linea_base|baseline"` en `packages/`/`a
 
 ## Cambio: dos tablas + dos triggers (autoridad real en Postgres, no en la aplicación)
 
-`packages/db/migrations/0112_roi_baseline_cobro_resultado.sql` — mismo patrón que
+`packages/db/migrations/0120_roi_baseline_cobro_resultado.sql` — mismo patrón que
 `0082_revenue_engine_gate.sql` (máquina de estados real por trigger):
 
 1. **`roi_baseline`**: línea base por `(hotel_id, agent_name)` — `metrica`/`valor_base`/

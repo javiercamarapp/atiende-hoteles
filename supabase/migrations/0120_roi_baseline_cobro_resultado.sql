@@ -1,4 +1,4 @@
--- ORIGEN: packages/db/migrations/0112_roi_baseline_cobro_resultado.sql sha256:4edc3c57d1ad7c1355c29aacbba2b33785190c004136fc171476d6cf5785b61f
+-- ORIGEN: packages/db/migrations/0120_roi_baseline_cobro_resultado.sql sha256:4edc3c57d1ad7c1355c29aacbba2b33785190c004136fc171476d6cf5785b61f
 -- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
 -- nuevo el script tras cambiar la migración fuente.
 

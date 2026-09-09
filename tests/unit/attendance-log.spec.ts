@@ -1,5 +1,5 @@
 // REQ-BO-024 (P0/GOB, LFT art.132 fr.XXXIV): attendance_log es append-only y encadenado
-// por hash POR EMPLEADO (packages/db/migrations/0091_attendance_log.sql, mismo patrón
+// por hash POR EMPLEADO (packages/db/migrations/0118_attendance_log.sql, mismo patrón
 // de "cabeza de cadena" + FOR UPDATE que audit_log/0015 -- ver tests/unit/audit-log.spec.ts
 // para el precedente). staff_schedule (0090) es el horario programado contra el que se
 // cruza -- mutable a propósito, protegido por su propia función SECURITY DEFINER.

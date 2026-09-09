@@ -1,6 +1,6 @@
 // REQ-REV-018/REQ-GOB-016 (P0/OBS-GOB, BP-015/BP-131/BP-171/GOB-037): espejo PURO (sin
 // acceso a BD, determinista) de la máquina de estados real que exige
-// `packages/db/migrations/0112_roi_baseline_cobro_resultado.sql` -- mismo criterio que
+// `packages/db/migrations/0120_roi_baseline_cobro_resultado.sql` -- mismo criterio que
 // `revenue/revenueEngineGate.ts` frente a `0082_revenue_engine_gate.sql`: la autoridad
 // final sobre si una línea base puede firmarse o si un cobro por resultado puede
 // activarse es el trigger de Postgres (nadie puede saltarse esto escribiendo SQL a

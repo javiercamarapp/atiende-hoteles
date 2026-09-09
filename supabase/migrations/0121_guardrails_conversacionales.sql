@@ -1,4 +1,4 @@
--- ORIGEN: packages/db/migrations/0113_guardrails_conversacionales.sql sha256:2147566192e0fce4d58d01b137c5504370517a2af702e99b95c5331f36b73c17
+-- ORIGEN: packages/db/migrations/0121_guardrails_conversacionales.sql sha256:2147566192e0fce4d58d01b137c5504370517a2af702e99b95c5331f36b73c17
 -- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
 -- nuevo el script tras cambiar la migración fuente.
 
