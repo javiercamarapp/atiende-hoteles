@@ -333,28 +333,38 @@ describe("obtenerCommitsGitReal: contra un repositorio git real", () => {
 
 // ---------------------------------------------------------------------------------
 // Verificación end-to-end contra una tarea de MUESTRA REAL de este propio repo
-// (REQ-GOB-003, ya cerrada por el commit real `2e15f3c` -- ver `git log --oneline`):
-// exactamente el escenario que el criterio de REQ-GOB-005 exige ("verificado con una
-// tarea de muestra cerrada end-to-end"). Se inyecta SOLO el archivo de tarea (una
-// fixture temporal, nunca escrita bajo `tasks/` real -- ese directorio no existe todavía
-// en este repo) contra el historial REAL de git de este repositorio (sin inyectar
-// commits), confirmando que el commit real de cierre de REQ-GOB-003 (a) existe, (b) es
-// único, y (c) cumple Conventional Commits -- sin ningún mock del historial.
+// (identificador GOB-013, ya cerrada por el commit real `a78fc0d` -- ver `git log
+// --oneline`): exactamente el escenario que el criterio de REQ-GOB-005 exige
+// ("verificado con una tarea de muestra cerrada end-to-end"). Se inyecta SOLO el
+// archivo de tarea (una fixture temporal, nunca escrita bajo `tasks/` real -- ese
+// directorio no existe todavía en este repo) contra el historial REAL de git de este
+// repositorio (sin inyectar commits), confirmando que el commit real de cierre (a)
+// existe, (b) es único, y (c) cumple Conventional Commits -- sin ningún mock del
+// historial.
 //
-// La muestra usaba originalmente REQ-GOB-004 (commit `ead57d3`), pero dos commits
-// POSTERIORES y ajenos (`f682d7c` REQ-HK-008, `101a141` REQ-GOB-005) mencionan
-// "REQ-GOB-004" en el CUERPO de su mensaje por razones narrativas propias -- el propio
-// cuerpo de `f682d7c` documenta explícitamente que esto "rompe la suposición de commit
-// único". Como el historial de git es inmutable (ya en `main`), ese id quedó
-// permanentemente ambiguo (3 commits) para este checker, que SÍ detecta la ambigüedad
-// correctamente (no es un bug del checker, ver `commitReferenciaTarea`) -- se cambió la
-// muestra a REQ-GOB-003, cuyo único commit real de cierre no está referenciado en
-// ningún otro lugar del historial.
+// ADVERTENCIA PARA QUIEN EDITE ESTE ARCHIVO: el historial de git es inmutable y ya
+// contiene 2 muestras QUEMADAS por este mismo motivo, en este orden:
+//   1. GOB-004 (commit ead57d3): 2 commits POSTERIORES y ajenos mencionan ese id en el
+//      CUERPO de su mensaje por razones narrativas propias -- uno de ellos documenta
+//      explícitamente que esto "rompe la suposición de commit único".
+//   2. GOB-003 (commit 2e15f3c): el commit que migró la muestra de GOB-004 a GOB-003
+//      mencionó el nuevo id textualmente en SU PROPIO cuerpo -- el mismo error, cometido
+//      al arreglarlo.
+// Por eso esta vez la muestra es GOB-013 y este comentario, a propósito, NUNCA escribe
+// el id concatenado con el prefijo REQ- como una sola palabra (que es justo lo que
+// `commitReferenciaTarea` empareja) -- ver el id real ensamblado en tiempo de ejecución
+// más abajo. Al comitear un cambio a este archivo, el mensaje del commit NO debe
+// contener el id de la muestra vigente como texto literal contiguo (revisar con
+// `commitsDeCierre` antes de pushear si hay duda).
 // ---------------------------------------------------------------------------------
-describe("checkCierreTareaConventionalCommits: tarea de muestra REAL ya cerrada de este repo (REQ-GOB-003)", () => {
-  it("REQ-GOB-003 (cerrada por el commit real 2e15f3c) -> 0 violaciones contra el git log real de este repo", () => {
+const MUESTRA_REAL_TASK_ID = ["REQ", "GOB", "013"].join("-");
+const MUESTRA_REAL_COMMIT = "a78fc0d";
+
+describe("checkCierreTareaConventionalCommits: tarea de muestra REAL ya cerrada de este repo (ver MUESTRA_REAL_TASK_ID arriba)", () => {
+  it("tarea de muestra real (cerrada por MUESTRA_REAL_COMMIT) -> 0 violaciones contra el git log real de este repo", () => {
     const tasksDir = crearDirTemporal("cierre-muestra-real-");
-    escribirTarea(tasksDir, "REQ-GOB-003.md", { id: "REQ-GOB-003", status: "review" });
+    escribirTarea(tasksDir, `${MUESTRA_REAL_TASK_ID}.md`, { id: MUESTRA_REAL_TASK_ID, status: "review" });
+    void MUESTRA_REAL_COMMIT; // documentado arriba, no usado en la aserción (el checker no recibe el hash esperado)
 
     // repoRoot por defecto (ROOT del script) -> lee el git log REAL de este repositorio,
     // no un repo sintético; solo el directorio de tareas es temporal.
