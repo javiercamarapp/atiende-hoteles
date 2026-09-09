@@ -48,6 +48,7 @@ import { aprobacionesRoutes } from "./routes/aprobaciones.ts";
 import { aprobacionesWhatsappRoutes } from "./routes/aprobacionesWhatsapp.ts";
 import { mensajeriaRoutes } from "./routes/mensajeria.ts";
 import { agentesRoutes } from "./routes/agentes.ts";
+import { vozElevenlabsRoutes } from "./routes/vozElevenlabs.ts";
 import { roiRoutes } from "./routes/roi.ts";
 import { privacidadRoutes } from "./routes/privacidad.ts";
 import { consentimientoRoutes } from "./routes/consentimiento.ts";
@@ -134,8 +135,9 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   // ignoraría pero declararla es información falsa), X-Content-Type-Options siempre.
   //
   // CSP completa siguiendo el patrón de `likida/next.config.ts` §"/api/:path*": esta
-  // API NUNCA sirve HTML (solo JSON, y los tres webhooks públicos -- mensajeria.ts,
-  // aprobacionesWhatsapp.ts, cancelacionPublica.ts -- tampoco devuelven HTML), así que
+  // API NUNCA sirve HTML (solo JSON, y los cuatro webhooks públicos -- mensajeria.ts,
+  // aprobacionesWhatsapp.ts, cancelacionPublica.ts, vozElevenlabs.ts -- tampoco
+  // devuelven HTML), así que
   // `default-src 'none'` no tiene nada legítimo que romper: cero script, cero estilo,
   // cero imagen que un navegador pudiera intentar cargar desde una respuesta de esta
   // API. Sin `unsafe-inline`/`unsafe-eval` en ninguna directiva (no hace falta: no hay
@@ -282,6 +284,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", aprobacionesRoutes(deps));
   app.route("/", mensajeriaRoutes(deps));
   app.route("/", agentesRoutes(deps));
+  app.route("/", vozElevenlabsRoutes(deps));
   app.route("/", roiRoutes(deps));
   app.route("/", privacidadRoutes(deps));
   app.route("/", consentimientoRoutes(deps));
