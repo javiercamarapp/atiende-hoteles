@@ -18,6 +18,7 @@ import {
   createAuthorizeMaintenanceExpenseTool,
   createHousekeepingTaskTool,
   createMaintenanceTicketTool,
+  createPostgresRoiEventRecorder,
   createRunBudget,
   createSendWhatsappTemplateTool,
   createTransactionalTemplateApprovalQueue,
@@ -94,6 +95,11 @@ function buildRunner(gate: AgentGate, script: readonly FakeStep[]) {
     pricing: {},
     gate,
     costLedger: new InMemoryCostLedger(),
+    // REQ-AGT-003: "autorizar_gasto_mantenimiento" (effect="money") es la única tool de
+    // dinero de este journey -- sin esto, la corrida que la ejecuta con éxito se cierra
+    // `roi_event_faltante` en vez de `completado` (ver runner.ts: cobertura del 100% de
+    // acciones con valor económico, sin excepción, verificada contra Postgres real).
+    roiEventRecorder: createPostgresRoiEventRecorder(engine.admin),
   });
 
   return { runner, approvalQueue };

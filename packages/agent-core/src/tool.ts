@@ -18,6 +18,25 @@ export interface ToolResult {
   readonly data?: unknown;
 }
 
+/** REQ-AGT-003 (H17-001/BP-131/GOB-037): los 4 campos que un `ROIEvent` exige sin
+ * excepcion para cualquier accion de agente con valor economico, mas el versionado
+ * explicito del supuesto usado (mismo contrato que `packages/db/migrations/0026_roi_event.sql`
+ * y `tools/roiTools.ts`). Es el "borrador" que una tool `effect="money"` produce de SU
+ * PROPIA ejecucion -- nunca algo que el modelo rellene: `deriveRoiEvent` recibe el input
+ * ya validado por Zod y el `ToolResult` real que la tool acaba de producir, siempre
+ * codigo deterministico de la propia tool. */
+export interface RoiEventDraft {
+  readonly tipoEvento: string;
+  readonly montoEstimado?: number;
+  readonly montoVerificado?: number;
+  readonly metodoContrafactual: string;
+  readonly confianza: number;
+  readonly supuestoVersion?: string;
+  readonly referenciaTipo?: "reserva" | "folio" | "tarea" | "conversacion" | "ninguna";
+  readonly referenciaCodigo?: string;
+  readonly notas?: string;
+}
+
 export interface ToolDefinitionSpec<TInput> {
   readonly name: string;
   readonly description: string;
@@ -32,6 +51,16 @@ export interface ToolDefinitionSpec<TInput> {
   /** Aprobacion automatica de una tool con needsApproval=true. Prohibido junto con
    * isPriceOrEmission=true. */
   readonly alwaysApprove?: boolean;
+  /** REQ-AGT-003: en la practica obligatorio para toda tool `effect="money"` -- es lo
+   * que permite a `AgentRunner` registrar el `ROIEvent` de esta ejecucion SIN depender
+   * de que el modelo decida llamar aparte "registrar_evento_roi" (ese camino sigue
+   * existiendo para eventos que NINGUNA tool `money` produce, p.ej. el cierre nocturno
+   * del auditor). `AgentRunner` solo la invoca cuando `result.ok===true` (nunca hay
+   * valor economico que registrar de una accion que no ocurrio); si la tool effect=
+   * "money" no la declara, o la declara y devuelve `null`, `AgentRunner` trata la
+   * corrida como cobertura faltante y la cierra explicitamente (`roi_event_faltante`,
+   * ver runner.ts) en vez de reportar exito sin ese registro. */
+  readonly deriveRoiEvent?: (ctx: ToolContext, input: TInput, result: ToolResult) => RoiEventDraft | null;
   readonly run: (ctx: ToolContext, input: TInput) => Promise<ToolResult> | ToolResult;
 }
 

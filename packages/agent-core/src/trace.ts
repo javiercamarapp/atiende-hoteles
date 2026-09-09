@@ -16,6 +16,12 @@ export type AgentTraceKind =
   | "budget_exceeded"
   | "provider_fallback"
   | "error"
+  /** REQ-AGT-003: el ROIEvent de una tool effect="money" ejecutada con exito quedo
+   * persistido (ver runner.ts `recordRoiEventForMoneyTool`). */
+  | "roi_event_recorded"
+  /** REQ-AGT-003: una tool effect="money" se ejecuto con exito pero su ROIEvent NO se
+   * pudo derivar/persistir -- la corrida se cierra `roi_event_faltante` justo despues. */
+  | "roi_event_faltante"
   | "run_finished";
 
 export interface AgentTraceEvent {

@@ -6,7 +6,7 @@
 
 import { randomUUID } from "node:crypto";
 import type { ToolContext } from "./context.ts";
-import { type ToolRegistry } from "./tool.ts";
+import { type ToolDefinition, type ToolRegistry, type ToolResult, type RoiEventDraft } from "./tool.ts";
 import type { ApprovalQueue } from "./approval.ts";
 import { hashApprovalInput } from "./approval.ts";
 import {
@@ -20,6 +20,17 @@ import type { AgentGate } from "./roles.ts";
 import type { AgentTraceEvent, CostLedger } from "./trace.ts";
 import { estimateCostUsd, type PricingTable } from "./pricing.ts";
 import { maskPhoneFieldsForApproval, redact } from "./redact.ts";
+
+/** REQ-AGT-003 (H17-001/GOB-037): quien persiste, del lado del llamador (apps/api, con
+ * acceso a Postgres -- agent-core sigue sin depender de un motor de BD concreto, H6a),
+ * el `ROIEvent` que una tool `effect="money"` produjo de su propia ejecucion. Debe
+ * RECHAZAR la promesa si no pudo persistir -- `AgentRunner` trata cualquier rechazo
+ * como cobertura faltante (`roi_event_faltante`), nunca como una ejecucion
+ * silenciosamente sin registrar. Ver `tools/roiTools.ts` `createPostgresRoiEventRecorder`
+ * para la implementacion real contra `public.roi_event` (migracion 0026). */
+export interface RoiEventRecorder {
+  record(ctx: ToolContext, agentName: string, draft: RoiEventDraft): Promise<void>;
+}
 
 export interface AgentRunnerOptions {
   readonly agentName: string;
@@ -56,6 +67,14 @@ export interface AgentRunnerOptions {
   readonly disclosureMessage?: string;
   readonly costLedger?: CostLedger;
   readonly onTrace?: (event: AgentTraceEvent) => void;
+  /** REQ-AGT-003: quien persiste el `ROIEvent` de cada tool `effect="money"` que se
+   * ejecuta con exito en esta corrida. Opcional a nivel de tipos (una corrida sin
+   * ninguna tool de dinero registrada no lo necesita), pero en la practica obligatorio
+   * para cualquier corrida cuyo catalogo incluya una tool `money` -- sin el, esa tool
+   * SIGUE pudiendo ejecutarse (la mutacion real ya ocurrio, `AgentRunner` no la revierte),
+   * pero la corrida se cierra explicitamente `roi_event_faltante` en vez de reportar
+   * exito sin cobertura de ROI. */
+  readonly roiEventRecorder?: RoiEventRecorder;
 }
 
 export type AgentRunStatus =
@@ -72,6 +91,13 @@ export type AgentRunStatus =
    * exige que el core nunca permita decidir dos acciones de dinero a la vez (aud-1
    * agentico.md ALTO #4). */
   | "paralelismo_dinero_bloqueado"
+  /** REQ-AGT-003 (H17-001/GOB-037): una tool `effect="money"` se ejecuto con
+   * `result.ok===true` (valor economico real, ya materializado -- esta corrida NO lo
+   * revierte) pero su `ROIEvent` no se pudo derivar/persistir (falta `deriveRoiEvent`,
+   * devolvio `null`, no hay `roiEventRecorder` configurado, o la persistencia fallo).
+   * Fail-closed explicito: nunca se reporta "completado" cuando la cobertura de ROI de
+   * el 100% de las acciones economicas, sin excepcion, no quedo garantizada. */
+  | "roi_event_faltante"
   | "truncado";
 
 export interface AgentRunResult {
@@ -479,6 +505,38 @@ export class AgentRunner {
           gate: opts.gate,
           message: redact(result.summary),
         });
+
+        // REQ-AGT-003 (H17-001/GOB-037): toda tool effect="money" que en verdad movio
+        // valor economico (result.ok===true) debe dejar su ROIEvent registrado ANTES de
+        // que la corrida continue -- nunca depende de que el modelo decida llamar aparte
+        // "registrar_evento_roi" (ese camino sigue existiendo para eventos que ninguna
+        // tool money produce). Fail-closed: la mutacion real ya ocurrio y esta corrida no
+        // la revierte, pero si no se pudo derivar/persistir el ROIEvent, se cierra
+        // explicitamente en vez de reportar exito sin esa cobertura.
+        if (tool.effect === "money" && result.ok) {
+          const roi = await this.recordRoiEventForMoneyTool(ctx, tool, parsed.data, result);
+          if (roi.ok) {
+            this.emit(ctx, runId, step, "roi_event_recorded", { toolName: tool.name, effect: tool.effect });
+          } else {
+            this.emit(ctx, runId, step, "roi_event_faltante", {
+              toolName: tool.name,
+              effect: tool.effect,
+              message: roi.reason,
+            });
+            return this.close(
+              ctx,
+              runId,
+              step + 1,
+              "roi_event_faltante",
+              null,
+              pendingApprovalIds,
+              `La accion "${tool.name}" genero valor economico pero no se pudo registrar su ` +
+                "ROIEvent asociado (REQ-AGT-003 exige cobertura del 100%, sin excepcion); se " +
+                "detiene explicitamente para que un humano revise.",
+            );
+          }
+        }
+
         toolResultMessages.push({ role: "tool", toolCallId: call.id, toolName: call.name, content: result.summary });
       }
 
@@ -543,6 +601,43 @@ export class AgentRunner {
       pendingApprovalIds: [...pendingApprovalIds],
       message: closingMessage,
     };
+  }
+
+  /** REQ-AGT-003: deriva (via `tool.deriveRoiEvent`) y persiste (via
+   * `opts.roiEventRecorder`) el ROIEvent de UNA ejecucion concreta de una tool
+   * effect="money" que ya termino `result.ok===true`. Nunca lanza -- cualquier motivo
+   * de no-cobertura (falta la funcion, devuelve null, no hay recorder, la persistencia
+   * rechaza) se devuelve como `{ ok: false, reason }` para que el llamador decida el
+   * cierre explicito de la corrida (fail-closed), en vez de propagar una excepcion sin
+   * `AgentRunResult`. */
+  private async recordRoiEventForMoneyTool(
+    ctx: ToolContext,
+    tool: ToolDefinition,
+    input: unknown,
+    result: ToolResult,
+  ): Promise<{ ok: true } | { ok: false; reason: string }> {
+    const opts = this.options;
+    if (typeof tool.deriveRoiEvent !== "function") {
+      return { ok: false, reason: `la tool "${tool.name}" (effect="money") no declara deriveRoiEvent` };
+    }
+    let draft: RoiEventDraft | null;
+    try {
+      draft = tool.deriveRoiEvent(ctx, input, result);
+    } catch (err) {
+      return { ok: false, reason: `deriveRoiEvent de "${tool.name}" lanzo: ${redact((err as Error).message)}` };
+    }
+    if (!draft) {
+      return { ok: false, reason: `la tool "${tool.name}" no produjo un ROIEvent para esta ejecucion` };
+    }
+    if (!opts.roiEventRecorder) {
+      return { ok: false, reason: "no hay un RoiEventRecorder configurado en esta corrida" };
+    }
+    try {
+      await opts.roiEventRecorder.record(ctx, opts.agentName, draft);
+    } catch (err) {
+      return { ok: false, reason: redact((err as Error).message) };
+    }
+    return { ok: true };
   }
 
   private emit(

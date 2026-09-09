@@ -214,6 +214,26 @@ export function createAuthorizeMaintenanceExpenseTool(
     inputSchema: authorizeMaintenanceExpenseInput,
     effect: "money",
     needsApproval: true,
+    // REQ-AGT-003 (H17-001/GOB-037): el ÚNICO gasto real que este catálogo puede
+    // autorizar hoy -- `AgentRunner` (runner.ts) llama esto DESPUÉS de `run()`, solo si
+    // `result.ok===true`, para registrar el ROIEvent SIN depender de que el modelo
+    // decida llamar aparte "registrar_evento_roi" (REQ-AGT-003 exige cobertura del
+    // 100%, sin excepción -- una tool opcional que el modelo puede olvidar llamar no la
+    // garantiza). `montoVerificado` (nunca `montoEstimado`): `input.actualCost` es el
+    // costo REAL que el humano ya aprobó al autorizar esta tool (GOB-026, doble
+    // confirmación), no una proyección -- por eso `confianza: 1`. `input.ticketId` ==
+    // `ticket.id` (la query de `run()` ya filtró por ese id + `ctx.hotelId`).
+    deriveRoiEvent: (_ctx, input) => ({
+      tipoEvento: "gasto_mantenimiento_autorizado",
+      montoVerificado: input.actualCost,
+      metodoContrafactual:
+        "Monto real autorizado y verificado al cerrar el ticket de mantenimiento (costo reportado por " +
+        "el técnico/staff tras el diagnóstico, ya confirmado por aprobación humana explícita -- no una " +
+        "estimación).",
+      confianza: 1,
+      referenciaTipo: "tarea",
+      referenciaCodigo: input.ticketId,
+    }),
     run: async (ctx, input) => {
       const { rows: ticketRows } = await deps.db.query<{
         id: string;

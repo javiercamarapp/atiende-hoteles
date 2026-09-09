@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/integration/agent-core/roi-event-cobertura.spec.ts (4 tests) 1448ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  18:18:28
+   Duration  1.93s (transform 157ms, setup 0ms, collect 296ms, tests 1.45s, environment 0ms, prepare 43ms)
+
+exit:0
