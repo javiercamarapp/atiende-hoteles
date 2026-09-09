@@ -39,7 +39,7 @@ export function looksLikeAllergyDeclaration(text: string | null | undefined): bo
   return ALLERGY_KEYWORDS_RE.test(stripDiacritics(text));
 }
 
-export type AllergyDeclaredVia = "estructurado" | "texto_libre";
+export type AllergyDeclaredVia = "estructurado" | "texto_libre" | "texto_libre_no_reconocido";
 
 export interface ResolveAllergyDeclaredInput {
   /** Campo estructurado del formulario/API ("¿el huésped declaró alergia?"). */
@@ -62,8 +62,26 @@ export interface ResolveAllergyDeclaredResult {
  *  PARECE declararlo. */
 export function resolveAllergyDeclared(input: ResolveAllergyDeclaredInput): ResolveAllergyDeclaredResult {
   if (input.structuredFlag) return { allergyDeclared: true, declaredVia: "estructurado" };
-  const detected = input.freeTextFields.some((field) => looksLikeAllergyDeclaration(field));
-  return detected ? { allergyDeclared: true, declaredVia: "texto_libre" } : { allergyDeclared: false, declaredVia: null };
+  if (input.freeTextFields.some((field) => looksLikeAllergyDeclaration(field))) {
+    return { allergyDeclared: true, declaredVia: "texto_libre" };
+  }
+  // MITIGACIÓN INTERIM (2026-09-08, P0/SEG): una auditoría adversarial encontró que
+  // ALLERGY_KEYWORDS_RE es trivialmente bypasseable con lenguaje natural/coloquial/mal
+  // escrito ("no tolero los mariscos, me hace mal comerlos", "quedé hospitalizado" --
+  // ver docs/logs/REQ-AB-004/ y docs/logs/allergy-bypass-regex/). Mientras no exista
+  // una red de seguridad categóricamente distinta (clasificación real, o exigir siempre
+  // el campo estructurado con el texto libre solo como bono -- decisión de producto
+  // pendiente de Javier), CUALQUIER nota de texto libre no vacía que NO calce con el
+  // regex se trata igual que si calzara: `allergyDeclared=true`, exige confirmación de
+  // cocina antes de asegurar seguridad. Sobre-disparar (pedir confirmación de más en un
+  // pedido con una nota inocua) es aceptable; NO disparar en un pedido con alergia real
+  // no lo es. Esto es deliberadamente más amplio que "duda razonable" -- es
+  // "cualquier nota sin clasificar se trata con la misma cautela que una declarada".
+  const hasUnrecognizedFreeText = input.freeTextFields.some((field) => field != null && field.trim().length > 0);
+  if (hasUnrecognizedFreeText) {
+    return { allergyDeclared: true, declaredVia: "texto_libre_no_reconocido" };
+  }
+  return { allergyDeclared: false, declaredVia: null };
 }
 
 export interface FnbOrderSafetyState {

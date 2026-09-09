@@ -58,10 +58,16 @@ describe("resolveAllergyDeclared", () => {
     expect(out.declaredVia).toBe("texto_libre");
   });
 
-  it("sin campo estructurado y sin ninguna nota sospechosa, NO declara alergia", () => {
-    const out = resolveAllergyDeclared({ structuredFlag: false, freeTextFields: ["sin cebolla", null, undefined] });
+  it("sin campo estructurado y con notas realmente vacías (null/undefined/blanco), NO declara alergia", () => {
+    const out = resolveAllergyDeclared({ structuredFlag: false, freeTextFields: [null, undefined, "   "] });
     expect(out.allergyDeclared).toBe(false);
     expect(out.declaredVia).toBeNull();
+  });
+
+  it("MITIGACIÓN INTERIM (P0/SEG, ver comentario en fnbAllergyGuard.ts): cualquier nota NO vacía que no calce con el regex igual declara alergia -- sobre-disparar es aceptable, un falso negativo no", () => {
+    const out = resolveAllergyDeclared({ structuredFlag: false, freeTextFields: ["sin cebolla", null, undefined] });
+    expect(out.allergyDeclared).toBe(true);
+    expect(out.declaredVia).toBe("texto_libre_no_reconocido");
   });
 });
 
@@ -112,5 +118,32 @@ describe("describeSafetyAssuranceMessage", () => {
     const msg = describeSafetyAssuranceMessage({ allergyDeclared: true, kitchenConfirmedBy: "staff-123" });
     expect(msg).toMatch(/es seguro/i);
     expect(msg.toLowerCase()).toContain("confirmado");
+  });
+});
+
+// Frases reales que dos auditorías adversariales independientes confirmaron que evadían
+// ALLERGY_KEYWORDS_RE (docs/logs/allergy-bypass-regex/) -- la mitigación interim de
+// resolveAllergyDeclared (cualquier texto no vacío sin match también declara) debe
+// cubrirlas TODAS, no por el regex sino por el fallback de "texto no reconocido".
+describe("resolveAllergyDeclared > mitigación interim cubre las frases que evadieron el regex", () => {
+  const frasesQueEvadianElRegex = [
+    "no tolero los mariscos, me hace mal comerlos",
+    "no me caen bien los camarones, mejor no me den",
+    "los mariscos me hacen mucho daño",
+    "si como camaron me hincho como globo",
+    "la ultima vez que comi camaron quede hospitalizado",
+    "nomas no me den camaron que me pongo muy mal",
+    "el marisco me choca feo, me hace enfermarme",
+    "soy allergica a los mariscos, porfavor tengan cuidado",
+    "traigo receta medica de evitar los cacahuates",
+    "el marisco me cae bien gordo, ni de broma me den",
+    "cuando como fresa me salen ronchas por todos lados",
+    "el gluten no me sienta nada bien",
+  ];
+
+  it.each(frasesQueEvadianElRegex)("%s -> allergyDeclared=true vía texto_libre_no_reconocido (aunque no calce el regex)", (frase) => {
+    const out = resolveAllergyDeclared({ structuredFlag: false, freeTextFields: [frase] });
+    expect(out.allergyDeclared).toBe(true);
+    expect(canAssureDishIsSafe({ allergyDeclared: out.allergyDeclared, kitchenConfirmedBy: null })).toBe(false);
   });
 });
