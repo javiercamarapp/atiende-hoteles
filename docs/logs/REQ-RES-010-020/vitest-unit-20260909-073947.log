@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-res-restantes
+
+ ✓ tests/unit/domain-hotel/club-segundo-viaje.spec.ts (9 tests) 2ms
+ ✓ tests/unit/domain-hotel/atribucion-canal.spec.ts (13 tests) 9ms
+
+ Test Files  2 passed (2)
+      Tests  22 passed (22)
+   Start at  01:39:47
+   Duration  351ms (transform 96ms, setup 0ms, collect 296ms, tests 11ms, environment 0ms, prepare 81ms)
+
