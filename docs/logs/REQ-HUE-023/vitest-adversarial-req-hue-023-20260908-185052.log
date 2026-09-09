@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/adversarial/guardrails-conversacionales.spec.ts (15 tests) 1425ms
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  18:51:37
+   Duration  2.11s (transform 312ms, setup 0ms, collect 553ms, tests 1.43s, environment 0ms, prepare 31ms)
+
+exit=0

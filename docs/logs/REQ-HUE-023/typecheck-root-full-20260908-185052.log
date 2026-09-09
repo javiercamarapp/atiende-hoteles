@@ -1,0 +1,58 @@
+tests/unit/domain-hotel/fnb-allergy-guard.spec.ts(7,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'AllergySafetyAssuranceBlockedError'.
+tests/unit/domain-hotel/fnb-allergy-guard.spec.ts(8,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'assertCanAssureDishIsSafe'.
+tests/unit/domain-hotel/fnb-allergy-guard.spec.ts(9,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'canAssureDishIsSafe'.
+tests/unit/domain-hotel/fnb-allergy-guard.spec.ts(10,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'describeSafetyAssuranceMessage'.
+tests/unit/domain-hotel/fnb-allergy-guard.spec.ts(11,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'looksLikeAllergyDeclaration'.
+tests/unit/domain-hotel/fnb-allergy-guard.spec.ts(12,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'resolveAllergyDeclared'.
+tests/unit/domain-hotel/fraude-deteccion.spec.ts(7,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'detectDiscountOutsidePolicy'.
+tests/unit/domain-hotel/fraude-deteccion.spec.ts(8,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'detectFolioReopenedAfterAudit'.
+tests/unit/domain-hotel/fraude-deteccion.spec.ts(9,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'detectRefundToDifferentCard'.
+tests/unit/domain-hotel/fraude-deteccion.spec.ts(10,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'detectUnpostedFnbCharge'.
+tests/unit/domain-hotel/fraude-deteccion.spec.ts(11,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'recipientRolesForPattern'.
+tests/unit/domain-hotel/parity-guard.spec.ts(7,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'PARITY_MODES'.
+tests/unit/domain-hotel/parity-guard.spec.ts(8,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'ParityGuardError'.
+tests/unit/domain-hotel/parity-guard.spec.ts(9,3): error TS2724: '"@atiende-hoteles/domain-hotel"' has no exported member named 'assertValidParityChannelConfig'. Did you mean 'assertValidTaxConfig'?
+tests/unit/domain-hotel/parity-guard.spec.ts(10,3): error TS2724: '"@atiende-hoteles/domain-hotel"' has no exported member named 'assertValidParityGuardConfig'. Did you mean 'assertValidTaxConfig'?
+tests/unit/domain-hotel/parity-guard.spec.ts(11,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'computeParityFloor'.
+tests/unit/domain-hotel/parity-guard.spec.ts(12,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'evaluateParityGuard'.
+tests/unit/domain-hotel/parity-guard.spec.ts(13,8): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'ParityGuardConfig'.
+tests/unit/domain-hotel/parity-guard.spec.ts(100,5): error TS2578: Unused '@ts-expect-error' directive.
+tests/unit/domain-hotel/parity-guard.spec.ts(220,35): error TS7006: Parameter 'v' implicitly has an 'any' type.
+tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts(18,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'forecastExponentialSmoothing'.
+tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts(19,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'forecastPickup'.
+tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts(20,8): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'TimeSeriesPoint'.
+tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts(64,31): error TS7006: Parameter 'p' implicitly has an 'any' type.
+tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts(130,31): error TS7006: Parameter 'p' implicitly has an 'any' type.
+tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts(147,47): error TS7006: Parameter 's' implicitly has an 'any' type.
+tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts(147,50): error TS7006: Parameter 'p' implicitly has an 'any' type.
+tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts(402,41): error TS7006: Parameter 'p' implicitly has an 'any' type.
+tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts(423,29): error TS7006: Parameter 'p' implicitly has an 'any' type.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(10,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'MIN_SHADOW_DAYS'.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(11,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'PROPONE_VARIATION_PCT_MAX'.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(12,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'PROPONE_VARIATION_PCT_MIN'.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(13,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'RevenueGateError'.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(14,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'REVENUE_GATE_STATES'.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(15,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'assertValidProponeVariationPct'.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(16,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'daysElapsed'.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(17,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'evaluateGateTransition'.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(18,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'evaluateRevenueProposal'.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(19,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'hasMetMinimumShadowPeriod'.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(20,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'isDemotion'.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(21,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'isPriceChangeWithinProponeLimit'.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(22,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'isPromotion'.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(24,10): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'evaluateWalkForwardBacktest'.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(24,44): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'WalkForwardBacktestResult'.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(127,33): error TS7006: Parameter 'r' implicitly has an 'any' type.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(143,33): error TS7006: Parameter 'r' implicitly has an 'any' type.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(155,33): error TS7006: Parameter 'r' implicitly has an 'any' type.
+tests/unit/domain-hotel/revenue-engine-gate.spec.ts(167,33): error TS7006: Parameter 'r' implicitly has an 'any' type.
+tests/unit/domain-hotel/walk-forward-backtest.spec.ts(8,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'buildWalkForwardWindows'.
+tests/unit/domain-hotel/walk-forward-backtest.spec.ts(9,3): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'evaluateWalkForwardBacktest'.
+tests/unit/domain-hotel/walk-forward-backtest.spec.ts(10,8): error TS2305: Module '"@atiende-hoteles/domain-hotel"' has no exported member 'DailyPricingRecord'.
+tests/unit/domain-hotel/walk-forward-backtest.spec.ts(11,8): error TS2724: '"@atiende-hoteles/domain-hotel"' has no exported member named 'WindowEvaluation'. Did you mean 'NoShowEvaluation'?
+tests/unit/domain-hotel/walk-forward-backtest.spec.ts(118,40): error TS7006: Parameter 'r' implicitly has an 'any' type.
+tests/unit/domain-hotel/walk-forward-backtest.spec.ts(131,40): error TS7006: Parameter 'r' implicitly has an 'any' type.
+tests/unit/domain-hotel/walk-forward-backtest.spec.ts(147,40): error TS7006: Parameter 'r' implicitly has an 'any' type.
+tests/unit/domain-hotel/walk-forward-backtest.spec.ts(160,40): error TS7006: Parameter 'r' implicitly has an 'any' type.
+tests/unit/domain-hotel/walk-forward-backtest.spec.ts(194,40): error TS7006: Parameter 'r' implicitly has an 'any' type.
+exit=2

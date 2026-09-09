@@ -35,11 +35,14 @@ import {
   EnvProvider,
   FakeProvider,
   PostgresApprovalQueue,
+  ProviderRouter,
   roleParamsForChannel,
   ToolRegistry,
   buildToolContext,
+  createGuestTicketTool,
   createHousekeepingTaskTool,
   createMaintenanceTicketTool,
+  createPostgresRoiEventRecorder,
   createRegistrarEventoRoiTool,
   createRunBudget,
   createSendWhatsappTemplateTool,
@@ -56,6 +59,13 @@ import {
   type ToolDefinition,
 } from "@atiende-hoteles/agent-core";
 import type { DbClient } from "@atiende-hoteles/db";
+import {
+  classifyUnaccompaniedMinorEscalation,
+  classifyVoiceGuardrailRefusal,
+  looksLikeRoomOrPresenceDisclosureRequest,
+} from "@atiende-hoteles/domain-hotel";
+import { escalateGuestTicketNow } from "../jobs/ticketEscalation.ts";
+import { persistAgentRunSummary, persistAgentTraceEvents } from "../lib/agentObservability.ts";
 import { sharedWhatsappAdapter } from "../lib/messaging.ts";
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
@@ -335,6 +345,82 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
 
     const body = parseBody(ejecutarSchema, await c.req.json().catch(() => ({})));
 
+    // REQ-HUE-023 (P0/SEG): "menor no acompañado debe escalar a humano" -- se evalúa
+    // ANTES que cualquier otro guardrail/tool/proveedor, para AMBOS canales (voz y
+    // texto): un menor sin acompañamiento nunca debe seguir conversando con el agente,
+    // sin importar qué más haya escrito. Se registra un `guest_ticket` real (frontdesk/
+    // alta) y se escala de inmediato (packages/domain-hotel/src/
+    // conversationalGuardrails.ts + apps/api/src/jobs/ticketEscalation.ts::
+    // escalateGuestTicketNow) para que quede trazable y asignable, en vez de solo
+    // devolver un mensaje y perder la señal. Si el ticket no pudiera crearse (p. ej.
+    // roomCode inválido, que aquí ni se manda) igual se corta la conversación --
+    // fail-closed: el huésped NUNCA se queda hablando con el agente por un fallo de
+    // registro secundario.
+    const menorNoAcompanado = classifyUnaccompaniedMinorEscalation(body.mensaje);
+    if (menorNoAcompanado) {
+      const ticketCtx = buildToolContext(
+        { orgId, hotelId, actor: { type: "staff", id: c.get("userId") }, requestId: c.get("requestId") },
+        createRunBudget({}),
+      );
+      const ticketResult = await createGuestTicketTool({ db }).run(ticketCtx, {
+        guestMessage: body.mensaje,
+        department: "frontdesk",
+        priority: "alta",
+        channel: body.canal === "voz" ? "voz" : "staff",
+      });
+      if (ticketResult.ok) {
+        const { ticketId } = ticketResult.data as { ticketId: string };
+        await escalateGuestTicketNow(db, { ticketId, hotelId, tenantId: orgId, reason: "menor_no_acompanado" });
+      }
+      return c.json({
+        estado: "escalado_menor_no_acompanado",
+        mensaje: menorNoAcompanado.guestFacingMessage,
+        canal: body.canal,
+        simulado: false,
+      });
+    }
+
+    // REQ-HUE-009 (P0/GOB): "el agente de voz nunca debe aceptar pagos con tarjeta por
+    // voz, cotizar tarifas fuera del PMS, revelar el número de habitación/presencia de
+    // un huésped, ni emitir/gestionar llaves por voz; en pruebas, el 100% de esas
+    // peticiones debe rechazarse." Se evalúa AQUÍ, antes de tocar el lock de
+    // presupuesto o de elegir proveedor, con un clasificador determinista
+    // (packages/domain-hotel/src/voiceGuardrails.ts) -- el rechazo nunca depende de que
+    // un LLM concreto "decida" resistir la petición (mismo criterio que
+    // tests/adversarial/prompt-injection.spec.ts: la barrera real vive en la capa de
+    // código). Las otras 3 categorías (pago con tarjeta / tarifa fuera del PMS / llave
+    // por voz) solo aplican cuando `canal === "voz"`: el equivalente de texto libre por
+    // WhatsApp (pago por tarjeta / check-in por chat libre) ya lo cubren
+    // paymentFreeTextGuard.ts/checkinFreeTextGuard.ts desde
+    // apps/api/src/routes/mensajeria.ts.
+    if (body.canal === "voz") {
+      const refusal = classifyVoiceGuardrailRefusal(body.mensaje);
+      if (refusal) {
+        return c.json({
+          estado: "rechazado_guardrail_voz",
+          mensaje: refusal.guestFacingMessage,
+          motivoGuardrail: refusal.reason,
+          canal: body.canal,
+          simulado: false,
+        });
+      }
+      // REQ-HUE-023: "0 revelaciones de número de habitación/presencia a terceros" --
+    } else if (looksLikeRoomOrPresenceDisclosureRequest(body.mensaje)) {
+      // La categoría "revelar habitación/presencia" del guardrail de voz (REQ-HUE-009)
+      // se reutiliza aquí TAMBIÉN para el canal de texto de este mismo endpoint (no
+      // estaba cubierta: el bloque `canal === "voz"` de arriba nunca corre para
+      // `canal === "texto"`, que es el default de este endpoint) -- mismo patrón léxico
+      // determinista, mismo mensaje de rechazo, sin depender de ningún LLM.
+      return c.json({
+        estado: "rechazado_guardrail_conversacional",
+        mensaje:
+          "Por la privacidad y seguridad de nuestros huéspedes, no puedo confirmar ni compartir el número de habitación ni si una persona se hospeda aquí.",
+        motivoGuardrail: "revelar_habitacion_o_presencia",
+        canal: body.canal,
+        simulado: false,
+      });
+    }
+
     // A5 (auditoria-2 agentico ALTO, REQ-AGT-020): serializa esta corrida contra
     // cualquier otra corrida CONCURRENTE del MISMO (hotel, agente) -- el advisory
     // lock es transaccional (se libera al COMMIT de esta transacción por-request,
@@ -399,6 +485,18 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
 
     const modelSlug = resolveModelForRole(def.role);
     let provider: LlmProvider;
+    // REQ-AGT-011/LLM-022: fallback de proveedor de modelo detrás de un router propio,
+    // solo en los canales CONVERSACIONALES (`canal`/`enrutador`, roles.ts) -- el auditor
+    // nocturno (`batch_nocturno`) corre sin huésped esperando en vivo, así que se queda
+    // con un único proveedor, sin router. Continuidad en los dos escenarios que hoy
+    // puede fallar el proveedor primario:
+    //  (a) nunca llega a intentar la llamada porque ya se sabe sin credenciales --
+    //      `ProviderRouter` (agent-core provider.ts) salta directo al de respaldo;
+    //  (b) falla a MITAD de una llamada ya en curso (`ProviderTransientError`) --
+    //      `AgentRunner.fallbackProvider` (runner.ts) reintenta la MISMA ronda con el
+    //      MISMO proveedor de respaldo y deja rastro en la traza (`provider_fallback`).
+    const esCanalConversacional = def.role !== "batch_nocturno";
+    let fallbackProvider: LlmProvider | undefined;
     if (body.demo) {
       // DEMO-101 es un código SINTÉTICO, no una habitación real del hotel (aud-2
       // agentico CRÍTICO): antes se tomaba "el primer cuarto real por código
@@ -410,7 +508,14 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       // Sin credenciales reales en este entorno: se declara `no_configurado` de forma
       // honesta (ver agent-core provider.ts) -- nunca una respuesta simulada haciéndose
       // pasar por real.
-      provider = new EnvProvider();
+      const primario = new EnvProvider({ id: "anthropic-primario", envKeys: ["ANTHROPIC_API_KEY"] });
+      if (esCanalConversacional) {
+        const respaldo = new EnvProvider({ id: "openrouter-respaldo", envKeys: ["OPENROUTER_API_KEY"] });
+        provider = new ProviderRouter({ providers: [primario, respaldo] });
+        fallbackProvider = respaldo;
+      } else {
+        provider = primario;
+      }
     }
 
     // aud-2 agentico CRÍTICO: la demo SIEMPRE corre en gate "shadow", sin importar el
@@ -450,6 +555,7 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     const runner = new AgentRunner({
       agentName: def.name,
       provider,
+      fallbackProvider,
       tools,
       approvalQueue,
       systemPrompt: def.systemPrompt,
@@ -461,6 +567,12 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       pricing,
       gate: gateEfectivo,
       disclosureMessage: def.disclosureMessage,
+      // REQ-AGT-003 (H17-001/GOB-037): conecta la cobertura AUTOMÁTICA de ROIEvent del
+      // `AgentRunner` (100% de las tools effect="money" que ejecutan con éxito en esta
+      // corrida, sin depender de que el modelo llame aparte "registrar_evento_roi") a
+      // `public.roi_event` real -- misma `db` de la sesión (RLS activa vía `dbSession`)
+      // que ya usan las demás tools de este catálogo.
+      roiEventRecorder: createPostgresRoiEventRecorder(db),
       onTrace: (event) => {
         events.push(event);
         if (event.kind === "llm_call") {
@@ -477,56 +589,34 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
 
     // Trazas paso a paso -> audit_log, en ORDEN (la cadena de hash de record_audit_log
     // depende del orden de inserción) y dentro de la MISMA transacción por-request que
-    // el INSERT de agent_run que sigue.
-    for (const event of events) {
-      await db.query("select public.record_audit_log($1, $2, $3, $4, $5, $6::jsonb);", [
-        orgId,
-        hotelId,
-        `agente.${event.kind}`,
-        "agent_run",
-        null,
-        JSON.stringify({
-          agente: def.name,
-          runId: event.runId,
-          paso: event.step,
-          modelo: event.modelSlug,
-          tool: event.toolName,
-          efecto: event.effect,
-          gate: event.gate,
-          tokensEntrada: event.tokensIn,
-          tokensSalida: event.tokensOut,
-          costoUsd: event.costUsd,
-          mensaje: event.message,
-        }),
-      ]);
-    }
+    // el INSERT de agent_run que sigue -- REQ-AGT-006: ambas escrituras redactan PII
+    // antes de persistir, ver apps/api/src/lib/agentObservability.ts.
+    await persistAgentTraceEvents({ db, orgId, hotelId, agentName: def.name, events });
 
-    await db.query(
-      `insert into public.agent_run
-         (run_id, org_id, hotel_id, agent_name, model_role, provider_id, model_slug, gate, status,
-          steps, tokens_in, tokens_out, cost_usd, request_id, actor_type, actor_id, duration_ms, message)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18);`,
-      [
-        result.runId,
-        orgId,
-        hotelId,
-        def.name,
-        def.role,
-        provider.id,
-        modelSlug,
-        gateEfectivo,
-        result.status,
-        result.steps,
-        tokensIn,
-        tokensOut,
-        costUsd,
-        c.get("requestId"),
-        "staff",
-        c.get("userId"),
-        durationMs,
-        result.message,
-      ],
-    );
+    await persistAgentRunSummary({
+      db,
+      runId: result.runId,
+      orgId,
+      hotelId,
+      agentName: def.name,
+      modelRole: def.role,
+      providerId: provider.id,
+      modelSlug,
+      gate: gateEfectivo,
+      status: result.status,
+      steps: result.steps,
+      tokensIn,
+      tokensOut,
+      costUsd,
+      requestId: c.get("requestId"),
+      actorType: "staff",
+      actorId: c.get("userId"),
+      durationMs,
+      // CRUDO a propósito: persistAgentRunSummary() es quien aplica redact() antes del
+      // INSERT (REQ-AGT-006). result.message sin tocar sigue siendo lo que la respuesta
+      // HTTP de abajo devuelve al actor que disparó la corrida.
+      message: result.message,
+    });
 
     deps.metrics.incrementAgentCost(hotelId, def.name, costUsd);
 
