@@ -48,6 +48,8 @@ import { mensajeriaRoutes } from "./routes/mensajeria.ts";
 import { agentesRoutes } from "./routes/agentes.ts";
 import { roiRoutes } from "./routes/roi.ts";
 import { privacidadRoutes } from "./routes/privacidad.ts";
+import { consentimientoRoutes } from "./routes/consentimiento.ts";
+import { auditoriaConversacionesRoutes } from "./routes/auditoriaConversaciones.ts";
 import { adminRoutes } from "./routes/admin.ts";
 import { suscripcionRoutes } from "./routes/suscripcion.ts";
 import { notificacionesRoutes } from "./routes/notificaciones.ts";
@@ -264,6 +266,8 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", agentesRoutes(deps));
   app.route("/", roiRoutes(deps));
   app.route("/", privacidadRoutes(deps));
+  app.route("/", consentimientoRoutes(deps));
+  app.route("/", auditoriaConversacionesRoutes(deps));
   app.route("/", adminRoutes(deps));
   app.route("/", suscripcionRoutes(resolvedDeps));
   app.route("/", notificacionesRoutes(deps));

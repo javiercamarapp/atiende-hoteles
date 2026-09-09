@@ -326,3 +326,30 @@ export {
   type WalkForwardBacktestInput,
   type WalkForwardBacktestResult,
 } from "./revenue/walkForwardBacktest.ts";
+export {
+  DEFAULT_WEEKLY_AUDIT_SAMPLE_SIZE,
+  CONVERSATION_AUDIT_CATEGORIES,
+  ConversationAuditError,
+  resolveIsoWeekStart,
+  resolveAuditWindow,
+  selectWeeklyAuditSample,
+  assertValidAuditReview,
+  type ConversationAuditCategory,
+  type AuditReviewInput,
+  type AuditReviewValidated,
+} from "./qa/conversationAudit.ts";
+export {
+  CONSENT_JURISDICTIONS,
+  consentKindSchema,
+  consentChannelSchema,
+  resolveConsentJurisdiction,
+  annotateConsentLedger,
+  filterConsentLedger,
+  summarizeConsentLedger,
+  type ConsentJurisdiction,
+  type ConsentKind,
+  type ConsentChannel,
+  type ConsentLedgerRow,
+  type ConsentLedgerEntry,
+  type ConsentLedgerSummaryBucket,
+} from "./consentLedger.ts";

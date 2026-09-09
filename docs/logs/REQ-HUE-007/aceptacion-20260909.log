@@ -1,0 +1,32 @@
+=== npx vitest run tests/unit/domain-hotel/auditoria-conversaciones-semanal.spec.ts ===
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-hue-restantes
+
+ ✓ tests/unit/domain-hotel/auditoria-conversaciones-semanal.spec.ts (19 tests) 3ms
+
+ Test Files  1 passed (1)
+      Tests  19 passed (19)
+   Start at  01:44:01
+   Duration  285ms (transform 79ms, setup 0ms, collect 122ms, tests 3ms, environment 0ms, prepare 43ms)
+
+
+=== npx vitest run tests/integration/api/auditoria-conversaciones.spec.ts ===
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-hue-restantes
+
+ ✓ tests/integration/api/auditoria-conversaciones.spec.ts (9 tests) 981ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  01:44:02
+   Duration  1.75s (transform 347ms, setup 0ms, collect 599ms, tests 981ms, environment 0ms, prepare 40ms)
+
+
+=== node --experimental-strip-types scripts/auditoria/muestreo-conversaciones.ts --n=30 (contra el Postgres persistente de desarrollo real, embedded-postgres) ===
+Semana auditada: 2026-09-07
+  Hotel Demo Centro (79364419-5e24-4cdf-be0d-68b451768101): 0/0 candidatas muestreadas (nueva), 0 pendientes de revisión.
+  Hotel Demo Playa (e0e58913-9004-4c03-b658-89256b5c7454): 0/0 candidatas muestreadas (nueva), 0 pendientes de revisión.
+Total: 0 conversaciones en muestra, 0 pendientes de revisión.
+Reporte guardado en: /private/tmp/hoteles-w2-hue-restantes/docs/logs/operativo/REQ-HUE-007-auditoria-semanal-2026-09-07.md
+
+NOTA: esta corrida es honesta -- el Postgres de desarrollo de este worktree no tiene ninguna conversación real (no hay canal de WhatsApp/voz real conectado, REQ-HUE-001/002/004 siguen pendientes-credenciales), así que 0 candidatas es el resultado correcto, no un error. El mecanismo de muestreo/selección/idempotencia/ventana de 7 días se verifica de punta a punta con conversaciones REALES (creadas vía el webhook simulado FakeWhatsappAdapter) en tests/integration/api/auditoria-conversaciones.spec.ts (9/9 arriba).

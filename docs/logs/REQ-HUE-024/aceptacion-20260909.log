@@ -1,0 +1,47 @@
+=== npx vitest run tests/unit/domain-hotel/consent-ledger.spec.ts ===
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-hue-restantes
+
+ ✓ tests/unit/domain-hotel/consent-ledger.spec.ts (9 tests) 8ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  01:44:20
+   Duration  323ms (transform 85ms, setup 0ms, collect 138ms, tests 8ms, environment 0ms, prepare 35ms)
+
+
+=== npx vitest run tests/integration/api/consentimiento.spec.ts ===
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-hue-restantes
+
+ ✓ tests/integration/api/consentimiento.spec.ts (9 tests) 965ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  01:44:21
+   Duration  1.65s (transform 307ms, setup 0ms, collect 512ms, tests 965ms, environment 0ms, prepare 35ms)
+
+
+=== npx vitest run tests/adversarial/consent-ledger.spec.ts (criterio de aceptación de docs/ACEPTACION.md) ===
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-hue-restantes
+
+ ✓ tests/adversarial/consent-ledger.spec.ts (5 tests) 944ms
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  01:44:23
+   Duration  1.62s (transform 305ms, setup 0ms, collect 513ms, tests 944ms, environment 0ms, prepare 31ms)
+
+
+=== npx vitest run tests/adversarial/opt-in-marketing.spec.ts (regresión: REQ-HUE-021/REQ-SEG-007, ya 'hecho', no se rompe con el fix de isMarketingSendBlocked) ===
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-hue-restantes
+
+ ✓ tests/adversarial/opt-in-marketing.spec.ts (11 tests) 931ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  01:44:25
+   Duration  1.61s (transform 311ms, setup 0ms, collect 520ms, tests 931ms, environment 0ms, prepare 37ms)
+
