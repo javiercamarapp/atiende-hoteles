@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-seg-restantes
+
+ ✓ tests/adversarial/disclosure-ia.spec.ts (7 tests) 888ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  01:57:25
+   Duration  1.53s (transform 314ms, setup 0ms, collect 527ms, tests 888ms, environment 0ms, prepare 26ms)
+

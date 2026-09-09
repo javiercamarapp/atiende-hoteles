@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-seg-restantes
+
+ ✓ tests/integration/api/incidentes.spec.ts (5 tests) 941ms
+ ✓ tests/unit/api/security-breach-alert.spec.ts (15 tests) 2ms
+
+ Test Files  2 passed (2)
+      Tests  20 passed (20)
+   Start at  01:57:27
+   Duration  1.62s (transform 330ms, setup 0ms, collect 558ms, tests 943ms, environment 0ms, prepare 27ms)
+

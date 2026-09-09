@@ -14,10 +14,24 @@
 // real en este repo, vía FakeWhatsappAdapter -- sin llamar nunca a Meta real, ADR-007).
 // El canal de voz depende de telefonía/PBX real (Telnyx, ver docs/REQUISITOS.md §5) que
 // no existe todavía en este repo -- no se simula aquí.
+//
+// REQ-SEG-001 (auditoria-2/legal [ALTO]): desde este fix, el disclosure de primer turno
+// YA NO es el texto pelado de GOB-034 -- compone además la URL real del aviso de
+// privacidad (`buildDisclosureMessageConAvisoPrivacidad`, agent-core disclosure.ts),
+// resuelta contra `deps.env.frontendUrl` (mismo criterio que routes/registro.ts). El
+// fixture de pruebas (`createApiFixture`) no fija `FRONTEND_URL`, así que cae al default
+// de desarrollo (`http://localhost:5173`, primer origen de CORS) -- ver env.ts.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { FakeWhatsappAdapter } from "@atiende-hoteles/mcp-whatsapp";
-import { WHATSAPP_DISCLOSURE_MESSAGE, RESPUESTA_FIJA_ES_HUMANO, esPreguntaSiEsHumano } from "@atiende-hoteles/agent-core";
+import {
+  buildDisclosureMessageConAvisoPrivacidad,
+  RESPUESTA_FIJA_ES_HUMANO,
+  esPreguntaSiEsHumano,
+} from "@atiende-hoteles/agent-core";
 import { createApiFixture, destroyApiFixture, loginAs, type ApiFixture } from "../support/api-fixture.ts";
+
+const AVISO_PRIVACIDAD_URL_ESPERADA = "http://localhost:5173/privacidad";
+const DISCLOSURE_CON_AVISO_ESPERADO = buildDisclosureMessageConAvisoPrivacidad(AVISO_PRIVACIDAD_URL_ESPERADA);
 
 interface MensajeRow {
   direction: string;
@@ -89,10 +103,12 @@ describe("adversarial: disclosure de IA en WhatsApp (REQ-HUE-006/GOB-034)", () =
     const mensajes = await mensajesDe(from);
     const disclosure = mensajes.find((m) => m.direction === "saliente" && m.template_name === "disclosure_ia");
     expect(disclosure).toBeTruthy();
-    // Texto EXACTO tomado del disclosure engine (agent-core), no un string reinventado
-    // en apps/api -- verifica que el canal y el núcleo del agente comparten una sola
-    // fuente de verdad (mismo principio que runner.ts `close()`).
-    expect(disclosure!.body).toBe(WHATSAPP_DISCLOSURE_MESSAGE);
+    // Texto EXACTO compuesto por el disclosure engine (agent-core), no un string
+    // reinventado en apps/api -- verifica que el canal y el núcleo del agente comparten
+    // una sola fuente de verdad (mismo principio que runner.ts `close()`), Y que incluye
+    // la URL real del aviso de privacidad (REQ-SEG-001, auditoria-2/legal [ALTO]).
+    expect(disclosure!.body).toBe(DISCLOSURE_CON_AVISO_ESPERADO);
+    expect(disclosure!.body).toContain(AVISO_PRIVACIDAD_URL_ESPERADA);
   });
 
   it("el SEGUNDO mensaje del MISMO hilo NO repite el disclosure (solo el primer turno)", async () => {

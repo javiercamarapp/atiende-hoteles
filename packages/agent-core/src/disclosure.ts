@@ -33,6 +33,33 @@ export const WHATSAPP_DISCLOSURE_MESSAGE: string = (() => {
   return msg;
 })();
 
+// REQ-SEG-001 (H19-001/H19-009): "Aviso de Privacidad... accesible desde el primer
+// contacto por WhatsApp/voz/web". auditoria-2/legal [ALTO] encontró que el disclosure de
+// arriba (que SÍ es el primer contacto real, ver mensajeria.ts) nunca daba al huésped
+// ninguna vía de un clic hacia el aviso -- disclosureMessage se diseñó solo para
+// GOB-034 (identificarse como IA) y nunca se le añadió el segundo propósito. Este hook
+// es el mecanismo TÉCNICO (genérico sobre cualquier canal, no solo WhatsApp): compone el
+// mismo disclosureMessage de siempre + una referencia a la URL real del aviso, que el
+// llamador (apps/api, que sí conoce `FRONTEND_URL`) resuelve y pasa aquí -- este paquete
+// (agent-core) no conoce URLs de despliegue, solo compone texto.
+// LÍMITE EXPLICITO: el TEXTO LEGAL del aviso mismo sigue pendiente de redacción por el
+// fundador/equipo legal (ver apps/web/src/pages/Privacidad.tsx `FaltaDato`,
+// docs/BLOQUEOS.md) -- lo que este hook garantiza es que, en cuanto ese texto se
+// apruebe, ya existe una ruta de un clic hacia él desde el primer mensaje real.
+export const AVISO_PRIVACIDAD_PATH = "/privacidad";
+
+/** Compone el disclosure de IA de primer turno + una frase con la URL real del aviso de
+ * privacidad (REQ-SEG-001). `avisoPrivacidadUrl` debe ser una URL absoluta ya resuelta
+ * por el llamador (típicamente `new URL(AVISO_PRIVACIDAD_PATH, env.frontendUrl)`). */
+export function buildDisclosureMessageConAvisoPrivacidad(avisoPrivacidadUrl: string): string {
+  if (!avisoPrivacidadUrl || avisoPrivacidadUrl.trim().length === 0) {
+    throw new Error(
+      "avisoPrivacidadUrl vacía -- REQ-SEG-001 exige que el disclosure de primer contacto enlace al aviso de privacidad real.",
+    );
+  }
+  return `${WHATSAPP_DISCLOSURE_MESSAGE} Puedes leer el aviso de privacidad completo aquí: ${avisoPrivacidadUrl}`;
+}
+
 /** Respuesta FIJA (no generativa, nunca sale del LLM) a "¿eres humano?" y variantes
  * cercanas -- REQ-HUE-006 exige texto identico en cada prueba/conversacion. */
 export const RESPUESTA_FIJA_ES_HUMANO: string =

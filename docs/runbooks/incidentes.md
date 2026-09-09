@@ -62,15 +62,82 @@ haya visto todavía.
 1. Notificar al afectado y a la autoridad (INAI) dentro del plazo legal aplicable —
    **pendiente de definir el plazo exacto y la plantilla de notificación con
    asesoría legal**; no se inventa un plazo aquí. Registrar la fecha de detección
-   (dispara el conteo del plazo) de forma inmutable (idealmente como entrada en
-   `audit_log` o, mientras no exista un tipo de evento dedicado, en un documento
-   fechado bajo `docs/logs/`).
+   (dispara el conteo del plazo) de forma inmutable — desde REQ-SEG-009 (2026-09-08)
+   esto YA NO es "idealmente" ni un documento suelto: **declarar la brecha vía
+   `POST /hoteles/:hotelId/incidentes/brecha`** (§1.6 abajo) deja esa marca de tiempo
+   como una fila real e inmutable de `audit_log` (misma cadena de hash append-only que
+   el resto del repo, 0008/0012/0015/0016) — nunca la reconstruyas a mano en un `.md`
+   cuando el mecanismo real ya existe.
 2. Informar internamente (fundador/responsable de datos) sin demora, incluso antes de
-   tener el análisis completo.
+   tener el análisis completo — el mismo endpoint de §1.6 ya dispara esto (webhook
+   configurable), no dependas solo de avisar por Slack/WhatsApp a mano.
 
 ### 1.5 Cierre
 - Postmortem escrito (qué pasó, cómo se detectó, qué se rotó/aisló, qué cambia para
   que no se repita) — guardar en `docs/logs/incidente-<fecha>-<slug>.md`.
+- Confirmar con `GET /hoteles/:hotelId/incidentes/brecha` (§1.6) que el incidente quedó
+  listado y con el `categoria`/`vulneracionSignificativa` correctos antes de cerrar.
+
+### 1.6 Mecanismo técnico (REQ-SEG-009 — documentado Y probado)
+
+Lo de arriba (1.1–1.5) es el procedimiento HUMANO. Esto es el código real que lo
+sostiene — `apps/api/src/routes/incidentes.ts` + `apps/api/src/lib/securityBreachAlert.ts`,
+probado de punta a punta contra un servidor HTTP real (no solo mocks) en
+`tests/integration/api/incidentes.spec.ts` y a nivel de unidad en
+`tests/unit/api/security-breach-alert.spec.ts`.
+
+**Declarar una brecha** (owner/gm únicamente — mismo nivel que aprobar una presentación
+SAT, REQ-SEG-010):
+```
+curl -X POST https://<api>/hoteles/<hotelId>/incidentes/brecha \
+  -H "authorization: Bearer <token-owner-o-gm>" \
+  -H "content-type: application/json" \
+  -d '{
+    "categoria": "documento_identidad",
+    "descripcion": "Descripción real de lo que pasó, qué se detectó y cuándo.",
+    "datosInvolucrados": ["pasaporte"]
+  }'
+```
+Categorías válidas: `documento_identidad`, `datos_pago`, `credencial_fiscal`,
+`credencial_aplicacion`, `conversacion_huesped`, `otro`. `datosInvolucrados` es una
+lista libre corta (ej. `["pasaporte"]`, `["efirma"]`) — si incluye
+`pasaporte`/`ine`/`documento_identidad`/`efirma`/`csd`/`credencial_fiscal`, la
+respuesta trae `vulneracionSignificativa: true` (criterio EXACTO de REQ-SEG-009: "una
+brecha de datos de pasaporte se considera vulneración significativa").
+
+La respuesta (`201`) trae `incidenteId` + `detectadoEn` (la marca de tiempo inmutable
+que dispara el conteo del plazo legal, §1.4) — guárdalos en el postmortem.
+
+**Listar brechas declaradas de un hotel** (para el postmortem/auditoría, §1.5):
+```
+curl https://<api>/hoteles/<hotelId>/incidentes/brecha -H "authorization: Bearer <token-owner-o-gm>"
+```
+
+**Notificación interna activa (sin demora, §1.4.2)**: configurable por variable de
+entorno, mismo patrón ya aceptado para el camino del dinero (ADR-008,
+`MONEY_ALERT_*`/`apps/api/src/lib/moneyAlert.ts`) — un webhook GENÉRICO, sin acoplarse
+a ningún proveedor concreto:
+- `SECURITY_BREACH_ALERT_WEBHOOK_URL`: si se define, cada brecha declarada se envía por
+  HTTP POST (JSON) a esa URL — un Slack Incoming Webhook, PagerDuty Events API, un
+  endpoint propio, o un relevo tipo Zapier/Make.
+- `SECURITY_BREACH_ALERT_EMAIL_TO` + `SECURITY_BREACH_ALERT_EMAIL_WEBHOOK_URL`: si
+  AMBAS se definen, se envía además `{ to, subject, alert }` a ese webhook de correo.
+
+**Sin ninguna de las dos configuradas**: la brecha SIGUE quedando registrada de forma
+inmutable (nunca depende de la notificación para persistir), pero `createApp()` lo
+declara al arrancar el proceso con `nivel: "alerta"` / `tipo:
+"alerta_brecha_seguridad_sin_destinatario"`, y `GET /ready` lo refleja en
+`securityBreachAlertsConfigured: false` — confirma ese campo antes de asumir que
+"alguien ya se habría enterado" de una brecha anterior (mismo criterio que §3 de este
+runbook para las alertas del camino del dinero).
+
+**LÍMITE EXPLICITO (pendiente de credenciales, no de código)**: el destino REAL de
+producción (a qué Slack/PagerDuty/correo llega la alerta) no está configurado en este
+entorno (ADR-007) — configurar esas variables con la URL/credencial real es una
+decisión operativa del fundador, no requiere ningún cambio de código. El canal FINAL
+de notificación al huésped afectado y a la autoridad (INAI) sigue siendo el proceso
+humano de §1.4.1 (plazo/plantilla pendientes de asesoría legal) — este mecanismo nunca
+notifica directamente a un huésped ni a una autoridad.
 - Si el vector fue un bug de código (ej. CORS/rate limit/redacción insuficiente),
   abrir la corrección con su propia prueba adversarial ANTES de cerrar el incidente.
 

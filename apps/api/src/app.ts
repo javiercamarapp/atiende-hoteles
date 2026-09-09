@@ -51,6 +51,7 @@ import { privacidadRoutes } from "./routes/privacidad.ts";
 import { adminRoutes } from "./routes/admin.ts";
 import { suscripcionRoutes } from "./routes/suscripcion.ts";
 import { notificacionesRoutes } from "./routes/notificaciones.ts";
+import { incidentesRoutes } from "./routes/incidentes.ts";
 import { toErrorBody } from "./lib/errors.ts";
 import {
   buildMoneyAlertLog,
@@ -60,6 +61,11 @@ import {
   isMoneyPath,
   resolveMoneyAlertDestination,
 } from "./lib/moneyAlert.ts";
+import {
+  buildNoDestinationStartupLog as buildNoSecurityBreachDestinationStartupLog,
+  hasSecurityBreachAlertDestination,
+  resolveSecurityBreachAlertDestination,
+} from "./lib/securityBreachAlert.ts";
 import { ipRateLimit, requestId, userRateLimit } from "./middleware.ts";
 import type { AppDeps, HonoEnvBindings, ResolvedAppDeps } from "./types.ts";
 
@@ -75,6 +81,14 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   const moneyAlertDestination = resolveMoneyAlertDestination();
   if (!hasMoneyAlertDestination(moneyAlertDestination)) {
     deps.logger.error(buildNoDestinationStartupLog(), "alerta_camino_dinero_sin_destinatario");
+  }
+
+  // REQ-SEG-009: mismo criterio que el bloque de arriba (ADR-008) aplicado a la
+  // notificación de brechas de seguridad (routes/incidentes.ts) -- declarado en el
+  // arranque, nunca descubierto solo cuando una brecha real ya ocurrió.
+  const securityBreachAlertDestination = resolveSecurityBreachAlertDestination();
+  if (!hasSecurityBreachAlertDestination(securityBreachAlertDestination)) {
+    deps.logger.error(buildNoSecurityBreachDestinationStartupLog(), "alerta_brecha_seguridad_sin_destinatario");
   }
 
   // H5 · REQ-INT-002/REQ-INT-005: sin credenciales reales del PSP/PAC, `createApp`
@@ -267,6 +281,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", adminRoutes(deps));
   app.route("/", suscripcionRoutes(resolvedDeps));
   app.route("/", notificacionesRoutes(deps));
+  app.route("/", incidentesRoutes(deps));
 
   return app;
 }

@@ -40,11 +40,19 @@
 // previos en `public.message` para la conversación dispara el disclosure de IA antes
 // de cualquier otra respuesta automática; independientemente del turno, una pregunta
 // tipo "¿eres humano?" recibe la respuesta FIJA no generativa del mismo módulo.
+//
+// REQ-SEG-001 (auditoria-2/legal [ALTO]): el disclosure de primer turno ahora compone
+// además la URL real del aviso de privacidad (`AVISO_PRIVACIDAD_PATH` resuelto contra
+// `deps.env.frontendUrl`, mismo criterio que routes/registro.ts/correo.ts para construir
+// enlaces absolutos) -- este webhook es el ÚNICO "primer contacto" real por WhatsApp de
+// todo el repo, así que es donde debía vivir el enlace, no solo el texto de GOB-034.
 import { randomUUID } from "node:crypto";
 import { Hono } from "hono";
 import { z } from "zod";
 import {
   SEND_WHATSAPP_TEMPLATE_TOOL_NAME,
+  AVISO_PRIVACIDAD_PATH,
+  buildDisclosureMessageConAvisoPrivacidad,
   buildToolContext,
   createRunBudget,
   createSendWhatsappTemplateTool,
@@ -54,7 +62,6 @@ import {
   PostgresApprovalQueue,
   RESPUESTA_FIJA_ES_HUMANO,
   transactionalTemplateCheckFromDb,
-  WHATSAPP_DISCLOSURE_MESSAGE,
   type SendWhatsappTemplateInput,
 } from "@atiende-hoteles/agent-core";
 import { FakeWhatsappAdapter } from "@atiende-hoteles/mcp-whatsapp";
@@ -237,17 +244,26 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       // de cualquier otra respuesta automática (tarjeta/check-in de abajo) para que sea
       // lo primero que el huésped recibe de vuelta en la conversación.
       if (esPrimerTurno) {
+        // REQ-SEG-001: URL absoluta real (no relativa) porque el destino es un mensaje
+        // de WhatsApp, no un `<Link>` de apps/web -- mismo patrón que
+        // routes/registro.ts/correo.ts (`new URL(path, deps.env.frontendUrl)`).
+        const avisoPrivacidadUrl = new URL(AVISO_PRIVACIDAD_PATH, deps.env.frontendUrl).toString();
+        const disclosureConAviso = buildDisclosureMessageConAvisoPrivacidad(avisoPrivacidadUrl);
         const disclosure = await sharedWhatsappAdapter.sendTemplateMessage({
           to: event.from,
           templateName: "disclosure_ia",
           languageCode: "es_MX",
-          parameters: [],
+          // El parámetro de plantilla real de Meta (pendiente de credenciales, ADR-007)
+          // llevaría esta misma URL -- aquí se conserva además como el `body` guardado
+          // (única fuente verificable en este entorno simulado, ver
+          // FakeWhatsappAdapter.sendTemplateMessage, que ignora `parameters`).
+          parameters: [avisoPrivacidadUrl],
           clientMessageId: `disclosure-ia-${event.eventId}`,
         });
         await deps.engine.admin.query(
           `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, template_name, body, external_message_id, delivery_status, simulated)
            values ($1, $2, $3, 'saliente', 'whatsapp', 'disclosure_ia', $4, $5, $6, true);`,
-          [configRows[0].tenant_id, hotelId, convRows[0]!.id, WHATSAPP_DISCLOSURE_MESSAGE, disclosure.externalMessageId, disclosure.status],
+          [configRows[0].tenant_id, hotelId, convRows[0]!.id, disclosureConAviso, disclosure.externalMessageId, disclosure.status],
         );
       }
 

@@ -340,4 +340,55 @@ describe("H8: observabilidad + seguridad de transporte (integración real)", () 
       }
     });
   });
+
+  // REQ-SEG-009: mismo patrón/mismo criterio de observabilidad que el bloque de arriba
+  // (ADR-008), aplicado a la alerta de brecha de seguridad (lib/securityBreachAlert.ts +
+  // routes/incidentes.ts). Cobertura funcional completa del endpoint (roles, audit_log,
+  // entrega real del webhook) en tests/integration/api/incidentes.spec.ts.
+  describe('Alerta estructurada de brecha de seguridad (`nivel: "alerta"`, REQ-SEG-009)', () => {
+    it("sin SECURITY_BREACH_ALERT_WEBHOOK_URL/EMAIL_*: createApp() declara la brecha al arrancar y GET /ready la refleja", async () => {
+      const previo = {
+        webhook: process.env.SECURITY_BREACH_ALERT_WEBHOOK_URL,
+        emailTo: process.env.SECURITY_BREACH_ALERT_EMAIL_TO,
+        emailWebhook: process.env.SECURITY_BREACH_ALERT_EMAIL_WEBHOOK_URL,
+      };
+      delete process.env.SECURITY_BREACH_ALERT_WEBHOOK_URL;
+      delete process.env.SECURITY_BREACH_ALERT_EMAIL_TO;
+      delete process.env.SECURITY_BREACH_ALERT_EMAIL_WEBHOOK_URL;
+      try {
+        const local = capturingLogger();
+        const localDeps: AppDeps = { ...deps, logger: local.logger, metrics: new MetricsRegistry() };
+        const localApp = createApp(localDeps);
+
+        const startupAlerts = local.parsed().filter((l) => l.nivel === "alerta" && l.tipo === "alerta_brecha_seguridad_sin_destinatario");
+        expect(startupAlerts.length).toBe(1);
+
+        const res = await localApp.request("/ready");
+        expect(res.status).toBe(200);
+        expect((await res.json()) as { securityBreachAlertsConfigured: boolean }).toMatchObject({ securityBreachAlertsConfigured: false });
+      } finally {
+        if (previo.webhook !== undefined) process.env.SECURITY_BREACH_ALERT_WEBHOOK_URL = previo.webhook;
+        if (previo.emailTo !== undefined) process.env.SECURITY_BREACH_ALERT_EMAIL_TO = previo.emailTo;
+        if (previo.emailWebhook !== undefined) process.env.SECURITY_BREACH_ALERT_EMAIL_WEBHOOK_URL = previo.emailWebhook;
+      }
+    });
+
+    it("con SECURITY_BREACH_ALERT_WEBHOOK_URL configurado: NO declara la brecha al arrancar, y GET /ready refleja securityBreachAlertsConfigured: true", async () => {
+      const previo = process.env.SECURITY_BREACH_ALERT_WEBHOOK_URL;
+      process.env.SECURITY_BREACH_ALERT_WEBHOOK_URL = "https://hooks.example.com/atiende-hoteles-brecha";
+      try {
+        const local = capturingLogger();
+        const localDeps: AppDeps = { ...deps, logger: local.logger, metrics: new MetricsRegistry() };
+        const localApp = createApp(localDeps);
+
+        expect(local.parsed().some((l) => l.tipo === "alerta_brecha_seguridad_sin_destinatario")).toBe(false);
+
+        const res = await localApp.request("/ready");
+        expect((await res.json()) as { securityBreachAlertsConfigured: boolean }).toMatchObject({ securityBreachAlertsConfigured: true });
+      } finally {
+        if (previo === undefined) delete process.env.SECURITY_BREACH_ALERT_WEBHOOK_URL;
+        else process.env.SECURITY_BREACH_ALERT_WEBHOOK_URL = previo;
+      }
+    });
+  });
 });

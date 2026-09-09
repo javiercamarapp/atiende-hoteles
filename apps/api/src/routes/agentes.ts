@@ -30,12 +30,14 @@ import { Hono } from "hono";
 import { z } from "zod";
 import {
   AgentRunner,
+  AVISO_PRIVACIDAD_PATH,
   DEFAULT_BATCH_PRICING,
   DEFAULT_PRICING,
   EnvProvider,
   FakeProvider,
   PostgresApprovalQueue,
   ProviderRouter,
+  buildDisclosureMessageConAvisoPrivacidad,
   roleParamsForChannel,
   ToolRegistry,
   buildToolContext,
@@ -552,6 +554,17 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     // proveedor (provider.ts `LlmCompleteParams.effort`, agregado en este mismo fix).
     const roleParams = roleParamsForChannel(def.role, body.canal);
 
+    // REQ-SEG-001: mismo criterio que routes/mensajeria.ts -- el disclosure de primer
+    // turno (cuando el agente define uno) enlaza al aviso de privacidad real, para
+    // AMBOS canales de este endpoint (`body.canal` texto/voz). El canal de voz real
+    // (telefonía/PBX) no existe todavía en este repo (pendiente-hardware, ver
+    // tests/adversarial/disclosure-ia.spec.ts) -- este endpoint es hoy la única
+    // superficie que ejercita `canal: "voz"`, así que el texto queda listo desde ya
+    // para cuando esa integración exista, sin depender de otro cambio en agent-core.
+    const disclosureMessage = def.disclosureMessage
+      ? buildDisclosureMessageConAvisoPrivacidad(new URL(AVISO_PRIVACIDAD_PATH, deps.env.frontendUrl).toString())
+      : undefined;
+
     const runner = new AgentRunner({
       agentName: def.name,
       provider,
@@ -566,7 +579,7 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       maxOutputTokensPerCall: def.maxOutputTokensPerCall,
       pricing,
       gate: gateEfectivo,
-      disclosureMessage: def.disclosureMessage,
+      disclosureMessage,
       // REQ-AGT-003 (H17-001/GOB-037): conecta la cobertura AUTOMÁTICA de ROIEvent del
       // `AgentRunner` (100% de las tools effect="money" que ejecutan con éxito en esta
       // corrida, sin depender de que el modelo llame aparte "registrar_evento_roi") a

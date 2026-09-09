@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /private/tmp/hoteles-w2-seg-restantes
+
+ ✓ tests/adversarial/registro-huespedes-migratorio.spec.ts (5 tests) 1001ms
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  01:57:29
+   Duration  1.64s (transform 313ms, setup 0ms, collect 521ms, tests 1.00s, environment 0ms, prepare 27ms)
+

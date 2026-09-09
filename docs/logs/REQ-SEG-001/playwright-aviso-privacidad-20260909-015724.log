@@ -1,0 +1,12 @@
+[WebServer] 1:57:47 a.m. [vite] warning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-swc" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] You or a plugin you are using have set `optimizeDeps.esbuildOptions` but this option is now deprecated. Vite now uses Rolldown to optimize the dependencies. Please use `optimizeDeps.rolldownOptions` instead.
+[WebServer] `esbuild` option is set to false, but `oxc` option was not set to false. `esbuild: false` does not have effect any more. If you want to disable the default transformation, which is now handled by Oxc, please set `oxc: false` instead.
+
+Running 4 tests using 2 workers
+
+  ✓  2 [desktop] › ../../tests/e2e/aviso-privacidad-primer-contacto.spec.ts:28:3 › aviso de privacidad accesible desde el primer contacto (REQ-SEG-001) › web: la landing pública enlaza el aviso de privacidad en el primer contacto (footer) (760ms)
+  ✓  1 [mobile] › ../../tests/e2e/aviso-privacidad-primer-contacto.spec.ts:28:3 › aviso de privacidad accesible desde el primer contacto (REQ-SEG-001) › web: la landing pública enlaza el aviso de privacidad en el primer contacto (footer) (798ms)
+  ✓  4 [mobile] › ../../tests/e2e/aviso-privacidad-primer-contacto.spec.ts:35:3 › aviso de privacidad accesible desde el primer contacto (REQ-SEG-001) › web: /privacidad renderiza el aviso real, con sus secciones y el banner honesto de pendiente de redacción legal final (524ms)
+  ✓  3 [desktop] › ../../tests/e2e/aviso-privacidad-primer-contacto.spec.ts:35:3 › aviso de privacidad accesible desde el primer contacto (REQ-SEG-001) › web: /privacidad renderiza el aviso real, con sus secciones y el banner honesto de pendiente de redacción legal final (662ms)
+
+  4 passed (6.5s)

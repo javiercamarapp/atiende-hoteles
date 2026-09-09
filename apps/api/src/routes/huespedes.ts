@@ -101,6 +101,94 @@ export function huespedesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     return c.json(rows.map((r) => ({ id: r.id, nombre: r.nombre, email: r.email, estancias: Number(r.estancias) })));
   });
 
+  // REQ-SEG-016 · "El registro de huéspedes debe cumplir la normativa migratoria y ser
+  // exportable sin imágenes de documentos...". Registrada ANTES de "/huespedes/:guestId"
+  // (mismo criterio de Hono que el resto de este archivo: un segmento literal
+  // "registro-migratorio" nunca debe poder confundirse con un :guestId real).
+  //
+  // "Sin imágenes de documentos" aquí es una garantía ESTRUCTURAL, no solo una promesa
+  // de esta query: ni `guest` (0005) ni `identity_ref` (0051) tienen NINGUNA columna
+  // para bytes de imagen en todo el esquema -- no hay de dónde seleccionarla aunque se
+  // quisiera (mismo argumento ya usado para `identity_vault`/`register_identity_document`).
+  //
+  // LEFT JOIN contra AMBOS `guest` e `identity_ref`: el registro manual de identidad
+  // por MRZ (`POST .../reservas/:id/identidad`) NO exige que la reserva tenga ya un
+  // `guest_id` asignado (`identity_ref` cuelga de `reservation_id`, no de `guest_id`) --
+  // una reserva puede tener identidad verificada sin huésped todavía, o huésped sin
+  // identidad todavía. Se incluye la fila si CUALQUIERA de los dos existe; se excluye
+  // solo cuando ninguno existe (nada real que reportar todavía).
+  //
+  // LÍMITE EXPLICITO (parcial, no "hecho" -- ver docs/REQUISITOS.md): esto cubre la
+  // parte EXPORTABLE del requisito. La retención diferenciada "por plaza" (1-5 años de
+  // registro, 30-90 días de audio, 30 días de IoT, 7-30 días de CCTV, 5 años de CFDI)
+  // sigue pendiente -- no existe ningún campo de jurisdicción/plaza en el esquema
+  // (`location` no tiene país/estado) y 3 de esas 5 categorías (audio/IoT/CCTV) no
+  // tienen todavía ninguna fuente de datos real que purgar (telefonía/PBX, cerraduras/
+  // sensores, cámaras -- todas pendientes-hardware, ver REQ-SEG-006/REQ-SEG-015 y el
+  // límite ya documentado en tests/adversarial/disclosure-ia.spec.ts para voz). Ver
+  // docs/BLOQUEOS.md para el detalle completo, incluida una tensión real detectada entre
+  // este requisito y REQ-SEG-004 que se deja señalada, no resuelta unilateralmente aquí.
+  const registroMigratorioSchema = z.object({
+    desde: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "desde debe ser YYYY-MM-DD"),
+    hasta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "hasta debe ser YYYY-MM-DD"),
+  });
+
+  app.get("/hoteles/:hotelId/huespedes/registro-migratorio", async (c) => {
+    assertRole(c, MANAGE_RESERVATIONS_ROLES);
+    const db = c.get("db");
+    const hotelId = c.req.param("hotelId");
+    const query = parseBody(registroMigratorioSchema, {
+      desde: c.req.query("desde"),
+      hasta: c.req.query("hasta"),
+    });
+    if (query.hasta < query.desde) {
+      throw Errors.validation("hasta no puede ser anterior a desde.");
+    }
+
+    const { rows } = await db.query<{
+      reservation_id: string;
+      nombre_completo: string;
+      tipo_documento: string | null;
+      ultimos4: string | null;
+      nacionalidad: string | null;
+      check_in: string;
+      check_out: string;
+    }>(
+      // COALESCE con `identity_ref` PRIMERO para nombre/tipo/últimos4: el registro
+      // manual de identidad por MRZ (identidadRoutes) escribe el nombre TAL COMO viene
+      // de la MRZ (verificado) en `identity_ref.full_name`, distinto del flujo de
+      // check-in en línea de autoservicio (`complete_checkin_public`, 0054/0061), que sí
+      // escribe `guest.full_name`/`document_type`/`document_last4` directamente --
+      // depender solo de `guest` dejaría el registro incompleto para el primer flujo.
+      `select r.id as reservation_id,
+              coalesce(ir.full_name, g.full_name) as nombre_completo,
+              coalesce(ir.document_type, g.document_type) as tipo_documento,
+              coalesce(ir.document_last4, g.document_last4) as ultimos4,
+              ir.nationality as nacionalidad,
+              r.check_in_date::text as check_in,
+              r.check_out_date::text as check_out
+       from public.reservation r
+       left join public.guest g on g.id = r.guest_id and g.hotel_id = r.hotel_id
+       left join public.identity_ref ir on ir.reservation_id = r.id and ir.hotel_id = r.hotel_id
+       where r.hotel_id = $1 and r.check_in_date >= $2::date and r.check_in_date <= $3::date
+         and (r.guest_id is not null or ir.reservation_id is not null)
+       order by r.check_in_date asc, nombre_completo asc;`,
+      [hotelId, query.desde, query.hasta],
+    );
+
+    return c.json(
+      rows.map((r) => ({
+        reservationId: r.reservation_id,
+        nombreCompleto: r.nombre_completo,
+        tipoDocumento: r.tipo_documento,
+        ultimos4: r.ultimos4,
+        nacionalidad: r.nacionalidad,
+        checkIn: r.check_in,
+        checkOut: r.check_out,
+      })),
+    );
+  });
+
   app.get("/hoteles/:hotelId/huespedes/:guestId", async (c) => {
     const db = c.get("db");
     const { rows } = await db.query<{ id: string; nombre: string; email: string | null; telefono: string | null }>(
