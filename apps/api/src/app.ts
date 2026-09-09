@@ -100,6 +100,11 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   // vive en memoria -- crear uno nuevo por request rompería esa garantía) etiquetado
   // `simulated: true` (ver `status()` de cada adaptador) -- nunca se fabrica un
   // resultado "real" para aparentar que la integración está completa.
+  // Auditoría de producción (2026-09-09): este `FakeStripeAdapter` es SOLO el default
+  // cuando nadie pasa `deps.payments` (pruebas, que nunca configuran credenciales
+  // reales) -- el arranque real (`server.ts`) SIEMPRE pasa `deps.payments` ya resuelto
+  // por `resolvePaymentPort()` (Stripe > Conekta > Fake, según qué credenciales existan
+  // en el proceso), así que este default nunca se usa en producción.
   // H12a · REQ-LAUNCH: sin `RESEND_API_KEY`/`SMTP_HOST` reales, `createApp` instancia
   // un `FakeEmailAdapter` respaldado por la tabla `email_outbox` (migración 0094) --
   // mismo mecanismo de conmutación honesta que `payments`/`cfdi` arriba (nunca se

@@ -10,6 +10,7 @@ import { loadEnv } from "./env.ts";
 import { rootLogger } from "./logger.ts";
 import { RateLimiter } from "./lib/rateLimit.ts";
 import { bootstrapProductionSecrets } from "./lib/secretsProvider.ts";
+import { resolvePaymentPort } from "./lib/resolvePaymentPort.ts";
 import { MetricsRegistry } from "./metrics.ts";
 import type { AppDeps } from "./types.ts";
 import { startNightAuditScheduler } from "./jobs/nightAuditScheduler.ts";
@@ -58,6 +59,18 @@ async function main() {
   // del default de `createApp()` (que nunca ve las variables de entorno del proceso).
   const emailPort = resolveEmailPort(engine.admin);
 
+  // Auditoría de producción (2026-09-09): `createApp()` (app.ts) SIEMPRE instanciaba
+  // `FakeStripeAdapter` como único default de `payments` -- este archivo (el arranque
+  // real) nunca llamaba a nada que resolviera Stripe/Conekta real, así que en producción
+  // el cobro a huéspedes corría contra el Fake sin importar qué credenciales existieran.
+  // Mismo criterio que `emailPort` arriba: se resuelve aquí, UNA vez, a partir de las
+  // variables de entorno del proceso real -- ver `resolvePaymentPort()`.
+  const paymentPort = resolvePaymentPort();
+  logger.info(
+    { provider: paymentPort.status().provider, simulated: paymentPort.status().simulated },
+    "adaptador de pagos resuelto",
+  );
+
   const deps: AppDeps = {
     engine,
     env,
@@ -66,6 +79,7 @@ async function main() {
     userLimiter: new RateLimiter({ limit: env.rateLimitPerUserPerMinute, windowMs: 60_000 }),
     metrics: new MetricsRegistry(),
     emailPort,
+    payments: paymentPort,
   };
 
   const app = createApp(deps);
