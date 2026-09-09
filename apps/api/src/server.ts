@@ -13,6 +13,7 @@ import type { AppDeps } from "./types.ts";
 import { startNightAuditScheduler } from "./jobs/nightAuditScheduler.ts";
 import { startIdentityVaultPurgeScheduler } from "./jobs/purgeIdentityVaultScheduler.ts";
 import { startConversationPurgeScheduler } from "./jobs/purgeConversationsScheduler.ts";
+import { startPaymentPreauthPurgeScheduler } from "./jobs/purgePaymentPreauthScheduler.ts";
 
 async function main() {
   const env = loadEnv();
@@ -63,11 +64,22 @@ async function main() {
     onError: (err) => logger.error({ err }, "purga de conversaciones: error en tick"),
   });
 
+  // REQ-SEG-011 · "los tokens de VCC/pre-autorización no utilizados deben
+  // purgarse/expirar automáticamente" -- mismo criterio que las purgas de arriba:
+  // planificador en proceso, lock por hotel, log + métrica por corrida (ver
+  // jobs/purgePaymentPreauthScheduler.ts).
+  const paymentPreauthPurgeScheduler = startPaymentPreauthPurgeScheduler(engine.admin, {
+    onHotelResult: (hotelId, result) => deps.metrics.incrementPaymentPreauthPurged(hotelId, result.expiredTotal),
+    onTick: (results) => logger.info({ results }, "purga de pre-autorizaciones de pago: tick"),
+    onError: (err) => logger.error({ err }, "purga de pre-autorizaciones de pago: error en tick"),
+  });
+
   const shutdown = async () => {
     logger.info("apagando apps/api");
     nightAuditScheduler.stop();
     identityVaultPurgeScheduler.stop();
     conversationPurgeScheduler.stop();
+    paymentPreauthPurgeScheduler.stop();
     await engine.stop();
     process.exit(0);
   };
