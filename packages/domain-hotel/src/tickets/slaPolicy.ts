@@ -149,3 +149,35 @@ export function computeSlaDueAt(createdAt: Date, slaMinutes: number): Date {
 export function isSlaOverdue(now: Date, slaDueAt: Date): boolean {
   return now.getTime() > slaDueAt.getTime();
 }
+
+/** REQ-HUE-014 (ampliación "notificación activa" al 75%/100% del SLA, patrón
+ *  competitivo verificado hoy en Duve/Optii): al 75% del SLA transcurrido se alerta a
+ *  el asignado+supervisor SIN esperar a que el ticket venza -- esto es un aviso
+ *  temprano, distinto de la escalación al 100% (`isSlaOverdue`/`escalateOverdueGuestTickets`,
+ *  `apps/api/src/jobs/ticketEscalation.ts`) que sube el ticket un nivel jerárquico.
+ *  0.75 es la fracción documentada del propio REQ; se expone como constante (no un
+ *  literal repetido en cada llamador) para que el job que escanea la BD
+ *  (`ticketEscalation.ts::notifyApproachingSlaGuestTickets`) y cualquier prueba unit
+ *  compartan la MISMA fuente de verdad. */
+export const SLA_WARNING_THRESHOLD_RATIO = 0.75;
+
+/** Instante en que el ticket alcanza el umbral de aviso temprano (por defecto 75% del
+ *  SLA) -- mismo patrón que `computeSlaDueAt` (creación + minutos), solo que con la
+ *  fracción del SLA en vez del SLA completo. */
+export function computeSlaWarningAt(
+  createdAt: Date,
+  slaMinutes: number,
+  thresholdRatio: number = SLA_WARNING_THRESHOLD_RATIO,
+): Date {
+  return new Date(createdAt.getTime() + slaMinutes * thresholdRatio * 60_000);
+}
+
+/** `true` si, al instante `now` (reloj inyectado), el ticket ya alcanzó su umbral de
+ *  aviso temprano (`computeSlaWarningAt`) -- mismo shape que `isSlaOverdue`, pero con
+ *  `>=` (a diferencia de `isSlaOverdue`, que usa `>` estricto para que el vencimiento
+ *  EXACTO todavía cuente como "dentro del SLA"): el aviso temprano es una alerta
+ *  preventiva, no un cumplimiento de contrato, así que alcanzar el umbral exacto ya
+ *  debe disparar el aviso en vez de esperar un instante más. */
+export function isSlaWarningDue(now: Date, warningAt: Date): boolean {
+  return now.getTime() >= warningAt.getTime();
+}

@@ -117,8 +117,13 @@ async function main() {
 
   // REQ-HUE-014 · escalación automática de `guest_ticket` cuyo SLA ya venció (lock por
   // hotel, ver jobs/ticketEscalationScheduler.ts) -- también ejecutable de forma
-  // independiente vía `node scripts/run-ticket-escalation-scheduler.ts`.
+  // independiente vía `node scripts/run-ticket-escalation-scheduler.ts`. `logger` se
+  // inyecta también para la notificación activa (webhook genérico, `lib/
+  // ticketAlertDispatch.ts`) del aviso al 75% del SLA y de la escalación al 100% --
+  // `alertDestination`/`dispatch` se dejan en su default real (`process.env`,
+  // `dispatchTicketAlert`), igual que `routes/fraude.ts` con `resolveFraudAlertDestination()`.
   const ticketEscalationScheduler = startTicketEscalationScheduler(engine.admin, {
+    logger,
     onTick: (results) => logger.info({ results }, "escalación de tickets: tick"),
     onError: (err) => logger.error({ err }, "escalación de tickets: error en tick"),
   });
