@@ -1,0 +1,19 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/adversarial/boveda-identidad.spec.ts > adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > MRZ válida: registra el documento, identity_ref expone SOLO campos mínimos 153ms
+ ✓ tests/adversarial/boveda-identidad.spec.ts > adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > la imagen enviada NUNCA se persiste: 0 filas en todo el esquema contienen el string enviado como imagen 33ms
+ ✓ tests/adversarial/boveda-identidad.spec.ts > adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > MRZ con dígito de control alterado es RECHAZADA: 0 filas creadas en la bóveda 27ms
+ ✓ tests/adversarial/boveda-identidad.spec.ts > adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > housekeeping NO puede leer identity_ref (403) -- solo owner/gm/frontdesk/reservations 43ms
+ ✓ tests/adversarial/boveda-identidad.spec.ts > adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > consulta DIRECTA a identity_vault desde una sesión de staff (incluso gm) es RECHAZADA -- solo vía las funciones SECURITY DEFINER 29ms
+ ✓ tests/adversarial/boveda-identidad.spec.ts > adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > cifrado en reposo: el ciphertext almacenado NUNCA contiene el número de documento en texto plano 36ms
+ ✓ tests/adversarial/boveda-identidad.spec.ts > adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > revelar el número completo con doble control (REQ-SEG-014) > frontdesk NO puede ni solicitar ni decidir sobre el revelado -- solo owner/gm 27ms
+ ✓ tests/adversarial/boveda-identidad.spec.ts > adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > revelar el número completo con doble control (REQ-SEG-014) > flujo completo feliz: gm solicita, owner (persona distinta) aprueba, gm expone el documento una sola vez 83ms
+ ✓ tests/adversarial/boveda-identidad.spec.ts > adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > revelar el número completo con doble control (REQ-SEG-014) > solicitud rechazada por la segunda persona: nunca puede exponerse el documento 65ms
+ ✓ tests/adversarial/boveda-identidad.spec.ts > adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004) > retención ≤30 días post-checkout con purga automática (t=31 días → 0 filas restantes; t=10 días → conservada) 84ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  16:56:33
+   Duration  6.89s (transform 1.27s, setup 0ms, collect 2.40s, tests 3.87s, environment 0ms, prepare 60ms)
+

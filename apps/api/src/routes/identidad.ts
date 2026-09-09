@@ -7,6 +7,12 @@
 // envía, NUNCA se persiste ni se reenvía a ningún LLM: se recibe, se ignora, se
 // descarta al terminar de procesar esta request (no existe ninguna columna ni tabla en
 // todo el esquema que pueda almacenarla -- ver cabecera de la migración 0051).
+//
+// REQ-SEG-014 (doble control pleno, packages/db/migrations/0085_identity_vault_doble_control.sql):
+// revelar el número completo ya NO es un solo paso -- un owner/gm SOLICITA acceso
+// (`/revelar/solicitudes`), un owner/gm DISTINTO lo APRUEBA o RECHAZA
+// (`/solicitudes/:requestId/decision`), y solo entonces quien solicitó puede
+// EXPONERLO (`/solicitudes/:requestId/revelar`), una sola vez.
 import { Hono } from "hono";
 import { z } from "zod";
 import { parsePassportMrz, InvalidMrzError } from "@atiende-hoteles/domain-hotel";
@@ -32,9 +38,31 @@ const registrarSchema = z.object({
   motivoRetencionExtendida: z.string().trim().min(3).max(500).optional(),
 });
 
-const revelarSchema = z.object({
+const solicitarRevelarSchema = z.object({
   motivo: z.string().trim().min(3).max(500),
 });
+
+const decisionSchema = z.object({
+  decision: z.enum(["aprobar", "rechazar"]),
+});
+
+interface AccessRequestRow {
+  id: string;
+  status: string;
+  requested_by: string;
+  approved_by: string | null;
+  expires_at: string;
+}
+
+function toAccessRequestBody(row: AccessRequestRow) {
+  return {
+    id: row.id,
+    estado: row.status,
+    solicitadoPor: row.requested_by,
+    aprobadoPor: row.approved_by,
+    expiraEn: row.expires_at,
+  };
+}
 
 interface IdentityRefRow {
   id: string;
@@ -63,8 +91,11 @@ export function identidadRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     dbSession(deps.engine),
     requireHotelMembership("hotelId"),
   );
+  // Wildcard: cubre tanto "/identidad/:identityRefId/revelar/solicitudes" (paso 1)
+  // como "/identidad/solicitudes/:requestId/decision|revelar" (pasos 2/3) -- todas
+  // exigen la misma membresía de hotel, el rol exacto se valida por handler.
   app.use(
-    "/hoteles/:hotelId/identidad/:identityRefId/revelar",
+    "/hoteles/:hotelId/identidad/*",
     authMiddleware(deps.env),
     dbSession(deps.engine),
     requireHotelMembership("hotelId"),
@@ -146,18 +177,66 @@ export function identidadRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     return c.json(toIdentityRefBody(rows[0]!));
   });
 
-  // REQ-SEG-014: acceso auditado por rol al número de documento completo (solo
-  // owner/gm, cada lectura queda en audit_log vía read_identity_vault_document).
-  app.post("/hoteles/:hotelId/identidad/:identityRefId/revelar", async (c) => {
+  // REQ-SEG-014 paso 1/3: un owner/gm SOLICITA acceso al documento completo de un
+  // `identity_ref`, documentando el motivo. No revela nada todavía -- solo crea la
+  // solicitud (`identity_vault_access_request`, 0082) en estado `pendiente`.
+  app.post("/hoteles/:hotelId/identidad/:identityRefId/revelar/solicitudes", async (c) => {
     assertRole(c, ADMIN_ROLES);
     const db = c.get("db");
     const identityRefId = c.req.param("identityRefId");
-    const body = parseBody(revelarSchema, await c.req.json().catch(() => ({})));
+    const body = parseBody(solicitarRevelarSchema, await c.req.json().catch(() => ({})));
+
+    try {
+      const { rows } = await db.query<AccessRequestRow>(
+        "select * from public.request_identity_vault_access($1, $2);",
+        [identityRefId, body.motivo],
+      );
+      return c.json(toAccessRequestBody(rows[0]!), 201);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (/rol_no_autorizado/.test(message)) throw Errors.forbidden("Solo owner/gm pueden solicitar revelar el documento completo de la bóveda de identidad.");
+      if (/identity_ref_no_encontrado/.test(message)) throw Errors.notFound("Documento de identidad no encontrado.");
+      throw err;
+    }
+  });
+
+  // REQ-SEG-014 paso 2/3: un owner/gm DISTINTO de quien solicitó aprueba o rechaza --
+  // este es el doble control en sí. Auto-aprobación explícitamente rechazada.
+  app.post("/hoteles/:hotelId/identidad/solicitudes/:requestId/decision", async (c) => {
+    assertRole(c, ADMIN_ROLES);
+    const db = c.get("db");
+    const requestId = c.req.param("requestId");
+    const body = parseBody(decisionSchema, await c.req.json().catch(() => ({})));
+
+    try {
+      const { rows } = await db.query<AccessRequestRow>(
+        "select * from public.decide_identity_vault_access($1, $2);",
+        [requestId, body.decision],
+      );
+      return c.json(toAccessRequestBody(rows[0]!));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (/autoaprobacion_no_permitida/.test(message)) throw Errors.forbidden("Quien solicita el acceso no puede aprobar su propia solicitud (doble control, REQ-SEG-014).");
+      if (/rol_no_autorizado/.test(message)) throw Errors.forbidden("Solo owner/gm pueden decidir sobre una solicitud de la bóveda de identidad.");
+      if (/solicitud_no_encontrada/.test(message)) throw Errors.notFound("Solicitud de acceso a la bóveda de identidad no encontrada.");
+      if (/solicitud_no_pendiente/.test(message)) throw Errors.conflict("Esta solicitud ya fue decidida o expiró.");
+      if (/solicitud_expirada/.test(message)) throw Errors.conflict("Esta solicitud ya expiró; hay que solicitar el acceso de nuevo.");
+      throw err;
+    }
+  });
+
+  // REQ-SEG-014 paso 3/3: SOLO quien solicitó el acceso puede exponer el documento de
+  // una solicitud ya `aprobada`, y solo una vez (de un solo uso). Cada lectura queda
+  // auditada en `audit_log` vía `reveal_identity_vault_document`.
+  app.post("/hoteles/:hotelId/identidad/solicitudes/:requestId/revelar", async (c) => {
+    assertRole(c, ADMIN_ROLES);
+    const db = c.get("db");
+    const requestId = c.req.param("requestId");
 
     try {
       const { rows } = await db.query<{ document_number_ciphertext: Buffer; document_number_iv: Buffer; document_number_auth_tag: Buffer }>(
-        "select * from public.read_identity_vault_document($1, $2);",
-        [identityRefId, body.motivo],
+        "select * from public.reveal_identity_vault_document($1);",
+        [requestId],
       );
       const row = rows[0]!;
       const key = loadIdentityVaultEncryptionKey();
@@ -168,8 +247,12 @@ export function identidadRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       return c.json({ numeroDocumento: documentNumber });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (/acceso_boveda_no_autorizado/.test(message)) throw Errors.forbidden("Solo owner/gm pueden revelar el documento completo de la bóveda de identidad.");
-      if (/identity_ref_no_encontrado/.test(message)) throw Errors.notFound("Documento de identidad no encontrado.");
+      if (/actor_no_autorizado/.test(message)) throw Errors.forbidden("Solo quien solicitó el acceso puede exponer este documento.");
+      if (/rol_no_autorizado/.test(message)) throw Errors.forbidden("Solo owner/gm pueden revelar el documento completo de la bóveda de identidad.");
+      if (/solicitud_no_encontrada/.test(message)) throw Errors.notFound("Solicitud de acceso a la bóveda de identidad no encontrada.");
+      if (/solicitud_ya_consumida/.test(message)) throw Errors.conflict("Esta solicitud ya se usó para exponer el documento; hay que solicitar el acceso de nuevo.");
+      if (/solicitud_no_aprobada/.test(message)) throw Errors.conflict("Esta solicitud todavía no fue aprobada por una segunda persona (doble control, REQ-SEG-014).");
+      if (/solicitud_expirada/.test(message)) throw Errors.conflict("Esta solicitud ya expiró; hay que solicitar el acceso de nuevo.");
       throw err;
     }
   });

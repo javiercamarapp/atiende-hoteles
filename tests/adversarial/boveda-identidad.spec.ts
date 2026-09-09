@@ -16,6 +16,7 @@ import { createApiFixture, destroyApiFixture, loginAs, type ApiFixture } from ".
 
 describe("adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004)", () => {
   let fixture: ApiFixture;
+  let ownerToken: string;
   let gmToken: string;
   let frontdeskToken: string;
   let housekeepingToken: string;
@@ -38,6 +39,7 @@ describe("adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004
     const hotelA = fixture.seed.hotels[0]!;
     hotelId = hotelA.id;
     roomTypeId = hotelA.roomTypes[0]!.id;
+    ownerToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "owner")!.email);
     gmToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "gm")!.email);
     frontdeskToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "frontdesk")!.email);
     housekeepingToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "housekeeping")!.email);
@@ -197,42 +199,115 @@ describe("adversarial: bóveda de identidad (REQ-REC-011/REQ-SEG-014/REQ-SEG-004
     expect(ciphertextHex).not.toContain(Buffer.from("G7654321").toString("hex"));
   });
 
-  it("revelar el número completo: solo owner/gm, cada lectura queda auditada en audit_log", async () => {
-    const reservationId = await crearReservaConfirmada(6);
-    const registro = await fixture.app.request(`/hoteles/${hotelId}/reservas/${reservationId}/identidad`, {
-      method: "POST",
-      headers: auth(frontdeskToken),
-      body: JSON.stringify({ mrzLine1: mrzValida.line1, mrzLine2: mrzValida.line2 }),
-    });
-    const { id: identityRefId } = (await registro.json()) as { id: string };
+  // REQ-SEG-014 "doble control pleno": revelar el número completo ahora exige TRES
+  // pasos -- (1) un owner/gm solicita, (2) un owner/gm DISTINTO aprueba, (3) solo quien
+  // solicitó puede exponer el documento de una solicitud ya aprobada, una sola vez.
+  describe("revelar el número completo con doble control (REQ-SEG-014)", () => {
+    async function registrarIdentidad(offset: number): Promise<string> {
+      const reservationId = await crearReservaConfirmada(offset);
+      const registro = await fixture.app.request(`/hoteles/${hotelId}/reservas/${reservationId}/identidad`, {
+        method: "POST",
+        headers: auth(frontdeskToken),
+        body: JSON.stringify({ mrzLine1: mrzValida.line1, mrzLine2: mrzValida.line2 }),
+      });
+      expect(registro.status).toBe(201);
+      const { id } = (await registro.json()) as { id: string };
+      return id;
+    }
 
-    const rechazo = await fixture.app.request(`/hoteles/${hotelId}/identidad/${identityRefId}/revelar`, {
-      method: "POST",
-      headers: auth(frontdeskToken),
-      body: JSON.stringify({ motivo: "verificación de rutina" }),
-    });
-    expect(rechazo.status).toBe(403);
+    async function solicitar(identityRefId: string, token: string, motivo: string) {
+      return fixture.app.request(`/hoteles/${hotelId}/identidad/${identityRefId}/revelar/solicitudes`, {
+        method: "POST",
+        headers: auth(token),
+        body: JSON.stringify({ motivo }),
+      });
+    }
 
-    const revelado = await fixture.app.request(`/hoteles/${hotelId}/identidad/${identityRefId}/revelar`, {
-      method: "POST",
-      headers: auth(gmToken),
-      body: JSON.stringify({ motivo: "solicitud de autoridad migratoria, folio 123" }),
-    });
-    expect(revelado.status).toBe(200);
-    const body = (await revelado.json()) as { numeroDocumento: string };
-    expect(body.numeroDocumento).toBe("G7654321");
+    function decidir(requestId: string, token: string, decision: "aprobar" | "rechazar") {
+      return fixture.app.request(`/hoteles/${hotelId}/identidad/solicitudes/${requestId}/decision`, {
+        method: "POST",
+        headers: auth(token),
+        body: JSON.stringify({ decision }),
+      });
+    }
 
-    const { rows: auditoria } = await fixture.engine.admin.query<{ payload: { reason: string } }>(
-      "select payload from public.audit_log where entity_id = $1 and action = 'identity_vault.decrypted' order by created_at desc limit 1;",
-      [identityRefId],
-    );
-    expect(auditoria).toHaveLength(1);
-    expect(auditoria[0]!.payload.reason).toMatch(/autoridad migratoria/);
+    function exponer(requestId: string, token: string) {
+      return fixture.app.request(`/hoteles/${hotelId}/identidad/solicitudes/${requestId}/revelar`, {
+        method: "POST",
+        headers: auth(token),
+      });
+    }
+
+    it("frontdesk NO puede ni solicitar ni decidir sobre el revelado -- solo owner/gm", async () => {
+      const identityRefId = await registrarIdentidad(6);
+      const rechazoSolicitar = await solicitar(identityRefId, frontdeskToken, "verificación de rutina");
+      expect(rechazoSolicitar.status).toBe(403);
+    });
+
+    it("flujo completo feliz: gm solicita, owner (persona distinta) aprueba, gm expone el documento una sola vez", async () => {
+      const identityRefId = await registrarIdentidad(7);
+
+      const solicitud = await solicitar(identityRefId, gmToken, "solicitud de autoridad migratoria, folio 123");
+      expect(solicitud.status).toBe(201);
+      const { id: requestId, estado } = (await solicitud.json()) as { id: string; estado: string };
+      expect(estado).toBe("pendiente");
+
+      // Antes de aprobarse, exponer el documento debe fallar (doble control real, no
+      // solo de nombre).
+      const exponerPrematuro = await exponer(requestId, gmToken);
+      expect(exponerPrematuro.status).toBe(409);
+
+      // La misma persona que solicitó NO puede aprobar su propia solicitud.
+      const autoaprobacion = await decidir(requestId, gmToken, "aprobar");
+      expect(autoaprobacion.status).toBe(403);
+
+      const aprobacion = await decidir(requestId, ownerToken, "aprobar");
+      expect(aprobacion.status).toBe(200);
+      expect(((await aprobacion.json()) as { estado: string }).estado).toBe("aprobada");
+
+      // Alguien que NO solicitó (aunque tenga rol owner/gm y la solicitud ya esté
+      // aprobada) no puede exponer el documento en su lugar.
+      const exponerAjeno = await exponer(requestId, ownerToken);
+      expect(exponerAjeno.status).toBe(403);
+
+      const revelado = await exponer(requestId, gmToken);
+      expect(revelado.status).toBe(200);
+      const body = (await revelado.json()) as { numeroDocumento: string };
+      expect(body.numeroDocumento).toBe("G7654321");
+
+      // Un solo uso: la misma solicitud aprobada no puede consumirse dos veces.
+      const segundaExposicion = await exponer(requestId, gmToken);
+      expect(segundaExposicion.status).toBe(409);
+
+      const { rows: auditoria } = await fixture.engine.admin.query<{ action: string; payload: Record<string, unknown> }>(
+        "select action, payload from public.audit_log where entity_id = $1 and (action like 'identity_vault.access%' or action = 'identity_vault.decrypted') order by created_at asc;",
+        [identityRefId],
+      );
+      const acciones = auditoria.map((r) => r.action);
+      expect(acciones).toEqual(
+        expect.arrayContaining(["identity_vault.access_requested", "identity_vault.access_approved", "identity_vault.decrypted"]),
+      );
+      const decrypted = auditoria.find((r) => r.action === "identity_vault.decrypted")!;
+      expect(String((decrypted.payload as { reason: string }).reason)).toMatch(/autoridad migratoria/);
+    });
+
+    it("solicitud rechazada por la segunda persona: nunca puede exponerse el documento", async () => {
+      const identityRefId = await registrarIdentidad(8);
+      const solicitud = await solicitar(identityRefId, gmToken, "motivo cualquiera pero suficientemente largo");
+      const { id: requestId } = (await solicitud.json()) as { id: string };
+
+      const rechazo = await decidir(requestId, ownerToken, "rechazar");
+      expect(rechazo.status).toBe(200);
+      expect(((await rechazo.json()) as { estado: string }).estado).toBe("rechazada");
+
+      const intentoExponer = await exponer(requestId, gmToken);
+      expect(intentoExponer.status).toBe(409);
+    });
   });
 
   it("retención ≤30 días post-checkout con purga automática (t=31 días → 0 filas restantes; t=10 días → conservada)", async () => {
-    const reservationVencida = await crearReservaConfirmada(7);
-    const reservationVigente = await crearReservaConfirmada(8);
+    const reservationVencida = await crearReservaConfirmada(9);
+    const reservationVigente = await crearReservaConfirmada(10);
 
     for (const reservationId of [reservationVencida, reservationVigente]) {
       const res = await fixture.app.request(`/hoteles/${hotelId}/reservas/${reservationId}/identidad`, {
