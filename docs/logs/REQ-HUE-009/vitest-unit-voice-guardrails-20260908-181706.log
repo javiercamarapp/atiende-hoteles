@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/unit/domain-hotel/voice-guardrails.spec.ts (11 tests) 16ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  18:17:26
+   Duration  991ms (transform 211ms, setup 0ms, collect 393ms, tests 16ms, environment 0ms, prepare 218ms)
+

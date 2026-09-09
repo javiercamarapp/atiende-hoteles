@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /Users/javiercamaraportepetit/Desktop/supabase/hoteles
+
+ ✓ tests/adversarial/voz-guardrails.spec.ts (4 tests) 2745ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  18:17:33
+   Duration  5.14s (transform 1.12s, setup 0ms, collect 2.07s, tests 2.75s, environment 0ms, prepare 77ms)
+

@@ -1,0 +1,6 @@
+
+/Users/javiercamaraportepetit/Desktop/supabase/hoteles/tests/e2e/paridad-restaurantes-login.spec.ts
+  62:89  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 1 problem (0 errors, 1 warning)
+
