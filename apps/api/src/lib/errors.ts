@@ -134,6 +134,27 @@ export function toErrorBody(err: unknown, requestId: string): { status: number; 
       },
     };
   }
+  // REQ-GOB-012 (migración 0081): `require_founder_decision_approval()` levanta
+  // `aprobacion_fundador_requerida: la categoria "<cat>" ...` cuando el intento cae en
+  // una de las 24 categorías reservadas al fundador (ej. `agent_config` subiendo
+  // `auditor_nocturno` -- el agente de revenue/cierre -- a "autopilot" sin una
+  // `founder_decision_approval` vigente). Antes de este mapeo caía al 500 genérico del
+  // final de esta función: un owner/gm que intentaba la transición vía
+  // `PATCH /hoteles/:hotelId/agentes/:agente/config` (apps/api/src/routes/agentes.ts)
+  // no tenía forma de saber, desde la respuesta HTTP, que el bloqueo era "falta
+  // aprobación del fundador" y no un error interno del servidor.
+  const founderApprovalMatch = /aprobacion_fundador_requerida: la categoria "([^"]+)"/.exec(message);
+  if (founderApprovalMatch) {
+    return {
+      status: 409,
+      body: {
+        code: "aprobacion_fundador_requerida",
+        message: `Esta acción ("${founderApprovalMatch[1]}") es una decisión reservada al fundador (REQ-GOB-012) y no tiene una aprobación registrada y vigente; no se puede aplicar todavía.`,
+        request_id: requestId,
+      },
+    };
+  }
+
   // H12c · public.check_entitlement() (0111) lanza `entitlement_exceeded:<recurso>` o
   // `entitlement_exceeded:suscripcion_inactiva`/`entitlement_exceeded:sin_suscripcion` --
   // se traduce a 402 con el detalle real (hint de la excepción), nunca a un 500 genérico.

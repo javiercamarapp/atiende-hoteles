@@ -36,6 +36,169 @@ describe("GET /hoteles/:hotelId/agentes", () => {
   });
 });
 
+describe("PATCH /hoteles/:hotelId/agentes/:agente/config (transición de gate shadow -> propone -> autopilot)", () => {
+  // "enrutador_mensajes" (no es el agente de revenue/cierre): gobernado SOLO por
+  // owner/gm, sin el guard extra de founder_decision_approval que sí aplica a
+  // "auditor_nocturno" (migración 0081 -- ver describe dedicado más abajo). Usarlo aquí
+  // aísla "quién puede tocar el gate + queda auditado" del requisito adicional de
+  // aprobación del fundador, que es un mecanismo aparte.
+  it("un rol no-admin (frontdesk) NO puede cambiar el gate: 403, config y audit_log intactos", async () => {
+    const antes = await fixture.app.request(`/hoteles/${hotelId}/agentes`, { headers: auth(ownerToken) });
+    const gateAntes = ((await antes.json()) as Array<{ agente: string; gate: string }>).find(
+      (a) => a.agente === "enrutador_mensajes",
+    )!.gate;
+    expect(gateAntes).toBe("shadow"); // default de código, nadie lo tocó todavía en este archivo
+
+    const res = await fixture.app.request(`/hoteles/${hotelId}/agentes/enrutador_mensajes/config`, {
+      method: "PATCH",
+      headers: auth(frontdeskToken),
+      body: JSON.stringify({ gate: "autopilot" }),
+    });
+    expect(res.status).toBe(403);
+
+    const despues = await fixture.app.request(`/hoteles/${hotelId}/agentes`, { headers: auth(ownerToken) });
+    const gateDespues = ((await despues.json()) as Array<{ agente: string; gate: string }>).find(
+      (a) => a.agente === "enrutador_mensajes",
+    )!.gate;
+    expect(gateDespues).toBe("shadow"); // el intento rechazado no movió el gate
+
+    const { rows } = await fixture.engine.admin.query(
+      "select id from public.audit_log where hotel_id = $1 and action = 'agent_config.gate_cambiado' and payload->>'agente' = 'enrutador_mensajes';",
+      [hotelId],
+    );
+    expect(rows).toHaveLength(0); // ni siquiera queda un intento fallido en la bitácora
+  });
+
+  it("un admin (owner/gm) SÍ puede pasar el gate a 'propone' y a 'autopilot', y cada transición deja bitácora (quién/cuándo/de-qué-a-qué)", async () => {
+    const ownerId = fixture.seed.hotels[0]!.staff.find((s) => s.role === "owner")!.id;
+
+    const aPropone = await fixture.app.request(`/hoteles/${hotelId}/agentes/enrutador_mensajes/config`, {
+      method: "PATCH",
+      headers: auth(ownerToken),
+      body: JSON.stringify({ gate: "propone" }),
+    });
+    expect(aPropone.status).toBe(200);
+    expect(((await aPropone.json()) as { gate: string }).gate).toBe("propone");
+
+    const aAutopilot = await fixture.app.request(`/hoteles/${hotelId}/agentes/enrutador_mensajes/config`, {
+      method: "PATCH",
+      headers: auth(ownerToken),
+      body: JSON.stringify({ gate: "autopilot" }),
+    });
+    expect(aAutopilot.status).toBe(200);
+    expect(((await aAutopilot.json()) as { gate: string }).gate).toBe("autopilot");
+
+    const { rows } = await fixture.engine.admin.query<{
+      actor_user_id: string;
+      payload: { agente: string; actorRole: string; gateAnterior: string; gateNuevo: string };
+      created_at: string;
+    }>(
+      `select actor_user_id, payload, created_at from public.audit_log
+       where hotel_id = $1 and action = 'agent_config.gate_cambiado' and payload->>'agente' = 'enrutador_mensajes'
+       order by seq asc;`,
+      [hotelId],
+    );
+    expect(rows).toHaveLength(2); // una fila por transición real de gate, en orden
+
+    expect(rows[0]!.actor_user_id).toBe(ownerId); // QUIÉN
+    expect(rows[0]!.created_at).toBeTruthy(); // CUÁNDO (columna propia de audit_log)
+    expect(rows[0]!.payload.actorRole).toBe("owner");
+    expect(rows[0]!.payload.gateAnterior).toBe("shadow"); // DE
+    expect(rows[0]!.payload.gateNuevo).toBe("propone"); // A
+
+    expect(rows[1]!.actor_user_id).toBe(ownerId);
+    expect(rows[1]!.payload.gateAnterior).toBe("propone");
+    expect(rows[1]!.payload.gateNuevo).toBe("autopilot");
+  });
+
+  it("un PATCH que no cambia nada (mismo gate/techo ya vigentes) no agrega ruido a la bitácora append-only", async () => {
+    const { rows: antes } = await fixture.engine.admin.query(
+      "select count(*)::int as n from public.audit_log where hotel_id = $1 and action = 'agent_config.gate_cambiado' and payload->>'agente' = 'enrutador_mensajes';",
+      [hotelId],
+    );
+
+    const res = await fixture.app.request(`/hoteles/${hotelId}/agentes/enrutador_mensajes/config`, {
+      method: "PATCH",
+      headers: auth(ownerToken),
+      body: JSON.stringify({ gate: "autopilot" }), // ya está en "autopilot" por la prueba anterior
+    });
+    expect(res.status).toBe(200);
+
+    const { rows: despues } = await fixture.engine.admin.query(
+      "select count(*)::int as n from public.audit_log where hotel_id = $1 and action = 'agent_config.gate_cambiado' and payload->>'agente' = 'enrutador_mensajes';",
+      [hotelId],
+    );
+    expect(despues[0]!.n).toBe(antes[0]!.n);
+  });
+
+  // "auditor_nocturno" es el ÚNICO agente etiquetado revenue/cierre (agents.ts) --
+  // REQ-GOB-012/migración 0081 exige ADEMÁS una aprobación vigente del fundador
+  // (`founder_decision_approval`, categoría "shadow_a_autopilot_revenue") antes de
+  // aceptar su paso a "autopilot", incluso para un owner/gm real. Antes del mapeo en
+  // errors.ts agregado en este mismo cambio, el intento por este endpoint HTTP
+  // devolvía un 500 genérico (el trigger de Postgres SÍ bloqueaba la escritura, pero la
+  // respuesta no explicaba por qué) -- esta prueba fija el contrato correcto: 409 con
+  // `code: "aprobacion_fundador_requerida"`, nunca un 500 opaco.
+  it("auditor_nocturno (revenue) a 'autopilot' exige aprobación del fundador incluso para owner: 409 claro sin ella, 200+auditado con ella", async () => {
+    const bloqueado = await fixture.app.request(`/hoteles/${hotelId}/agentes/auditor_nocturno/config`, {
+      method: "PATCH",
+      headers: auth(ownerToken),
+      body: JSON.stringify({ gate: "autopilot" }),
+    });
+    expect(bloqueado.status).toBe(409);
+    const bodyBloqueado = (await bloqueado.json()) as { code: string };
+    expect(bodyBloqueado.code).toBe("aprobacion_fundador_requerida");
+
+    const catalogoAntes = await fixture.app.request(`/hoteles/${hotelId}/agentes`, { headers: auth(ownerToken) });
+    const gateAntes = ((await catalogoAntes.json()) as Array<{ agente: string; gate: string }>).find(
+      (a) => a.agente === "auditor_nocturno",
+    )!.gate;
+    expect(gateAntes).toBe("shadow"); // el intento bloqueado no movió el gate
+
+    // Registrar la aprobación del fundador es una operación de PLATAFORMA (0081: sin
+    // camino de autoservicio desde ninguna sesión de aplicación) -- se hace directo
+    // contra el motor, igual que tests/adversarial/decisiones-reservadas-fundador.spec.ts.
+    const founderRows = await fixture.engine.admin.query<{ id: string }>(
+      "insert into public.staff_user (email, full_name) values ($1, $2) returning id;",
+      [`fundador-gate-test-${hotelId}@atiende-hoteles.test`, "Fundador de prueba"],
+    );
+    const founderId = founderRows.rows[0]!.id;
+    await fixture.engine.admin.query("insert into public.founder_identity (user_id, full_name) values ($1, $2);", [
+      founderId,
+      "Fundador de prueba",
+    ]);
+    await fixture.engine.withAppSession({ userId: founderId }, (db) =>
+      db.query(
+        `insert into public.founder_decision_approval (category, org_id, hotel_id, decided_by, texto_exacto)
+         values ('shadow_a_autopilot_revenue', $1, $2, $3, $4);`,
+        [
+          fixture.seed.orgId,
+          hotelId,
+          founderId,
+          "Apruebo el paso de auditor_nocturno a autopilot para este hotel (prueba de integración del endpoint de gate).",
+        ],
+      ),
+    );
+
+    const permitido = await fixture.app.request(`/hoteles/${hotelId}/agentes/auditor_nocturno/config`, {
+      method: "PATCH",
+      headers: auth(ownerToken),
+      body: JSON.stringify({ gate: "autopilot" }),
+    });
+    expect(permitido.status).toBe(200);
+    expect(((await permitido.json()) as { gate: string }).gate).toBe("autopilot");
+
+    const { rows } = await fixture.engine.admin.query<{ payload: { gateAnterior: string; gateNuevo: string } }>(
+      `select payload from public.audit_log
+       where hotel_id = $1 and action = 'agent_config.gate_cambiado' and payload->>'agente' = 'auditor_nocturno';`,
+      [hotelId],
+    );
+    expect(rows).toHaveLength(1); // el intento bloqueado nunca llegó a escribir agent_config, así que no generó bitácora
+    expect(rows[0]!.payload.gateAnterior).toBe("shadow");
+    expect(rows[0]!.payload.gateNuevo).toBe("autopilot");
+  });
+});
+
 describe("POST /hoteles/:hotelId/agentes/:agente/ejecutar (demo)", () => {
   it("shadow: completa sin ejecutar tools de escritura, inserta agent_run + audit_log en la misma transacción", async () => {
     const res = await fixture.app.request(`/hoteles/${hotelId}/agentes/recepcion_virtual/ejecutar`, {
