@@ -8,7 +8,7 @@
 // aquí, solo el cableado de dependencias de producción.
 //
 // CÓMO DESPLEGAR ESTE DIRECTORIO (proyecto Vercel separado del de `apps/web`):
-//   1. 👤 USUARIO crea un proyecto Vercel nuevo (Settings → Root Directory:
+//   1. USUARIO crea un proyecto Vercel nuevo (Settings → Root Directory:
 //      "deploy/api/vercel") -- este agente no crea proyectos Vercel (ver encargo).
 //   2. Variables de entorno del proyecto: ver deploy/env-matrix.md fila "apps/api
 //      (Vercel opción a)".

@@ -202,11 +202,11 @@ function renderAuditDocument(
   const fallidos = results.filter((r) => !r.ok);
   const veredictoSeccion =
     record.verdict === "rojo"
-      ? `## Veredicto: 🔴 ROJO\n\n${fallidos.length}/${results.length} ítem(s) del checklist fallaron. REQ-OBS-003/GOB-009 ` +
+      ? `## Veredicto: ROJO\n\n${fallidos.length}/${results.length} ítem(s) del checklist fallaron. REQ-OBS-003/GOB-009 ` +
         `exige detener el loop de construcción hasta resolución -- no se toma ninguna tarea nueva del backlog ` +
         `mientras esta ronda siga sin marcarse resuelta (\`node scripts/checks/auditoria-periodica.ts --resolver ${record.round}\` ` +
         "una vez corregida la causa)."
-      : `## Veredicto: 🟢 VERDE\n\n${results.length}/${results.length} ítem(s) del checklist en verde. El loop de construcción continúa.`;
+      : `## Veredicto: VERDE\n\n${results.length}/${results.length} ítem(s) del checklist en verde. El loop de construcción continúa.`;
 
   return [
     "---",
