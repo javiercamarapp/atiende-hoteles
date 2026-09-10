@@ -18,3 +18,4 @@ tests/**/screenshots/*.tmp.png
 .claude/
 .vercel/
 .gstack/
+supabase/.temp/

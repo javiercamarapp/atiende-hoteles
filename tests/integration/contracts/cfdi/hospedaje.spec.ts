@@ -7,6 +7,15 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiFixture, crearFolioConfirmado, destroyApiFixture, loginAs, type ApiFixture } from "../../../support/api-fixture.ts";
 
+/** Fechas relativas a "hoy" -- nunca un string absoluto, para que la suite no se
+ *  pudra cuando el reloj real cruce la fecha hardcodeada (visto en CI: un
+ *  checkInDate fijo en el pasado ya no tiene tarifa configurada). */
+function isoDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
 describe("REQ-BO-001 · contrato de CFDI de hospedaje (7 casos)", () => {
   let fixture: ApiFixture;
   let gmToken: string;
@@ -29,11 +38,11 @@ describe("REQ-BO-001 · contrato de CFDI de hospedaje (7 casos)", () => {
     return { authorization: `Bearer ${gmToken}`, "content-type": "application/json" };
   }
 
-  let diaSecuencial = 20;
+  let diaSecuencial = 10;
   async function folioConCargo(monto: number, concepto = "hospedaje") {
     diaSecuencial += 1;
-    const checkIn = `2026-09-${String(diaSecuencial).padStart(2, "0")}`;
-    const checkOut = `2026-09-${String(diaSecuencial + 1).padStart(2, "0")}`;
+    const checkIn = isoDate(diaSecuencial);
+    const checkOut = isoDate(diaSecuencial + 1);
     const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
       checkInDate: checkIn,
@@ -103,8 +112,8 @@ describe("REQ-BO-001 · contrato de CFDI de hospedaje (7 casos)", () => {
   it("4) propina NUNCA entra al subtotal del CFDI", async () => {
     const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
-      checkInDate: "2026-09-18",
-      checkOutDate: "2026-09-19",
+      checkInDate: isoDate(6),
+      checkOutDate: isoDate(7),
     });
     await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cargos`, {
       method: "POST",
@@ -133,13 +142,13 @@ describe("REQ-BO-001 · contrato de CFDI de hospedaje (7 casos)", () => {
   it("5) no-show: la penalización se postea como concepto 'hospedaje', lleva IVA pero NO ISH, y el CFDI declara EXACTAMENTE lo que el folio le cobró al huésped (F3)", async () => {
     const { reservationId, folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
-      checkInDate: "2026-09-09",
-      checkOutDate: "2026-09-10",
+      checkInDate: isoDate(1),
+      checkOutDate: isoDate(2),
     });
     await fixture.app.request(`/hoteles/${hotelId}/reservas/procesar-no-show`, {
       method: "POST",
       headers: auth(),
-      body: JSON.stringify({ asOfDate: "2026-09-12" }),
+      body: JSON.stringify({ asOfDate: isoDate(4) }),
     });
     const { rows: reservationRows } = await fixture.engine.admin.query<{ status: string }>(
       "select status from public.reservation where id = $1;",
