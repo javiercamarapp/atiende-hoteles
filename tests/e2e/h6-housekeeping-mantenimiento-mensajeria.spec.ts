@@ -178,7 +178,11 @@ test("housekeeping/mantenimiento/mensajería/aprobaciones: recorrido real desde 
     await page.getByLabel("Teléfono del huésped (E.164)").fill("+5215500000123");
     await page.getByLabel("Nombre de la plantilla").fill("checkin_confirmado_e2e");
     await page.getByRole("button", { name: "Enviar", exact: true }).click();
-    await expect(page.getByText(/pendiente de aprobación|enviado/i)).toBeVisible({ timeout: 15_000 });
+    // getByText simple hace match tambien con el parrafo de ayuda estatico
+    // ("...queda pendiente de aprobación.") -- se acota a role="status" (el
+    // aviso real de resultado del envio) para no depender de dos elementos
+    // con texto parecido.
+    await expect(page.getByRole("status").filter({ hasText: /pendiente de aprobación|enviado/i })).toBeVisible({ timeout: 15_000 });
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, `h6-mensajeria-${vp?.width}x${vp?.height}.png`), fullPage: true });
 
     // ---- /aprobaciones: la bandeja muestra la(s) solicitud(es) reales pendientes ----
