@@ -16,6 +16,7 @@ import { z } from "zod";
 import { classifyGuestMessage, classifyUnaccompaniedMinorEscalation } from "@atiende-hoteles/domain-hotel";
 import { buildToolContext, createGuestTicketTool, createRunBudget } from "@atiende-hoteles/agent-core";
 import { escalateGuestTicketNow } from "../jobs/ticketEscalation.ts";
+import { sharedWhatsappAdapter, whatsappAdapterSimulated } from "../lib/messaging.ts";
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
@@ -139,7 +140,7 @@ export function ticketsRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       createRunBudget({}),
     );
 
-    const tool = createGuestTicketTool({ db });
+    const tool = createGuestTicketTool({ db, messaging: sharedWhatsappAdapter, simulated: whatsappAdapterSimulated });
     const result = await tool.run(ctx, {
       guestMessage: body.guestMessage,
       roomCode: body.roomCode,

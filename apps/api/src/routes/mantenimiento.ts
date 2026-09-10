@@ -17,7 +17,7 @@ import {
   type CreateMaintenanceTicketInput,
 } from "@atiende-hoteles/agent-core";
 import { buildToolExecutors } from "../lib/agentTools.ts";
-import { sharedWhatsappAdapter } from "../lib/messaging.ts";
+import { sharedWhatsappAdapter, whatsappAdapterSimulated } from "../lib/messaging.ts";
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
@@ -116,7 +116,7 @@ export function mantenimientoRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       createRunBudget({}),
     );
 
-    const tool = createMaintenanceTicketTool({ db });
+    const tool = createMaintenanceTicketTool({ db, messaging: sharedWhatsappAdapter, simulated: whatsappAdapterSimulated });
     // auditoria-2/frontend [ALTO]: `CreateMaintenanceTicketInput.estimatedCost`
     // (packages/agent-core, fuera de este lote) sigue tipado `number` no-nulo con
     // `.default(0)` en su propio esquema Zod -- pero esa tool nunca re-valida `input`
