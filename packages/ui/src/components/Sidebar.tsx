@@ -1,6 +1,8 @@
 import { useState, type ComponentType, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
+  Bell,
+  CreditCard,
   HelpCircle,
   LogOut,
   PanelLeftClose,
@@ -157,33 +159,77 @@ export function Sidebar({ sections, user, onLogout, hotelSelector }: SidebarProp
         })}
       </nav>
 
-      <div className="p-2 space-y-0.5 shrink-0">
+      {/* Bloque de cuenta — mismo patrón de dos capas que dashboard/chrome.tsx
+          de Likida: zona hundida (bg-muted, a todo lo ancho, sombra
+          interior) + tarjeta de usuario SOBREPUESTA (margen negativo, fondo
+          y sombra propios) en vez de solo separada por un borde. */}
+      <div className="shrink-0 border-t border-border">
         {!collapsed && (
-          <div className="rounded-xl bg-muted/60 p-1.5 space-y-0.5 mb-1.5">
-            <button className="w-full flex items-center gap-2 px-3 py-2.5 mb-1 rounded-full text-[13px] border border-border bg-card hover:bg-muted transition-colors min-h-11">
+          <div className="bg-muted px-2 pt-2 pb-5 space-y-0.5 shadow-[inset_0_2px_5px_-2px_rgba(0,0,0,0.08)]">
+            <button className="w-full flex items-center gap-2 px-3 py-2.5 mb-1 rounded-full text-[13px] border border-border bg-card hover:bg-background transition-colors min-h-11">
               <HelpCircle className="w-3.5 h-3.5 text-muted-foreground shrink-0" strokeWidth={1.75} />
               <span className="truncate">Centro de ayuda</span>
             </button>
+            {/* Mismos 5 ítems y mismo orden que el bloque ABAJO real de
+                Likida; activo = píldora sólida bg-primary. Solo
+                "Configuración" tiene página real hoy en este repo. */}
+            <button
+              type="button"
+              disabled
+              title="Notificaciones: todavía no existe una sección propia en Atiende Hoteles."
+              className="w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-full text-[13px] text-muted-foreground/50 cursor-not-allowed min-h-11"
+            >
+              <span className="flex items-center gap-2.5">
+                <Bell className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+                <span className="truncate">Notificaciones</span>
+              </span>
+              <span className="font-mono text-[9px] uppercase tracking-[0.06em] text-muted-foreground/60 shrink-0">Pronto</span>
+            </button>
+            <button
+              type="button"
+              disabled
+              title="Mi perfil: todavía no existe esta pantalla en Atiende Hoteles."
+              className="w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-full text-[13px] text-muted-foreground/50 cursor-not-allowed min-h-11"
+            >
+              <span className="flex items-center gap-2.5">
+                <UserRound className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+                <span className="truncate">Mi perfil</span>
+              </span>
+              <span className="font-mono text-[9px] uppercase tracking-[0.06em] text-muted-foreground/60 shrink-0">Pronto</span>
+            </button>
+            <button
+              type="button"
+              disabled
+              title="Plan y facturación: todavía no existe esta pantalla en Atiende Hoteles."
+              className="w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-full text-[13px] text-muted-foreground/50 cursor-not-allowed min-h-11"
+            >
+              <span className="flex items-center gap-2.5">
+                <CreditCard className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+                <span className="truncate">Plan y facturación</span>
+              </span>
+              <span className="font-mono text-[9px] uppercase tracking-[0.06em] text-muted-foreground/60 shrink-0">Pronto</span>
+            </button>
             <NavLink
               to="/configuracion"
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-full text-[13px] text-muted-foreground hover:bg-background transition-colors min-h-11"
+              className={({ isActive }) =>
+                cn(
+                  "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-full text-[13px] transition-colors min-h-11",
+                  isActive ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-background",
+                )
+              }
             >
               <Settings className="w-4 h-4 shrink-0" strokeWidth={1.75} />
               <span className="truncate">Configuración</span>
             </NavLink>
-            <div className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-full text-[13px] text-muted-foreground min-h-11">
-              <UserRound className="w-4 h-4 shrink-0" strokeWidth={1.75} />
-              <span className="truncate">{user?.rol ?? "Mi perfil"}</span>
-            </div>
             <div className="pt-1.5 pb-0.5 flex justify-center">
               <ThemeSelector />
             </div>
           </div>
         )}
 
-        <div className={cn("border-t border-border pt-1.5", collapsed ? "px-0" : "px-1")}>
+        <div className={cn("relative px-2 pb-2", collapsed ? "-mt-1" : "-mt-3.5")}>
           {!collapsed ? (
-            <div className="flex items-center gap-2 px-2 py-1">
+            <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-2 shadow-sm">
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-medium shrink-0">
                 {user?.email?.charAt(0).toUpperCase() || "A"}
               </div>
@@ -196,7 +242,7 @@ export function Sidebar({ sections, user, onLogout, hotelSelector }: SidebarProp
               </button>
             </div>
           ) : (
-            <Button onClick={onLogout} variant="ghost" size="icon" className="w-full" aria-label="Cerrar sesión">
+            <Button onClick={onLogout} variant="ghost" size="icon" className="w-full rounded-xl border border-border bg-card shadow-sm" aria-label="Cerrar sesión">
               <LogOut className="w-5 h-5" />
             </Button>
           )}
