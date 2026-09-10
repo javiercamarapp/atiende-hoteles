@@ -9,10 +9,11 @@
 // `crear_ticket_huesped` que usaría el agente conversacional) y la escalación
 // automática (`escalateOverdueGuestTickets`/`TicketEscalationScheduler`, RLS real
 // incluida) de punta a punta.
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApiFixture, destroyApiFixture, loginAs, type ApiFixture } from "../../support/api-fixture.ts";
 import {
   escalateOverdueGuestTickets,
+  notifyApproachingSlaGuestTickets,
 } from "../../../apps/api/src/jobs/ticketEscalation.ts";
 import {
   loadHotelsForTicketEscalation,
@@ -33,6 +34,7 @@ interface TicketRow {
   slaVenceEn: string;
   escaladoEn: string | null;
   escaladoARoles: string[];
+  avisoSla75En: string | null;
 }
 
 describe("REQ-HUE-014: mensaje del huésped → ticket con departamento/habitación/prioridad/SLA + escalación automática", () => {
@@ -43,6 +45,13 @@ describe("REQ-HUE-014: mensaje del huésped → ticket con departamento/habitaci
   let tenantId: string;
   let roomCode: string;
   let roomCode2: string;
+  // Staff real sembrado por seedDev (un `staff_user` por rol por hotel, ver
+  // packages/db/src/seed.ts) -- usado por las pruebas de notificación activa de más
+  // abajo para verificar QUIÉN recibe cada alerta (asignado/supervisor/roles de
+  // escalación), no solo que "se envió algo".
+  let maintenanceStaff: { id: string; email: string; role: string };
+  let gmStaff: { id: string; email: string; role: string };
+  let ownerStaff: { id: string; email: string; role: string };
 
   beforeAll(async () => {
     fixture = await createApiFixture();
@@ -51,6 +60,9 @@ describe("REQ-HUE-014: mensaje del huésped → ticket con departamento/habitaci
     tenantId = fixture.seed.orgId;
     gmToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "gm")!.email);
     frontdeskToken = await loginAs(fixture.app, hotelA.staff.find((s) => s.role === "frontdesk")!.email);
+    maintenanceStaff = hotelA.staff.find((s) => s.role === "maintenance")!;
+    gmStaff = hotelA.staff.find((s) => s.role === "gm")!;
+    ownerStaff = hotelA.staff.find((s) => s.role === "owner")!;
 
     const { rows } = await fixture.engine.admin.query<{ code: string }>(
       "select code from public.room where hotel_id = $1 order by code limit 2;",
@@ -331,5 +343,194 @@ describe("REQ-HUE-014: mensaje del huésped → ticket con departamento/habitaci
 
     const ticket = await leerTicket(ticketId);
     expect(ticket.estado).toBe("escalado");
+  });
+
+  // ---------------------------------------------------------------------------------
+  // REQ-HUE-014 (ampliación "notificación activa", patrón Duve/Optii verificado hoy):
+  // al 75% del SLA se alerta al asignado+supervisor, al 100% se escala -- ambos SIEMPRE
+  // por notificación activa (no solo un cambio de `status` en la base). Las pruebas de
+  // arriba ya cubren el cambio de estado/auditoría del 100%; las de abajo cubren el
+  // aviso al 75% y que AMBOS umbrales disparan una notificación activa real (verificada
+  // con un `dispatch` inyectado -- nunca contacta la API real de Meta/WhatsApp ni
+  // ningún endpoint real, mismo criterio de "reloj/red inyectados, nunca reales" que el
+  // resto de este archivo).
+  // ---------------------------------------------------------------------------------
+  describe("aviso temprano al 75% del SLA (antes de la escalación al 100%)", () => {
+    it("marca el aviso exactamente al alcanzar el 75% del SLA, no antes, y es idempotente", async () => {
+      const res = await crearTicket(frontdeskToken, {
+        guestMessage: "El aire acondicionado hace un ruido raro.",
+        department: "maintenance",
+        priority: "alta", // SLA 30 min -> umbral de aviso a los 22.5 min (75%)
+        roomCode,
+      });
+      const { ticketId } = (await res.json()) as { ticketId: string };
+      const ticket = await leerTicket(ticketId);
+      const slaDueAt = new Date(ticket.slaVenceEn);
+      // `slaDueAt` viene de `sla_due_at::text` -> `new Date(...)`, que trunca la
+      // precisión de microsegundos que sí tiene el `timestamptz` real de Postgres
+      // (`created_at`/`sla_due_at` comparten el mismo `now()` de la transacción, ver
+      // ticketTools.ts). El umbral EXACTO al microsegundo ya está probado sin ese
+      // margen de error en `tests/unit/domain-hotel/ticket-sla-policy.spec.ts`
+      // (`computeSlaWarningAt`/`isSlaWarningDue`, Dates puros de JS, sin ida y vuelta
+      // por Postgres) -- aquí, contra la BD real, se usa un margen de +1ms sobre el
+      // umbral aproximado para no depender de esa fracción de microsegundo perdida.
+      const umbralAproximado = new Date(slaDueAt.getTime() - 30 * 0.25 * 60_000); // 75% de 30 min
+      const yaEnElUmbral = new Date(umbralAproximado.getTime() + 1);
+
+      // Un minuto ANTES del umbral: todavía no se avisa.
+      const antes = await notifyApproachingSlaGuestTickets(
+        fixture.engine.admin,
+        { hotelId, tenantId },
+        { now: () => new Date(umbralAproximado.getTime() - 60_000) },
+      );
+      expect(antes.warned.map((t) => t.id)).not.toContain(ticketId);
+      expect((await leerTicket(ticketId)).avisoSla75En).toBeNull();
+
+      // Al llegar al umbral del 75%: sí se avisa (a diferencia de `isSlaOverdue`, que
+      // usa `>` estricto en el 100%, el aviso preventivo del 75% dispara con `>=`, ver
+      // `isSlaWarningDue`).
+      const primera = await notifyApproachingSlaGuestTickets(
+        fixture.engine.admin,
+        { hotelId, tenantId },
+        { now: () => yaEnElUmbral },
+      );
+      expect(primera.warned.map((t) => t.id)).toContain(ticketId);
+      expect(primera.supervisorRoles).toEqual(["gm"]);
+      const avisado = primera.warned.find((t) => t.id === ticketId)!;
+      expect(avisado.department).toBe("maintenance");
+      expect(avisado.assignedTo).toBeNull(); // nadie asignado todavía
+
+      const despues = await leerTicket(ticketId);
+      expect(despues.avisoSla75En).not.toBeNull();
+      expect(despues.estado).toBe("abierto"); // el aviso NO cambia el estado del ticket
+
+      // Segunda corrida sobre el mismo instante: no reenvía (idempotente, mismo
+      // criterio que la escalación al 100%).
+      const segunda = await notifyApproachingSlaGuestTickets(
+        fixture.engine.admin,
+        { hotelId, tenantId },
+        { now: () => yaEnElUmbral },
+      );
+      expect(segunda.warned.map((t) => t.id)).not.toContain(ticketId);
+
+      const { rows: auditRows } = await fixture.engine.admin.query<{ id: string }>(
+        "select id from public.audit_log where hotel_id = $1 and action = 'guest_ticket.alerta_sla_75';",
+        [hotelId],
+      );
+      expect(auditRows).toHaveLength(1);
+    });
+
+    it("un ticket cerrado antes de llegar al 75% de su SLA nunca recibe el aviso", async () => {
+      const res = await crearTicket(frontdeskToken, {
+        guestMessage: "Falta shampoo.",
+        department: "housekeeping",
+        priority: "alta", // SLA 30 min
+        roomCode,
+      });
+      const { ticketId } = (await res.json()) as { ticketId: string };
+
+      const cierre = await fixture.app.request(`/hoteles/${hotelId}/tickets/${ticketId}/cerrar`, {
+        method: "PATCH",
+        headers: { authorization: `Bearer ${gmToken}`, "content-type": "application/json" },
+        body: JSON.stringify({ resolutionNote: "Entregado por camarista." }),
+      });
+      expect(cierre.status).toBe(200);
+
+      const resultado = await notifyApproachingSlaGuestTickets(
+        fixture.engine.admin,
+        { hotelId, tenantId },
+        { now: () => new Date(Date.now() + 24 * 60 * 60_000) }, // muy por delante, si siguiera abierto ya habría avisado
+      );
+      expect(resultado.warned.map((t) => t.id)).not.toContain(ticketId);
+    });
+  });
+
+  describe("notificación ACTIVA (webhook genérico inyectado -- nunca la API real de Meta/WhatsApp)", () => {
+    it("al 75% del SLA despacha una alerta activa al asignado directo + supervisor(gm) + el departamento del ticket", async () => {
+      const res = await crearTicket(frontdeskToken, {
+        guestMessage: "El aire acondicionado no enfría bien.",
+        department: "maintenance",
+        priority: "alta", // SLA 30 min
+        roomCode,
+      });
+      const { ticketId } = (await res.json()) as { ticketId: string };
+
+      // Asigna el ticket a un miembro real del staff de mantenimiento -- sin ruta HTTP
+      // para esto todavía (solo `reasignar` de departamento), se fija directo en BD
+      // igual que el resto de este archivo fija `ticket_sla_policy`.
+      await fixture.engine.admin.query("update public.guest_ticket set assigned_to = $1 where id = $2;", [
+        maintenanceStaff.id,
+        ticketId,
+      ]);
+
+      const ticket = await leerTicket(ticketId);
+      const slaDueAt = new Date(ticket.slaVenceEn);
+      // +1ms de margen sobre el umbral aproximado -- ver comentario extenso en la
+      // prueba anterior (precisión de microsegundos de Postgres perdida al pasar por
+      // `::text` -> `new Date(...)`).
+      const yaEnElUmbral = new Date(slaDueAt.getTime() - 30 * 0.25 * 60_000 + 1);
+
+      const dispatch = vi.fn().mockResolvedValue(undefined);
+      const scheduler = new TicketEscalationScheduler(fixture.engine.admin, {
+        now: () => yaEnElUmbral,
+        dispatch,
+        alertDestination: { webhookUrl: "https://hooks.example.test/tickets" },
+      });
+      const results = await scheduler.tick([{ id: hotelId, tenantId }]);
+      expect(results.find((r) => r.hotelId === hotelId)?.warningResult?.warned.map((t) => t.id)).toContain(ticketId);
+
+      const llamadasDeEsteTicket = dispatch.mock.calls.filter(([alerta]) => (alerta as { ticket_id: string }).ticket_id === ticketId);
+      expect(llamadasDeEsteTicket).toHaveLength(1);
+      const [alerta, destino] = llamadasDeEsteTicket[0]!;
+      expect((alerta as { tipo: string }).tipo).toBe("ticket_sla_alerta_75");
+      expect(destino).toEqual({ webhookUrl: "https://hooks.example.test/tickets" });
+      const destinatarios = (alerta as { destinatarios: string[] }).destinatarios;
+      expect(destinatarios).toContain(maintenanceStaff.email); // asignado directo
+      expect(destinatarios).toContain(gmStaff.email); // supervisor (default ["gm"])
+
+      // Todavía NO venció del todo -- ninguna llamada de escalación para este ticket.
+      expect(dispatch.mock.calls.some(([a]) => (a as { tipo: string }).tipo === "ticket_sla_escalado")).toBe(false);
+    });
+
+    it("al 100% del SLA (escalación) despacha una alerta activa a los roles reales gm+owner del hotel", async () => {
+      const res = await crearTicket(frontdeskToken, {
+        guestMessage: "No hay agua caliente.",
+        department: "maintenance",
+        priority: "alta",
+        roomCode,
+      });
+      const { ticketId } = (await res.json()) as { ticketId: string };
+      const ticket = await leerTicket(ticketId);
+      const slaDueAt = new Date(ticket.slaVenceEn);
+
+      const dispatch = vi.fn().mockResolvedValue(undefined);
+      const scheduler = new TicketEscalationScheduler(fixture.engine.admin, {
+        now: () => new Date(slaDueAt.getTime() + 60_000),
+        dispatch,
+        alertDestination: { webhookUrl: "https://hooks.example.test/tickets" },
+      });
+      await scheduler.tick([{ id: hotelId, tenantId }]);
+
+      const llamadaEscalacion = dispatch.mock.calls.find(
+        ([alerta]) => (alerta as { tipo: string; ticket_id: string }).tipo === "ticket_sla_escalado" && (alerta as { ticket_id: string }).ticket_id === ticketId,
+      );
+      expect(llamadaEscalacion).toBeDefined();
+      const [alerta] = llamadaEscalacion!;
+      const destinatarios = (alerta as { destinatarios: string[]; roles_destinatario: string[] }).destinatarios;
+      expect((alerta as { roles_destinatario: string[] }).roles_destinatario).toEqual(["gm", "owner"]);
+      expect(destinatarios).toContain(gmStaff.email);
+      expect(destinatarios).toContain(ownerStaff.email);
+    });
+
+    it("sin ningún ticket por avisar ni por escalar, el planificador no despacha ninguna notificación activa", async () => {
+      const dispatch = vi.fn().mockResolvedValue(undefined);
+      const scheduler = new TicketEscalationScheduler(fixture.engine.admin, {
+        now: () => new Date(),
+        dispatch,
+        alertDestination: { webhookUrl: "https://hooks.example.test/tickets" },
+      });
+      await scheduler.tick([{ id: hotelId, tenantId }]);
+      expect(dispatch).not.toHaveBeenCalled();
+    });
   });
 });

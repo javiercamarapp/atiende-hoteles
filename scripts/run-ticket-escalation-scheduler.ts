@@ -17,12 +17,18 @@ async function main() {
   const engine = await bootstrapDevEngine(env);
   try {
     const hotels = await loadHotelsForTicketEscalation(engine.admin);
+    // Sin `logger`/`alertDestination`/`dispatch` explícitos: usa los defaults reales
+    // (webhook genérico vía `TICKET_ALERT_WEBHOOK_URL`/`MONEY_ALERT_WEBHOOK_URL` del
+    // entorno, ver `lib/ticketAlertDispatch.ts`) -- mismo criterio que el planificador
+    // en proceso de `server.ts`.
     const scheduler = new TicketEscalationScheduler(engine.admin);
     const results = await scheduler.tick(hotels);
 
     for (const r of results) {
       if (r.ran) {
-        console.log(`hotel ${r.hotelId}: ${r.result?.escalated.length ?? 0} ticket(s) escalado(s).`);
+        console.log(
+          `hotel ${r.hotelId}: ${r.warningResult?.warned.length ?? 0} aviso(s) al 75% del SLA, ${r.result?.escalated.length ?? 0} ticket(s) escalado(s).`,
+        );
       } else if (r.error) {
         console.error(`hotel ${r.hotelId}: ERROR -- ${r.error}`);
       } else {

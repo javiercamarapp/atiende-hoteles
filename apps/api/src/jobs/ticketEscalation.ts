@@ -7,6 +7,7 @@
 // cualquier `Date`, ver `tests/integration/tickets/sla-escalado.spec.ts`) ejercitan
 // EXACTAMENTE la misma consulta, sin necesitar mover el reloj del propio Postgres.
 import type { DbClient } from "@atiende-hoteles/db";
+import { SLA_WARNING_THRESHOLD_RATIO } from "@atiende-hoteles/domain-hotel";
 
 export interface EscalateTicketsParams {
   hotelId: string;
@@ -33,6 +34,12 @@ export interface EscalatedTicket {
 
 export interface EscalateTicketsResult {
   escalated: EscalatedTicket[];
+  /** Roles a los que se escaló ESTE lote (mismo valor para todos los `escalated` de una
+   *  sola corrida, ya que `escalateToRoles` es un único parámetro por llamada) --
+   *  expuesto para que el llamador (`ticketEscalationScheduler.ts`) pueda resolver
+   *  destinatarios reales y disparar la notificación activa sin adivinar qué roles se
+   *  usaron. */
+  escalateToRoles: readonly string[];
 }
 
 /** Escala (status -> 'escalado', `escalated_at`/`escalated_to_roles` fijados) todo
@@ -85,7 +92,123 @@ export async function escalateOverdueGuestTickets(
     );
   }
 
-  return { escalated };
+  return { escalated, escalateToRoles };
+}
+
+export interface WarnedTicket {
+  id: string;
+  department: string;
+  priority: string;
+  roomId: string | null;
+  /** `staff_user.id` asignado al ticket, si ya se asignó (`assigned_to`, migración
+   *  0098) -- null cuando el ticket sigue en la bandeja general del departamento sin
+   *  una persona específica encima. El llamador usa esto para notificar al asignado
+   *  DIRECTO además del rol supervisor (ver `notifyApproachingSlaGuestTickets`). */
+  assignedTo: string | null;
+  slaDueAt: string;
+}
+
+export interface NotifySlaWarningParams {
+  hotelId: string;
+  tenantId: string;
+}
+
+export interface NotifySlaWarningOptions {
+  /** Reloj inyectable (default: la hora real) -- mismo criterio que
+   *  `EscalateTicketsOptions.now`: nunca `Date.now()` interno. */
+  now?: () => Date;
+  /** Fracción del SLA a la que se dispara el aviso temprano (default
+   *  `SLA_WARNING_THRESHOLD_RATIO` = 0.75, `@atiende-hoteles/domain-hotel`). Inyectable
+   *  solo para pruebas que necesiten un umbral distinto sin esperar minutos reales de
+   *  diferencia; en producción SIEMPRE se usa el default documentado del REQ. */
+  warningThresholdRatio?: number;
+  /** Roles supervisores a notificar junto con el asignado directo (si existe) -- default
+   *  `["gm"]`: este esquema no tiene un rol "jefe de departamento" distinto del propio
+   *  `department` del ticket ni de gm/owner (8 roles exactos, REQ-TEN-003), así que el
+   *  "supervisor" del patrón Duve/Optii es gm (mismo criterio ya usado por
+   *  `escalateOverdueGuestTickets` para "sube un nivel" al 100%). El propio
+   *  `department` del ticket se notifica SIEMPRE además de estos roles (ver
+   *  `notifyApproachingSlaGuestTickets`), representando al "asignado" cuando el ticket
+   *  todavía no tiene una persona específica en `assigned_to`. */
+  supervisorRoles?: readonly string[];
+}
+
+export interface NotifySlaWarningResult {
+  warned: WarnedTicket[];
+  supervisorRoles: readonly string[];
+}
+
+/** REQ-HUE-014 (ampliación "notificación activa", patrón Duve/Optii): marca
+ *  (`sla_warning_notified_at`, migración 0127) todo `guest_ticket` ABIERTO o EN
+ *  PROGRESO de `hotelId` que ya alcanzó el 75% de su SLA transcurrido (
+ *  `isSlaWarningDue`/`computeSlaWarningAt`, `@atiende-hoteles/domain-hotel`) y que
+ *  TODAVÍA no recibió ese aviso -- distinto de `escalateOverdueGuestTickets` (100%,
+ *  sube de nivel): este aviso NO cambia `status` ni department, es una alerta
+ *  preventiva para que el asignado+supervisor actúen ANTES de que el ticket venza del
+ *  todo. Idempotente por el mismo criterio que la escalación (`sla_warning_notified_at
+ *  is null` en el WHERE): una segunda corrida sobre los mismos tickets ya avisados no
+ *  vuelve a tocarlos ni a reenviar el aviso. Un ticket puede recibir el aviso al 75% Y
+ *  escalarse después al 100% si nadie actuó a tiempo -- ambos eventos son
+ *  independientes y ambos quedan en `audit_log`. */
+export async function notifyApproachingSlaGuestTickets(
+  db: DbClient,
+  params: NotifySlaWarningParams,
+  opts: NotifySlaWarningOptions = {},
+): Promise<NotifySlaWarningResult> {
+  const now = (opts.now ?? (() => new Date()))();
+  const warningThresholdRatio = opts.warningThresholdRatio ?? SLA_WARNING_THRESHOLD_RATIO;
+  const supervisorRoles = opts.supervisorRoles ?? ["gm"];
+
+  // Umbral = created_at + sla_minutes * ratio minutos -- exactamente
+  // `computeSlaWarningAt()` de domain-hotel, reimplementado aquí en SQL (mismo criterio
+  // documentado en el encabezado del archivo: la comparación de vencimiento SIEMPRE se
+  // hace con `now` como parámetro, nunca con el reloj de Postgres) para poder marcarlo
+  // en un solo UPDATE...RETURNING atómico, igual que `escalateOverdueGuestTickets`.
+  const { rows } = await db.query<{
+    id: string;
+    department: string;
+    priority: string;
+    room_id: string | null;
+    assigned_to: string | null;
+    sla_due_at: string;
+  }>(
+    `update public.guest_ticket
+     set sla_warning_notified_at = $1
+     where hotel_id = $2
+       and status in ('abierto', 'en_progreso')
+       and sla_warning_notified_at is null
+       and created_at + (sla_minutes * $3::numeric) * interval '1 minute' <= $1
+     returning id, department::text as department, priority::text as priority, room_id, assigned_to,
+               sla_due_at::text as sla_due_at;`,
+    [now, params.hotelId, warningThresholdRatio],
+  );
+
+  const warned: WarnedTicket[] = rows.map((r) => ({
+    id: r.id,
+    department: r.department,
+    priority: r.priority,
+    roomId: r.room_id,
+    assignedTo: r.assigned_to,
+    slaDueAt: r.sla_due_at,
+  }));
+
+  if (warned.length > 0) {
+    await db.query(
+      "select public.record_audit_log($1, $2, 'guest_ticket.alerta_sla_75', 'guest_ticket', null, $3);",
+      [
+        params.tenantId,
+        params.hotelId,
+        JSON.stringify({
+          ticketIds: warned.map((t) => t.id),
+          umbral: warningThresholdRatio,
+          supervisorRoles,
+          avisadoAl: now.toISOString(),
+        }),
+      ],
+    );
+  }
+
+  return { warned, supervisorRoles };
 }
 
 export interface EscalateTicketNowParams {

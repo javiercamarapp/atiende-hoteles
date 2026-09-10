@@ -14,9 +14,12 @@ import {
   DEFAULT_SLA_MINUTES_BY_PRIORITY,
   GUEST_TICKET_DEPARTMENTS,
   GUEST_TICKET_PRIORITIES,
+  SLA_WARNING_THRESHOLD_RATIO,
   classifyGuestMessage,
   computeSlaDueAt,
+  computeSlaWarningAt,
   isSlaOverdue,
+  isSlaWarningDue,
   resolveSlaMinutes,
 } from "@atiende-hoteles/domain-hotel";
 import { DEFAULT_SLA_MINUTES_BY_PRIORITY as AGENT_CORE_DEFAULT_SLA_MINUTES_BY_PRIORITY } from "@atiende-hoteles/agent-core";
@@ -104,6 +107,40 @@ describe("resolveSlaMinutes / computeSlaDueAt / isSlaOverdue (REQ-HUE-014, reloj
     const slaDueAt = computeSlaDueAt(createdAt, DEFAULT_SLA_MINUTES_BY_PRIORITY.alta);
     const relojSimuladoUnaHoraDespues = new Date(createdAt.getTime() + 60 * 60_000);
     expect(isSlaOverdue(relojSimuladoUnaHoraDespues, slaDueAt)).toBe(true);
+  });
+});
+
+describe("computeSlaWarningAt / isSlaWarningDue (REQ-HUE-014, aviso temprano al 75% del SLA)", () => {
+  it("SLA_WARNING_THRESHOLD_RATIO es 0.75 (75% del SLA, patrón Duve/Optii documentado en el REQ)", () => {
+    expect(SLA_WARNING_THRESHOLD_RATIO).toBe(0.75);
+  });
+
+  it("computeSlaWarningAt suma el 75% del SLA (no el 100%) a la fecha de creación por default", () => {
+    const createdAt = new Date("2026-01-01T00:00:00.000Z");
+    // SLA de 40 min -> aviso a los 30 min (75%), vencimiento completo a los 40.
+    expect(computeSlaWarningAt(createdAt, 40).toISOString()).toBe("2026-01-01T00:30:00.000Z");
+    expect(computeSlaDueAt(createdAt, 40).toISOString()).toBe("2026-01-01T00:40:00.000Z");
+  });
+
+  it("computeSlaWarningAt acepta un umbral distinto del default (inyectable, nunca hardcodeado dos veces)", () => {
+    const createdAt = new Date("2026-01-01T00:00:00.000Z");
+    expect(computeSlaWarningAt(createdAt, 40, 0.5).toISOString()).toBe("2026-01-01T00:20:00.000Z");
+  });
+
+  it("isSlaWarningDue: reloj simulado exactamente EN el umbral del 75% YA está vencido (a diferencia de isSlaOverdue, que usa > estricto en el 100%)", () => {
+    const createdAt = new Date("2026-01-01T00:00:00.000Z");
+    const warningAt = computeSlaWarningAt(createdAt, 40);
+
+    expect(isSlaWarningDue(warningAt, warningAt)).toBe(true);
+    expect(isSlaWarningDue(new Date(warningAt.getTime() - 1), warningAt)).toBe(false);
+    expect(isSlaWarningDue(new Date(warningAt.getTime() + 1), warningAt)).toBe(true);
+  });
+
+  it("un ticket por debajo del 75% de su SLA no dispara el aviso, aunque ya lleve más de la mitad transcurrido", () => {
+    const createdAt = new Date("2026-01-01T00:00:00.000Z");
+    const warningAt = computeSlaWarningAt(createdAt, 40); // 75% de 40 min = 30 min
+    const relojAlSesentaPorCiento = new Date(createdAt.getTime() + 24 * 60_000); // 60% de 40 min
+    expect(isSlaWarningDue(relojAlSesentaPorCiento, warningAt)).toBe(false);
   });
 });
 

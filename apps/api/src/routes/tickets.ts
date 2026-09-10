@@ -51,6 +51,10 @@ interface TicketRow {
   assigned_to: string | null;
   escalated_at: string | null;
   escalated_to_roles: unknown;
+  // REQ-HUE-014 (ampliación "notificación activa", migración 0127): no-nulo desde que
+  // se disparó el aviso temprano al 75% del SLA (`notifyApproachingSlaGuestTickets`,
+  // jobs/ticketEscalation.ts) -- distinto de `escalated_at` (100%, sube de nivel).
+  sla_warning_notified_at: string | null;
   resolution_note: string | null;
   closed_at: string | null;
   created_at: string;
@@ -70,6 +74,7 @@ function serializeTicket(t: TicketRow) {
     asignadoA: t.assigned_to,
     escaladoEn: t.escalated_at,
     escaladoARoles: t.escalated_to_roles,
+    avisoSla75En: t.sla_warning_notified_at,
     notaResolucion: t.resolution_note,
     cerradoEn: t.closed_at,
     creadoEn: t.created_at,
@@ -105,6 +110,7 @@ export function ticketsRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
               gt.channel::text as channel, gt.guest_message, gt.sla_minutes,
               gt.sla_due_at::text as sla_due_at, gt.assigned_to,
               gt.escalated_at::text as escalated_at, gt.escalated_to_roles,
+              gt.sla_warning_notified_at::text as sla_warning_notified_at,
               gt.resolution_note, gt.closed_at::text as closed_at,
               gt.created_at::text as created_at
        from public.guest_ticket gt
