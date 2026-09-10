@@ -1,4 +1,6 @@
 import { Outlet } from "react-router-dom";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import {
   LayoutDashboard,
   CalendarCheck,
@@ -24,6 +26,7 @@ import { SelectorHotel } from "../components/SelectorHotel";
 import { AprobacionesBadge } from "../components/AprobacionesBadge";
 import { NotificacionesBell } from "../components/NotificacionesBell";
 import { CookieConsentBanner } from "../components/CookieConsentBanner";
+import { BotonChatDatos } from "../components/BotonChatDatos";
 
 // Mapa de navegación hotelero (docs/referencia/05-frontend-restaurantes.md
 // §5) — misma anatomía de acordeón/colapso que AdminSidebar de Restaurantes,
@@ -116,6 +119,19 @@ function BannerHotelesBloqueado() {
   );
 }
 
+/**
+ * Píldora de fecha del header — mismo patrón que AdminDashboard.tsx de
+ * atiende-restaurantes (`format(new Date(), "d MMM yyyy", { locale: es })`
+ * en un pill font-mono). Fecha real del navegador, nunca un placeholder.
+ */
+function PildoraFecha() {
+  return (
+    <span className="font-mono text-xs text-muted-foreground border border-border rounded-full px-3 py-1.5 shrink-0">
+      {format(new Date(), "d MMM yyyy", { locale: es })}
+    </span>
+  );
+}
+
 export function AppShell() {
   const { sesion, cerrarSesion } = useAuth();
 
@@ -137,6 +153,16 @@ export function AppShell() {
         />
       </div>
 
+      {
+        // No se agregan aquí BotonChatDatos ni PildoraFecha: la fila de acción
+        // ya carga wordmark + 2 iconos (44px c/u) + el pill de SelectorHotel
+        // (hasta 10rem de nombre truncado + ícono + chevron) en el ancho de
+        // un MobileHeader `fixed`. Sumar un botón de texto ("Chatea con tus
+        // datos") y otra píldora ("10 sep 2026") desborda o envuelve la fila
+        // en los ~375-414px de un teléfono real -- no hay espacio honesto
+        // para las dos piezas nuevas aquí. Se dejan solo en el header de
+        // escritorio (línea ~152).
+      }
       <MobileHeader
         title={<AtiendeWordmark className="scale-90 origin-left" />}
         action={
@@ -150,8 +176,10 @@ export function AppShell() {
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="hidden md:flex items-center justify-end gap-3 px-6 py-3">
+          <BotonChatDatos />
           <NotificacionesBell />
           <AprobacionesBadge />
+          <PildoraFecha />
           <span className="text-sm text-muted-foreground">{sesion?.email}</span>
         </header>
         <main id="contenido-principal" tabIndex={-1} className="flex-1 px-4 py-4 pt-20 pb-24 md:pt-2 md:pb-8 md:px-6">

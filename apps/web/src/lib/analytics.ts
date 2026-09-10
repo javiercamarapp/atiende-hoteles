@@ -40,7 +40,7 @@ function guardarConsentimiento(valor: Consentimiento): void {
 }
 
 let analyticsPort: AnalyticsPort = new FakeAnalyticsAdapter();
-let errorReporterPort: ErrorReporterPort = new FakeErrorReporterAdapter();
+const errorReporterPort: ErrorReporterPort = new FakeErrorReporterAdapter();
 
 function activarAdaptadorReal(): void {
   const apiKey = (import.meta.env.VITE_POSTHOG_KEY as string | undefined) || undefined;
