@@ -154,6 +154,8 @@ function buildToolForName(name: string, deps: { db: DbClient; agentName: string 
       return createHousekeepingTaskTool({ db: deps.db });
     case "crear_ticket_mantenimiento":
       return createMaintenanceTicketTool({ db: deps.db });
+    case "crear_ticket_huesped":
+      return createGuestTicketTool({ db: deps.db });
     case "enviar_mensaje_whatsapp_plantilla":
       return createSendWhatsappTemplateTool({ db: deps.db, messaging: sharedWhatsappAdapter, simulated: true });
     case "registrar_evento_roi":

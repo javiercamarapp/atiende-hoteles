@@ -156,9 +156,41 @@ describe("apps/api: voz (ElevenLabs) — webhook de tools + config (integración
       expect(rows).toHaveLength(0);
     });
 
+    it("gate=shadow: crear-ticket-huesped (room service/F&B) tampoco se ejecuta de verdad", async () => {
+      const config = await getConfig(ownerToken);
+      expect(config.gateRecepcionVirtual).toBe("shadow");
+
+      const res = await llamarTool("crear-ticket-huesped", config.toolWebhookSecret, {
+        guestMessage: "El huésped pide una jarra de café y dos vasos a la habitación.",
+        roomCode,
+        department: "fnb",
+        priority: "media",
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { result: { ok: boolean; ejecutado: boolean; modo: string } };
+      expect(body.result.ejecutado).toBe(false);
+      expect(body.result.modo).toBe("shadow");
+
+      const { rows } = await fixture.engine.admin.query(
+        "select id from public.guest_ticket where hotel_id = $1 and department = 'fnb';",
+        [hotelId],
+      );
+      expect(rows).toHaveLength(0);
+    });
+
     it("entrada inválida para la tool -> 400 (nunca se intenta ejecutar)", async () => {
       const config = await getConfig(ownerToken);
       const res = await llamarTool("crear-tarea-housekeeping", config.toolWebhookSecret, { roomCode: "" });
+      expect(res.status).toBe(400);
+      const body = (await res.json()) as { error: string };
+      expect(body.error).toMatch(/entrada inválida/);
+    });
+
+    it("crear-ticket-huesped sin department -> 400 (nunca se intenta ejecutar)", async () => {
+      const config = await getConfig(ownerToken);
+      const res = await llamarTool("crear-ticket-huesped", config.toolWebhookSecret, {
+        guestMessage: "El huésped pide algo de room service.",
+      });
       expect(res.status).toBe(400);
       const body = (await res.json()) as { error: string };
       expect(body.error).toMatch(/entrada inválida/);
@@ -201,6 +233,28 @@ describe("apps/api: voz (ElevenLabs) — webhook de tools + config (integración
       expect(hkBody.result.ejecutado).toBe(true);
       const { rows: tasks } = await fixture.engine.admin.query("select id from public.housekeeping_task where hotel_id = $1;", [hotelId]);
       expect(tasks.length).toBeGreaterThanOrEqual(1);
+
+      // Room service/F&B: crear-ticket-huesped con department "fnb" -- se manda un
+      // `channel: "whatsapp"` a propósito para probar que el webhook lo IGNORA y fuerza
+      // "voz" del lado del servidor (ver comentario en vozElevenlabs.ts: este canal
+      // nunca confía en un `channel` que mande el modelo).
+      const rs = await llamarTool("crear-ticket-huesped", config.toolWebhookSecret, {
+        guestMessage: "El huésped pide una jarra de café y dos vasos a la habitación.",
+        roomCode,
+        department: "fnb",
+        priority: "media",
+        channel: "whatsapp",
+      });
+      expect(rs.status).toBe(200);
+      const rsBody = (await rs.json()) as { result: { ok: boolean; ejecutado: boolean; datos: { ticketId: string } } };
+      expect(rsBody.result.ejecutado).toBe(true);
+      const { rows: guestTickets } = await fixture.engine.admin.query<{ id: string; channel: string; department: string }>(
+        "select id, channel::text as channel, department::text as department from public.guest_ticket where hotel_id = $1 and department = 'fnb';",
+        [hotelId],
+      );
+      expect(guestTickets).toHaveLength(1);
+      expect(guestTickets[0]!.id).toBe(rsBody.result.datos.ticketId);
+      expect(guestTickets[0]!.channel).toBe("voz");
 
       const mant = await llamarTool("crear-ticket-mantenimiento", config.toolWebhookSecret, {
         roomCode,

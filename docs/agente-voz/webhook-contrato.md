@@ -15,7 +15,7 @@ primera llamada telefónica real.
   el flujo completo de `enviar_mensaje_whatsapp_plantilla` (pendiente → aprobación
   humana vía `/aprobaciones/:id/decidir` → mensaje real creado): todo esto tiene un test
   de integración real que falla si se rompe —
-  `tests/integration/api/voz-elevenlabs.spec.ts` (13 casos, corre contra una BD real).
+  `tests/integration/api/voz-elevenlabs.spec.ts` (16 casos, corre contra una BD real).
 - `scripts/voz-elevenlabs-webhook-simulator.ts` ejercita el mismo código contra un
   servidor de este repo corriendo de verdad (`npm run dev`), simulando ambas formas de
   cuerpo documentadas más abajo.
@@ -74,13 +74,14 @@ se construyó en esta tarea.
 ### 2.4 Comportamiento real de latencia/reintentos/timeouts de ElevenLabs
 
 No verificado. El webhook responde rápido en todos los casos (inserts simples, sin
-llamadas a proveedores externos reales) — housekeeping/mantenimiento/ROI deberían
-responder en milisegundos contra Postgres local; `enviar-whatsapp-plantilla` hace, como
-máximo, una consulta adicional de configuración antes de encolar la aprobación. No hay
-evidencia de que ElevenLabs vaya a reintentar una llamada de tool que tarde o falle —
-eso importa para la idempotencia de `crear_tarea_housekeeping`/`crear_ticket_mantenimiento`
-(hoy NO son idempotentes ante un reintento exacto: un reintento crearía una segunda fila
-duplicada). Pendiente de diseño si en la práctica ElevenLabs reintenta.
+llamadas a proveedores externos reales) — housekeeping/mantenimiento/ticket de
+huésped/ROI deberían responder en milisegundos contra Postgres local;
+`enviar-whatsapp-plantilla` hace, como máximo, una consulta adicional de configuración
+antes de encolar la aprobación. No hay evidencia de que ElevenLabs vaya a reintentar una
+llamada de tool que tarde o falle — eso importa para la idempotencia de
+`crear_tarea_housekeeping`/`crear_ticket_mantenimiento`/`crear_ticket_huesped` (hoy
+NINGUNA de las tres es idempotente ante un reintento exacto: un reintento crearía una
+segunda fila duplicada). Pendiente de diseño si en la práctica ElevenLabs reintenta.
 
 ## 3. Qué hacer en la primera llamada de prueba real
 

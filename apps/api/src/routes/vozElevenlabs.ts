@@ -28,16 +28,20 @@
 //      `VOICE_TOOL_SECRET` para todas las sucursales). Un hotel nunca puede, ni por bug
 //      de configuración, invocar las tools de otro hotel.
 //   2. El catálogo de tools expuesto es EXACTAMENTE el de `recepcion_virtual`
-//      (agent-core `agents.ts`) -- las 4 tools ya existentes (housekeeping, mantenimiento,
-//      WhatsApp, ROI), sin agregar ninguna tool de disponibilidad/reserva/cotización/cobro
-//      (límite de seguridad ya documentado en ese catálogo). No se agregó ninguna tool
-//      nueva de solo-lectura en esta tarea: la única candidata razonable (consultar el
-//      estado de una reserva/ticket propio) requeriría verificar de forma confiable que
-//      quien llama es ESE huésped -- este canal todavía no resuelve esa identidad
-//      (ninguna variable de sistema de ElevenLabs para el número de quien llama se
-//      pudo verificar contra una cuenta real en este entorno, ver
-//      docs/agente-voz/README.md §5) -- construirla ahora sería exactamente el tipo de
-//      "probablemente funciona" que ADR-006/007 prohíben.
+//      (agent-core `agents.ts`) -- las 5 tools ya existentes (housekeeping, mantenimiento,
+//      ticket de huésped -- incluye room service/F&B, WhatsApp, ROI), sin agregar
+//      ninguna tool de disponibilidad/reserva/cotización/cobro (límite de seguridad ya
+//      documentado en ese catálogo). `crear_ticket_huesped` (agregada en agent/voz-tool-
+//      room-service) es la MISMA tool de dominio que ya usan `routes/tickets.ts` (canal
+//      QR/staff) y el guardrail de menor no acompañado de `routes/agentes.ts` -- ninguna
+//      tool nueva de negocio, solo un tercer canal de entrada a una tool que ya existía.
+//      Sigue sin agregarse ninguna tool nueva de solo-lectura en esta tarea: la única
+//      candidata razonable (consultar el estado de una reserva/ticket propio) requeriría
+//      verificar de forma confiable que quien llama es ESE huésped -- este canal todavía
+//      no resuelve esa identidad (ninguna variable de sistema de ElevenLabs para el
+//      número de quien llama se pudo verificar contra una cuenta real en este entorno,
+//      ver docs/agente-voz/README.md §5) -- construirla ahora sería exactamente el tipo
+//      de "probablemente funciona" que ADR-006/007 prohíben.
 //   3. El gate del hotel para `recepcion_virtual` (`agent_config`, agentes.ts
 //      `resolveAgentConfig`) SIGUE APLICANDO aquí, igual que dentro de `AgentRunner`
 //      (runner.ts): mientras el gate sea "shadow" (default, BP-016), ninguna tool con
@@ -60,6 +64,7 @@ import { z } from "zod";
 import {
   AGENT_DEFINITIONS,
   buildToolContext,
+  createGuestTicketTool,
   createHousekeepingTaskTool,
   createMaintenanceTicketTool,
   createRegistrarEventoRoiTool,
@@ -174,12 +179,14 @@ function toolResult(body: Record<string, unknown>) {
 type VozToolName =
   | "crear-tarea-housekeeping"
   | "crear-ticket-mantenimiento"
+  | "crear-ticket-huesped"
   | "enviar-whatsapp-plantilla"
   | "registrar-evento-roi";
 
 const VOZ_TOOL_NAMES = new Set<VozToolName>([
   "crear-tarea-housekeeping",
   "crear-ticket-mantenimiento",
+  "crear-ticket-huesped",
   "enviar-whatsapp-plantilla",
   "registrar-evento-roi",
 ]);
@@ -191,6 +198,8 @@ function buildTool(toolName: VozToolName, db: DbClient): ToolDefinition<any> {
       return createHousekeepingTaskTool({ db });
     case "crear-ticket-mantenimiento":
       return createMaintenanceTicketTool({ db });
+    case "crear-ticket-huesped":
+      return createGuestTicketTool({ db });
     case "enviar-whatsapp-plantilla":
       return createSendWhatsappTemplateTool({ db, messaging: sharedWhatsappAdapter, simulated: true });
     case "registrar-evento-roi":
@@ -229,6 +238,15 @@ export function vozElevenlabsRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     const raw = await c.req.json().catch(() => ({}));
     const params = extractToolParams(raw);
     const requestId = toolCallId(raw, params);
+
+    // `crear_ticket_huesped` acepta `channel` en su schema (qr/staff/whatsapp/voz) --
+    // igual que `requestedBy` en el punto 4 del comentario de archivo (nunca "guest"
+    // porque no hay teléfono verificado), este webhook NUNCA confía en un `channel` que
+    // mandara el modelo: se fuerza a "voz" del lado del servidor sin importar qué haya
+    // en el cuerpo, porque ESTE webhook es por definición el canal de voz.
+    if (toolName === "crear-ticket-huesped") {
+      params.channel = "voz";
+    }
 
     const tool = buildTool(toolName, deps.engine.admin);
     const parsed = tool.inputSchema.safeParse(params);

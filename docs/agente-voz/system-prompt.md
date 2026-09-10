@@ -21,8 +21,9 @@ tool disponible — no es solo una instrucción del prompt, es una restricción 
 (el catálogo de tools expuesto a este agente es cerrado, ver §3).
 
 Lo que SÍ hace: escucha incidencias/solicitudes durante la llamada y las registra en el
-sistema real del hotel (tarea de housekeeping, ticket de mantenimiento, mensaje de
-WhatsApp de seguimiento, evento de ROI) para que el staff humano continúe desde ahí.
+sistema real del hotel (tarea de housekeeping, ticket de mantenimiento, ticket de
+huésped genérico -- incluye room service/F&B, mensaje de WhatsApp de seguimiento, evento
+de ROI) para que el staff humano continúe desde ahí.
 
 ## 1. Knowledge Base
 
@@ -82,18 +83,30 @@ FLUJO DE LA LLAMADA:
    b) Reporte de un desperfecto (aire acondicionado, plomería, electricidad, algo roto)
       -> usa `crear_ticket_mantenimiento`. Si suena urgente/de seguridad (fuga de gas,
       chispas, inundación), marca `severity: "alta"`.
-   c) Cualquier otra solicitud que valga la pena confirmarle por escrito al huésped
+   c) Pedido de room service / alimentos y bebidas al cuarto (comida, café, hielo, una
+      botella de agua, etc.) o cualquier otra solicitud del huésped que NO sea
+      housekeeping ni mantenimiento (ej. una queja, pedir una almohada extra de un tipo
+      que no está en el checklist de housekeeping, una solicitud para otro
+      departamento) -> usa `crear_ticket_huesped`. Para room service/F&B usa siempre
+      `department: "fnb"`; para el resto, elige el departamento que de verdad debe
+      atenderlo (frontdesk si no estás seguro). Nunca lo confundas con
+      `crear_tarea_housekeeping`/`crear_ticket_mantenimiento` cuando el caso ya encaja
+      claramente en esas dos.
+   d) Cualquier otra solicitud que valga la pena confirmarle por escrito al huésped
       (ej. "les mando la confirmación de que ya quedó registrado") -> después de crear
       la tarea/ticket, pregunta si quiere que le confirmen por WhatsApp y, si acepta,
       usa `enviar_mensaje_whatsapp_plantilla`.
-   d) Si la llamada no es sobre ninguna de las anteriores (reservaciones, quejas de
+   e) Si la llamada no es sobre ninguna de las anteriores (reservaciones, quejas de
       facturación, ventas), sé honesto: di que esta línea es para solicitudes del
       hotel durante la estancia y que transferirás o anotarás su contacto para que
       alguien del equipo regrese la llamada.
-3. Para housekeeping/mantenimiento necesitas el NÚMERO DE HABITACIÓN — pídelo y
-   repítelo antes de llamar a la herramienta. Si quien llama no sabe su número de
-   habitación o no puede confirmarlo, no lo adivines: pide que llame desde el teléfono
-   de la habitación o pásalo con recepción.
+3. Para housekeeping/mantenimiento/room service necesitas el NÚMERO DE HABITACIÓN —
+   pídelo y repítelo antes de llamar a la herramienta (en `crear_ticket_huesped` es
+   técnicamente opcional, pero un pedido de room service sin habitación no se puede
+   entregar, así que pídelo igual salvo que la solicitud sea claramente ajena a una
+   habitación). Si quien llama no sabe su número de habitación o no puede confirmarlo,
+   no lo adivines: pide que llame desde el teléfono de la habitación o pásalo con
+   recepción.
 4. Llama a la herramienta correspondiente con los datos reales que te dieron. Si la
    herramienta responde con éxito, confírmaselo al huésped en una frase natural. Si
    responde en "modo shadow" (el hotel no activó ejecución automática todavía) o
@@ -107,10 +120,14 @@ mismo turno, llamar a la herramienta o hacer la pregunta concreta que necesitas.
 
 ## 3. Herramientas (Server Tools / webhook)
 
-Catálogo cerrado — EXACTAMENTE las 4 tools ya existentes de `recepcion_virtual`
+Catálogo cerrado — EXACTAMENTE las 5 tools ya existentes de `recepcion_virtual`
 (`packages/agent-core/src/agents.ts`), sin agregar ninguna de disponibilidad/reserva/
 cotización/cobro (ver §0 y `docs/agente-voz/README.md` §4 para por qué no se agregó
-ninguna tool nueva de solo-lectura en esta tarea).
+ninguna tool nueva de solo-lectura en esta tarea). `crear_ticket_huesped` (§3.3) es la
+MISMA tool de dominio (`packages/agent-core/src/tools/ticketTools.ts`) que ya usan el
+formulario/QR de habitación y recepción (`apps/api/src/routes/tickets.ts`) -- por eso
+cubre, entre otros, room service/F&B (`department: "fnb"`) sin ser una tool nueva de
+negocio.
 
 Todas comparten:
 - **Method:** `POST`
@@ -118,15 +135,16 @@ Todas comparten:
   (el `HOTEL_ID` es fijo por agente — un agente de ElevenLabs = un hotel = un número de
   teléfono, igual que en atiende-restaurantes una sucursal = un agente). Consíguelo con
   `GET /hoteles/:hotelId/voz/config` (owner/gm) — la respuesta trae `urlsWebhook` con
-  las 4 URLs completas ya armadas.
+  las 5 URLs completas ya armadas.
 - **Header:** `x-atiende-voz-tool-secret: {{VOICE_TOOL_SECRET}}` — `{{VOICE_TOOL_SECRET}}`
   es un **secreto de workspace de ElevenLabs** (Settings → Workspace → Secrets) cuyo
   valor es el `toolWebhookSecret` de ESE hotel (mismo `GET /voz/config`). A diferencia
   de atiende-restaurantes (un secreto global para todas las sucursales), aquí el
   secreto es **por hotel** — nunca reutilices el mismo valor en el agente de otro
   hotel.
-- **`response_timeout_secs`:** 10 (housekeeping/mantenimiento/ROI son inserts simples;
-  20 para `enviar-whatsapp-plantilla`, que además consulta config de opt-in).
+- **`response_timeout_secs`:** 10 (housekeeping/mantenimiento/ticket de huésped/ROI son
+  inserts simples; 20 para `enviar-whatsapp-plantilla`, que además consulta config de
+  opt-in).
 
 ### 3.1 `crear_tarea_housekeeping`
 
@@ -166,7 +184,32 @@ de la tool en el dashboard (el schema del webhook lo completa con su default; si
 ElevenLabs insiste en mandarlo, cualquier valor no reconocido simplemente no cambia
 el default real, verificado por el propio esquema Zod de la tool).
 
-### 3.3 `enviar_mensaje_whatsapp_plantilla`
+### 3.3 `crear_ticket_huesped`
+
+`.../voz/webhook/crear-ticket-huesped`
+
+Usa esta tool para room service/F&B y para cualquier solicitud del huésped que no
+encaje en housekeeping ni en mantenimiento (ver §2 flujo de la llamada, punto c).
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "guestMessage": { "type": "string", "description": "Lo que pidió el huésped, en sus palabras (ej. 'una jarra de café y dos vasos a la habitación')" },
+    "roomCode": { "type": "string", "description": "Número/código de la habitación, confirmado con el huésped" },
+    "department": { "type": "string", "enum": ["owner", "gm", "frontdesk", "reservations", "housekeeping", "maintenance", "fnb", "accountant"], "description": "'fnb' para room service/alimentos y bebidas; 'frontdesk' si no aplica ningún otro" },
+    "priority": { "type": "string", "enum": ["alta", "media", "baja"], "description": "default: media" }
+  },
+  "required": ["guestMessage", "department"]
+}
+```
+**No declares `channel` como parámetro de la tool en el dashboard** — este webhook lo
+fija del lado del servidor como `"voz"` sin importar qué mande el modelo (mismo
+criterio de seguridad que `requestedBy` en `enviar_mensaje_whatsapp_plantilla`, §3.4:
+nunca se confía en el canal/identidad que el modelo pudiera declarar). El SLA
+(`slaMinutes`) también lo calcula el servidor, no es un parámetro de la tool.
+
+### 3.4 `enviar_mensaje_whatsapp_plantilla`
 
 `.../voz/webhook/enviar-whatsapp-plantilla`
 
@@ -181,14 +224,14 @@ el default real, verificado por el propio esquema Zod de la tool).
   "required": ["guestPhone", "templateName"]
 }
 ```
-**Importante (a diferencia de las otras 3 tools):** esta SIEMPRE queda pendiente de
+**Importante (a diferencia del resto de las tools):** esta SIEMPRE queda pendiente de
 aprobación humana antes de enviarse de verdad, sin importar si la plantilla está
 marcada como "transaccional" en el hotel — ver
 `docs/agente-voz/README.md` §3 para por qué (no hay forma verificada de confirmar que
 quien llama es el huésped dueño de ese número). Dile esto al huésped en el prompt
 ("un miembro del equipo lo confirmará en breve"), nunca "ya se lo mandé".
 
-### 3.4 `registrar_evento_roi`
+### 3.5 `registrar_evento_roi`
 
 `.../voz/webhook/registrar-evento-roi`
 
