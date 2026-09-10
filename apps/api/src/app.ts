@@ -10,6 +10,7 @@ import { FakeStripeAdapter } from "@atiende-hoteles/mcp-payments";
 import { DualPacCfdiPort, FakeFinkokAdapter, FakeSwSapienAdapter } from "@atiende-hoteles/mcp-cfdi";
 import { FakeEmailAdapter, dbEmailOutboxSink } from "@atiende-hoteles/email";
 import { FakeBillingAdapter } from "@atiende-hoteles/mcp-billing";
+import { FakeOutboundTaskSyncAdapter, OutboundTaskSyncGateway } from "@atiende-hoteles/mcp-outbound";
 import { authRoutes } from "./routes/auth.ts";
 import { authGoogleRoutes } from "./routes/auth-google.ts";
 import { registroRoutes } from "./routes/registro.ts";
@@ -43,6 +44,7 @@ import { housekeepingRoutes } from "./routes/housekeeping.ts";
 import { mantenimientoRoutes } from "./routes/mantenimiento.ts";
 import { ticketsRoutes } from "./routes/tickets.ts";
 import { reputacionRoutes } from "./routes/reputacion.ts";
+import { pmsOutboundConfigRoutes } from "./routes/pmsOutboundConfig.ts";
 import { asistenciaRoutes } from "./routes/asistencia.ts";
 import { aprobacionesRoutes } from "./routes/aprobaciones.ts";
 import { aprobacionesWhatsappRoutes } from "./routes/aprobacionesWhatsapp.ts";
@@ -110,6 +112,16 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   // un `FakeEmailAdapter` respaldado por la tabla `email_outbox` (migración 0094) --
   // mismo mecanismo de conmutación honesta que `payments`/`cfdi` arriba (nunca se
   // finge un correo enviado; `FakeEmailAdapter` etiqueta cada mensaje `simulated: true`).
+  // Conector outbound PMS-enterprise (docs/integraciones/conector-pms-enterprise.md):
+  // sin `deps.outboundTaskSync` (pruebas, la mayoría de despliegues sin un hotel de
+  // cadena conectado todavía), `FakeOutboundTaskSyncAdapter` -- mismo mecanismo de
+  // conmutación honesta que `payments`/`cfdi`/`billing` arriba. El gateway SIEMPRE usa
+  // `engine.admin` (sin RLS a propósito -- decidir si reenviar una tarea es una decisión
+  // interna del sistema, no del rol del staff que la disparó, ver
+  // `@atiende-hoteles/mcp-outbound` `OutboundTaskSyncGateway`).
+  const outboundTaskSync = deps.outboundTaskSync ?? new FakeOutboundTaskSyncAdapter();
+  const outboundTaskSyncGateway = new OutboundTaskSyncGateway(deps.engine.admin, outboundTaskSync);
+
   const resolvedDeps: ResolvedAppDeps = {
     ...deps,
     payments: deps.payments ?? new FakeStripeAdapter(),
@@ -119,6 +131,8 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
     // único por proceso (misma razón que payments/cfdi arriba: su idempotencia/replay
     // guard de webhook vive en memoria).
     billing: deps.billing ?? new FakeBillingAdapter(),
+    outboundTaskSync,
+    outboundTaskSyncGateway,
   };
 
   // REQ-SEG (auditoria-1/seguridad.md [MEDIO] CORS): lista blanca explícita por
@@ -278,18 +292,22 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", fraudeRoutes(deps));
   app.route("/", pedidosFnbRoutes(deps));
   app.route("/", checkinOnlineRoutes(deps));
-  app.route("/", housekeepingRoutes(deps));
-  app.route("/", mantenimientoRoutes(deps));
-  app.route("/", ticketsRoutes(deps));
-  app.route("/", reputacionRoutes(deps));
+  // H18 · conector-pms-enterprise: estas 4 rutas crean housekeeping_task/
+  // maintenance_ticket/guest_ticket -- necesitan `resolvedDeps.outboundTaskSyncGateway`
+  // (`ResolvedAppDeps`, no `AppDeps`) para engancharse al conector outbound.
+  app.route("/", housekeepingRoutes(resolvedDeps));
+  app.route("/", mantenimientoRoutes(resolvedDeps));
+  app.route("/", ticketsRoutes(resolvedDeps));
+  app.route("/", reputacionRoutes(resolvedDeps));
+  app.route("/", pmsOutboundConfigRoutes(deps));
   app.route("/", asistenciaRoutes(deps));
   // REQ-UX-006: webhook público (sin sesión de staff) montado ANTES de la ruta
   // autenticada -- mismo criterio de orden que routes/mensajeria.ts.
   app.route("/", aprobacionesWhatsappRoutes(deps));
   app.route("/", aprobacionesRoutes(deps));
   app.route("/", mensajeriaRoutes(deps));
-  app.route("/", agentesRoutes(deps));
-  app.route("/", vozElevenlabsRoutes(deps));
+  app.route("/", agentesRoutes(resolvedDeps));
+  app.route("/", vozElevenlabsRoutes(resolvedDeps));
   app.route("/", roiRoutes(deps));
   app.route("/", privacidadRoutes(deps));
   app.route("/", consentimientoRoutes(deps));

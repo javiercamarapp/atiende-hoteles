@@ -3,6 +3,7 @@ import type { PaymentProviderPort } from "@atiende-hoteles/mcp-payments";
 import type { CfdiPort } from "@atiende-hoteles/mcp-cfdi";
 import type { EmailPort } from "@atiende-hoteles/email";
 import type { BillingProviderPort } from "@atiende-hoteles/mcp-billing";
+import type { OutboundTaskSyncGateway, OutboundTaskSyncPort } from "@atiende-hoteles/mcp-outbound";
 import type { AppEnv } from "./env.ts";
 import type { Logger } from "./logger.ts";
 import type { MetricsRegistry } from "./metrics.ts";
@@ -34,17 +35,31 @@ export interface AppDeps {
    *  Conekta, ver README de packages/mcp-servers/billing) -- si se omite, `createApp`
    *  instancia un `FakeBillingAdapter` único (mismo criterio que `payments`/`cfdi`). */
   billing?: BillingProviderPort;
+  /** Conector outbound PMS-enterprise (packages/mcp-servers/outbound,
+   *  docs/integraciones/conector-pms-enterprise.md): `OutboundTaskSyncPort` real
+   *  (mecanismo de envío en sí, sin credencial global -- la credencial es por hotel, ver
+   *  `hotel_pms_outbound_config`) -- si se omite, `createApp` instancia
+   *  `FakeOutboundTaskSyncAdapter` (mismo mecanismo de conmutación honesta que
+   *  `payments`/`cfdi`/`billing` arriba). */
+  outboundTaskSync?: OutboundTaskSyncPort;
 }
 
-/** Vista de `AppDeps` con `payments`/`cfdi`/`emailPort`/`billing` ya resueltos -- lo que
- *  reciben los route factories que los usan (folios/night-audit/cfdi/registro/correo/
- *  auth-google/suscripcion), para no repetir el `??` de default en cada uno. `createApp`
+/** Vista de `AppDeps` con `payments`/`cfdi`/`emailPort`/`billing`/`outboundTaskSync` ya
+ *  resueltos -- lo que reciben los route factories que los usan (folios/night-audit/
+ *  cfdi/registro/correo/auth-google/suscripcion/housekeeping/mantenimiento/tickets/
+ *  reputacion/voz/agentes), para no repetir el `??` de default en cada uno. `createApp`
  *  (app.ts) es el único lugar que construye esto. */
 export interface ResolvedAppDeps extends AppDeps {
   payments: PaymentProviderPort;
   cfdi: CfdiPort;
   emailPort: EmailPort;
   billing: BillingProviderPort;
+  outboundTaskSync: OutboundTaskSyncPort;
+  /** `OutboundTaskSyncGateway` ya armado con `engine.admin` (sin RLS a propósito, ver
+   *  ese paquete) + `outboundTaskSync` -- lo que las tools de agent-core reciben como
+   *  `deps.outboundSync` (`OutboundTaskSyncLike`, forma estructural mínima). Un solo
+   *  gateway por proceso, igual que el resto de adaptadores compartidos de arriba. */
+  outboundTaskSyncGateway: OutboundTaskSyncGateway;
 }
 
 export type Variables = {

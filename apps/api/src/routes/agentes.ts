@@ -59,6 +59,7 @@ import {
   type AgentTraceEvent,
   type FakeStep,
   type LlmProvider,
+  type OutboundTaskSyncLike,
   type ToolDefinition,
 } from "@atiende-hoteles/agent-core";
 import type { DbClient } from "@atiende-hoteles/db";
@@ -74,7 +75,7 @@ import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
 import type { HotelRole } from "../domain/roles.ts";
-import type { AppDeps, HonoEnvBindings } from "../types.ts";
+import type { HonoEnvBindings, ResolvedAppDeps } from "../types.ts";
 
 // .strict(): un intento de mandar "hotelId"/"gate"/"orgId" en el cuerpo se RECHAZA por
 // campo desconocido en vez de ignorarse en silencio -- defensa explícita además de que
@@ -147,15 +148,18 @@ async function tieneCorridasEsteMes(db: DbClient, hotelId: string, agentName: st
   return Number(rows[0]?.count ?? 0) > 0;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- catálogo heterogéneo: cada tool trae su propio TInput, igual que buildToolExecutors() en lib/agentTools.ts.
-function buildToolForName(name: string, deps: { db: DbClient; agentName: string }): ToolDefinition<any> {
+function buildToolForName(
+  name: string,
+  deps: { db: DbClient; agentName: string; outboundSync: OutboundTaskSyncLike },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- catálogo heterogéneo: cada tool trae su propio TInput, igual que buildToolExecutors() en lib/agentTools.ts.
+): ToolDefinition<any> {
   switch (name) {
     case "crear_tarea_housekeeping":
-      return createHousekeepingTaskTool({ db: deps.db, messaging: sharedWhatsappAdapter, simulated: true });
+      return createHousekeepingTaskTool({ db: deps.db, messaging: sharedWhatsappAdapter, simulated: true, outboundSync: deps.outboundSync });
     case "crear_ticket_mantenimiento":
-      return createMaintenanceTicketTool({ db: deps.db, messaging: sharedWhatsappAdapter, simulated: true });
+      return createMaintenanceTicketTool({ db: deps.db, messaging: sharedWhatsappAdapter, simulated: true, outboundSync: deps.outboundSync });
     case "crear_ticket_huesped":
-      return createGuestTicketTool({ db: deps.db, messaging: sharedWhatsappAdapter, simulated: true });
+      return createGuestTicketTool({ db: deps.db, messaging: sharedWhatsappAdapter, simulated: true, outboundSync: deps.outboundSync });
     case "enviar_mensaje_whatsapp_plantilla":
       return createSendWhatsappTemplateTool({ db: deps.db, messaging: sharedWhatsappAdapter, simulated: true });
     case "registrar_evento_roi":
@@ -168,10 +172,10 @@ function buildToolForName(name: string, deps: { db: DbClient; agentName: string 
   }
 }
 
-function buildToolRegistry(def: AgentDefinition, db: DbClient): ToolRegistry {
+function buildToolRegistry(def: AgentDefinition, db: DbClient, outboundSync: OutboundTaskSyncLike): ToolRegistry {
   const registry = new ToolRegistry();
   for (const name of def.toolNames) {
-    registry.register(buildToolForName(name, { db, agentName: def.name }));
+    registry.register(buildToolForName(name, { db, agentName: def.name, outboundSync }));
   }
   return registry;
 }
@@ -258,7 +262,7 @@ function buildDemoScript(agentName: string, roomCode: string): FakeStep[] {
   ];
 }
 
-export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
+export function agentesRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
   const app = new Hono<HonoEnvBindings>();
 
   app.use("/hoteles/:hotelId/agentes*", authMiddleware(deps.env), dbSession(deps.engine), requireHotelMembership("hotelId"));
@@ -367,7 +371,12 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         { orgId, hotelId, actor: { type: "staff", id: c.get("userId") }, requestId: c.get("requestId") },
         createRunBudget({}),
       );
-      const ticketResult = await createGuestTicketTool({ db, messaging: sharedWhatsappAdapter, simulated: true }).run(ticketCtx, {
+      const ticketResult = await createGuestTicketTool({
+        db,
+        messaging: sharedWhatsappAdapter,
+        simulated: true,
+        outboundSync: deps.outboundTaskSyncGateway,
+      }).run(ticketCtx, {
         guestMessage: body.mensaje,
         department: "frontdesk",
         priority: "alta",
@@ -482,7 +491,7 @@ export function agentesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       });
     }
 
-    const tools = buildToolRegistry(def, db);
+    const tools = buildToolRegistry(def, db, deps.outboundTaskSyncGateway);
     const approvalQueue = createTransactionalTemplateApprovalQueue(
       new PostgresApprovalQueue(db),
       transactionalTemplateCheckFromDb(db),
