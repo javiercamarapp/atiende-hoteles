@@ -881,4 +881,82 @@ describe("AgentRunner", () => {
       expect(result.message).not.toContain("500");
     });
   });
+
+  describe("Patrón Likida/atiende.ai #7: 'nunca termina sin preguntar' (completionStatusToolName)", () => {
+    function consultarEstadoTool(completo: boolean, camposFaltantes: string[] = []) {
+      return defineTool({
+        name: "consultar_estado_onboarding",
+        description: "consulta el estado",
+        inputSchema: z.object({}),
+        effect: "read",
+        needsApproval: false,
+        run: () => ({ ok: true, summary: completo ? "completo" : "incompleto", data: { completo, camposFaltantes } }),
+      });
+    }
+
+    it("el modelo cierra 'completado' SIN llamar a la tool de estado: se bloquea con el mensaje genérico", async () => {
+      const provider = new FakeProvider([{ kind: "final", text: "¡Listo, todo quedó configurado!" }]);
+      const tools = new ToolRegistry();
+      tools.register(consultarEstadoTool(true));
+      const events: { kind: string }[] = [];
+      const runner = new AgentRunner(
+        baseOptions({ provider, tools, completionStatusToolName: "consultar_estado_onboarding", onTrace: (e) => events.push(e) }),
+      );
+      const result = await runner.run(ctxFor(), "ya terminé");
+      expect(result.status).toBe("completado");
+      expect(result.message).not.toBe("¡Listo, todo quedó configurado!");
+      expect(events.filter((e) => e.kind === "completion_status_blocked")).toHaveLength(1);
+    });
+
+    it("el modelo consulta el estado, que reporta completo=true: el mensaje de cierre pasa tal cual", async () => {
+      const tools = new ToolRegistry();
+      tools.register(consultarEstadoTool(true));
+      const provider = new FakeProvider([
+        { kind: "tool_calls", calls: [{ name: "consultar_estado_onboarding", input: {} }] },
+        { kind: "final", text: "¡Perfecto, tu hotel ya está listo para operar!" },
+      ]);
+      const runner = new AgentRunner(baseOptions({ provider, tools, completionStatusToolName: "consultar_estado_onboarding" }));
+      const result = await runner.run(ctxFor(), "ya terminé");
+      expect(result.message).toBe("¡Perfecto, tu hotel ya está listo para operar!");
+    });
+
+    it("el modelo consulta el estado, que reporta un campo faltante: el mensaje se reemplaza por una pregunta que lo nombra", async () => {
+      const tools = new ToolRegistry();
+      tools.register(consultarEstadoTool(false, ["la zona horaria de tu hotel"]));
+      const provider = new FakeProvider([
+        { kind: "tool_calls", calls: [{ name: "consultar_estado_onboarding", input: {} }] },
+        { kind: "final", text: "¡Listo, ya terminamos!" },
+      ]);
+      const runner = new AgentRunner(baseOptions({ provider, tools, completionStatusToolName: "consultar_estado_onboarding" }));
+      const result = await runner.run(ctxFor(), "ya terminé");
+      expect(result.message).not.toContain("ya terminamos");
+      expect(result.message).toContain("la zona horaria de tu hotel");
+    });
+
+    it("sin completionStatusToolName configurado (todos los demás agentes), el comportamiento no cambia", async () => {
+      const provider = new FakeProvider([{ kind: "final", text: "listo" }]);
+      const runner = new AgentRunner(baseOptions({ provider }));
+      const result = await runner.run(ctxFor(), "hola");
+      expect(result.message).toBe("listo");
+    });
+
+    it("un status distinto de 'completado' (ej. esperando_aprobacion) nunca pasa por este guard", async () => {
+      const tools = new ToolRegistry();
+      tools.register(
+        defineTool({
+          name: "cerrar_folio",
+          description: "cierra el folio",
+          inputSchema: z.object({}),
+          effect: "money",
+          needsApproval: true,
+          run: () => ({ ok: true, summary: "cerrado" }),
+        }),
+      );
+      const provider = new FakeProvider([{ kind: "tool_calls", calls: [{ name: "cerrar_folio", input: {} }] }]);
+      const runner = new AgentRunner(baseOptions({ provider, tools, completionStatusToolName: "consultar_estado_onboarding" }));
+      const result = await runner.run(ctxFor(), "cierra mi cuenta");
+      expect(result.status).toBe("esperando_aprobacion");
+      expect(result.message).toContain("Esperando aprobacion humana");
+    });
+  });
 });

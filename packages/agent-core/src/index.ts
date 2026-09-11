@@ -5,6 +5,7 @@ export * from "./budget.ts";
 export * from "./context.ts";
 export * from "./redact.ts";
 export * from "./priceHallucinationGuard.ts";
+export * from "./completionStatusGuard.ts";
 export * from "./tool.ts";
 export * from "./approval.ts";
 export * from "./sql.ts";
