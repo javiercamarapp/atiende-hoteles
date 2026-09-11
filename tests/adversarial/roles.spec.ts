@@ -71,6 +71,58 @@ describe("adversarial: matriz de roles (REQ-TEN-003) y escalada", () => {
     expect(body.code).toBe("forbidden");
   });
 
+  // Patrón Likida/atiende.ai #6: mitad faltante del patrón de autorización por rol --
+  // antes de este cambio, el 403 de arriba (housekeeping leyendo un folio) no dejaba
+  // NINGÚN rastro en audit_log ni en el logger estructurado (app.ts `onError` solo
+  // registraba `status >= 500`). Esta prueba verifica extremo a extremo (API real +
+  // Postgres real) que ahora sí queda una fila `access.denied`, bajo el tenant REAL del
+  // hotel objetivo (no el que el actor reclama en su JWT), con el actor/ruta/motivo.
+  it("un 403 de assertRole (housekeeping leyendo un folio) queda auditado en audit_log como 'access.denied'", async () => {
+    const hotelA = fixture.seed.hotels[0]!;
+    const hk = hotelA.staff.find((s) => s.role === "housekeeping")!;
+    const token = await loginAs(fixture.app, hk.email);
+
+    const before = await fixture.engine.admin.query<{ count: string }>(
+      "select count(*)::text as count from public.audit_log where hotel_id = $1 and action = 'access.denied';",
+      [hotelId],
+    );
+    const countBefore = Number(before.rows[0]!.count);
+
+    const res = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}`, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(res.status).toBe(403);
+
+    const { rows } = await fixture.engine.admin.query<{
+      tenant_id: string;
+      hotel_id: string;
+      actor_user_id: string;
+      action: string;
+      entity_type: string;
+      payload: { route: string; method: string; reason: string };
+    }>(
+      `select tenant_id, hotel_id, actor_user_id, action, entity_type, payload
+       from public.audit_log
+       where hotel_id = $1 and action = 'access.denied'
+       order by created_at desc limit 1;`,
+      [hotelId],
+    );
+    expect(rows).toHaveLength(1);
+    const row = rows[0]!;
+    expect(row.tenant_id).toBe(fixture.seed.orgId); // tenant REAL del hotel, no uno inventado.
+    expect(row.actor_user_id).toBe(hk.id);
+    expect(row.entity_type).toBe("route");
+    expect(row.payload.route).toBe(`/hoteles/${hotelId}/folios/${folioId}`);
+    expect(row.payload.method).toBe("GET");
+    expect(row.payload.reason).toMatch(/housekeeping/);
+
+    const after = await fixture.engine.admin.query<{ count: string }>(
+      "select count(*)::text as count from public.audit_log where hotel_id = $1 and action = 'access.denied';",
+      [hotelId],
+    );
+    expect(Number(after.rows[0]!.count)).toBe(countBefore + 1); // exactamente una fila nueva, no un duplicado.
+  });
+
   it.each(MONEY_ROLES)("rol %s SÍ puede leer un folio de su hotel", async (role) => {
     const hotelA = fixture.seed.hotels[0]!;
     const staff = hotelA.staff.find((s) => s.role === role)!;

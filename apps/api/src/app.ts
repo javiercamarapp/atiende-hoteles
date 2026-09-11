@@ -243,7 +243,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
     }
   });
 
-  app.onError((err, c) => {
+  app.onError(async (err, c) => {
     const requestId = c.get("requestId") ?? "sin-id";
     const { status, body } = toErrorBody(err, requestId);
     if (err instanceof Error && "headers" in err) {
@@ -252,6 +252,43 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
     }
     if (status >= 500) {
       deps.logger.error({ request_id: requestId, err: err instanceof Error ? err.message : String(err) }, "error_interno");
+    }
+    // Patrón Likida/atiende.ai #6: mitad faltante del patrón de autorización por rol --
+    // `requireHotelMembership`/`assertRole` (middleware.ts) ya lanzan 403 explícito,
+    // pero hasta este cambio NINGÚN 403 quedaba auditado (el bloque de arriba solo
+    // cubre `status >= 500`). Un único punto central (aquí, no en cada uno de los ~100
+    // call sites de `assertRole`) para no tener que tocar cada ruta: se dispara ÚNICO
+    // punto de entrada real de un 403 hoy, `ApiError` con `status === 403`. `db` (el
+    // session RLS del request, `c.get("db")`) YA fue rollback-eado y su cliente
+    // devuelto al pool por `withAppSession` (packages/db/src/engines.ts) en cuanto el
+    // `throw` salió de su callback -- reutilizarlo aquí sería un cliente liberado, por
+    // eso se abre una sesión NUEVA y corta (`deps.engine.withAppSession`) solo para
+    // esta escritura. `record_access_denied()` (migración 0130) resuelve
+    // hotel_id -> tenant_id real del lado del servidor (SECURITY DEFINER) para que la
+    // fila quede bajo el tenant DUEÑO del hotel objetivo (visible para su staff), no
+    // bajo el tenant que el actor reclama en su JWT -- el caso más común de 403
+    // (`requireHotelMembership`) es justo cuando el actor NO pertenece a ese hotel.
+    if (status === 403) {
+      const hotelId = c.req.param("hotelId");
+      if (hotelId) {
+        try {
+          await deps.engine.withAppSession({ userId: c.get("userId") ?? null }, async (session) => {
+            await session.query("select public.record_access_denied($1, $2, $3, $4);", [
+              hotelId,
+              c.req.path,
+              c.req.method,
+              err instanceof Error ? err.message : String(err),
+            ]);
+          });
+        } catch (auditErr) {
+          // Nunca deja que un fallo AUDITANDO el 403 oculte el 403 real que el cliente
+          // debe recibir -- se registra y se continúa devolviendo la respuesta normal.
+          deps.logger.error(
+            { request_id: requestId, err: auditErr instanceof Error ? auditErr.message : String(auditErr) },
+            "fallo_auditoria_acceso_denegado",
+          );
+        }
+      }
     }
     // La alerta estructurada del camino del dinero (`nivel: "alerta"`) se emite una
     // sola vez, en el middleware general de abajo (después de `await next()`): ese
