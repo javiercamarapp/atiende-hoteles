@@ -1,0 +1,10 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-req-ab-010[39m
+
+ [32m✓[39m tests/integration/ab/merma.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 5931[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m11 passed[39m[22m[90m (11)[39m
+[2m   Start at [22m 00:44:59
+[2m   Duration [22m 10.64s[2m (transform 2.10s, setup 0ms, collect 3.98s, tests 5.93s, environment 0ms, prepare 202ms)[22m
+
