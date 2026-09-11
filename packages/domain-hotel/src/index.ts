@@ -296,6 +296,21 @@ export {
   debeBloquearContactoPorCanalAjenoALaOta,
   type ReservaContactoOtaInput,
 } from "./reservas/contactoOtaEnmascarado.ts";
+export {
+  LOYALTY_REDEEMABLE_BENEFIT_TYPES,
+  LOYALTY_REDEMPTION_CHANNELS,
+  evaluateLoyaltyRedemption,
+  assertValidLateCheckoutHours,
+  assertValidFnbCreditAmount,
+  assertValidReconocimientoTexto,
+  type LoyaltyRedeemableBenefitType,
+  type LoyaltyRedemptionChannel,
+  type LoyaltyBenefitsConfig,
+  type LoyaltyRedemptionRejectReason,
+  type LoyaltyRedemptionSnapshot,
+  type EvaluateLoyaltyRedemptionInput,
+  type EvaluateLoyaltyRedemptionResult,
+} from "./reservas/programaLealtad.ts";
 // H12c merge (integrador) · 2026-09-08: `./forecast/index.ts` (REQ-AGT-012, commit b1f3d47
 // en origin/main) sí existe con sus 2 archivos completos, pero nunca se re-exportó desde
 // este barrel -- `tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts` importa
