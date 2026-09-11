@@ -40,6 +40,7 @@ import { clubSegundoViajeRoutes } from "./routes/clubSegundoViaje.ts";
 import { fraudeRoutes } from "./routes/fraude.ts";
 import { pedidosFnbRoutes } from "./routes/pedidosFnb.ts";
 import { fnbOfflineQueueRoutes } from "./routes/fnbOfflineQueue.ts";
+import { capturaCargosRoutes } from "./routes/capturaCargos.ts";
 import { checkinOnlineRoutes } from "./routes/checkinOnline.ts";
 import { housekeepingRoutes } from "./routes/housekeeping.ts";
 import { mantenimientoRoutes } from "./routes/mantenimiento.ts";
@@ -293,6 +294,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", fraudeRoutes(deps));
   app.route("/", pedidosFnbRoutes(deps));
   app.route("/", fnbOfflineQueueRoutes(resolvedDeps));
+  app.route("/", capturaCargosRoutes(resolvedDeps));
   app.route("/", checkinOnlineRoutes(deps));
   // H18 · conector-pms-enterprise: estas 4 rutas crean housekeeping_task/
   // maintenance_ticket/guest_ticket -- necesitan `resolvedDeps.outboundTaskSyncGateway`

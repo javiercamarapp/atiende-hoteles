@@ -304,6 +304,18 @@ export {
   type FnbOfflineQueueValidation,
 } from "./fnbOfflineQueueGuard.ts";
 export {
+  ROOM_CHARGE_CAPTURE_SOURCES,
+  validateRoomChargeCaptureAttempt,
+  buildChargeCaptureReport,
+  type RoomChargeCaptureSource,
+  type RoomChargeCaptureStatus,
+  type RoomChargeCaptureAttemptInput,
+  type RoomChargeCaptureValidation,
+  type RoomChargeCaptureAttemptRecord,
+  type ChargeCaptureReportOptions,
+  type ChargeCaptureReportResult,
+} from "./chargeCaptureReport.ts";
+export {
   FRAUD_PATTERNS,
   recipientRolesForPattern,
   detectDiscountOutsidePolicy,

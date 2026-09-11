@@ -30,6 +30,9 @@ export interface HotelMoneyConfig {
   dsaPerNight: number;
   stateCode: string;
   rfcEmisor: string | null;
+  /** REQ-AB-012/H10-020: umbral objetivo de tasa de captura de cargos (0.995 = 99.5%
+   *  por defecto), parametrizado por hotel -- migración 0131. */
+  chargeCaptureRateTarget: number;
 }
 
 export async function loadHotelMoneyConfig(db: DbClient, hotelId: string): Promise<HotelMoneyConfig> {
@@ -40,8 +43,10 @@ export async function loadHotelMoneyConfig(db: DbClient, hotelId: string): Promi
     dsa_per_night: string;
     state_code: string;
     rfc_emisor: string | null;
+    charge_capture_rate_target: string;
   }>(
-    "select iva_rate, ish_rate, discount_threshold, dsa_per_night, state_code, rfc_emisor from public.hotel_tax_config where hotel_id = $1;",
+    `select iva_rate, ish_rate, discount_threshold, dsa_per_night, state_code, rfc_emisor, charge_capture_rate_target
+     from public.hotel_tax_config where hotel_id = $1;`,
     [hotelId],
   );
   const row = rows[0];
@@ -57,6 +62,7 @@ export async function loadHotelMoneyConfig(db: DbClient, hotelId: string): Promi
     dsaPerNight: Number(row.dsa_per_night),
     stateCode: row.state_code,
     rfcEmisor: row.rfc_emisor,
+    chargeCaptureRateTarget: Number(row.charge_capture_rate_target),
   };
 }
 
