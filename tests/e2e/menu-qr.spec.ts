@@ -115,8 +115,12 @@ test("menú QR con video: reglas de all-inclusive/day-pass, alérgenos multiling
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ email: "fnb@hotel-demo-centro.demo", password: "atiende-dev-2026" }),
     });
-    expect(loginRes.status, await loginRes.text()).toBe(200);
-    const session = (await loginRes.json()) as { token: string; hoteles: { id: string; nombre: string }[] };
+    // No usar `.text()` para el mensaje de `expect` y luego `.json()` sobre la misma
+    // `Response`: el cuerpo solo puede leerse una vez (`TypeError: Body is unusable:
+    // Body has already been read`) -- se lee una sola vez como texto y se reusa.
+    const loginBody = await loginRes.text();
+    expect(loginRes.status, loginBody).toBe(200);
+    const session = JSON.parse(loginBody) as { token: string; hoteles: { id: string; nombre: string }[] };
     const hotelId = session.hoteles.find((h) => h.nombre === "Hotel Demo Centro")!.id;
     const auth = { authorization: `Bearer ${session.token}`, "content-type": "application/json" };
 
@@ -154,16 +158,18 @@ test("menú QR con video: reglas de all-inclusive/day-pass, alérgenos multiling
       headers: auth,
       body: JSON.stringify({ tipoUbicacion: "mesa", numeroFisico: 7 }),
     });
-    expect(mesaRes.status, await mesaRes.text()).toBe(201);
-    const mesa = (await mesaRes.json()) as { locationCode: string };
+    const mesaBody = await mesaRes.text();
+    expect(mesaRes.status, mesaBody).toBe(201);
+    const mesa = JSON.parse(mesaBody) as { locationCode: string };
 
     const camastroRes = await fetch(`http://localhost:${apiPort}/hoteles/${hotelId}/menu-qr/ubicaciones`, {
       method: "POST",
       headers: auth,
       body: JSON.stringify({ tipoUbicacion: "camastro", numeroFisico: 3 }),
     });
-    expect(camastroRes.status, await camastroRes.text()).toBe(201);
-    const camastro = (await camastroRes.json()) as { locationCode: string };
+    const camastroBody = await camastroRes.text();
+    expect(camastroRes.status, camastroBody).toBe(201);
+    const camastro = JSON.parse(camastroBody) as { locationCode: string };
 
     // Verificación literal del criterio de aceptación: "2 QR distintos -> 2
     // location_code distintos".

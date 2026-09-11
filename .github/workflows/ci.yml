@@ -287,8 +287,16 @@ jobs:
       # push/PR, y falla el job (bloqueante) si encuentra un hallazgo real. Verificación
       # manual previa (repo real, 0 hallazgos; y que SÍ bloquea un secreto de prueba
       # inyectado): docs/logs/REQ-SEG-012/.
+      #
+      # `GITHUB_TOKEN` es obligatorio desde una actualización de gitleaks-action@v2:
+      # sin él, el job falla de inmediato en el evento `pull_request` con "GITHUB_TOKEN
+      # is now required to scan pull requests" -- ANTES de correr gitleaks siquiera (no
+      # es un hallazgo de secreto real, es un requisito de la action; confirmado en el
+      # log del job fallido de este PR). En el evento `push` no se requiere, por eso ese
+      # job sí pasaba.
       - name: gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_CONFIG: .gitleaks.toml
 
