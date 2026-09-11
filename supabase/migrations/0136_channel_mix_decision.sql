@@ -1,4 +1,4 @@
--- ORIGEN: packages/db/migrations/0130_channel_mix_decision.sql sha256:6ddc825e54d41786e56182080a3e20f9aaebe0b5f05b4e3d7cb2089013dd8e22
+-- ORIGEN: packages/db/migrations/0136_channel_mix_decision.sql sha256:6ddc825e54d41786e56182080a3e20f9aaebe0b5f05b4e3d7cb2089013dd8e22
 -- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
 -- nuevo el script tras cambiar la migración fuente.
 
