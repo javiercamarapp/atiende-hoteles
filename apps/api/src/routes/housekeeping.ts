@@ -19,8 +19,11 @@ import {
   evaluateLinenCountDeviation,
   DEFAULT_LINEN_DEVIATION_THRESHOLD_PCT,
   LinenOptOutMessageBlamesGuestError,
+  HousekeepingReportError,
+  assertValidTargetReadyTime,
 } from "@atiende-hoteles/domain-hotel";
 import { sharedWhatsappAdapter, whatsappAdapterSimulated } from "../lib/messaging.ts";
+import { generateHousekeepingDailyReport, persistHousekeepingDailyReport } from "../lib/housekeepingDailyReport.ts";
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
@@ -80,6 +83,8 @@ const inspeccionarSchema = z.object({
   nota: z.string().trim().max(500).optional(),
 });
 const fueraDeServicioSchema = z.object({ fueraDeServicio: z.boolean() });
+const configSchema = z.object({ targetReadyTime: z.string().trim().min(1).max(8) });
+const generarReporteSchema = z.object({ fecha: z.string().regex(FECHA_RE) });
 
 // REQ-HK-003: el set estándar de 6 fotos (BP-075/H11-004) más los ítems del checklist
 // propio de la tarea que quien sube evidencia declara haber atendido. `tipo` no se
@@ -379,10 +384,11 @@ export function housekeepingRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings>
 
     const { rows } = await db.query<{ id: string; room_id: string }>(
       `update public.housekeeping_task
-       set inspected_by = $1, inspected_at = now(), notes = coalesce($2, notes), updated_at = now()
-       where id = $3 and hotel_id = $4
+       set inspected_by = $1, inspected_at = now(), notes = coalesce($2, notes),
+           inspection_result = $3, updated_at = now()
+       where id = $4 and hotel_id = $5
        returning id, room_id;`,
-      [c.get("userId"), body.nota ?? null, taskId, hotelId],
+      [c.get("userId"), body.nota ?? null, body.resultado, taskId, hotelId],
     );
     if (rows.length === 0) throw Errors.notFound("Tarea de housekeeping no encontrada.");
 
@@ -597,6 +603,102 @@ export function housekeepingRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings>
         alerta: deviation.alertTriggered,
         fotoUrl: body.fotoUrl,
         creadoEn: rows[0]!.created_at,
+      },
+      201,
+    );
+  });
+
+  // Config del reporte diario (REQ-HK-010): la "hora objetivo" de habitación lista es
+  // por hotel, la decide el gerente -- solo owner/gm la leen/cambian (mismo criterio de
+  // alcance que `hotel_pms_outbound_config`).
+  app.get("/hoteles/:hotelId/housekeeping/config", async (c) => {
+    assertRole(c, ADMIN_ROLES);
+    const db = c.get("db");
+    const { rows } = await db.query<{ target_ready_time: string }>(
+      `select target_ready_time::text as target_ready_time
+       from public.hotel_housekeeping_config where hotel_id = $1;`,
+      [c.req.param("hotelId")],
+    );
+    return c.json({ targetReadyTime: rows[0]?.target_ready_time ?? "15:00:00" });
+  });
+
+  app.patch("/hoteles/:hotelId/housekeeping/config", async (c) => {
+    assertRole(c, ADMIN_ROLES);
+    const db = c.get("db");
+    const orgId = c.get("orgId");
+    const hotelId = c.req.param("hotelId");
+    const body = parseBody(configSchema, await c.req.json().catch(() => ({})));
+
+    let targetReadyTime: string;
+    try {
+      targetReadyTime = assertValidTargetReadyTime(body.targetReadyTime);
+    } catch (err) {
+      if (err instanceof HousekeepingReportError) throw Errors.validation(err.message);
+      throw err;
+    }
+
+    await db.query(
+      `insert into public.hotel_housekeeping_config (hotel_id, tenant_id, target_ready_time)
+       values ($1, $2, $3)
+       on conflict (hotel_id) do update set target_ready_time = excluded.target_ready_time, updated_at = now();`,
+      [hotelId, orgId, targetReadyTime],
+    );
+    return c.json({ targetReadyTime });
+  });
+
+  // Reporte diario al gerente (REQ-HK-010). GET consulta el snapshot ya persistido (no
+  // genera nada); POST lo genera/regenera para la fecha pedida -- idempotente en el
+  // sentido de que recalcula SIEMPRE contra el estado actual de la BD y sobrescribe el
+  // snapshot anterior de ese mismo día (a diferencia de la muestra semanal de
+  // conversaciones, aquí SÍ tiene sentido recalcular: una tarea que se cerró tarde debe
+  // poder corregir el reporte del día antes de que el gerente lo lea en la mañana
+  // siguiente). El mismo cálculo lo dispara, sin servidor HTTP de por medio,
+  // `scripts/housekeeping/reporte-diario.ts` (cron real).
+  app.get("/hoteles/:hotelId/housekeeping/reporte-diario", async (c) => {
+    assertRole(c, ADMIN_ROLES);
+    const db = c.get("db");
+    const hotelId = c.req.param("hotelId");
+    const fecha = c.req.query("fecha");
+    if (!fecha || !FECHA_RE.test(fecha)) throw Errors.validation("Parámetro 'fecha' requerido, formato YYYY-MM-DD.");
+
+    const { rows } = await db.query(
+      `select report_date::text as "reportDate", target_ready_time::text as "targetReadyTime",
+              camaristas, rooms_cleaned as "roomsCleaned", rooms_ready_by_target as "roomsReadyByTarget",
+              re_cleans as "reCleans", incidents, tickets_generated as "ticketsGenerated",
+              generated_at::text as "generatedAt"
+       from public.housekeeping_daily_report where hotel_id = $1 and report_date = $2;`,
+      [hotelId, fecha],
+    );
+    if (rows.length === 0) throw Errors.notFound(`Reporte diario de housekeeping no generado para ${fecha}.`);
+    return c.json(rows[0]);
+  });
+
+  app.post("/hoteles/:hotelId/housekeeping/reporte-diario", async (c) => {
+    assertRole(c, ADMIN_ROLES);
+    const db = c.get("db");
+    const orgId = c.get("orgId");
+    const hotelId = c.req.param("hotelId");
+    const body = parseBody(generarReporteSchema, await c.req.json().catch(() => ({})));
+
+    let report: Awaited<ReturnType<typeof generateHousekeepingDailyReport>>;
+    try {
+      report = await generateHousekeepingDailyReport(db, hotelId, body.fecha);
+    } catch (err) {
+      if (err instanceof HousekeepingReportError) throw Errors.validation(err.message);
+      throw err;
+    }
+    await persistHousekeepingDailyReport(db, orgId, report, c.get("userId"));
+
+    return c.json(
+      {
+        reportDate: report.reportDate,
+        targetReadyTime: report.targetReadyTime,
+        camaristas: report.camaristas,
+        roomsCleaned: report.roomsCleaned,
+        roomsReadyByTarget: report.roomsReadyByTarget,
+        reCleans: report.reCleans,
+        incidents: report.incidents,
+        ticketsGenerated: report.ticketsGenerated,
       },
       201,
     );

@@ -161,6 +161,19 @@ export {
   type InspectionVisionOutcome,
   type EvaluateVisionInspectionInput,
 } from "./housekeeping/inspeccionVision.ts";
+export {
+  HousekeepingReportError,
+  assertValidTargetReadyTime,
+  assertValidReportDate,
+  resolveBusinessDayWindow,
+  buildHousekeepingDailyReport,
+  type HousekeepingTaskDailyStatus,
+  type HousekeepingInspectionResult,
+  type HousekeepingTaskRecord,
+  type HousekeepingDailyReportInput,
+  type CamaristaDailyStats,
+  type HousekeepingDailyReport,
+} from "./housekeeping/reporteDiario.ts";
 // Merge de reconciliación (2026-09-08): la sesión H12c había retirado estos 6 bloques
 // `export { … } from` (`./voiceGuardrails.ts`, `./pl/usaliPL.ts`, `./tickets/slaPolicy.ts`,
 // `./marketingTemplateLinter.ts`, `./conversationalGuardrails.ts`,
