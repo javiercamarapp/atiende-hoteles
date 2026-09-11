@@ -63,6 +63,26 @@ describe("FakeFinkokAdapter -- timbrado idempotente", () => {
     expect(second.status).toBe("cancelado");
     expect(first.fechaSolicitud).toBe(second.fechaSolicitud);
   });
+
+  // REQ-QA-010: `consultarEstado` es capability declarada de `CfdiPort` sin contract
+  // test hasta este cambio -- la auditoría estática de
+  // scripts/checks/registro-conectores-pms.ts la reportaba como hallazgo bloqueante
+  // (ver docs/logs/REQ-QA-010/). Prueba el round-trip real: timbrado -> "timbrado",
+  // cancelado -> "cancelado", y un UUID que el PAC nunca timbró lanza en vez de
+  // inventar un estado.
+  it("consultarEstado refleja el estado real: timbrado tras timbrar, cancelado tras cancelar", async () => {
+    const pac = new FakeFinkokAdapter();
+    const timbrado = await pac.timbrar(buildTimbrarInput());
+    expect(await pac.consultarEstado(timbrado.uuid)).toBe("timbrado");
+
+    await pac.cancelar({ uuid: timbrado.uuid, motivo: "02", idempotencyKey: "consulta-cancel-1" });
+    expect(await pac.consultarEstado(timbrado.uuid)).toBe("cancelado");
+  });
+
+  it("consultarEstado de un UUID que este PAC nunca timbró lanza, nunca inventa un estado", async () => {
+    const pac = new FakeFinkokAdapter();
+    await expect(pac.consultarEstado("00000000-0000-0000-0000-000000000000")).rejects.toThrow(/UUID desconocido/);
+  });
 });
 
 describe("DualPacCfdiPort -- conmutación primario caído -> secundario sin duplicar", () => {

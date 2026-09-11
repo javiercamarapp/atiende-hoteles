@@ -1,0 +1,2 @@
+REQ-QA-010: 1 hallazgo(s) bloqueante(s) en la auditoría de contract test por capability:
+  [cfdi] consultarEstado: conector de CFDI (CfdiPort): la capability `consultarEstado` (declarada en `CfdiPort`, packages/mcp-servers/cfdi/src/port.ts) no tiene contract test correspondiente -- ninguno de sus archivos de evidencia (tests/unit/mcp-servers/cfdi/pac-doble.spec.ts, tests/integration/contracts/cfdi/hospedaje.spec.ts) la ejercita.

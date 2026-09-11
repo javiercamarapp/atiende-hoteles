@@ -90,6 +90,19 @@ jobs:
       # sintéticos), este paso además la hace fallar rápido contra el backlog real, antes
       # de la suite completa (ADR-009).
       - run: node scripts/checks/gate-por-tarea.ts
+      # REQ-QA-010 (BP-141, compartido con REQ-REV-015): falla si alguna capability
+      # declarada de `PmsPort`/`PaymentProviderPort`/`CfdiPort` (los 3 tipos de
+      # conector que el requisito nombra: PMS, pago, CFDI) no tiene contract test
+      # correspondiente en sus archivos de evidencia declarados -- auditoría de SOLO
+      # LECTURA (nunca escribe) que corre en cada push/PR, lo más cercano a "antes de
+      # cada release" que este repo tiene hoy (no existe un pipeline de release
+      # separado de CI) -- ver scripts/checks/registro-conectores-pms.ts. Corre
+      # también dentro de `npm test`
+      # (tests/unit/qa/registro-conectores-pms.spec.ts, contra un puerto/contract
+      # tests sintéticos para el caso negativo, y contra el registro real de los 3
+      # conectores para confirmar 0 hallazgos hoy), este paso además la hace fallar
+      # rápido contra el registro real, antes de la suite completa (ADR-009).
+      - run: node scripts/checks/registro-conectores-pms.ts
       # REQ-SEG-003/REQ-HUE-022 (BP-091/H19-003): falla si aparece una librería/API de
       # reconocimiento facial (AWS Rekognition, Azure Face API, Face++, Kairos,
       # face-api.js, etc.) o su vocabulario genérico en `apps/`/`packages/`, o si algún
