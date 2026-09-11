@@ -48,6 +48,10 @@ import { pedidosFnbRoutes } from "./routes/pedidosFnb.ts";
 import { fnbCentrosConsumoRoutes } from "./routes/fnbCentrosConsumo.ts";
 import { fnbMermaRoutes } from "./routes/fnbMerma.ts";
 import { bitacorasNom251Routes } from "./routes/bitacorasNom251.ts";
+import { menuQrRoutes } from "./routes/menuQr.ts";
+import { fnbOfflineQueueRoutes } from "./routes/fnbOfflineQueue.ts";
+import { upsellFnbRoutes } from "./routes/upsellFnb.ts";
+import { capturaCargosRoutes } from "./routes/capturaCargos.ts";
 import { checkinOnlineRoutes } from "./routes/checkinOnline.ts";
 import { housekeepingRoutes } from "./routes/housekeeping.ts";
 import { mantenimientoRoutes } from "./routes/mantenimiento.ts";
@@ -313,6 +317,10 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", fnbCentrosConsumoRoutes(deps));
   app.route("/", fnbMermaRoutes(deps));
   app.route("/", bitacorasNom251Routes(deps));
+  app.route("/", menuQrRoutes(deps));
+  app.route("/", upsellFnbRoutes(deps));
+  app.route("/", fnbOfflineQueueRoutes(resolvedDeps));
+  app.route("/", capturaCargosRoutes(resolvedDeps));
   app.route("/", checkinOnlineRoutes(deps));
   // H18 · conector-pms-enterprise: estas 4 rutas crean housekeeping_task/
   // maintenance_ticket/guest_ticket -- necesitan `resolvedDeps.outboundTaskSyncGateway`

@@ -43,6 +43,29 @@ export const Errors = {
       "impuesto_no_coincide",
       `El impuesto enviado (${recibido}) no coincide con el calculado por el motor fiscal (${esperado}). El impuesto siempre lo calcula el sistema, nunca el cliente.`,
     ),
+  /** REQ-AB-012/H10-020: al "capturar" un intento de cargo (vincularlo a un `charge`
+   *  real ya posteado, capturaCargos.ts), el monto del `charge` debe coincidir (con
+   *  tolerancia de un centavo, mismo criterio que `impuestoNoCoincide` de arriba y que
+   *  `packages/domain-hotel/src/fraude/deteccion.ts`) con el monto declarado del
+   *  intento. Sin este chequeo, cualquier rol de dinero podría vincular un `charge`
+   *  pequeño cualquiera a un intento de fuga mucho mayor para inflar artificialmente la
+   *  tasa de captura ≥99.5% que este REQ existe para vigilar. */
+  montoCapturaNoCoincide: (montoIntento: number, montoCharge: number) =>
+    new ApiError(
+      422,
+      "monto_captura_no_coincide",
+      `El monto del charge vinculado (${montoCharge}) no coincide con el monto declarado del intento (${montoIntento}). Un intento de captura solo puede vincularse a un charge real por el mismo monto.`,
+    ),
+  /** REQ-AB-012/H10-020: un `charge` real ya vinculado ("capturado") a otro intento no
+   *  puede reutilizarse para marcar un segundo intento como capturado -- ver
+   *  `room_charge_capture_attempt_charge_id_unique_idx` (migración 0155) para el
+   *  backstop de base de datos de esta misma invariante. */
+  chargeYaCapturadoPorOtroIntento: () =>
+    new ApiError(
+      409,
+      "charge_ya_capturado_por_otro_intento",
+      "Este charge ya fue vinculado a otro intento de captura; no puede reutilizarse para capturar un segundo intento.",
+    ),
   rateLimited: (retryAfterSeconds: number, message = "Límite de solicitudes excedido. Intenta de nuevo en unos segundos.") =>
     new ApiError(429, "rate_limited", message, { "Retry-After": String(Math.max(0, Math.ceil(retryAfterSeconds))) }),
   // H12c · LAUNCH-015: 402 explícito (nunca un bloqueo silencioso, REQ-UX-002) cuando

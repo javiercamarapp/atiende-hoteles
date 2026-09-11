@@ -24,6 +24,7 @@ import { startPaymentPreauthPurgeScheduler } from "./jobs/purgePaymentPreauthSch
 import { startPmsCloudbedsSyncScheduler } from "./jobs/pmsCloudbedsSyncScheduler.ts";
 import { startBarReputacionScheduler } from "./jobs/barReputacionScheduler.ts";
 import { startGroupFollowUpScheduler } from "./jobs/seguimientoSolicitudGrupoScheduler.ts";
+import { startFnbUpsellScheduler } from "./jobs/fnbUpsellScheduler.ts";
 
 async function main() {
   // REQ-SEG-013 · antes de leer cualquier secreto de `process.env`, le da a Vault/KMS
@@ -205,6 +206,14 @@ async function main() {
     onError: (err) => logger.error({ err }, "seguimiento de solicitudes de grupo: error en tick"),
   });
 
+  // REQ-AB-014 · disparo de ofertas de upsell F&B en T-7/T-3/check-in (lock por hotel,
+  // ver jobs/fnbUpsellScheduler.ts) -- también ejecutable de forma independiente vía
+  // `node scripts/run-fnb-upsell-scheduler.ts`.
+  const fnbUpsellScheduler = startFnbUpsellScheduler(engine.admin, {
+    onTick: (results) => logger.info({ results }, "upsell F&B: tick"),
+    onError: (err) => logger.error({ err }, "upsell F&B: error en tick"),
+  });
+
   const shutdown = async () => {
     logger.info("apagando apps/api");
     nightAuditScheduler.stop();
@@ -217,6 +226,7 @@ async function main() {
     pmsCloudbedsSyncScheduler.stop();
     barReputacionScheduler.stop();
     groupFollowUpScheduler.stop();
+    fnbUpsellScheduler.stop();
     await engine.stop();
     process.exit(0);
   };

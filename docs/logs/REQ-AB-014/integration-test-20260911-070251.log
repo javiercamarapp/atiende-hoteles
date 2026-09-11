@@ -1,0 +1,14 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/Users/javiercamaraportepetit/Desktop/supabase/hoteles/.claude/worktrees/fusion-ab-restantes[39m
+
+ [32m✓[39m tests/integration/ab/upsell-fnb.spec.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 24929[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AB-014: upsell F&B disparado en T-7/T-3/check-in, precio siempre del catálogo real (motor de Revenue)[2m > [22mcrea los 2 platillos reales que respaldan las ofertas de upsell (REQ-AB-001) [33m 2427[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AB-014: upsell F&B disparado en T-7/T-3/check-in, precio siempre del catálogo real (motor de Revenue)[2m > [22mowner/gm/fnb da de alta las plantillas de upsell -- el precio SIEMPRE es el del platillo real, nunca uno enviado en el body (0 precios del LLM) [33m 614[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AB-014: upsell F&B disparado en T-7/T-3/check-in, precio siempre del catálogo real (motor de Revenue)[2m > [22mrechaza una plantilla cuyo menu_item pertenece a OTRO hotel (caso negativo de aislamiento entre hoteles) [33m 524[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AB-014: upsell F&B disparado en T-7/T-3/check-in, precio siempre del catálogo real (motor de Revenue)[2m > [22mcrea 3 reservas confirmadas reales: una a T-7 exacto, una lejana (nada vencido), una el día de check-in [33m 1062[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m13 passed[39m[22m[90m (13)[39m
+[2m   Start at [22m 01:04:41
+[2m   Duration [22m 41.69s[2m (transform 6.73s, setup 0ms, collect 15.33s, tests 24.93s, environment 0ms, prepare 485ms)[22m
+

@@ -493,6 +493,24 @@ export {
   type FnbMermaCausaResumen,
 } from "./fnbMermaGuard.ts";
 export {
+  validateFnbOfflineQueueItem,
+  type FnbOfflineOperationType,
+  type FnbOfflineQueueItemInput,
+  type FnbOfflineQueueValidation,
+} from "./fnbOfflineQueueGuard.ts";
+export {
+  ROOM_CHARGE_CAPTURE_SOURCES,
+  validateRoomChargeCaptureAttempt,
+  buildChargeCaptureReport,
+  type RoomChargeCaptureSource,
+  type RoomChargeCaptureStatus,
+  type RoomChargeCaptureAttemptInput,
+  type RoomChargeCaptureValidation,
+  type RoomChargeCaptureAttemptRecord,
+  type ChargeCaptureReportOptions,
+  type ChargeCaptureReportResult,
+} from "./chargeCaptureReport.ts";
+export {
   FRAUD_PATTERNS,
   recipientRolesForPattern,
   detectDiscountOutsidePolicy,
@@ -728,3 +746,36 @@ export {
   type ContentCalendarEntry,
   type MonthlyContentCalendar,
 } from "./ugcContentCalendar.ts";
+export {
+  LOCATION_TYPES,
+  isLocationType,
+  InvalidPhysicalNumberError,
+  buildLocationCode,
+  buildMenuQrTargetUrl,
+  ALLERGEN_CODES,
+  SUPPORTED_MENU_LANGUAGES,
+  ALLERGEN_LABELS,
+  translateAllergen,
+  resolveMenuForGuest,
+  type LocationType,
+  type AllergenCode,
+  type MenuLanguage,
+  type FareContext,
+  type MenuItemCatalog,
+  type ResolvedAllergen,
+  type ResolvedMenuItem,
+} from "./menuQr.ts";
+export {
+  UPSELL_OFFER_TYPES,
+  isUpsellOfferType,
+  UPSELL_TRIGGER_MOMENTS,
+  isUpsellTriggerMoment,
+  FnbUpsellEngineError,
+  daysUntilCheckIn,
+  dueUpsellTriggerMoments,
+  parseRevenuePricedCatalogRow,
+  resolveOfferPrice,
+  type UpsellOfferType,
+  type UpsellTriggerMoment,
+  type RevenuePricedCatalogRow,
+} from "./fnbUpsellEngine.ts";

@@ -1,0 +1,17 @@
+
+> @atiende/web@0.0.0 lint
+> eslint .
+
+[0m[0m
+[0m[4m/Users/javiercamaraportepetit/Desktop/supabase/hoteles/.claude/worktrees/fusion-ab-restantes/apps/web/src/hooks/useAuth.tsx[24m[0m
+[0m  [2m44:17[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4m/Users/javiercamaraportepetit/Desktop/supabase/hoteles/.claude/worktrees/fusion-ab-restantes/apps/web/src/hooks/useHotel.tsx[24m[0m
+[0m  [2m56:17[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4m/Users/javiercamaraportepetit/Desktop/supabase/hoteles/.claude/worktrees/fusion-ab-restantes/apps/web/src/pages/Agentes.tsx[24m[0m
+[0m  [2m27:8[22m  [33mwarning[39m  'AgenteCosto' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[33m[1m✖ 3 problems (0 errors, 3 warnings)[22m[39m[0m
+[0m[33m[1m[22m[39m[0m
+apps/web lint exit:0
