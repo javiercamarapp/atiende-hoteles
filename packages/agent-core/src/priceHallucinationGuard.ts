@@ -73,7 +73,7 @@ export function findPriceHallucinations(
     // capturado) no es una tarifa real -- evita ruido; el patrón ya exige al menos un
     // dígito, esto es solo defensivo.
     if (digits.length === 0) continue;
-    const sourced = sourcedDigitSequences.some((seq) => seq.includes(digits));
+    const sourced = sourcedDigitSequences.some((seq) => seq === digits);
     if (!sourced) findings.push({ kind: "money", matchedText });
   }
 

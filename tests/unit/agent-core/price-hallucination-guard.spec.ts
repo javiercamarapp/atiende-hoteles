@@ -36,6 +36,35 @@ describe("findPriceHallucinations", () => {
     expect(findings[0]!.matchedText).toContain("999");
   });
 
+  it("NO exonera una cifra cuyos dígitos son SUBCADENA de una cifra sourced distinta (regresión: comparación por igualdad, no por substring)", () => {
+    // sourcedText trae "$1,200 MXN" (dígitos "1200"); el modelo inventa "$120" (dígitos
+    // "120", que es subcadena de "1200") -- antes `"1200".includes("120")` dejaba pasar
+    // esta cifra inventada como si estuviera respaldada. Debe bloquearse.
+    const findings120 = findPriceHallucinations("Te ofrezco $120 MXN.", ["La tarifa es $1,200 MXN por noche."]);
+    expect(findings120).toHaveLength(1);
+    expect(findings120[0]!.matchedText).toContain("120");
+
+    // Mismo caso con "$200" (también subcadena de "1200", en otra posición).
+    const findings200 = findPriceHallucinations("Te ofrezco $200 MXN.", ["La tarifa es $1,200 MXN por noche."]);
+    expect(findings200).toHaveLength(1);
+    expect(findings200[0]!.matchedText).toContain("200");
+
+    // Y con "$12" (prefijo/subcadena de "1200").
+    const findings12 = findPriceHallucinations("Te ofrezco $12 MXN.", ["La tarifa es $1,200 MXN por noche."]);
+    expect(findings12).toHaveLength(1);
+    expect(findings12[0]!.matchedText).toContain("12");
+  });
+
+  it("SÍ exonera la misma cifra citada con separador de miles distinto ('$1,200' sourced vs '$1200' citado por el modelo, y viceversa)", () => {
+    // El modelo cita sin separador de miles lo que la tool devolvió CON separador.
+    const withoutComma = findPriceHallucinations("Cuesta $1200 MXN.", ["La tarifa es $1,200 MXN por noche."]);
+    expect(withoutComma).toHaveLength(0);
+
+    // Y el caso inverso: la tool no usó separador y el modelo sí lo agrega al citar.
+    const withComma = findPriceHallucinations("Cuesta $1,200 MXN.", ["La tarifa es $1200 MXN por noche."]);
+    expect(withComma).toHaveLength(0);
+  });
+
   it("detecta una afirmación de disponibilidad ('hay habitaciones disponibles') sin sourcedText", () => {
     const findings = findPriceHallucinations("Hay habitaciones disponibles para esas fechas.");
     expect(findings).toHaveLength(1);
