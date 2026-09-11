@@ -4,3 +4,4 @@ export * from "./hmac.ts";
 export * from "./idempotency.ts";
 export * from "./rate-limiter.ts";
 export * from "./credentials.ts";
+export * from "./safeFetch.ts";
