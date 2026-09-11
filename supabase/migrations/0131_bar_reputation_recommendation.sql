@@ -1,4 +1,4 @@
--- ORIGEN: packages/db/migrations/0130_bar_reputation_recommendation.sql sha256:24ac99bbd43f05bd0ea879ea76feeec7878c2f8b6ec5169ec43e9b4168839f1d
+-- ORIGEN: packages/db/migrations/0131_bar_reputation_recommendation.sql sha256:24ac99bbd43f05bd0ea879ea76feeec7878c2f8b6ec5169ec43e9b4168839f1d
 -- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
 -- nuevo el script tras cambiar la migración fuente.
 
