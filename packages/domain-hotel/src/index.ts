@@ -370,6 +370,19 @@ export {
   type PriceRecommendationExplanation,
 } from "./revenue/priceRecommendationExplainer.ts";
 export {
+  REPUTATION_INDEX_MIN,
+  REPUTATION_INDEX_MAX,
+  DEFAULT_BAR_REPUTATION_THRESHOLD,
+  DEFAULT_BAR_REPUTATION_WINDOW_DAYS,
+  sentimentScoreToIndice,
+  calcularIndiceReputacion,
+  detectarCruceDeUmbral,
+  recomendarAjusteBar,
+  type IndiceReputacionPunto,
+  type CruceUmbralResult,
+  type RecomendacionAjusteBar,
+} from "./revenue/barPorReputacion.ts";
+export {
   DEFAULT_WEEKLY_AUDIT_SAMPLE_SIZE,
   CONVERSATION_AUDIT_CATEGORIES,
   ConversationAuditError,
