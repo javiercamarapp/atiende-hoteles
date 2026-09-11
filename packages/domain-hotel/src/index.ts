@@ -56,6 +56,9 @@ export {
   type RoomChargeIdentityVerificationResult,
 } from "./folioEngine.ts";
 export { looksLikeCheckinDataInFreeText } from "./checkinFreeTextGuard.ts";
+export { looksLikeCancellationIntent } from "./cancellationIntentGuard.ts";
+export { looksLikePaymentComplaint } from "./paymentComplaintGuard.ts";
+export { looksLikeArcoRequest } from "./arcoIntentGuard.ts";
 export {
   KNOWN_REVIEW_TOPICS,
   TOPIC_KEYWORDS,
