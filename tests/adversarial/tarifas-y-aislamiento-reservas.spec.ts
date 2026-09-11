@@ -10,6 +10,16 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiFixture, destroyApiFixture, loginAs, type ApiFixture } from "../support/api-fixture.ts";
 
+// Bug real de CI (10-sep-2026): fechas que eran literales absolutos se quedan fuera
+// de la ventana de tarifa/disponibilidad sembrada por seedDev (siempre desde "hoy"
+// real, 30 días) tarde o temprano -- corregidas a offsets relativos, nunca "hoy" mismo.
+function isoDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
+
 describe("adversarial: tarifas restringidas por rol + aislamiento de reservas entre hoteles", () => {
   let fixture: ApiFixture;
 
@@ -88,8 +98,8 @@ describe("adversarial: tarifas restringidas por rol + aislamiento de reservas en
       headers: { authorization: `Bearer ${tokenA}`, "content-type": "application/json", "idempotency-key": randomUUID() },
       body: JSON.stringify({
         roomTypeId: hotelA.roomTypes[0]!.id,
-        checkInDate: "2026-09-10",
-        checkOutDate: "2026-09-11",
+        checkInDate: isoDate(1),
+        checkOutDate: isoDate(2),
       }),
     });
     const { id: reservationId } = (await creada.json()) as { id: string };

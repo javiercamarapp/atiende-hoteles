@@ -5,6 +5,16 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiFixture, crearFolioConfirmado, destroyApiFixture, loginAs, type ApiFixture } from "../../support/api-fixture.ts";
 
+// Bug real de CI (10-sep-2026): fechas que eran literales absolutos se quedan fuera
+// de la ventana de tarifa/disponibilidad sembrada por seedDev (siempre desde "hoy"
+// real, 30 días) tarde o temprano -- corregidas a offsets relativos, nunca "hoy" mismo.
+function isoDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
+
 describe("REQ-BO-002 · idempotencia de timbrado CFDI", () => {
   let fixture: ApiFixture;
   let gmToken: string;
@@ -38,7 +48,7 @@ describe("REQ-BO-002 · idempotencia de timbrado CFDI", () => {
   }
 
   it("misma Idempotency-Key repetida devuelve exactamente la misma respuesta (mismo UUID)", async () => {
-    const folioId = await folioConCargo("2026-09-16", "2026-09-17");
+    const folioId = await folioConCargo(isoDate(7), isoDate(8));
     const key = randomUUID();
     const opts = {
       method: "POST" as const,
@@ -57,7 +67,7 @@ describe("REQ-BO-002 · idempotencia de timbrado CFDI", () => {
   });
 
   it("una SEGUNDA solicitud con Idempotency-Key DISTINTA sobre el MISMO folio también devuelve el mismo UUID (nunca dos timbrados)", async () => {
-    const folioId = await folioConCargo("2026-09-18", "2026-09-19");
+    const folioId = await folioConCargo(isoDate(9), isoDate(10));
     const first = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cfdi`, {
       method: "POST",
       headers: { ...auth(), "idempotency-key": randomUUID() },
@@ -81,7 +91,7 @@ describe("REQ-BO-002 · idempotencia de timbrado CFDI", () => {
   });
 
   it("dos solicitudes de timbrado CONCURRENTES sobre el mismo folio: exactamente 1 fila en cfdi_emision", async () => {
-    const folioId = await folioConCargo("2026-09-20", "2026-09-21");
+    const folioId = await folioConCargo(isoDate(11), isoDate(12));
     const [a, b] = await Promise.all([
       fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cfdi`, {
         method: "POST",
@@ -114,7 +124,7 @@ describe("REQ-BO-002 · idempotencia de timbrado CFDI", () => {
   });
 
   it("cancelar un CFDI ya cancelado se rechaza explícitamente (nunca se re-envía la cancelación al PAC en silencio)", async () => {
-    const folioId = await folioConCargo("2026-09-22", "2026-09-23");
+    const folioId = await folioConCargo(isoDate(13), isoDate(14));
     const emitRes = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cfdi`, {
       method: "POST",
       headers: { ...auth(), "idempotency-key": randomUUID() },

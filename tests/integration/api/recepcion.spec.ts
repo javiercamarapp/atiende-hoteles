@@ -7,6 +7,16 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiFixture, destroyApiFixture, loginAs, type ApiFixture } from "../../support/api-fixture.ts";
 
+// Bug real de CI (10-sep-2026): fechas que eran literales absolutos se quedan fuera
+// de la ventana de tarifa/disponibilidad sembrada por seedDev (siempre desde "hoy"
+// real, 30 días) tarde o temprano -- corregidas a offsets relativos, nunca "hoy" mismo.
+function isoDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
+
 describe("GET /hoteles/:hotelId/recepcion (auditoria-2/frontend)", () => {
   let fixture: ApiFixture;
   let gmToken: string;
@@ -48,7 +58,7 @@ describe("GET /hoteles/:hotelId/recepcion (auditoria-2/frontend)", () => {
     const created = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
       headers: { ...auth(), "idempotency-key": crypto.randomUUID() },
-      body: JSON.stringify({ roomTypeId, checkInDate: "2026-09-20", checkOutDate: "2026-09-22" }),
+      body: JSON.stringify({ roomTypeId, checkInDate: isoDate(11), checkOutDate: isoDate(13) }),
     });
     expect(created.status).toBe(201);
     const { id: reservationId } = (await created.json()) as { id: string };

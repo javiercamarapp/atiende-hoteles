@@ -4,6 +4,16 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiFixture, crearFolioConfirmado, destroyApiFixture, loginAs, type ApiFixture } from "../../support/api-fixture.ts";
 
+// Bug real de CI (10-sep-2026): fechas que eran literales absolutos se quedan fuera
+// de la ventana de tarifa/disponibilidad sembrada por seedDev (siempre desde "hoy"
+// real, 30 días) tarde o temprano -- corregidas a offsets relativos, nunca "hoy" mismo.
+function isoDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
+
 describe("folio: split, transferencia entre folios, cierre (H5)", () => {
   let fixture: ApiFixture;
   let gmToken: string;
@@ -30,7 +40,7 @@ describe("folio: split, transferencia entre folios, cierre (H5)", () => {
   }
 
   it("split: mueve un cargo a un folio nuevo de la MISMA reserva, ambos saldos cuadran", async () => {
-    const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: "2026-09-16", checkOutDate: "2026-09-17" });
+    const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: isoDate(7), checkOutDate: isoDate(8) });
     const chargeRes = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cargos`, {
       method: "POST",
       headers: { ...auth(), "idempotency-key": randomUUID() },
@@ -60,8 +70,8 @@ describe("folio: split, transferencia entre folios, cierre (H5)", () => {
   });
 
   it("transferir un cargo a otro folio EXISTENTE del mismo hotel: saldo se mueve", async () => {
-    const { folioId: folioOrigen } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: "2026-09-18", checkOutDate: "2026-09-19" });
-    const { folioId: folioDestino } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: "2026-09-20", checkOutDate: "2026-09-21" });
+    const { folioId: folioOrigen } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: isoDate(9), checkOutDate: isoDate(10) });
+    const { folioId: folioDestino } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: isoDate(11), checkOutDate: isoDate(12) });
 
     const chargeRes = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioOrigen}/cargos`, {
       method: "POST",
@@ -84,7 +94,7 @@ describe("folio: split, transferencia entre folios, cierre (H5)", () => {
   });
 
   it("no se puede transferir un cargo a un folio de OTRO hotel", async () => {
-    const { folioId: folioOrigen } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: "2026-09-22", checkOutDate: "2026-09-23" });
+    const { folioId: folioOrigen } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: isoDate(13), checkOutDate: isoDate(14) });
     const chargeRes = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioOrigen}/cargos`, {
       method: "POST",
       headers: { ...auth(), "idempotency-key": randomUUID() },
@@ -106,7 +116,7 @@ describe("folio: split, transferencia entre folios, cierre (H5)", () => {
   });
 
   it("cierre con saldo distinto de cero como saldo_cero se rechaza (409)", async () => {
-    const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: "2026-09-24", checkOutDate: "2026-09-25" });
+    const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: isoDate(15), checkOutDate: isoDate(16) });
     await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cargos`, {
       method: "POST",
       headers: { ...auth(), "idempotency-key": randomUUID() },
@@ -121,7 +131,7 @@ describe("folio: split, transferencia entre folios, cierre (H5)", () => {
   });
 
   it("cierre como cuenta_por_cobrar con saldo pendiente y rol administrativo se permite", async () => {
-    const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: "2026-09-26", checkOutDate: "2026-09-27" });
+    const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: isoDate(17), checkOutDate: isoDate(18) });
     await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cargos`, {
       method: "POST",
       headers: { ...auth(), "idempotency-key": randomUUID() },

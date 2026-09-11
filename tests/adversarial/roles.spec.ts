@@ -6,6 +6,16 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiFixture, destroyApiFixture, loginAs, type ApiFixture } from "../support/api-fixture.ts";
 import { MONEY_ROLES, HOTEL_ROLES } from "@atiende-hoteles/api";
 
+// Bug real de CI (10-sep-2026): fechas que eran literales absolutos se quedan fuera
+// de la ventana de tarifa/disponibilidad sembrada por seedDev (siempre desde "hoy"
+// real, 30 días) tarde o temprano -- corregidas a offsets relativos, nunca "hoy" mismo.
+function isoDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
+
 describe("adversarial: matriz de roles (REQ-TEN-003) y escalada", () => {
   let fixture: ApiFixture;
   let hotelId: string;
@@ -94,7 +104,7 @@ describe("adversarial: matriz de roles (REQ-TEN-003) y escalada", () => {
     const res = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json", "idempotency-key": "hk-intento-1" },
-      body: JSON.stringify({ roomTypeId: hotelA.roomTypes[0]!.id, checkInDate: "2026-09-25", checkOutDate: "2026-09-26" }),
+      body: JSON.stringify({ roomTypeId: hotelA.roomTypes[0]!.id, checkInDate: isoDate(16), checkOutDate: isoDate(17) }),
     });
     expect(res.status).toBe(403);
   });
@@ -107,7 +117,7 @@ describe("adversarial: matriz de roles (REQ-TEN-003) y escalada", () => {
     const res = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json", "idempotency-key": "reservations-ok-1" },
-      body: JSON.stringify({ roomTypeId: hotelA.roomTypes[0]!.id, checkInDate: "2026-09-27", checkOutDate: "2026-09-28" }),
+      body: JSON.stringify({ roomTypeId: hotelA.roomTypes[0]!.id, checkInDate: isoDate(18), checkOutDate: isoDate(19) }),
     });
     expect(res.status).toBe(201);
   });

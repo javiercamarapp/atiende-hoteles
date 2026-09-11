@@ -88,6 +88,18 @@ const FIXTURE_RESERVATIONS: FakeReservationRecord[] = [
   },
 ];
 
+/** Bug real de CI (10-sep-2026): estas dos fechas eran literales absolutos
+ *  ("2026-09-10"/"2026-09-11"). `tests/integration/pms/pms-cloudbeds-sync-scheduler.spec.ts`
+ *  sincroniza contra una ventana relativa a "ahora" -- un literal fijo se sale de esa
+ *  ventana tarde o temprano (y de paso, para desarrollo local, una fecha real "de
+ *  pasado mañana" es más útil que una congelada en 2026). Se calculan en cada carga
+ *  del módulo relativas al reloj real, mañana y pasado mañana. */
+function isoDateFromNow(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
 const FIXTURE_RATE_PLANS: PmsRatePlan[] = [
   {
     externalRatePlanId: "CB-RP-STD-FLEX",
@@ -95,7 +107,7 @@ const FIXTURE_RATE_PLANS: PmsRatePlan[] = [
     name: "Tarifa flexible",
     currency: "MXN",
     nightlyRate: 1500,
-    date: "2026-09-10",
+    date: isoDateFromNow(1),
   },
   {
     externalRatePlanId: "CB-RP-STD-FLEX",
@@ -103,7 +115,7 @@ const FIXTURE_RATE_PLANS: PmsRatePlan[] = [
     name: "Tarifa flexible",
     currency: "MXN",
     nightlyRate: 1500,
-    date: "2026-09-11",
+    date: isoDateFromNow(2),
   },
 ];
 

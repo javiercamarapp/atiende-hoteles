@@ -5,6 +5,16 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiFixture, crearFolioConfirmado, destroyApiFixture, loginAs, type ApiFixture } from "../../support/api-fixture.ts";
 
+// Bug real de CI (10-sep-2026): fechas que eran literales absolutos se quedan fuera
+// de la ventana de tarifa/disponibilidad sembrada por seedDev (siempre desde "hoy"
+// real, 30 días) tarde o temprano -- corregidas a offsets relativos, nunca "hoy" mismo.
+function isoDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
+
 describe("folio: cargos por concepto, descuentos, reverso (H5)", () => {
   let fixture: ApiFixture;
   let gmToken: string;
@@ -34,8 +44,8 @@ describe("folio: cargos por concepto, descuentos, reverso (H5)", () => {
   it("cargo de concepto 'ab' calcula impuesto determinista desde el motor (sin impuesto explícito)", async () => {
     const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
-      checkInDate: "2026-09-16",
-      checkOutDate: "2026-09-17",
+      checkInDate: isoDate(7),
+      checkOutDate: isoDate(8),
     });
 
     const res = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cargos`, {
@@ -52,8 +62,8 @@ describe("folio: cargos por concepto, descuentos, reverso (H5)", () => {
   it("F1/REQ-BO-001: un rol de dinero (frontdesk) NO puede fijar el impuesto a mano -- 422 si no coincide con el motor", async () => {
     const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
-      checkInDate: "2026-09-20",
-      checkOutDate: "2026-09-21",
+      checkInDate: isoDate(11),
+      checkOutDate: isoDate(12),
     });
 
     // Escenario del hallazgo CRÍTICO: hospedaje 1000, ivaRate 0.16 + ishRate 0.03 =>
@@ -76,8 +86,8 @@ describe("folio: cargos por concepto, descuentos, reverso (H5)", () => {
   it("F1: un impuesto explícito que SÍ coincide exacto con el motor se acepta (compatibilidad)", async () => {
     const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
-      checkInDate: "2026-09-22",
-      checkOutDate: "2026-09-23",
+      checkInDate: isoDate(13),
+      checkOutDate: isoDate(14),
     });
 
     const res = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cargos`, {
@@ -93,8 +103,8 @@ describe("folio: cargos por concepto, descuentos, reverso (H5)", () => {
   it("descuento bajo el umbral lo aplica frontdesk directamente", async () => {
     const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
-      checkInDate: "2026-09-18",
-      checkOutDate: "2026-09-19",
+      checkInDate: isoDate(9),
+      checkOutDate: isoDate(10),
     });
     await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cargos`, {
       method: "POST",
@@ -113,8 +123,8 @@ describe("folio: cargos por concepto, descuentos, reverso (H5)", () => {
   it("descuento sobre el umbral aplicado por frontdesk SIN autorización se rechaza (403)", async () => {
     const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
-      checkInDate: "2026-09-20",
-      checkOutDate: "2026-09-21",
+      checkInDate: isoDate(11),
+      checkOutDate: isoDate(12),
     });
 
     const res = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/descuentos`, {
@@ -128,8 +138,8 @@ describe("folio: cargos por concepto, descuentos, reverso (H5)", () => {
   it("descuento sobre el umbral aplicado por frontdesk CON autorización de un gm real se permite", async () => {
     const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
-      checkInDate: "2026-09-22",
-      checkOutDate: "2026-09-23",
+      checkInDate: isoDate(13),
+      checkOutDate: isoDate(14),
     });
 
     const res = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/descuentos`, {
@@ -143,8 +153,8 @@ describe("folio: cargos por concepto, descuentos, reverso (H5)", () => {
   it("reverso de un cargo NUNCA borra la fila original: inserta una nueva y el saldo vuelve a 0", async () => {
     const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
-      checkInDate: "2026-09-24",
-      checkOutDate: "2026-09-25",
+      checkInDate: isoDate(15),
+      checkOutDate: isoDate(16),
     });
 
     const chargeRes = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cargos`, {
@@ -182,8 +192,8 @@ describe("folio: cargos por concepto, descuentos, reverso (H5)", () => {
   it("reversar un cargo ya reversado se rechaza (409)", async () => {
     const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
-      checkInDate: "2026-09-26",
-      checkOutDate: "2026-09-27",
+      checkInDate: isoDate(17),
+      checkOutDate: isoDate(18),
     });
     const chargeRes = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cargos`, {
       method: "POST",
@@ -208,8 +218,8 @@ describe("folio: cargos por concepto, descuentos, reverso (H5)", () => {
   it("un folio cerrado no admite nuevos cargos", async () => {
     const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
-      checkInDate: "2026-09-28",
-      checkOutDate: "2026-09-29",
+      checkInDate: isoDate(19),
+      checkOutDate: isoDate(20),
     });
 
     const close = await fixture.app.request(`/hoteles/${hotelId}/folios/${folioId}/cerrar`, {

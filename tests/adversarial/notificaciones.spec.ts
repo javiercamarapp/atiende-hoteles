@@ -9,6 +9,16 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiFixture, destroyApiFixture, loginAs, crearFolioConfirmado, type ApiFixture } from "../support/api-fixture.ts";
 
+// Bug real de CI (10-sep-2026): fechas que eran literales absolutos se quedan fuera
+// de la ventana de tarifa/disponibilidad sembrada por seedDev (siempre desde "hoy"
+// real, 30 días) tarde o temprano -- corregidas a offsets relativos, nunca "hoy" mismo.
+function isoDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
+
 describe("adversarial: centro de notificaciones (H12c)", () => {
   let fixture: ApiFixture;
 
@@ -27,8 +37,8 @@ describe("adversarial: centro de notificaciones (H12c)", () => {
 
     await crearFolioConfirmado(fixture.app, token, hotelA.id, {
       roomTypeId: hotelA.roomTypes[0]!.id,
-      checkInDate: "2026-09-10",
-      checkOutDate: "2026-09-12",
+      checkInDate: isoDate(1),
+      checkOutDate: isoDate(3),
     });
 
     const res = await fixture.app.request(`/hoteles/${hotelA.id}/notificaciones?no_leidas=true`, {
@@ -65,8 +75,8 @@ describe("adversarial: centro de notificaciones (H12c)", () => {
 
     await crearFolioConfirmado(fixture.app, tokenB, hotelB.id, {
       roomTypeId: hotelB.roomTypes[0]!.id,
-      checkInDate: "2026-09-14",
-      checkOutDate: "2026-09-16",
+      checkInDate: isoDate(5),
+      checkOutDate: isoDate(7),
     });
 
     const resA = await fixture.app.request(`/hoteles/${hotelA.id}/notificaciones`, { headers: { authorization: `Bearer ${tokenA}` } });
@@ -86,8 +96,8 @@ describe("adversarial: centro de notificaciones (H12c)", () => {
     // Genera >=1 notificación no leída de tipo broadcast por rol (reserva_nueva).
     await crearFolioConfirmado(fixture.app, token, hotelA.id, {
       roomTypeId: hotelA.roomTypes[0]!.id,
-      checkInDate: "2026-09-18",
-      checkOutDate: "2026-09-20",
+      checkInDate: isoDate(9),
+      checkOutDate: isoDate(11),
     });
 
     const antes = await fixture.app.request(`/hoteles/${hotelA.id}/notificaciones/no-leidas/conteo`, {

@@ -16,7 +16,21 @@ import {
 } from "../../../apps/api/src/jobs/pmsCloudbedsSyncScheduler.ts";
 import { CloudbedsSimulator } from "../../../packages/mcp-servers/pms/src/testing/cloudbeds-simulator.ts";
 
-const SYNC_NOW = () => new Date("2026-09-08T00:00:00Z"); // fija el rango [2026-09-08, 2026-09-22)
+// Bug real de CI (10-sep-2026): fechas que eran literales absolutos se quedan fuera
+// de la ventana de tarifa/disponibilidad sembrada por seedDev (siempre desde "hoy"
+// real, 30 días) tarde o temprano -- corregidas a offsets relativos, nunca "hoy" mismo.
+function isoDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
+
+// SYNC_NOW también era un literal absoluto ("2026-09-08") -- el "reloj" que el propio
+// tick de sincronización usa para decidir su ventana [now, now+14) queda anclado a
+// isoDate(-1) (mismo offset relativo que el original tenía frente a las fechas
+// "2026-09-10"/"2026-09-11" de las aserciones de abajo, ahora isoDate(1)/isoDate(2)).
+const SYNC_NOW = () => new Date(`${isoDate(-1)}T00:00:00Z`);
 
 describe("pmsCloudbedsSyncScheduler (integracion, Postgres real)", () => {
   let fixture: PgFixture;
@@ -54,7 +68,7 @@ describe("pmsCloudbedsSyncScheduler (integracion, Postgres real)", () => {
     const realAdapterSinCredenciales = new CloudbedsAdapter();
     const roomTypes = await loadRoomTypesForCloudbedsSync(fixture.engine.admin);
 
-    const before = await fixture.engine.admin.query("select count(*)::int as n from public.rate_plan where room_type_id = $1 and date between '2026-09-08' and '2026-09-21';", [roomTypeId]);
+    const before = await fixture.engine.admin.query(`select count(*)::int as n from public.rate_plan where room_type_id = $1 and date between '${isoDate(-1)}' and '${isoDate(12)}';`, [roomTypeId]);
 
     const results = await runPmsCloudbedsSyncTick(fixture.engine.admin, realAdapterSinCredenciales, roomTypes, { now: SYNC_NOW });
 
@@ -66,7 +80,7 @@ describe("pmsCloudbedsSyncScheduler (integracion, Postgres real)", () => {
         error: expect.stringMatching(/PENDIENTE DE CREDENCIALES/),
       }),
     ]);
-    const after = await fixture.engine.admin.query<{ n: number }>("select count(*)::int as n from public.rate_plan where room_type_id = $1 and date between '2026-09-08' and '2026-09-21';", [roomTypeId]);
+    const after = await fixture.engine.admin.query<{ n: number }>(`select count(*)::int as n from public.rate_plan where room_type_id = $1 and date between '${isoDate(-1)}' and '${isoDate(12)}';`, [roomTypeId]);
     expect(after.rows[0]!.n).toBe(before.rows[0]!.n);
   });
 
@@ -79,12 +93,12 @@ describe("pmsCloudbedsSyncScheduler (integracion, Postgres real)", () => {
     expect(results).toEqual([expect.objectContaining({ roomTypeId, synced: true, ratesWritten: 2 })]);
 
     const { rows } = await fixture.engine.admin.query<{ date: string; price: string; currency: string }>(
-      "select date::text as date, price, currency from public.rate_plan where room_type_id = $1 and date in ('2026-09-10','2026-09-11') order by date;",
+      `select date::text as date, price, currency from public.rate_plan where room_type_id = $1 and date in ('${isoDate(1)}','${isoDate(2)}') order by date;`,
       [roomTypeId],
     );
     expect(rows).toEqual([
-      { date: "2026-09-10", price: "1500.00", currency: "MXN" },
-      { date: "2026-09-11", price: "1500.00", currency: "MXN" },
+      { date: isoDate(1), price: "1500.00", currency: "MXN" },
+      { date: isoDate(2), price: "1500.00", currency: "MXN" },
     ]);
   });
 
@@ -98,13 +112,13 @@ describe("pmsCloudbedsSyncScheduler (integracion, Postgres real)", () => {
     await runPmsCloudbedsSyncTick(fixture.engine.admin, fake, roomTypes, { now: SYNC_NOW });
 
     const { rows } = await fixture.engine.admin.query<{ n: number }>(
-      "select count(*)::int as n from public.rate_plan where room_type_id = $1 and date in ('2026-09-10','2026-09-11');",
+      `select count(*)::int as n from public.rate_plan where room_type_id = $1 and date in ('${isoDate(1)}','${isoDate(2)}');`,
       [roomTypeId],
     );
     expect(rows[0]!.n).toBe(2); // sigue habiendo exactamente 2 filas, no 4
 
     const { rows: prices } = await fixture.engine.admin.query<{ price: string }>(
-      "select price from public.rate_plan where room_type_id = $1 and date = '2026-09-10';",
+      `select price from public.rate_plan where room_type_id = $1 and date = '${isoDate(1)}';`,
       [roomTypeId],
     );
     expect(prices[0]!.price).toBe("1800.00");
@@ -118,8 +132,8 @@ describe("pmsCloudbedsSyncScheduler (integracion, Postgres real)", () => {
           reservationID: "SIM-RES-E2E",
           propertyID: "SIM-PROPERTY-E2E",
           status: "confirmed",
-          startDate: "2026-09-10",
-          endDate: "2026-09-11",
+          startDate: isoDate(1),
+          endDate: isoDate(2),
           total: 1000,
           dateModified: "2026-09-01T00:00:00Z",
           roomTypeID: "CB-RT-STD",
@@ -140,7 +154,7 @@ describe("pmsCloudbedsSyncScheduler (integracion, Postgres real)", () => {
       expect(results[0]!.ratesWritten).toBeGreaterThan(0);
 
       const { rows } = await fixture.engine.admin.query<{ price: string }>(
-        "select price from public.rate_plan where room_type_id = $1 and date = '2026-09-10';",
+        `select price from public.rate_plan where room_type_id = $1 and date = '${isoDate(1)}';`,
         [roomTypeId],
       );
       expect(rows[0]!.price).toBe("1500.00");

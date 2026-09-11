@@ -15,6 +15,16 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiFixture, destroyApiFixture, loginAs, type ApiFixture } from "../support/api-fixture.ts";
 
+// Bug real de CI (10-sep-2026): fechas que eran literales absolutos se quedan fuera
+// de la ventana de tarifa/disponibilidad sembrada por seedDev (siempre desde "hoy"
+// real, 30 días) tarde o temprano -- corregidas a offsets relativos, nunca "hoy" mismo.
+function isoDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
+
 describe("idempotency_key: ventana de expiración (auditoria-1/datos MEDIO)", () => {
   let fixture: ApiFixture;
   let gmToken: string;
@@ -32,7 +42,7 @@ describe("idempotency_key: ventana de expiración (auditoria-1/datos MEDIO)", ()
     const reservaRes = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
       headers: { ...auth(), "idempotency-key": randomUUID() },
-      body: JSON.stringify({ roomTypeId, checkInDate: "2026-10-01", checkOutDate: "2026-10-02" }),
+      body: JSON.stringify({ roomTypeId, checkInDate: isoDate(22), checkOutDate: isoDate(23) }),
     });
     const reserva = (await reservaRes.json()) as { id: string };
 

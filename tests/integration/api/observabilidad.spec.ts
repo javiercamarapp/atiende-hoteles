@@ -23,6 +23,16 @@ import {
 import type { Hono } from "hono";
 import type { HonoEnvBindings } from "@atiende-hoteles/api";
 
+// Bug real de CI (10-sep-2026): fechas que eran literales absolutos se quedan fuera
+// de la ventana de tarifa/disponibilidad sembrada por seedDev (siempre desde "hoy"
+// real, 30 días) tarde o temprano -- corregidas a offsets relativos, nunca "hoy" mismo.
+function isoDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
+
 function capturingLogger() {
   const lines: string[] = [];
   const destination = new Writable({
@@ -181,7 +191,7 @@ describe("H8: observabilidad + seguridad de transporte (integración real)", () 
       const creada = await localApp.request(`/hoteles/${hotelId}/reservas`, {
         method: "POST",
         headers: { authorization: `Bearer ${gmToken}`, "content-type": "application/json", "idempotency-key": randomUUID() },
-        body: JSON.stringify({ roomTypeId, checkInDate: "2026-10-01", checkOutDate: "2026-10-02" }),
+        body: JSON.stringify({ roomTypeId, checkInDate: isoDate(22), checkOutDate: isoDate(23) }),
       });
       expect(creada.status).toBe(201);
 

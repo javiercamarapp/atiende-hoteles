@@ -5,6 +5,16 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiFixture, crearFolioConfirmado, destroyApiFixture, loginAs, type ApiFixture } from "../../support/api-fixture.ts";
 
+// Bug real de CI (10-sep-2026): fechas que eran literales absolutos se quedan fuera
+// de la ventana de tarifa/disponibilidad sembrada por seedDev (siempre desde "hoy"
+// real, 30 días) tarde o temprano -- corregidas a offsets relativos, nunca "hoy" mismo.
+function isoDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
+
 describe("pago concurrente con la misma Idempotency-Key (H5)", () => {
   let fixture: ApiFixture;
   let gmToken: string;
@@ -28,7 +38,7 @@ describe("pago concurrente con la misma Idempotency-Key (H5)", () => {
   }
 
   it("dos solicitudes de pago simultáneas con la MISMA Idempotency-Key -> exactamente 1 fila en payment", async () => {
-    const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: "2026-09-16", checkOutDate: "2026-09-17" });
+    const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: isoDate(7), checkOutDate: isoDate(8) });
     const key = randomUUID();
     const opts = {
       method: "POST" as const,
@@ -54,7 +64,7 @@ describe("pago concurrente con la misma Idempotency-Key (H5)", () => {
   });
 
   it("dos solicitudes de pago con tarjeta y la MISMA Idempotency-Key -> PaymentsPort.charge() solo cobra una vez", async () => {
-    const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: "2026-09-18", checkOutDate: "2026-09-19" });
+    const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, { roomTypeId, checkInDate: isoDate(9), checkOutDate: isoDate(10) });
     const key = randomUUID();
     const opts = {
       method: "POST" as const,
