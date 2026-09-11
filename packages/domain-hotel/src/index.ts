@@ -563,3 +563,14 @@ export {
   type LinenCountDeviationInput,
   type LinenCountDeviationResult,
 } from "./housekeeping/linenOptOut.ts";
+export {
+  FNB_CONSUMPTION_CENTER_TYPES,
+  planFnbInventoryTransfer,
+  computeTheoreticalBreakfastCost,
+  type FnbConsumptionCenterType,
+  type FnbCenterRef,
+  type PlanFnbInventoryTransferInput,
+  type FnbInventoryTransferPlan,
+  type TheoreticalBreakfastCostInput,
+  type TheoreticalBreakfastCostResult,
+} from "./fnbCentrosConsumo.ts";
