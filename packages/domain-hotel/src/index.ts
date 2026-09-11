@@ -298,6 +298,20 @@ export {
   type FnbOrderSafetyState,
 } from "./fnbAllergyGuard.ts";
 export {
+  MINIBAR_EVIDENCE_TYPES,
+  validateMinibarEvidence,
+  MinibarEvidenceMissingError,
+  assertMinibarEvidencePresent,
+  MINIBAR_DISPUTE_RATE_THRESHOLD_PERCENT,
+  computeMinibarDisputeRate,
+  type MinibarEvidenceType,
+  type MinibarChecklistItem,
+  type MinibarEvidenceInput,
+  type MinibarEvidenceValidation,
+  type MinibarDisputeRateInput,
+  type MinibarDisputeRateResult,
+} from "./minibarEvidence.ts";
+export {
   FRAUD_PATTERNS,
   recipientRolesForPattern,
   detectDiscountOutsidePolicy,
