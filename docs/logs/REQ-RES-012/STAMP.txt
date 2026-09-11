@@ -1,0 +1,57 @@
+REQ-RES-012 — cotización, contrato, bloqueo de habitaciones (room block) y
+seguimiento de cut-off para grupos/bodas/eventos (P1/F)
+Fecha: 2026-09-11
+Agente: Sonnet (subagente de implementación)
+
+Criterio literal de docs/ACEPTACION.md (el contrato real cerrado por este trabajo):
+"Cotización de grupo/evento generada en <15 min desde la solicitud; el precio de
+grupo consulta al motor de Revenue el costo de desplazamiento de ADR antes de
+fijarse (verificado: precio de grupo ≠ precio manual si el motor de Revenue indica
+desplazamiento distinto de cero)."
+
+Archivos de este requisito:
+- packages/db/migrations/0130_room_block_group_quote.sql (tabla `room_block`:
+  cotización + ciclo de vida real del bloqueo de inventario, RLS)
+- supabase/migrations/0130_room_block_group_quote.sql (espejo, export-supabase-migrations.ts)
+- packages/domain-hotel/src/reservas/groupQuote.ts (nuevo, puro: SLA de 15 min desde
+  la solicitud + precio de grupo = precio manual + costo de desplazamiento de ADR,
+  rechaza cualquier noche sin consulta al motor de Revenue)
+- packages/domain-hotel/src/reservas/roomBlock.ts (nuevo, puro: alerta de cut-off por
+  pickup insuficiente, habitaciones a liberar)
+- packages/domain-hotel/src/index.ts (export de ambos módulos)
+- apps/api/src/pms/dbGroupDisplacementPort.ts (nuevo: consulta REAL a
+  `availability`/`rate_plan` para estimar el desplazamiento por noche — heurística de
+  ocupación ya en libro ≥70% documentada en el archivo)
+- apps/api/src/domain/groupQuote.ts (nuevo: orquesta la consulta real + el cálculo +
+  persistencia; confirmar/liberar/cancelar el room block; pickup; alerta de cut-off)
+- apps/api/src/routes/grupos.ts (nuevo: POST .../grupos/cotizaciones,
+  GET .../cotizaciones/:id, POST .../confirmar, POST .../liberar, POST .../cancelar,
+  PATCH .../pickup, GET .../cutoff-alerta)
+- apps/api/src/app.ts (registro de gruposRoutes)
+- tests/unit/domain-hotel/group-quote.spec.ts (11/11)
+- tests/unit/domain-hotel/room-block.spec.ts (12/12)
+- tests/integration/grupos/cotizacion.spec.ts (8/8, embedded-postgres real — el
+  archivo exacto que nombra docs/ACEPTACION.md)
+- tests/integration/grupos/room-block.spec.ts (2/2, embedded-postgres real — cobertura
+  adicional del resto del texto del requisito: room block + cut-off)
+
+Alcance deliberado (documentado en los comentarios de archivo, para no fingir más de
+lo construido): el contrato en PDF (H02-016) y el seguimiento automático de RFPs sin
+respuesta (REQ-RES-013, otra fila/job) quedan fuera de este cierre.
+
+Comandos y evidencia:
+- vitest-unit-20260911-052655.log — npx vitest run tests/unit/domain-hotel/group-quote.spec.ts tests/unit/domain-hotel/room-block.spec.ts (23/23, exit 0)
+- vitest-integration-20260911-052655.log — npx vitest run tests/integration/grupos/cotizacion.spec.ts tests/integration/grupos/room-block.spec.ts (10/10, exit 0)
+- typecheck-20260911-052655.log — npm run typecheck (limpio, exit 0)
+- eslint-20260911-052655.log — npx eslint <archivos nuevos/modificados de este cierre> (limpio, exit 0)
+- check-migraciones-20260911-052655.log — npm run check:migraciones (OK, 0 destructivo sin aprobar)
+- export-supabase-migrations: ejecutado (node --experimental-strip-types scripts/export-supabase-migrations.ts) — espejo de supabase/migrations/ regenerado, incluye 0130_room_block_group_quote.sql
+
+Nota de regresión (NO causada por este cambio, reportada por transparencia): al correr
+la suite COMPLETA (`npx vitest run tests/unit tests/integration`) en esta misma
+máquina, 1789/1790 tests pasan; el único fallo es
+`tests/integration/api/reservas-carga-concurrente.spec.ts` (benchmark de p95 <500ms en
+GET /hoteles/:hotelId/reservas bajo 50 requests concurrentes), que además falla en
+AISLAMIENTO (sin ningún cambio de este cierre en el camino) con p95 medido de
+508-689ms según la carga de la máquina en el momento -- un umbral de latencia fijo
+sensible al hardware/carga del host, no una regresión introducida por REQ-RES-012.
