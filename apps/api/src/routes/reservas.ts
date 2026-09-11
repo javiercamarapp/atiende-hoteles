@@ -27,7 +27,7 @@ import { parseBody } from "../lib/validate.ts";
 import { withIdempotency } from "../lib/idempotency.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
 import { ADMIN_ROLES, MANAGE_RESERVATIONS_ROLES } from "../domain/roles.ts";
-import { quoteNetAmount } from "../pms/quoteNetAmount.ts";
+import { quoteConvertedToReportingCurrency } from "../pms/quoteConversion.ts";
 import { computeLoyaltyBenefitForNewReservation } from "../domain/clubSegundoViaje.ts";
 import { loadCancellationPolicy } from "../pms/taxConfig.ts";
 import { runNoShowJob } from "../jobs/noShow.ts";
@@ -201,18 +201,31 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         // Cotiza ANTES de tocar inventario: min-stay/CTA/CTD se validan contra tarifa
         // real (REQ-RES-002/H07-005) y la reserva se rechaza sin dejar locks a medias
         // si la estadía no cumple la restricción.
-        const quotedAmount = await quoteNetAmount(db, {
+        //
+        // REQ-RES-015: si `rate_plan.currency` de este cuarto/fechas está fijada en una
+        // divisa distinta a la de reporte del motor (`REPORTING_CURRENCY`, hoy MXN),
+        // `quoteConvertedToReportingCurrency` la convierte ACTIVAMENTE con el tipo de
+        // cambio vigente registrado por el hotel ANTES de tocar inventario o calcular el
+        // descuento de lealtad -- fail-closed (409 `tipo_cambio_no_registrado`) si no hay
+        // tasa vigente, en vez de reservar con un monto en la moneda equivocada (el bug
+        // que describía REQ-RES-015: `reservation.currency` tratado como texto plano sin
+        // ninguna lógica de conversión real).
+        const converted = await quoteConvertedToReportingCurrency(db, {
           hotelId,
           roomTypeId: body.roomTypeId,
           checkInDate: body.checkInDate,
           checkOutDate: body.checkOutDate,
         });
+        const quotedAmount = converted.netAmount; // ya en `REPORTING_CURRENCY`
 
         // REQ-RES-010 (club de segundo viaje): este endpoint SOLO crea reservas con el
         // `channel` DEFAULT de la columna ('directo', migración 0014) -- por eso
         // `isDirectChannel: true` es literal, no una lectura de `body` (que no acepta
         // `channel`). Sin `guestId` (o sin membresía activa/config de descuento) el
         // beneficio simplemente no aplica -- ver `computeLoyaltyBenefitForNewReservation`.
+        // El descuento se calcula SOBRE el monto ya convertido: el umbral/porcentaje de
+        // descuento de `hotel_loyalty_program_config` está pensado en la moneda de
+        // reporte del hotel, nunca en la divisa original de una tarifa foránea.
         const loyaltyBenefit = await computeLoyaltyBenefitForNewReservation(db, {
           hotelId,
           guestId: body.guestId ?? null,
@@ -252,10 +265,29 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         );
         const reservation = inserted[0]!;
 
+        // REQ-RES-015: además de `converted.exchangeRateApplied`, deja explícita la
+        // moneda/monto ORIGINAL en el outbox -- un consumidor futuro del evento
+        // (ej. un reporte externo) no debe tener que re-derivar la conversión desde
+        // `hotel_exchange_rate` para saber en qué divisa se fijó realmente la tarifa.
+        const conversion =
+          converted.exchangeRateApplied !== null
+            ? {
+                monedaOriginal: converted.quote.currency,
+                montoOriginal: converted.quote.netAmount,
+                monedaReporte: converted.reportingCurrency,
+                tipoCambioAplicado: converted.exchangeRateApplied,
+              }
+            : null;
+
         await db.query(
           `insert into public.outbox (tenant_id, hotel_id, aggregate_type, aggregate_id, event_type, payload)
            values ($1, $2, 'reservation', $3, 'reservation.created', $4);`,
-          [orgId, hotelId, reservation.id, JSON.stringify({ reservationId: reservation.id, totalAmount, loyaltyDiscountAmount: loyaltyBenefit.discountAmount })],
+          [
+            orgId,
+            hotelId,
+            reservation.id,
+            JSON.stringify({ reservationId: reservation.id, totalAmount, loyaltyDiscountAmount: loyaltyBenefit.discountAmount, conversion }),
+          ],
         );
 
         await db.query(
@@ -275,6 +307,9 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
               loyaltyBenefit: loyaltyBenefit.applies
                 ? { discountPct: loyaltyBenefit.discountPct, discountAmount: loyaltyBenefit.discountAmount, netAmountBeforeDiscount: quotedAmount }
                 : null,
+              // REQ-RES-015: rastro auditable de la conversión aplicada -- null cuando
+              // la tarifa ya estaba fijada en la moneda de reporte (sin conversión).
+              conversion,
             }),
           ],
         );
@@ -285,10 +320,14 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
             id: reservation.id,
             estado: reservation.status,
             total: totalAmount,
+            moneda: converted.reportingCurrency,
             codigoConfirmacion: reservation.confirmation_code,
             descuentoClub: loyaltyBenefit.applies
               ? { pct: loyaltyBenefit.discountPct, monto: loyaltyBenefit.discountAmount }
               : null,
+            // REQ-RES-015: null cuando la tarifa ya estaba en la moneda de reporte --
+            // el motor de reservas OPERA en multi-moneda, no la simula siempre.
+            conversion,
           },
         };
       },
@@ -413,12 +452,18 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
 
         const newRoomTypeId = body.roomTypeId ?? current.room_type_id;
 
-        const totalAmount = await quoteNetAmount(db, {
+        // REQ-RES-015: misma conversión activa que la creación (POST arriba) -- una
+        // modificación de fechas/tipo de habitación puede aterrizar en un rango cuya
+        // tarifa esté fijada en otra divisa (ej. temporada distinta con rate_plan en
+        // USD), así que se re-resuelve la conversión con la MISMA función, no con
+        // `quoteNetAmount` crudo.
+        const converted = await quoteConvertedToReportingCurrency(db, {
           hotelId,
           roomTypeId: newRoomTypeId,
           checkInDate: body.checkInDate,
           checkOutDate: body.checkOutDate,
         });
+        const totalAmount = converted.netAmount;
 
         for (const night of nightsBetween(current.check_in_date, current.check_out_date)) {
           await db.query("select * from public.release_availability($1, $2, $3, 1);", [
@@ -440,6 +485,16 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         );
         const updated = updatedRows[0]!;
 
+        const conversion =
+          converted.exchangeRateApplied !== null
+            ? {
+                monedaOriginal: converted.quote.currency,
+                montoOriginal: converted.quote.netAmount,
+                monedaReporte: converted.reportingCurrency,
+                tipoCambioAplicado: converted.exchangeRateApplied,
+              }
+            : null;
+
         await db.query(
           `insert into public.outbox (tenant_id, hotel_id, aggregate_type, aggregate_id, event_type, payload)
            values ($1, $2, 'reservation', $3, 'reservation.modified', $4);`,
@@ -447,7 +502,7 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
             orgId,
             hotelId,
             reservationId,
-            JSON.stringify({ checkIn: body.checkInDate, checkOut: body.checkOutDate, roomTypeId: newRoomTypeId, totalAmount }),
+            JSON.stringify({ checkIn: body.checkInDate, checkOut: body.checkOutDate, roomTypeId: newRoomTypeId, totalAmount, conversion }),
           ],
         );
         await db.query(
@@ -459,13 +514,22 @@ export function reservasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
             JSON.stringify({
               antes: { checkIn: current.check_in_date, checkOut: current.check_out_date, roomTypeId: current.room_type_id },
               despues: { checkIn: body.checkInDate, checkOut: body.checkOutDate, roomTypeId: newRoomTypeId },
+              // REQ-RES-015: mismo rastro auditable que `reservation.created`.
+              conversion,
             }),
           ],
         );
 
         return {
           status: 200,
-          body: { id: updated.id, estado: updated.status, total: totalAmount, codigoConfirmacion: updated.confirmation_code },
+          body: {
+            id: updated.id,
+            estado: updated.status,
+            total: totalAmount,
+            moneda: converted.reportingCurrency,
+            codigoConfirmacion: updated.confirmation_code,
+            conversion,
+          },
         };
       },
     );
