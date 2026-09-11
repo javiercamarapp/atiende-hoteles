@@ -91,7 +91,10 @@ import {
   detectAndRedactPaymentData,
   detectLocalKnowledgeCategory,
   lintMarketingTemplateBody,
+  looksLikeArcoRequest,
+  looksLikeCancellationIntent,
   looksLikeCheckinDataInFreeText,
+  looksLikePaymentComplaint,
 } from "@atiende-hoteles/domain-hotel";
 import { resolveWhatsappWebhookVerifier, sharedWhatsappAdapter, whatsappAdapterSimulated } from "../lib/messaging.ts";
 import type { DbClient } from "@atiende-hoteles/db";
@@ -386,6 +389,72 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         );
       }
 
+      // Patrón Likida/atiende.ai #8 (fast-path determinista antes del LLM/ticket
+      // genérico, intent 1/3): "cancelar mi reserva" por chat se redirige al endpoint
+      // ya verificado y estructurado (`POST /reservas/cancelacion-publica`,
+      // REQ-RES-005, exige código de reserva + apellido) en vez de caer en la
+      // clasificación genérica de ticket -- MISMO criterio que el bloque de check-in de
+      // arriba: nunca ejecuta la cancelación aquí, solo redirige.
+      if (looksLikeCancellationIntent(event.textBody)) {
+        const redirect = await sharedWhatsappAdapter.sendTemplateMessage({
+          to: event.from,
+          templateName: "cancelacion_enlace_estructurado",
+          languageCode: "es_MX",
+          parameters: [],
+          clientMessageId: `cancelacion-redirect-${event.eventId}`,
+        });
+        await deps.engine.admin.query(
+          `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, template_name, body, external_message_id, delivery_status, simulated)
+           values ($1, $2, $3, 'saliente', 'whatsapp', 'cancelacion_enlace_estructurado',
+                   'Para cancelar tu reserva por tu seguridad te pedimos verificar tu código de reserva y apellido: te compartimos el enlace seguro.',
+                   $4, $5, $6);`,
+          [configRows[0].tenant_id, hotelId, convRows[0]!.id, redirect.externalMessageId, redirect.status, whatsappAdapterSimulated],
+        );
+      }
+
+      // Patrón Likida/atiende.ai #8 (intent 2/3): una queja de pago/disputa de cobro
+      // (distinta de la captura de PAN que ya cubre `pago.containsCardNumber` arriba)
+      // se redirige a la plantilla de soporte de pagos -- nunca decide ni ejecuta
+      // ningún reembolso/reverso aquí (eso sigue siendo exclusivo de staff con
+      // `MONEY_ROLES` vía `POST .../folios/.../reverso`).
+      if (looksLikePaymentComplaint(event.textBody)) {
+        const redirect = await sharedWhatsappAdapter.sendTemplateMessage({
+          to: event.from,
+          templateName: "queja_pago_enlace_soporte",
+          languageCode: "es_MX",
+          parameters: [],
+          clientMessageId: `queja-pago-${event.eventId}`,
+        });
+        await deps.engine.admin.query(
+          `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, template_name, body, external_message_id, delivery_status, simulated)
+           values ($1, $2, $3, 'saliente', 'whatsapp', 'queja_pago_enlace_soporte',
+                   'Lamentamos el inconveniente con tu cobro: te compartimos un enlace seguro para que nuestro equipo revise tu caso.',
+                   $4, $5, $6);`,
+          [configRows[0].tenant_id, hotelId, convRows[0]!.id, redirect.externalMessageId, redirect.status, whatsappAdapterSimulated],
+        );
+      }
+
+      // Patrón Likida/atiende.ai #8 (intent 3/3): un derecho ARCO/privacidad pedido por
+      // chat se redirige al flujo estructurado y auditado ya existente
+      // (`POST /privacidad/solicitud`, REQ-SEG-002) -- nunca ejecuta ningún borrado/
+      // exportación de datos aquí, solo redirige.
+      if (looksLikeArcoRequest(event.textBody)) {
+        const redirect = await sharedWhatsappAdapter.sendTemplateMessage({
+          to: event.from,
+          templateName: "arco_enlace_estructurado",
+          languageCode: "es_MX",
+          parameters: [],
+          clientMessageId: `arco-redirect-${event.eventId}`,
+        });
+        await deps.engine.admin.query(
+          `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, template_name, body, external_message_id, delivery_status, simulated)
+           values ($1, $2, $3, 'saliente', 'whatsapp', 'arco_enlace_estructurado',
+                   'Para ejercer tus derechos ARCO sobre tus datos personales, te compartimos el enlace seguro de solicitud.',
+                   $4, $5, $6);`,
+          [configRows[0].tenant_id, hotelId, convRows[0]!.id, redirect.externalMessageId, redirect.status, whatsappAdapterSimulated],
+        );
+      }
+
       // Gate único de `recepcion_virtual` (agent_config) para TODA acción autónoma de
       // este agente sobre WhatsApp -- conocimiento local (REQ-HUE-026, abajo) y ticket
       // (REQ-HUE-014, más abajo) comparten la MISMA resolución de gate (una sola
@@ -506,10 +575,17 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       // crea el ticket SIN `roomCode` (la tool ya soporta esto, ver `ticketTools.ts`)
       // en vez de adivinar una habitación -- honestidad de "esqueleto real" (ADR-006/
       // 007) sobre inventar una asociación que este repo no puede verificar hoy.
+      // Patrón Likida/atiende.ai #8: los 3 fast-paths deterministas de arriba
+      // (cancelación/queja de pago/ARCO) ya tienen su propia respuesta fija resuelta --
+      // igual que check-in/tarjeta/"¿eres humano?", no son peticiones operativas que un
+      // departamento deba atender vía ticket genérico.
       const mensajeYaAtendidoPorPatronFijo =
         esPreguntaSiEsHumano(event.textBody) ||
         pago.containsCardNumber ||
         looksLikeCheckinDataInFreeText(event.textBody) ||
+        looksLikeCancellationIntent(event.textBody) ||
+        looksLikePaymentComplaint(event.textBody) ||
+        looksLikeArcoRequest(event.textBody) ||
         categoriaConocimientoLocalRespondida;
       if (event.textBody && event.textBody.trim().length > 0 && !mensajeYaAtendidoPorPatronFijo) {
         if (recepcionVirtualActiva) {

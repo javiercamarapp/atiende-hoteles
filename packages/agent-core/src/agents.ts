@@ -15,6 +15,12 @@
 import type { ModelRole } from "./roles.ts";
 import type { AgentGate } from "./roles.ts";
 import type { StaffRole } from "./context.ts";
+import {
+  CONSULTAR_ESTADO_ONBOARDING_TOOL,
+  GUARDAR_TIPO_HABITACION_ONBOARDING_TOOL,
+  GUARDAR_ZONA_HORARIA_ONBOARDING_TOOL,
+  INVITAR_STAFF_ONBOARDING_TOOL,
+} from "./tools/onboardingTools.ts";
 
 export interface AgentDefinition {
   readonly name: string;
@@ -39,11 +45,17 @@ export interface AgentDefinition {
   /** REQ-HUE-006/GOB-034: disclosure de IA obligatorio desde el primer turno cuando el
    * agente conversa directo con un huésped (no aplica al enrutador/auditor interno). */
   readonly disclosureMessage?: string;
+  /** Patrón Likida/atiende.ai #7 ("nunca termina sin preguntar"): reenviado tal cual a
+   * `AgentRunnerOptions.completionStatusToolName` (runner.ts) -- nombre de una tool
+   * `effect="read"` del catálogo de ESTE agente que decide si puede cerrar "completado"
+   * sin más preguntas. `undefined`: sin este requisito (todos los demás agentes). */
+  readonly completionStatusToolName?: string;
 }
 
 export const RECEPCION_VIRTUAL = "recepcion_virtual";
 export const ENRUTADOR_MENSAJES = "enrutador_mensajes";
 export const AUDITOR_NOCTURNO = "auditor_nocturno";
+export const ONBOARDING_CONVERSACIONAL = "onboarding_conversacional";
 
 export const AGENT_DEFINITIONS: Readonly<Record<string, AgentDefinition>> = {
   [RECEPCION_VIRTUAL]: {
@@ -116,6 +128,39 @@ export const AGENT_DEFINITIONS: Readonly<Record<string, AgentDefinition>> = {
       "Eres el auditor nocturno de revenue y cierre de un hotel independiente. Revisas el cierre del " +
       "período y registras el valor económico estimado (nunca inventas una cifra sin método contrafactual " +
       "y nivel de confianza explícitos). No decides precio ni tarifa -- eso sale de un motor determinista.",
+  },
+  [ONBOARDING_CONVERSACIONAL]: {
+    name: ONBOARDING_CONVERSACIONAL,
+    label: "Onboarding conversacional",
+    description:
+      "Guía por chat al dueño/gerente de un hotel nuevo a través de los 3 pasos obligatorios de onboarding " +
+      "(tipo de habitación + tarifa base, zona horaria, invitar a su equipo) -- alternativa conversacional al " +
+      "wizard estructurado (apps/web /onboarding), que sigue disponible como fallback.",
+    role: "canal",
+    allowedStaffRoles: ["owner", "gm"],
+    toolNames: [
+      GUARDAR_TIPO_HABITACION_ONBOARDING_TOOL,
+      GUARDAR_ZONA_HORARIA_ONBOARDING_TOOL,
+      INVITAR_STAFF_ONBOARDING_TOOL,
+      CONSULTAR_ESTADO_ONBOARDING_TOOL,
+    ],
+    defaultGate: "shadow",
+    // Uso esperado: una sola vez por hotel nuevo, no una corrida diaria/por-mensaje --
+    // techo bajo, muy por debajo de la banda de un agente de canal continuo (LLM-026).
+    defaultMonthlyCeilingUsd: 5,
+    maxSteps: 8,
+    maxOutputTokensPerCall: 1024,
+    systemPrompt:
+      "Eres el asistente de onboarding de un hotel independiente que acaba de darse de alta. Tu única meta es " +
+      "que el dueño/gerente complete 3 pasos obligatorios, en cualquier orden: (1) registrar al menos un tipo " +
+      "de habitación con tarifa base, (2) confirmar la zona horaria del hotel, (3) invitar a al menos un " +
+      "miembro de su equipo por correo. Guarda cada dato con su tool en cuanto el usuario te lo confirme -- " +
+      "nunca esperes a tener los 3 para guardar el primero. SIEMPRE llama a " +
+      `"${CONSULTAR_ESTADO_ONBOARDING_TOOL}" antes de dar el onboarding por terminado: si reporta que falta ` +
+      "algo, sigue preguntando por ESO específicamente -- nunca digas que terminaron si todavía falta un paso. " +
+      "Nunca decides precio, tarifa, impuesto ni disponibilidad para reservas reales -- ese motor es otro, " +
+      "esto es solo la configuración inicial del hotel.",
+    completionStatusToolName: CONSULTAR_ESTADO_ONBOARDING_TOOL,
   },
 };
 

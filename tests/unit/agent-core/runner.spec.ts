@@ -9,6 +9,7 @@ import {
   FakeProvider,
   InMemoryApprovalQueue,
   InMemoryCostLedger,
+  PRICE_HALLUCINATION_FALLBACK_MESSAGE,
   ToolRegistry,
   buildToolContext,
   createRunBudget,
@@ -791,6 +792,171 @@ describe("AgentRunner", () => {
       const result = await runner.run(ctxFor(), "hola");
       expect(result.status).toBe("no_configurado");
       expect(events.filter((e) => e.kind === "run_finished")).toHaveLength(1);
+    });
+  });
+
+  describe("Patrón Likida/atiende.ai #4: guardia anti-alucinación de precio/disponibilidad " +
+    "(el modelo nunca puede citar una cifra que ninguna tool ya ejecutada respalde)", () => {
+    it("el modelo menciona un precio SIN ninguna tool ejecutada: el mensaje se reemplaza, nunca llega la cifra inventada", async () => {
+      const provider = new FakeProvider([{ kind: "final", text: "La habitación cuesta $1,200 MXN por noche." }]);
+      const events: { kind: string; message?: string }[] = [];
+      const runner = new AgentRunner(baseOptions({ provider, onTrace: (e) => events.push(e) }));
+      const result = await runner.run(ctxFor(), "¿cuánto cuesta la habitación?");
+      expect(result.status).toBe("completado");
+      expect(result.message).not.toContain("1,200");
+      expect(result.message).not.toContain("$");
+      // finalText SÍ conserva el texto crudo del modelo (registro interno/depuración) --
+      // solo `message` (el canal documentado como seguro hacia el humano) se sanitiza.
+      expect(result.finalText).toContain("1,200");
+      expect(events.filter((e) => e.kind === "price_hallucination_blocked")).toHaveLength(1);
+    });
+
+    it("el modelo menciona 'sí hay disponibilidad' SIN ninguna tool ejecutada: se bloquea igual", async () => {
+      const provider = new FakeProvider([{ kind: "final", text: "Sí hay disponibilidad para esas fechas." }]);
+      const runner = new AgentRunner(baseOptions({ provider }));
+      const result = await runner.run(ctxFor(), "¿hay lugar?");
+      // El propio mensaje de reemplazo SÍ contiene la palabra "disponibilidad" (es
+      // parte de su prosa fija) -- lo que se verifica es que la AFIRMACIÓN original del
+      // modelo ("sí hay...") desapareció, sustituida por el fallback fijo.
+      expect(result.message).not.toContain("Sí hay disponibilidad para esas fechas.");
+      expect(result.message).toBe(PRICE_HALLUCINATION_FALLBACK_MESSAGE);
+    });
+
+    it("el modelo cita EXACTAMENTE el precio que devolvió una tool ya ejecutada esta corrida: NO se bloquea", async () => {
+      const tools = new ToolRegistry();
+      tools.register(
+        defineTool({
+          name: "consultar_tarifa",
+          description: "consulta la tarifa real",
+          inputSchema: z.object({}),
+          effect: "read",
+          needsApproval: false,
+          run: () => ({ ok: true, summary: "La tarifa vigente es $1,200 MXN por noche." }),
+        }),
+      );
+      const provider = new FakeProvider([
+        { kind: "tool_calls", calls: [{ name: "consultar_tarifa", input: {} }] },
+        { kind: "final", text: "Con gusto: la habitación cuesta $1,200 MXN por noche." },
+      ]);
+      const events: { kind: string }[] = [];
+      const runner = new AgentRunner(baseOptions({ provider, tools, onTrace: (e) => events.push(e) }));
+      const result = await runner.run(ctxFor(), "¿cuánto cuesta?");
+      expect(result.message).toContain("1,200");
+      expect(events.filter((e) => e.kind === "price_hallucination_blocked")).toHaveLength(0);
+    });
+
+    it("una cifra DISTINTA a la que la tool devolvió SÍ se bloquea (el modelo no puede 'redondear' ni inventar una cercana)", async () => {
+      const tools = new ToolRegistry();
+      tools.register(
+        defineTool({
+          name: "consultar_tarifa",
+          description: "consulta la tarifa real",
+          inputSchema: z.object({}),
+          effect: "read",
+          needsApproval: false,
+          run: () => ({ ok: true, summary: "La tarifa vigente es $1,200 MXN por noche." }),
+        }),
+      );
+      const provider = new FakeProvider([
+        { kind: "tool_calls", calls: [{ name: "consultar_tarifa", input: {} }] },
+        { kind: "final", text: "Te puedo ofrecer un precio especial de $999 MXN por noche." },
+      ]);
+      const runner = new AgentRunner(baseOptions({ provider, tools }));
+      const result = await runner.run(ctxFor(), "¿me haces un descuento?");
+      expect(result.message).not.toContain("999");
+    });
+
+    it("un mensaje de cierre sin ninguna mención de precio/disponibilidad nunca se toca (sin falsos positivos)", async () => {
+      const provider = new FakeProvider([{ kind: "final", text: "Con gusto te ayudo con tu solicitud." }]);
+      const runner = new AgentRunner(baseOptions({ provider }));
+      const result = await runner.run(ctxFor(), "hola");
+      expect(result.message).toBe("Con gusto te ayudo con tu solicitud.");
+    });
+
+    it("el bloqueo aplica ANTES de anteponer el disclosure de primer turno (el disclosure fijo nunca se pierde)", async () => {
+      const provider = new FakeProvider([{ kind: "final", text: "Cuesta $500 MXN." }]);
+      const runner = new AgentRunner(baseOptions({ provider, disclosureMessage: "Soy un asistente de IA del hotel." }));
+      const result = await runner.run(firstTurnCtxFor(), "¿cuánto cuesta?");
+      expect(result.message.startsWith("Soy un asistente de IA del hotel.")).toBe(true);
+      expect(result.message).not.toContain("500");
+    });
+  });
+
+  describe("Patrón Likida/atiende.ai #7: 'nunca termina sin preguntar' (completionStatusToolName)", () => {
+    function consultarEstadoTool(completo: boolean, camposFaltantes: string[] = []) {
+      return defineTool({
+        name: "consultar_estado_onboarding",
+        description: "consulta el estado",
+        inputSchema: z.object({}),
+        effect: "read",
+        needsApproval: false,
+        run: () => ({ ok: true, summary: completo ? "completo" : "incompleto", data: { completo, camposFaltantes } }),
+      });
+    }
+
+    it("el modelo cierra 'completado' SIN llamar a la tool de estado: se bloquea con el mensaje genérico", async () => {
+      const provider = new FakeProvider([{ kind: "final", text: "¡Listo, todo quedó configurado!" }]);
+      const tools = new ToolRegistry();
+      tools.register(consultarEstadoTool(true));
+      const events: { kind: string }[] = [];
+      const runner = new AgentRunner(
+        baseOptions({ provider, tools, completionStatusToolName: "consultar_estado_onboarding", onTrace: (e) => events.push(e) }),
+      );
+      const result = await runner.run(ctxFor(), "ya terminé");
+      expect(result.status).toBe("completado");
+      expect(result.message).not.toBe("¡Listo, todo quedó configurado!");
+      expect(events.filter((e) => e.kind === "completion_status_blocked")).toHaveLength(1);
+    });
+
+    it("el modelo consulta el estado, que reporta completo=true: el mensaje de cierre pasa tal cual", async () => {
+      const tools = new ToolRegistry();
+      tools.register(consultarEstadoTool(true));
+      const provider = new FakeProvider([
+        { kind: "tool_calls", calls: [{ name: "consultar_estado_onboarding", input: {} }] },
+        { kind: "final", text: "¡Perfecto, tu hotel ya está listo para operar!" },
+      ]);
+      const runner = new AgentRunner(baseOptions({ provider, tools, completionStatusToolName: "consultar_estado_onboarding" }));
+      const result = await runner.run(ctxFor(), "ya terminé");
+      expect(result.message).toBe("¡Perfecto, tu hotel ya está listo para operar!");
+    });
+
+    it("el modelo consulta el estado, que reporta un campo faltante: el mensaje se reemplaza por una pregunta que lo nombra", async () => {
+      const tools = new ToolRegistry();
+      tools.register(consultarEstadoTool(false, ["la zona horaria de tu hotel"]));
+      const provider = new FakeProvider([
+        { kind: "tool_calls", calls: [{ name: "consultar_estado_onboarding", input: {} }] },
+        { kind: "final", text: "¡Listo, ya terminamos!" },
+      ]);
+      const runner = new AgentRunner(baseOptions({ provider, tools, completionStatusToolName: "consultar_estado_onboarding" }));
+      const result = await runner.run(ctxFor(), "ya terminé");
+      expect(result.message).not.toContain("ya terminamos");
+      expect(result.message).toContain("la zona horaria de tu hotel");
+    });
+
+    it("sin completionStatusToolName configurado (todos los demás agentes), el comportamiento no cambia", async () => {
+      const provider = new FakeProvider([{ kind: "final", text: "listo" }]);
+      const runner = new AgentRunner(baseOptions({ provider }));
+      const result = await runner.run(ctxFor(), "hola");
+      expect(result.message).toBe("listo");
+    });
+
+    it("un status distinto de 'completado' (ej. esperando_aprobacion) nunca pasa por este guard", async () => {
+      const tools = new ToolRegistry();
+      tools.register(
+        defineTool({
+          name: "cerrar_folio",
+          description: "cierra el folio",
+          inputSchema: z.object({}),
+          effect: "money",
+          needsApproval: true,
+          run: () => ({ ok: true, summary: "cerrado" }),
+        }),
+      );
+      const provider = new FakeProvider([{ kind: "tool_calls", calls: [{ name: "cerrar_folio", input: {} }] }]);
+      const runner = new AgentRunner(baseOptions({ provider, tools, completionStatusToolName: "consultar_estado_onboarding" }));
+      const result = await runner.run(ctxFor(), "cierra mi cuenta");
+      expect(result.status).toBe("esperando_aprobacion");
+      expect(result.message).toContain("Esperando aprobacion humana");
     });
   });
 });

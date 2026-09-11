@@ -5,7 +5,7 @@
 // incluso después de esta prueba.
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { WebhookOutboundAdapter, OutboundDeliveryError, WEBHOOK_OUTBOUND_VERIFICADO_CONTRA_REAL } from "@atiende-hoteles/mcp-outbound";
-import { verifyHmacSignature } from "@atiende-hoteles/mcp-shared";
+import { SsrfBlockedError, verifyHmacSignature } from "@atiende-hoteles/mcp-shared";
 import {
   startFakeOutboundTargetServer,
   type FakeOutboundTargetServer,
@@ -27,8 +27,13 @@ describe("contrato: WebhookOutboundAdapter real contra simulador HTTP local", ()
     server.resetForcedResponses();
   });
 
+  // Patrón Likida/atiende.ai #1 (anti-SSRF, safeFetch.ts): `allowPrivateIpForTesting`
+  // es SOLO para que esta suite pueda hablar con `fakeOutboundTargetServer.ts`, que por
+  // diseño corre en 127.0.0.1 (loopback) -- ver comentario de
+  // `WebhookOutboundAdapterConfig`. La prueba "bloquea SSRF" de abajo (sin esta bandera)
+  // es la que demuestra que la protección real sigue activa.
   function makeAdapter(requestTimeoutMs = 5_000): WebhookOutboundAdapter {
-    return new WebhookOutboundAdapter({ requestTimeoutMs, maxAttempts: 4 });
+    return new WebhookOutboundAdapter({ requestTimeoutMs, maxAttempts: 4, allowPrivateIpForTesting: true });
   }
 
   function sampleTask(overrides: Partial<Parameters<WebhookOutboundAdapter["pushTask"]>[1]> = {}) {
@@ -115,5 +120,19 @@ describe("contrato: WebhookOutboundAdapter real contra simulador HTTP local", ()
     await adapter.pushTask({ url: server.webhookUrl, secret: server.secret }, sampleTask({ taskId: "task-a" }));
     await adapter.pushTask({ url: server.webhookUrl, secret: server.secret }, sampleTask({ taskId: "task-b" }));
     expect(server.received[0]!.signature).not.toBe(server.received[1]!.signature);
+  });
+
+  // Patrón Likida/atiende.ai #1 (anti-SSRF): sin `allowPrivateIpForTesting` (el default
+  // real, el que usa producción), el adaptador debe rechazar `destination.url` aunque
+  // apunte a un servidor local real que SÍ respondería -- la protección es sobre la IP
+  // resuelta, no sobre "si el servidor existe". Sin este chequeo, la prueba "camino
+  // feliz" de arriba (con la bandera activada) sería la única evidencia sobre este
+  // adaptador, y nunca demostraría que la protección real está conectada.
+  it("SIN allowPrivateIpForTesting, pushTask() bloquea destination.url apuntando a 127.0.0.1 (SSRF)", async () => {
+    const adapter = new WebhookOutboundAdapter({ requestTimeoutMs: 2_000, maxAttempts: 1 });
+    await expect(adapter.pushTask({ url: server.webhookUrl, secret: server.secret }, sampleTask())).rejects.toBeInstanceOf(
+      SsrfBlockedError,
+    );
+    expect(server.received).toHaveLength(0); // ningún socket real se abrió contra el servidor.
   });
 });

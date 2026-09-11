@@ -84,8 +84,13 @@ function buildProductionDeps(): AppDeps {
 // rateLimit.ts`): cada invocación fría de una función serverless arranca con un
 // `RateLimiter` NUEVO y vacío -- en Vercel (múltiples instancias concurrentes, sin estado
 // compartido entre invocaciones) el límite deja de ser efectivo de verdad. Documentado
-// como brecha conocida de la Opción (a) en deploy/README.md "Comparación", no resuelto
-// aquí (mover a Redis/Upstash es LAUNCH-022, fuera del alcance de este adaptador).
+// como brecha conocida de la Opción (a) en deploy/README.md "Comparación". Patrón
+// Likida/atiende.ai #3: `rateLimit.ts` ya expone `PostgresRateLimitStore`/
+// `AsyncRateLimiter`, un store real (no Redis/Upstash -- instrucción explícita de no
+// aprovisionar infraestructura nueva) respaldado por el mismo Postgres que esta función
+// ya usa, probado de extremo a extremo (`tests/unit/api/postgres-rate-limit-store.spec.ts`)
+// -- deliberadamente NO wireado aquí todavía (agrega un round-trip a Postgres por
+// request; decisión de costo/latencia de quien despliegue esta opción de verdad).
 const app = createApp(buildProductionDeps());
 
 export const handler = handle(app);

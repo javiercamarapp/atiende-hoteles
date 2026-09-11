@@ -31,7 +31,12 @@ describe("GET /hoteles/:hotelId/agentes", () => {
     const res = await fixture.app.request(`/hoteles/${hotelId}/agentes`, { headers: auth(frontdeskToken) });
     expect(res.status).toBe(200);
     const body = (await res.json()) as Array<{ agente: string; gate: string; techoMensualUsd: number }>;
-    expect(body.map((a) => a.agente).sort()).toEqual(["auditor_nocturno", "enrutador_mensajes", "recepcion_virtual"]);
+    expect(body.map((a) => a.agente).sort()).toEqual([
+      "auditor_nocturno",
+      "enrutador_mensajes",
+      "onboarding_conversacional",
+      "recepcion_virtual",
+    ]);
     for (const a of body) expect(a.gate).toBe("shadow");
   });
 });
@@ -230,6 +235,42 @@ describe("POST /hoteles/:hotelId/agentes/:agente/ejecutar (demo)", () => {
     // Shadow: ninguna tarea/ticket real se crea (AgentRunner las omite por gate).
     const { rows: tasks } = await fixture.engine.admin.query("select id from public.housekeeping_task where hotel_id = $1;", [hotelId]);
     expect(tasks).toHaveLength(0);
+  });
+
+  // Patrón Likida/atiende.ai #7: demo de onboarding_conversacional -- en shadow (SIEMPRE
+  // forzado en demo) las 3 tools de escritura del guion se OMITEN, pero
+  // consultar_estado_onboarding SÍ corre de verdad contra el hotel real -- demuestra que
+  // el guard "nunca termina sin preguntar" también protege el camino de demo: la demo
+  // nunca reporta "completo" cuando el motor determinista no puede confirmarlo.
+  it("onboarding_conversacional (demo): corre de extremo a extremo, sin escrituras reales en shadow, y su tool de estado real corrió", async () => {
+    const res = await fixture.app.request(`/hoteles/${hotelId}/agentes/onboarding_conversacional/ejecutar`, {
+      method: "POST",
+      headers: auth(ownerToken),
+      body: JSON.stringify({ mensaje: "Ayúdame con el onboarding de mi hotel.", demo: true }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { estado: string; simulado: boolean; runId: string; gate: string; mensaje: string };
+    expect(body.estado).toBe("completado");
+    expect(body.simulado).toBe(true);
+    expect(body.gate).toBe("shadow");
+    expect(body.mensaje.length).toBeGreaterThan(0); // NUNCA un cierre vacío/silencioso.
+
+    // Ninguna de las 3 escrituras reales ocurrió (gate shadow): el hotel de demo (real,
+    // seeded) no ganó un tipo de habitación NUEVO llamado "Estándar (demo)".
+    const { rows: roomTypesDemo } = await fixture.engine.admin.query(
+      "select id from public.room_type where hotel_id = $1 and name = 'Estándar (demo)';",
+      [hotelId],
+    );
+    expect(roomTypesDemo).toHaveLength(0);
+
+    // consultar_estado_onboarding (effect="read") SÍ se ejecutó de verdad -- se verifica
+    // por su traza real en audit_log (misma fuente que el resto de esta suite).
+    const { rows: auditRows } = await fixture.engine.admin.query<{ action: string; payload: { tool?: string } }>(
+      `select action, payload from public.audit_log where hotel_id = $1 and payload->>'runId' = $2 order by seq asc;`,
+      [hotelId, body.runId],
+    );
+    const toolCallActions = auditRows.filter((r) => r.action === "agente.tool_call").map((r) => r.payload.tool);
+    expect(toolCallActions).toContain("consultar_estado_onboarding");
   });
 
   it("no acepta hotelId/gate/orgId en el cuerpo (input del cliente nunca fija identidad/gate)", async () => {

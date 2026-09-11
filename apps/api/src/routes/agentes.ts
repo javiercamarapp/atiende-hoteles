@@ -31,18 +31,26 @@ import { z } from "zod";
 import {
   AgentRunner,
   AVISO_PRIVACIDAD_PATH,
+  CONSULTAR_ESTADO_ONBOARDING_TOOL,
   DEFAULT_BATCH_PRICING,
   DEFAULT_PRICING,
   EnvProvider,
   FakeProvider,
+  GUARDAR_TIPO_HABITACION_ONBOARDING_TOOL,
+  GUARDAR_ZONA_HORARIA_ONBOARDING_TOOL,
+  INVITAR_STAFF_ONBOARDING_TOOL,
   PostgresApprovalQueue,
   ProviderRouter,
   buildDisclosureMessageConAvisoPrivacidad,
   roleParamsForChannel,
   ToolRegistry,
   buildToolContext,
+  createConsultarEstadoOnboardingTool,
+  createGuardarTipoHabitacionOnboardingTool,
+  createGuardarZonaHorariaOnboardingTool,
   createGuestTicketTool,
   createHousekeepingTaskTool,
+  createInvitarStaffOnboardingTool,
   createMaintenanceTicketTool,
   createPostgresRoiEventRecorder,
   createRegistrarEventoRoiTool,
@@ -57,12 +65,14 @@ import {
   type AgentDefinition,
   type AgentGate,
   type AgentTraceEvent,
+  type EmailSenderLike,
   type FakeStep,
   type LlmProvider,
   type OutboundTaskSyncLike,
   type ToolDefinition,
 } from "@atiende-hoteles/agent-core";
 import type { DbClient } from "@atiende-hoteles/db";
+import type { EmailPort } from "@atiende-hoteles/email";
 import {
   classifyUnaccompaniedMinorEscalation,
   classifyVoiceGuardrailRefusal,
@@ -149,9 +159,31 @@ async function tieneCorridasEsteMes(db: DbClient, hotelId: string, agentName: st
   return Number(rows[0]?.count ?? 0) > 0;
 }
 
+/** Adapta `EmailPort` (packages/email) al contrato mínimo `EmailSenderLike` que
+ *  `createInvitarStaffOnboardingTool` espera (agent-core sigue sin depender de
+ *  `@atiende-hoteles/email`, H6a) -- mismo criterio que `sharedWhatsappAdapter` para las
+ *  tools de mensajería. */
+function emailPortToSenderLike(emailPort: EmailPort): EmailSenderLike {
+  return {
+    async send(input) {
+      return emailPort.send({
+        to: { email: input.to },
+        subject: input.subject,
+        preheader: input.text.slice(0, 140),
+        html: `<p>${input.text}</p>`,
+        text: input.text,
+        template: "invitacion-staff-onboarding-agente",
+        dedupeKey: input.dedupeKey,
+        tenantId: input.tenantId,
+        hotelId: input.hotelId,
+      });
+    },
+  };
+}
+
 function buildToolForName(
   name: string,
-  deps: { db: DbClient; agentName: string; outboundSync: OutboundTaskSyncLike },
+  deps: { db: DbClient; agentName: string; outboundSync: OutboundTaskSyncLike; emailPort: EmailPort; frontendUrl: string },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- catálogo heterogéneo: cada tool trae su propio TInput, igual que buildToolExecutors() en lib/agentTools.ts.
 ): ToolDefinition<any> {
   switch (name) {
@@ -165,6 +197,19 @@ function buildToolForName(
       return createSendWhatsappTemplateTool({ db: deps.db, messaging: sharedWhatsappAdapter, simulated: true });
     case "registrar_evento_roi":
       return createRegistrarEventoRoiTool({ db: deps.db, agentName: deps.agentName });
+    // Patrón Likida/atiende.ai #7 (onboarding_conversacional):
+    case GUARDAR_TIPO_HABITACION_ONBOARDING_TOOL:
+      return createGuardarTipoHabitacionOnboardingTool({ db: deps.db });
+    case GUARDAR_ZONA_HORARIA_ONBOARDING_TOOL:
+      return createGuardarZonaHorariaOnboardingTool({ db: deps.db });
+    case INVITAR_STAFF_ONBOARDING_TOOL:
+      return createInvitarStaffOnboardingTool({
+        db: deps.db,
+        email: emailPortToSenderLike(deps.emailPort),
+        frontendUrl: deps.frontendUrl,
+      });
+    case CONSULTAR_ESTADO_ONBOARDING_TOOL:
+      return createConsultarEstadoOnboardingTool({ db: deps.db });
     default:
       // Catálogo cerrado (REQ-AGT-018, patrón registry): un nombre de tool en
       // AGENT_DEFINITIONS que no tenga fábrica aquí es un error de configuración, nunca
@@ -173,10 +218,16 @@ function buildToolForName(
   }
 }
 
-function buildToolRegistry(def: AgentDefinition, db: DbClient, outboundSync: OutboundTaskSyncLike): ToolRegistry {
+function buildToolRegistry(
+  def: AgentDefinition,
+  db: DbClient,
+  outboundSync: OutboundTaskSyncLike,
+  emailPort: EmailPort,
+  frontendUrl: string,
+): ToolRegistry {
   const registry = new ToolRegistry();
   for (const name of def.toolNames) {
-    registry.register(buildToolForName(name, { db, agentName: def.name, outboundSync }));
+    registry.register(buildToolForName(name, { db, agentName: def.name, outboundSync, emailPort, frontendUrl }));
   }
   return registry;
 }
@@ -240,6 +291,26 @@ function buildDemoScript(agentName: string, roomCode: string): FakeStep[] {
   }
   if (agentName === "enrutador_mensajes") {
     return [{ kind: "final", text: "Clasificación (demo): idioma=es, intención=incidencia_habitacion, área=housekeeping." }];
+  }
+  if (agentName === "onboarding_conversacional") {
+    // Recorrido de demo de los 3 pasos + la verificación final -- en gate "shadow"
+    // (SIEMPRE forzado en demo, ver comentario de función) las 3 tools `effect="write"`
+    // se OMITEN (mismo mecanismo que housekeeping/mantenimiento en la demo de
+    // recepcion_virtual), pero `consultar_estado_onboarding` (`effect="read"`) SÍ corre
+    // de verdad -- si el hotel real todavía no completó los 3 pasos, el guard "nunca
+    // termina sin preguntar" (completionStatusGuard.ts) reemplaza el texto de cierre de
+    // abajo por una pregunta real, honestamente: la demo nunca finge un "completo" que
+    // el propio motor determinista no puede confirmar.
+    return [
+      {
+        kind: "tool_calls",
+        calls: [{ name: GUARDAR_TIPO_HABITACION_ONBOARDING_TOOL, input: { name: "Estándar (demo)", maxOccupancy: 2, totalRooms: 5, basePrice: 1500 } }],
+      },
+      { kind: "tool_calls", calls: [{ name: GUARDAR_ZONA_HORARIA_ONBOARDING_TOOL, input: { timezone: "America/Mexico_City" } }] },
+      { kind: "tool_calls", calls: [{ name: INVITAR_STAFF_ONBOARDING_TOOL, input: { email: "equipo-demo@ejemplo.com", role: "frontdesk" } }] },
+      { kind: "tool_calls", calls: [{ name: CONSULTAR_ESTADO_ONBOARDING_TOOL, input: {} }] },
+      { kind: "final", text: "Demo: onboarding completo -- tipo de habitación, zona horaria y equipo ya registrados." },
+    ];
   }
   return [
     {
@@ -524,7 +595,7 @@ export function agentesRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
       });
     }
 
-    const tools = buildToolRegistry(def, db, deps.outboundTaskSyncGateway);
+    const tools = buildToolRegistry(def, db, deps.outboundTaskSyncGateway, deps.emailPort, deps.env.frontendUrl);
     const approvalQueue = createTransactionalTemplateApprovalQueue(
       new PostgresApprovalQueue(db),
       transactionalTemplateCheckFromDb(db),
@@ -648,6 +719,10 @@ export function agentesRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
       pricing,
       gate: gateEfectivo,
       disclosureMessage,
+      // Patrón Likida/atiende.ai #7: reenviado tal cual desde AGENT_DEFINITIONS (ADR-006
+      // "agentes como datos") -- `undefined` para todos los agentes salvo
+      // `onboarding_conversacional`, sin ninguna rama especial por nombre aquí.
+      completionStatusToolName: def.completionStatusToolName,
       // REQ-AGT-003 (H17-001/GOB-037): conecta la cobertura AUTOMÁTICA de ROIEvent del
       // `AgentRunner` (100% de las tools effect="money" que ejecutan con éxito en esta
       // corrida, sin depender de que el modelo llame aparte "registrar_evento_roi") a

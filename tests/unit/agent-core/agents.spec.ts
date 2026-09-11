@@ -6,6 +6,7 @@ import {
   AGENT_DEFINITIONS,
   AUDITOR_NOCTURNO,
   ENRUTADOR_MENSAJES,
+  ONBOARDING_CONVERSACIONAL,
   RECEPCION_VIRTUAL,
   getAgentDefinition,
   listAgentDefinitions,
@@ -13,9 +14,16 @@ import {
 } from "@atiende-hoteles/agent-core";
 
 describe("AGENT_DEFINITIONS", () => {
-  it("declara los 3 agentes de H7 con nombre coherente con su clave", () => {
+  it("declara los 3 agentes de H7 + onboarding_conversacional (patrón Likida #7) con nombre coherente con su clave", () => {
     const names = listAgentDefinitions().map((d) => d.name);
-    expect(names.sort()).toEqual([AUDITOR_NOCTURNO, ENRUTADOR_MENSAJES, RECEPCION_VIRTUAL].sort());
+    expect(names.sort()).toEqual([AUDITOR_NOCTURNO, ENRUTADOR_MENSAJES, ONBOARDING_CONVERSACIONAL, RECEPCION_VIRTUAL].sort());
+  });
+
+  it("onboarding_conversacional declara completionStatusToolName y SOLO owner/gm pueden dispararlo", () => {
+    const onboarding = getAgentDefinition(ONBOARDING_CONVERSACIONAL)!;
+    expect(onboarding.completionStatusToolName).toBe("consultar_estado_onboarding");
+    expect(onboarding.toolNames).toContain("consultar_estado_onboarding");
+    expect([...onboarding.allowedStaffRoles].sort()).toEqual(["gm", "owner"]);
   });
 
   it("cada agente arranca en gate shadow por defecto (BP-016: ningún agente nuevo entra en autopilot por omisión)", () => {

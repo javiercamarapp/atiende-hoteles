@@ -1,16 +1,27 @@
 /**
  * Adaptador HTTP real y GENÉRICO del conector outbound PMS-enterprise -- mismo criterio
  * "esqueleto honesto" que `packages/mcp-servers/payments/src/adapters/stripe-adapter.ts`:
- * puerto real, adaptador HTTP real (fetch nativo, sin SDK), Fake para pruebas,
- * `verificadoContraReal = false` explícito. A diferencia de Stripe/Conekta, este
- * adaptador no habla el contrato de UN proveedor documentado -- habla el contrato que
- * CADA hotel de cadena define para su propio sistema (HotSOS/Optii-style): un webhook
- * HTTP que recibe un POST JSON firmado por HMAC saliente. Eso es exactamente lo que
- * "genérico configurable por hotel" significa aquí: no hay una API pública fija que
- * verificar, por lo que el contrato de prueba (`tests/integration/contracts/outbound/`)
- * corre contra un servidor HTTP local que IMPLEMENTA ese contrato mínimo (verificación
- * de firma + 200 OK), no contra un proveedor real con nombre propio.
+ * puerto real, adaptador HTTP real, Fake para pruebas, `verificadoContraReal = false`
+ * explícito. A diferencia de Stripe/Conekta, este adaptador no habla el contrato de UN
+ * proveedor documentado -- habla el contrato que CADA hotel de cadena define para su
+ * propio sistema (HotSOS/Optii-style): un webhook HTTP que recibe un POST JSON firmado
+ * por HMAC saliente. Eso es exactamente lo que "genérico configurable por hotel"
+ * significa aquí: no hay una API pública fija que verificar, por lo que el contrato de
+ * prueba (`tests/integration/contracts/outbound/`) corre contra un servidor HTTP local
+ * que IMPLEMENTA ese contrato mínimo (verificación de firma + 200 OK), no contra un
+ * proveedor real con nombre propio.
  *
+ * Patrón Likida/atiende.ai #1 (anti-SSRF): `destination.url` es una URL configurada por
+ * CADA hotel (`hotel_pms_outbound_config.webhook_url`) -- a diferencia del resto de
+ * adaptadores de este repo (Stripe/Conekta/Cloudbeds/Meta/Resend/Google, todos con base
+ * fija por proveedor), aquí un admin de hotel malicioso o comprometido podría apuntar la
+ * URL a un recurso interno (metadata de nube, servicio interno del propio backend). Por
+ * eso este adaptador usa `safeFetch()` (packages/mcp-servers/shared/src/safeFetch.ts) en
+ * vez de `fetch` nativo -- resuelve y valida la IP de destino contra rangos privados/
+ * reservados ANTES de conectar, fija esa misma IP para el socket real (anti DNS-
+ * rebinding), nunca sigue redirects automáticamente y limita el tamaño de la respuesta.
+ *
+
  * *** [PENDIENTE DE VERIFICACIÓN CONTRA EL PROVEEDOR REAL] ***
  * `verificadoContraReal = false` (constante de módulo + propiedad de instancia): este
  * código hace POSTs HTTP reales cuando se le da una `OutboundTaskDestination`, y se
@@ -35,6 +46,7 @@
 import {
   PortRateLimitError,
   retryWithBackoff,
+  safeFetch,
   signHmac,
   type AdapterStatus,
 } from "@atiende-hoteles/mcp-shared";
@@ -64,6 +76,13 @@ export interface WebhookOutboundAdapterConfig {
    *  `StripeAdapter`). Un no-2xx que NO es 429 nunca se reintenta -- puede ser un
    *  payload rechazado a propósito por el hotel, reintentar ciegamente lo empeoraría. */
   maxAttempts?: number;
+  /** SOLO para pruebas -- ver `SafeFetchOptions.allowPrivateIpForTesting`
+   *  (packages/mcp-servers/shared/src/safeFetch.ts): permite que la suite de contrato
+   *  (`tests/integration/contracts/outbound/webhook-outbound-adapter.spec.ts`) hable con
+   *  `tests/support/fakeOutboundTargetServer.ts`, que por diseño corre en 127.0.0.1
+   *  (loopback). NUNCA debe fijarse `true` a partir de `destination` (dato del hotel) --
+   *  ver ese mismo comentario para el porqué. Default `false`. */
+  allowPrivateIpForTesting?: boolean;
 }
 
 /**
@@ -83,10 +102,12 @@ export class WebhookOutboundAdapter implements OutboundTaskSyncPort {
   readonly verificadoContraReal = false as const;
   private readonly requestTimeoutMs: number;
   private readonly maxAttempts: number;
+  private readonly allowPrivateIpForTesting: boolean;
 
   constructor(config: WebhookOutboundAdapterConfig = {}) {
     this.requestTimeoutMs = config.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
     this.maxAttempts = config.maxAttempts ?? 4;
+    this.allowPrivateIpForTesting = config.allowPrivateIpForTesting ?? false;
   }
 
   /** No depende de credenciales de proceso (ver comentario de cabecera de `port.ts`):
@@ -101,7 +122,7 @@ export class WebhookOutboundAdapter implements OutboundTaskSyncPort {
 
     const response = await retryWithBackoff(
       async () => {
-        const res = await fetch(destination.url, {
+        const res = await safeFetch(destination.url, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -110,7 +131,8 @@ export class WebhookOutboundAdapter implements OutboundTaskSyncPort {
             [OUTBOUND_TASK_TYPE_HEADER]: task.taskType,
           },
           body: rawBody,
-          signal: AbortSignal.timeout(this.requestTimeoutMs),
+          timeoutMs: this.requestTimeoutMs,
+          allowPrivateIpForTesting: this.allowPrivateIpForTesting,
         });
         if (res.status === 429) {
           const retryAfterHeader = res.headers.get("Retry-After");
