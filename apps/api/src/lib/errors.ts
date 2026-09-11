@@ -73,6 +73,17 @@ export function toErrorBody(err: unknown, requestId: string): { status: number; 
       body: { code: "sin_disponibilidad", message: "No hay disponibilidad para la fecha/tipo de habitación solicitada.", request_id: requestId },
     };
   }
+  // REQ-AB-007 (H10-011): `fnb_registrar_traspaso()` (packages/db/migrations/
+  // 0130_fnb_centros_consumo.sql) re-valida bajo lock incluso cuando la ruta ya
+  // pre-validó con `planFnbInventoryTransfer` -- si la existencia cambió entre el
+  // pre-chequeo y el lock (carrera real), este es el mapeo que evita que esa condición
+  // caiga al 500 genérico.
+  if (/stock_insuficiente|traspaso_invalido|centro_invalido/.test(message)) {
+    return {
+      status: 409,
+      body: { code: "conflict", message: "El traspaso de inventario no es válido con la existencia/centros actuales.", request_id: requestId },
+    };
+  }
   if (/transicion_invalida/.test(message)) {
     return {
       status: 409,
