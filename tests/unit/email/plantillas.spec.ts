@@ -1,4 +1,4 @@
-// H12a · Verifica, para cada una de las 12 plantillas de packages/email, que renderizar
+// H12a · Verifica, para cada una de las 13 plantillas de packages/email, que renderizar
 // sus datos de muestra no lanza, que ni el HTML ni el texto quedan con basura de
 // interpolación (`undefined`/`[object Object]`) y que ambos formatos contienen al menos
 // un dato clave de la muestra (no solo el HTML -- el texto plano es obligatorio, ver
@@ -19,6 +19,7 @@ const CLAVES: Record<string, string[]> = {
   "recibo-pago": ["F-2026-00981", "$5,940.00"],
   "cfdi-disponible": ["3F2A9C10-6B4D-4E7A-9F1C-2D8E5A0B7C34"],
   "prospeccion-comercial": ["Hacienda San Ignacio", "Roberto Peón"],
+  "cotizacion-abandonada": ["Hotel Boutique Casa Mérida", "Habitación Doble Superior"],
 };
 
 describe("plantillas de correo (H12a)", () => {

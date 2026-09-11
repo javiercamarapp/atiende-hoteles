@@ -374,6 +374,14 @@ export interface DecidirAccionesInput {
 
 const NEGATIVOS: ReadonlySet<SentimentLabel> = new Set(["negativo", "muy_negativo"]);
 
+/** Azúcar exportada: mismo criterio que usa `decidirAcciones` para decidir si el
+ *  review en su conjunto cuenta como "negativo" -- reutilizada por REQ-CRM-003
+ *  (apps/api/src/routes/reputacion.ts) para saber qué temas de esta reseña son
+ *  candidatos a la acumulación de menciones negativas (ver acumulacionTickets.ts). */
+export function esSentimientoNegativo(etiqueta: SentimentLabel): boolean {
+  return NEGATIVOS.has(etiqueta);
+}
+
 /**
  * Decide, de forma determinista, qué acción(es) dispara una clasificación ya hecha
  * (REQ-CRM-002: "disparando la acción correspondiente: ticket, mensaje proactivo,

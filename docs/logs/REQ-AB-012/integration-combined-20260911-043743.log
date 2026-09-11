@@ -1,0 +1,13 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/Users/javiercamaraportepetit/Desktop/supabase/hoteles/.claude/worktrees/fusion-ab-restantes[39m
+
+ [32m✓[39m tests/integration/folio/ab012-captura-cargos.spec.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 16472[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AB-012: reporte de tasa de captura de cargos ≥99.5%[2m > [22mcaso positivo del REQ: 199/200 capturados (99.5% exacto) => cumpleUmbral=true [33m 8979[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AB-012: reporte de tasa de captura de cargos ≥99.5%[2m > [22mcaso negativo del REQ: una tasa por debajo del umbral se reporta como cumpleUmbral=false, con el detalle de lo no capturado [33m 592[2mms[22m[39m
+ [32m✓[39m tests/integration/folio/ab012-bypass-por-concepto.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 3082[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m18 passed[39m[22m[90m (18)[39m
+[2m   Start at [22m 22:42:43
+[2m   Duration [22m 25.45s[2m (transform 2.54s, setup 0ms, collect 5.21s, tests 19.55s, environment 0ms, prepare 133ms)[22m
+

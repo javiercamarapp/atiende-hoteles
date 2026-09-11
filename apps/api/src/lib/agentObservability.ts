@@ -20,6 +20,13 @@
 // redactar sigue siendo lo que la ruta devuelve en la respuesta HTTP (`mensaje: result.
 // message`) -- eso no es "persistir una traza de observabilidad", es la respuesta viva
 // al actor (staff/huésped) que disparó la corrida, que necesita leer el dato real.
+//
+// REQ-AGT-007 (H19-011/OBS): `event.toolInput`/`event.promptVersion` (agent-core
+// `trace.ts`, poblados por `AgentRunner` SOLO en el `tool_call` de una tool
+// económica/legal -- `effect==="money"` o `isPriceOrEmission`) se persisten aquí bajo
+// `inputHerramienta`/`versionPrompt` -- son el "registro de la regla/prompt que la
+// originó" que el criterio de aceptación exige poder reconstruir desde `audit_log`, sin
+// tener que reproducir la corrida ni confiar en la memoria de quien la ejecutó.
 import { redact, type AgentTraceEvent } from "@atiende-hoteles/agent-core";
 import type { DbClient } from "@atiende-hoteles/db";
 
@@ -60,6 +67,13 @@ export async function persistAgentTraceEvents(params: PersistAgentTraceEventsPar
         // Defensa en profundidad (ver comentario de archivo): redact() otra vez aquí,
         // aunque agent-core `runner.ts` ya debió haberlo hecho antes de `emit()`.
         mensaje: event.message === undefined ? undefined : redact(event.message),
+        // REQ-AGT-007: input real (ya redactado por `describeApprovalInput` en
+        // agent-core) y hash del `systemPrompt` vigente -- solo presentes en el
+        // `tool_call` de una tool económica/legal (ver comentario de archivo). Defensa
+        // en profundidad igual que `mensaje`: si `event.toolInput` trajera PII sin pasar
+        // por `redact()` en agent-core, se redacta otra vez aquí antes del INSERT.
+        inputHerramienta: event.toolInput === undefined ? undefined : redact(event.toolInput),
+        versionPrompt: event.promptVersion,
       }),
     ]);
   }

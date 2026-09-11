@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /private/tmp/wf-hoteles-fix-ugc-docs
+
+ ✓ tests/unit/domain-hotel/ugc-content-calendar.spec.ts (8 tests) 9ms
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  03:43:30
+   Duration  314ms (transform 93ms, setup 0ms, collect 136ms, tests 9ms, environment 0ms, prepare 37ms)
+
+exit: 0

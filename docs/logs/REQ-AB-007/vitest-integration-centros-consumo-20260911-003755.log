@@ -1,0 +1,13 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-req-ab-007[39m
+
+ [32m✓[39m tests/integration/ab/centros-consumo.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 18085[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AB-007: centros de consumo, traspasos internos y costo de desayuno imputado[2m > [22mrechaza traspasar más existencia de la que hay en el origen (stock insuficiente, bajo lock real) [33m 471[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AB-007: centros de consumo, traspasos internos y costo de desayuno imputado[2m > [22mimputa el costo del desayuno = ocupación proyectada × costo teórico, y se RECALCULA solo con nueva ocupación (H10-012) [33m 1145[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AB-007: centros de consumo, traspasos internos y costo de desayuno imputado[2m > [22msin configurar el costo por habitación-noche, el costo imputado es honestamente $0 (nunca una cifra inventada) [33m 308[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 00:39:18
+[2m   Duration [22m 28.08s[2m (transform 4.71s, setup 0ms, collect 8.82s, tests 18.08s, environment 0ms, prepare 78ms)[22m
+

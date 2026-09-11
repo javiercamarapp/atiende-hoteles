@@ -1,0 +1,11 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-ticket-autom-tico-por-menciones-negativas-en-rese-[39m
+
+ [32m✓[39m tests/unit/domain-hotel/reputacion-acumulacion-tickets.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/integration/crm/ticket-por-repeticion.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 998[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m13 passed[39m[22m[90m (13)[39m
+[2m   Start at [22m 01:25:35
+[2m   Duration [22m 1.77s[2m (transform 423ms, setup 0ms, collect 753ms, tests 1000ms, environment 0ms, prepare 98ms)[22m
+

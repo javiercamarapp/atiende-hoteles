@@ -1,0 +1,11 @@
+$ npm run typecheck
+
+> atiende-hoteles@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json && tsc --noEmit -p apps/api/tsconfig.json
+
+$ npm run check:migraciones
+
+> atiende-hoteles@0.0.0 check:migraciones
+> node --experimental-strip-types scripts/check-migraciones.ts
+
+check-migraciones: OK (95 migración(es) verificadas contra el manifiesto base, 0 DROP/ALTER destructivo sin aprobar).

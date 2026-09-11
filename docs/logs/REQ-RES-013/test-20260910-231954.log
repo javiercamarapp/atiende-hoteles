@@ -1,0 +1,18 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-seguimiento-de-reserva-a-48h-7-d-as[39m
+
+ [32m✓[39m tests/unit/domain-hotel/seguimiento-solicitud-grupo.spec.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/adversarial/propuesta-rfp-sin-validacion.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 5880[2mms[22m[39m
+ [32m✓[39m tests/integration/grupos/seguimiento.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 5592[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-RES-013: seguimiento automático de solicitudes de grupo (48h/7d) + gate de validación humana para RFP[2m > [22m0 propuestas sin registro de validación humana: la ruta rechaza el envío sin validacionId válido, y lo permite tras registrar la validación [33m 324[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m24 passed[39m[22m[90m (24)[39m
+[2m   Start at [22m 23:19:56
+[2m   Duration [22m 10.36s[2m (transform 2.87s, setup 0ms, collect 5.74s, tests 11.48s, environment 1ms, prepare 390ms)[22m
+
+
+> atiende-hoteles@0.0.0 check:migraciones
+> node --experimental-strip-types scripts/check-migraciones.ts
+
+check-migraciones: OK (95 migración(es) verificadas contra el manifiesto base, 0 DROP/ALTER destructivo sin aprobar).

@@ -1,0 +1,10 @@
+
+> atiende-hoteles@0.0.0 lint
+> eslint .
+
+[0m[0m
+[0m[4m/private/tmp/wf-hoteles-ticket-autom-tico-por-menciones-negativas-en-rese-/tests/e2e/paridad-restaurantes-login.spec.ts[24m[0m
+[0m  [2m62:89[22m  [33mwarning[39m  'page' is defined but never used. Allowed unused args must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[33m[1m✖ 1 problem (0 errors, 1 warning)[22m[39m[0m
+[0m[33m[1m[22m[39m[0m

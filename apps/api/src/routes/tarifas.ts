@@ -15,8 +15,9 @@ import { z } from "zod";
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
-import { ADMIN_ROLES, MANAGE_INVENTORY_ROLES } from "../domain/roles.ts";
+import { ADMIN_ROLES, MANAGE_INVENTORY_ROLES, MONEY_ROLES } from "../domain/roles.ts";
 import { loadTaxConfig } from "../pms/taxConfig.ts";
+import { insertExchangeRate, loadExchangeRates } from "../pms/exchangeRate.ts";
 import type { AppDeps, HonoEnvBindings } from "../types.ts";
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "formato de fecha esperado YYYY-MM-DD");
@@ -70,6 +71,31 @@ const overbookingSchema = z.object({
   occupancyThresholdPct: z.number().min(0).max(100),
 });
 
+// REQ-RES-015: espejo de las columnas reales de `hotel_exchange_rate` (0150) --
+// `fromCurrency`/`toCurrency` son códigos ISO 4217 de 3 letras (mismo check que la
+// tabla), `rate` unidades de `toCurrency` por 1 unidad de `fromCurrency` (> 0, mismo
+// check), `effectiveDate` la fecha desde la que esta tasa es vigente (inclusive).
+const exchangeRateSchema = z
+  .object({
+    fromCurrency: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z]{3}$/, "debe ser un código de divisa ISO 4217 de 3 letras (ej. 'USD')"),
+    toCurrency: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z]{3}$/, "debe ser un código de divisa ISO 4217 de 3 letras (ej. 'MXN')")
+      .default("MXN"),
+    rate: z.number().positive(),
+    effectiveDate: dateSchema,
+  })
+  .refine((v) => v.fromCurrency !== v.toCurrency, {
+    message: "fromCurrency y toCurrency no pueden ser la misma divisa",
+    path: ["toCurrency"],
+  });
+
 function datesInRange(desde: string, hasta: string): string[] {
   const dates: string[] = [];
   const cursor = new Date(`${desde}T00:00:00Z`);
@@ -98,6 +124,7 @@ export function tarifasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     dbSession(deps.engine),
     requireHotelMembership("hotelId"),
   );
+  app.use("/hoteles/:hotelId/tipo-cambio*", authMiddleware(deps.env), dbSession(deps.engine), requireHotelMembership("hotelId"));
 
   // ---- rate_plan (tarifas por temporada) ----
 
@@ -269,6 +296,71 @@ export function tarifasRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     );
 
     return c.json(body);
+  });
+
+  // ---- Tipo de cambio (REQ-RES-015) ----
+  //
+  // Endpoint faltante que describía el hallazgo de REQ-RES-015: el módulo de dominio
+  // puro (`packages/domain-hotel/src/reservas/multiMoneda.ts`) y la tabla (0150) ya
+  // existían y estaban probados, pero ninguna ruta HTTP dejaba a un hotel REGISTRAR su
+  // tipo de cambio vigente -- sin esto, `hotel_exchange_rate` solo podía poblarse con el
+  // cliente admin, privilegio que ningún usuario real del producto tiene (mismo
+  // hallazgo, mismo patrón de corrección, que "auditoría-1/backend [ALTO]" ya dejó
+  // documentado arriba en `routes/reservas.ts` para `folio`).
+  //
+  // Solo GET+POST (nunca PUT): 0150 es append-only (solo hay policy de INSERT/SELECT,
+  // nunca de UPDATE/DELETE) -- "corregir" una tasa mal capturada es registrar una fila
+  // NUEVA con la fecha correcta, nunca sobreescribir la anterior (mismo principio que
+  // `charge`/`payment`, 0007).
+  app.get("/hoteles/:hotelId/tipo-cambio", async (c) => {
+    assertRole(c, MONEY_ROLES);
+    const db = c.get("db");
+    const rates = await loadExchangeRates(db, c.req.param("hotelId"));
+    return c.json(
+      rates.map((r) => ({
+        id: r.id,
+        fromCurrency: r.fromCurrency,
+        toCurrency: r.toCurrency,
+        rate: r.rate,
+        effectiveDate: r.effectiveDate,
+      })),
+    );
+  });
+
+  app.post("/hoteles/:hotelId/tipo-cambio", async (c) => {
+    // Decisión financiera que afecta directamente cuánto reporta el hotel en su moneda
+    // base -- mismo criterio de rol que `PUT /impuestos` arriba (ADMIN_ROLES: owner/gm,
+    // espejo exacto de la policy de INSERT de 0150).
+    assertRole(c, ADMIN_ROLES);
+    const db = c.get("db");
+    const orgId = c.get("orgId");
+    const hotelId = c.req.param("hotelId");
+    const body = parseBody(exchangeRateSchema, await c.req.json().catch(() => ({})));
+
+    const inserted = await insertExchangeRate(db, {
+      tenantId: orgId,
+      hotelId,
+      fromCurrency: body.fromCurrency,
+      toCurrency: body.toCurrency,
+      rate: body.rate,
+      effectiveDate: body.effectiveDate,
+    });
+
+    await db.query(
+      "select public.record_audit_log($1, $2, 'hotel_exchange_rate.created', 'hotel_exchange_rate', $3, $4);",
+      [orgId, hotelId, inserted.id, JSON.stringify(body)],
+    );
+
+    return c.json(
+      {
+        id: inserted.id,
+        fromCurrency: inserted.fromCurrency,
+        toCurrency: inserted.toCurrency,
+        rate: inserted.rate,
+        effectiveDate: inserted.effectiveDate,
+      },
+      201,
+    );
   });
 
   // ---- Sobreventa por tipo de habitación ----

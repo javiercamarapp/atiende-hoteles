@@ -125,8 +125,29 @@ export function createHousekeepingTaskTool(deps: HousekeepingToolDeps): ToolDefi
   });
 }
 
+/** REQ-HK-012: umbral/ventana por defecto para escalar automáticamente un activo con
+ *  tickets repetidos (3 en 14 días) -- copia intencional (mismo criterio documentado ya
+ *  en `DEFAULT_SLA_MINUTES_BY_PRIORITY`, ticketTools.ts: agent-core sigue sin depender
+ *  de `@atiende-hoteles/domain-hotel`, "núcleo puro sin dependencias externas al
+ *  paquete") del default real de
+ *  `packages/domain-hotel/src/tickets/assetEscalation.ts::DEFAULT_ASSET_ESCALATION_POLICY`
+ *  -- `tests/unit/domain-hotel/mantenimiento-activo-escalacion.spec.ts` verifica que
+ *  ambos coinciden. */
+export const DEFAULT_ASSET_ESCALATION_POLICY = { thresholdCount: 3, windowDays: 14 } as const;
+/** Roles destinatarios por defecto de la escalación por repetición -- mismo trío
+ *  gm+owner que la escalación por SLA vencido de `guest_ticket`
+ *  (`apps/api/src/jobs/ticketEscalation.ts::escalateOverdueGuestTickets`): el problema
+ *  ya se reportó N veces sin resolverse de raíz, así que sube un nivel jerárquico. */
+export const DEFAULT_ASSET_ESCALATION_ROLES = ["gm", "owner"] as const;
+
 const createMaintenanceTicketInput = z.object({
   roomCode: z.string().trim().min(1).max(20).optional(),
+  // REQ-HK-012: código del activo/equipo (packages/db/migrations/0130) sobre el que se
+  // reporta el ticket -- opcional a propósito (mismo criterio que `roomCode`): un
+  // ticket sin activo declarado ("el pasillo del 3er piso huele raro") se sigue
+  // registrando exactamente igual que antes de esta migración, sin historial/
+  // escalación por repetición.
+  assetCode: z.string().trim().min(1).max(20).optional(),
   title: z.string().trim().min(1).max(150),
   description: z.string().trim().min(1).max(1000),
   origin: z.enum(["huesped", "staff", "agente", "sensor"]).default("agente"),
@@ -135,12 +156,18 @@ const createMaintenanceTicketInput = z.object({
 });
 export type CreateMaintenanceTicketInput = z.infer<typeof createMaintenanceTicketInput>;
 
-/** REQ-HK-011: recibe un ticket de mantenimiento de cualquier origen. effect="write" sin
- * aprobacion -- reportar un problema no autoriza gasto todavia (eso lo exige
+/** REQ-HK-011/012: recibe un ticket de mantenimiento de cualquier origen. effect="write"
+ * sin aprobacion -- reportar un problema no autoriza gasto todavia (eso lo exige
  * `autorizar_gasto_mantenimiento` por separado). Detecta duplicados simples (mismo
- * titulo+habitacion, ticket abierto) dentro de una ventana de 24h (REQ-HK-011/012) y
- * marca la habitacion "fuera de servicio" cuando la severidad es alta (REQ-HK-014,
- * pendiente de PMS real -- aqui es la unica fuente de estado). */
+ * titulo+habitacion, ticket abierto) dentro de una ventana de 24h (REQ-HK-011) y marca
+ * la habitacion "fuera de servicio" cuando la severidad es alta (REQ-HK-014, pendiente
+ * de PMS real -- aqui es la unica fuente de estado). Cuando el llamador declara
+ * `assetCode` (REQ-HK-012), enriquece la respuesta con el historial de tickets previos
+ * de ESE activo y escala automáticamente (`escalated_at`/`escalated_to_roles`) al
+ * alcanzar el umbral configurado (`maintenance_escalation_policy`, o el default de
+ * arriba) de tickets del mismo activo dentro de la ventana de días configurada -- el
+ * conteo SIEMPRE incluye el ticket recién creado (mismo criterio "N tickets repetidos"
+ * documentado en `DEFAULT_ASSET_ESCALATION_POLICY`). */
 export function createMaintenanceTicketTool(deps: HousekeepingToolDeps): ToolDefinition<CreateMaintenanceTicketInput> {
   return defineTool({
     name: "crear_ticket_mantenimiento",
@@ -162,6 +189,21 @@ export function createMaintenanceTicketTool(deps: HousekeepingToolDeps): ToolDef
           };
         }
         roomId = roomRows[0].id;
+      }
+
+      let assetId: string | null = null;
+      if (input.assetCode) {
+        const { rows: assetRows } = await deps.db.query<{ id: string }>(
+          "select id from public.maintenance_asset where hotel_id = $1 and code = $2;",
+          [ctx.hotelId, input.assetCode],
+        );
+        if (!assetRows[0]) {
+          return {
+            ok: false,
+            summary: `No existe el activo "${input.assetCode}" en este hotel; no se creó ningún ticket.`,
+          };
+        }
+        assetId = assetRows[0].id;
       }
 
       const { rows: duplicateRows } = await deps.db.query<{ id: string }>(
@@ -189,14 +231,15 @@ export function createMaintenanceTicketTool(deps: HousekeepingToolDeps): ToolDef
 
       const { rows } = await deps.db.query<{ id: string }>(
         `insert into public.maintenance_ticket
-           (tenant_id, hotel_id, room_id, title, description, origin, severity,
+           (tenant_id, hotel_id, room_id, asset_id, title, description, origin, severity,
             estimated_cost, requires_approval, marks_room_out_of_service, created_by)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          returning id;`,
         [
           ctx.orgId,
           ctx.hotelId,
           roomId,
+          assetId,
           input.title,
           input.description,
           input.origin,
@@ -214,6 +257,91 @@ export function createMaintenanceTicketTool(deps: HousekeepingToolDeps): ToolDef
         ]);
       }
       const ticketId = rows[0]!.id;
+
+      // REQ-HK-012: historial + escalación por repetición del activo, solo cuando el
+      // llamador declaró `assetCode` -- sin activo, el ticket se comporta EXACTAMENTE
+      // igual que antes de esta migración (ver comentario de `assetCode` arriba).
+      let assetHistorial: { ticketId: string; title: string; severity: string; status: string; createdAt: string }[] = [];
+      let escalado = false;
+      let escaladoARoles: readonly string[] = [];
+      if (assetId) {
+        const { rows: policyRows } = await deps.db.query<{ threshold_count: number; window_days: number }>(
+          "select threshold_count, window_days from public.maintenance_escalation_policy where hotel_id = $1;",
+          [ctx.hotelId],
+        );
+        const policy =
+          policyRows[0] && policyRows[0].threshold_count > 0 && policyRows[0].window_days > 0
+            ? { thresholdCount: policyRows[0].threshold_count, windowDays: policyRows[0].window_days }
+            : DEFAULT_ASSET_ESCALATION_POLICY;
+
+        // Conteo "N tickets repetidos en X días" -- SIEMPRE incluye el recién creado
+        // (`created_at` del nuevo ticket ya cae dentro de la ventana que arranca en
+        // `now() - windowDays`, evaluada por Postgres en esta misma consulta).
+        const { rows: countRows } = await deps.db.query<{ n: string }>(
+          `select count(*)::text as n from public.maintenance_ticket
+           where hotel_id = $1 and asset_id = $2
+             and created_at >= now() - ($3 || ' days')::interval;`,
+          [ctx.hotelId, assetId, policy.windowDays],
+        );
+        const ticketsEnVentana = Number(countRows[0]?.n ?? "0");
+        escalado = ticketsEnVentana >= policy.thresholdCount;
+
+        if (escalado) {
+          escaladoARoles = DEFAULT_ASSET_ESCALATION_ROLES;
+          await deps.db.query(
+            `update public.maintenance_ticket
+             set escalated_at = now(), escalated_to_roles = $1::jsonb, updated_at = now()
+             where id = $2;`,
+            [JSON.stringify(escaladoARoles), ticketId],
+          );
+          await recordToolAudit({
+            db: deps.db,
+            orgId: ctx.orgId,
+            hotelId: ctx.hotelId,
+            actor: ctx.actor,
+            toolName: "crear_ticket_mantenimiento",
+            action: "maintenance_ticket.escalado_por_repeticion",
+            entityType: "maintenance_ticket",
+            entityId: ticketId,
+            before: { escaladoEn: null },
+            after: {
+              escaladoEn: new Date().toISOString(),
+              escaladoARoles,
+              activoId: assetId,
+              ticketsEnVentana,
+              umbral: policy.thresholdCount,
+              ventanaDias: policy.windowDays,
+            },
+          });
+        }
+
+        // Historial del activo (REQ-HK-012 "enriquecer cada ticket con el historial del
+        // activo asociado") -- tickets PREVIOS (excluye el recién creado), más
+        // recientes primero, sin límite de ventana: el historial completo es lo que
+        // permite a mantenimiento ver el patrón de fallas del equipo, no solo las que
+        // cayeron dentro de la ventana de escalación.
+        const { rows: historyRows } = await deps.db.query<{
+          id: string;
+          title: string;
+          severity: string;
+          status: string;
+          created_at: string;
+        }>(
+          `select id, title, severity::text as severity, status::text as status, created_at::text as created_at
+           from public.maintenance_ticket
+           where hotel_id = $1 and asset_id = $2 and id != $3
+           order by created_at desc
+           limit 20;`,
+          [ctx.hotelId, assetId, ticketId],
+        );
+        assetHistorial = historyRows.map((h) => ({
+          ticketId: h.id,
+          title: h.title,
+          severity: h.severity,
+          status: h.status,
+          createdAt: h.created_at,
+        }));
+      }
 
       // Hallazgo de auditoría (H6b): antes de esto, la ÚNICA forma de enterarse de un
       // ticket de mantenimiento nuevo era el tablero de staff -- ver comentario de
@@ -247,8 +375,17 @@ export function createMaintenanceTicketTool(deps: HousekeepingToolDeps): ToolDef
 
       return {
         ok: true,
-        summary: `Ticket de mantenimiento "${input.title}" creado (severidad ${input.severity}).`,
-        data: { ticketId, requiresApproval, marksOutOfService, notificacion, ...(outboundSync ? { outboundSync } : {}) },
+        summary: escalado
+          ? `Ticket de mantenimiento "${input.title}" creado (severidad ${input.severity}); escalado a ${escaladoARoles.join("/")} por repetición sobre el mismo activo.`
+          : `Ticket de mantenimiento "${input.title}" creado (severidad ${input.severity}).`,
+        data: {
+          ticketId,
+          requiresApproval,
+          marksOutOfService,
+          notificacion,
+          ...(outboundSync ? { outboundSync } : {}),
+          ...(assetId ? { assetId, assetHistorial, escalado, escaladoARoles } : {}),
+        },
       };
     },
   });

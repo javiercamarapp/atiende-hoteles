@@ -1,0 +1,43 @@
+$ npx vitest run tests/unit/domain-hotel/multi-moneda.spec.ts
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-soporte-multi-moneda-en-reservas[39m
+
+ [32m✓[39m tests/unit/domain-hotel/multi-moneda.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m11 passed[39m[22m[90m (11)[39m
+[2m   Start at [22m 23:09:25
+[2m   Duration [22m 1.56s[2m (transform 395ms, setup 0ms, collect 884ms, tests 3ms, environment 0ms, prepare 61ms)[22m
+
+
+$ npm run check:migraciones
+
+> atiende-hoteles@0.0.0 check:migraciones
+> node --experimental-strip-types scripts/check-migraciones.ts
+
+check-migraciones: OK (95 migración(es) verificadas contra el manifiesto base, 0 DROP/ALTER destructivo sin aprobar).
+
+$ node --experimental-strip-types scripts/export-supabase-migrations.ts
+export-supabase-migrations: 95 migración(es) escritas en /private/tmp/wf-hoteles-soporte-multi-moneda-en-reservas/supabase/migrations
+
+$ npx vitest run tests/unit/migrations.spec.ts
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-soporte-multi-moneda-en-reservas[39m
+
+ [32m✓[39m tests/unit/migrations.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 26618[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22maplica todas las migraciones desde una base vacia [33m 5398[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22mes idempotente: correrlo dos veces no reaplica nada la segunda vez [33m 5355[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22mrechaza continuar si una migracion ya aplicada fue editada (expand-only) [33m 5497[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22mdb:reset (dropAllMigratedObjects) deja la base lista para re-aplicar desde cero [33m 10367[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 23:09:30
+[2m   Duration [22m 27.44s[2m (transform 109ms, setup 0ms, collect 200ms, tests 26.62s, environment 0ms, prepare 158ms)[22m
+
+
+$ npm run typecheck
+
+> atiende-hoteles@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json && tsc --noEmit -p apps/api/tsconfig.json
+

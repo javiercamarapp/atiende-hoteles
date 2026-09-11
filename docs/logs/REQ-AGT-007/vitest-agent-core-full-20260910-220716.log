@@ -1,0 +1,51 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-req-agt-007[39m
+
+ [32m✓[39m tests/unit/agent-core/tool-schema-strict.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 35085[2mms[22m[39m
+   [33m[2m✓[22m[39m recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001)[2m > [22mcerrar un ticket con autorizar_gasto_mantenimiento deja una fila de audit_log con timestamp, agente y valor anterior/nuevo reales [33m 19328[2mms[22m[39m
+   [33m[2m✓[22m[39m recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001)[2m > [22maudit_log sigue siendo append-only e inmutable para la fila que dejo la tool (ADR-005/GOB-026) [33m 15632[2mms[22m[39m
+ [32m✓[39m tests/integration/agent-core/roi-event-cobertura.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 9308[2mms[22m[39m
+ [32m✓[39m tests/integration/agent-core/postgres-approval-queue.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 35312[2mms[22m[39m
+   [33m[2m✓[22m[39m PostgresApprovalQueue (contrato ApprovalQueue)[2m > [22mrechaza que el mismo actor confirme dos veces una aprobacion de dinero [33m 380[2mms[22m[39m
+   [33m[2m✓[22m[39m PostgresApprovalQueue (contrato ApprovalQueue)[2m > [22mrechaza la segunda confirmacion de dinero si declara el MISMO rol con un actor distinto (aud-1 agentico.md MEDIO #6: dos alias del mismo rol no son dos personas) [33m 504[2mms[22m[39m
+   [33m[2m✓[22m[39m PostgresApprovalQueue (contrato ApprovalQueue)[2m > [22muna solicitud RECHAZADA se reusa (misma decision humana): un reintento identico del modelo obtiene el mismo id, con status 'rechazada' visible, nunca una pendiente fantasma [33m 359[2mms[22m[39m
+   [33m[2m✓[22m[39m PostgresApprovalQueue (contrato ApprovalQueue)[2m > [22mno reusa la solicitud entre hoteles distintos (misma tool+input) [33m 395[2mms[22m[39m
+   [33m[2m✓[22m[39m PostgresApprovalQueue (contrato ApprovalQueue)[2m > [22mdecide() rechaza una solicitud expirada [33m 341[2mms[22m[39m
+   [33m[2m✓[22m[39m PostgresApprovalQueue (persistencia real)[2m > [22msobrevive un reinicio del PROCESO: el estado vive en Postgres, no en el objeto JS [33m 15025[2mms[22m[39m
+   [33m[2m✓[22m[39m PostgresApprovalQueue (persistencia real)[2m > [22mdoble confirmacion de dinero con DOS actores/roles reales via sesiones RLS distintas (owner + gm) [33m 2771[2mms[22m[39m
+ [32m✓[39m tests/integration/agent-core/trazabilidad-decision.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 15486[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AGT-007: trazabilidad/explicabilidad de una decisión económica de agente (AgentRunner + Postgres real)[2m > [22muna decisión económica APROBADA (autorizar_gasto_mantenimiento) se reconstruye por completo desde su fila de audit_log: input real + regla/prompt + resultado [33m 364[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AGT-007: trazabilidad/explicabilidad de una decisión económica de agente (AgentRunner + Postgres real)[2m > [22muna decisión económica DENEGADA (ticket inexistente) es IGUAL de trazable: input + regla/prompt quedan registrados aunque la acción se rechace -- caso negativo [33m 488[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AGT-007: trazabilidad/explicabilidad de una decisión económica de agente (AgentRunner + Postgres real)[2m > [22mun cambio en el systemPrompt del agente produce un promptVersion DISTINTO -- el hash está atado al texto real de la regla, no es un valor fijo [33m 394[2mms[22m[39m
+ [32m✓[39m tests/integration/agent-core/fallback-proveedor.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 14350[2mms[22m[39m
+ [32m✓[39m tests/integration/agent-core/staff-notify.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 14873[2mms[22m[39m
+   [33m[2m✓[22m[39m staffNotify: notificación activa de WhatsApp al crear housekeeping_task/maintenance_ticket/guest_ticket[2m > [22mcrear_ticket_mantenimiento notifica al staff con rol maintenance, y NO reenvía en un duplicado dentro de 24h [33m 395[2mms[22m[39m
+   [33m[2m✓[22m[39m staffNotify: notificación activa de WhatsApp al crear housekeeping_task/maintenance_ticket/guest_ticket[2m > [22msin ningún staff del rol responsable con whatsapp_phone registrado, la tarea se crea igual [33m 369[2mms[22m[39m
+   [33m[2m✓[22m[39m staffNotify: notificación activa de WhatsApp al crear housekeeping_task/maintenance_ticket/guest_ticket[2m > [22mbest effort: un adaptador que falla no bloquea la creación del ticket [33m 487[2mms[22m[39m
+ [32m✓[39m tests/integration/agent-core/journey-checkin-incidencia.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 23555[2mms[22m[39m
+   [33m[2m✓[22m[39m Journey check-in/incidencia · AgentRunner + FakeProvider (shadow/propone/autopilot)[2m > [22mshadow: NINGUNA tool de escritura/externa se ejecuta (solo se registra la intencion) [33m 307[2mms[22m[39m
+   [33m[2m✓[22m[39m Journey check-in/incidencia · AgentRunner + FakeProvider (shadow/propone/autopilot)[2m > [22mautopilot: crea tarea + ticket, envía WhatsApp transaccional SIN espera humana, y detiene la autorización de gasto esperando aprobación [33m 716[2mms[22m[39m
+   [33m[2m✓[22m[39m Journey check-in/incidencia · AgentRunner + FakeProvider (shadow/propone/autopilot)[2m > [22mT2/CRÍTICO: si el modelo pone un destinatario DISTINTO al huésped de la conversación en curso, la plantilla transaccional NO se auto-aprueba (cae a espera humana) [33m 428[2mms[22m[39m
+   [33m[2m✓[22m[39m Journey check-in/incidencia · AgentRunner + FakeProvider (shadow/propone/autopilot)[2m > [22mT2/CRÍTICO: un agente SIN huésped vinculado (p.ej. prueba operativa de staff) nunca auto-aprueba una plantilla transaccional, sin importar el destinatario [33m 546[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/env-provider-openrouter.spec.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 792[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/ocr-aislado-sin-internet.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 92[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/runner.spec.ts [2m([22m[2m33 tests[22m[2m)[22m[32m 275[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/tool.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/roles.spec.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/no-parallel-tool-money.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/provider.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/pricing.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/approval.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/disclosure.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/agents.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/redact.spec.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/context.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/postgres-approval-concurrency.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/roi-tools.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/trace.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m23 passed[39m[22m[90m (23)[39m
+[2m      Tests [22m [1m[32m231 passed[39m[22m[90m (231)[39m
+[2m   Start at [22m 22:10:12
+[2m   Duration [22m 157.83s[2m (transform 2.05s, setup 0ms, collect 6.68s, tests 149.16s, environment 0ms, prepare 238ms)[22m
+

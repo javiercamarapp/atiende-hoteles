@@ -18,6 +18,7 @@
  */
 
 import { randomInt } from "node:crypto";
+import { resolveConsentJurisdiction } from "./consentLedger.ts";
 
 export const OTP_CODE_LENGTH = 6;
 export const OTP_TTL_MINUTES = 10;
@@ -109,4 +110,49 @@ export function evaluateOtpConfirmation(input: EvaluateOtpConfirmationInput): Ev
     };
   }
   return { outcome: "aceptado", applyChange: true, nextStatus: "confirmado", attemptsAfter: input.attemptsBefore };
+}
+
+/**
+ * REQ-AGT-010 (P1/SEG): "El sistema debe implementar rate limits por número/tenant/país
+ * y exigir OTP para cambios de datos sensibles del huésped." La mitad OTP de este
+ * requisito ya la cubre todo lo de arriba (REQ-HUE-023, mismo archivo); esto añade la
+ * ÚNICA pieza de regla de negocio que faltaba para el límite de tasa: qué compone su
+ * clave. El CONTEO en sí (ventana fija, incremento, TTL) es infraestructura y reutiliza
+ * `RateLimiter` de `apps/api/src/lib/rateLimit.ts` -- el MISMO mecanismo en memoria ya
+ * usado por `POST /registro` y `POST /correo/olvide-contrasena` (ninguna tabla nueva,
+ * ningún store distribuido nuevo); lo único distinto aquí es la CLAVE, de "ip" a
+ * "tenant+país+número". Se resuelve en este módulo (no en la ruta) para que "qué cuenta
+ * como el mismo bucket" tenga una sola fuente de verdad pura y probada, en vez de vivir
+ * como un template string inline dentro de `apps/api/src/routes/huespedes.ts`.
+ *
+ * "País" reutiliza `resolveConsentJurisdiction` (`consentLedger.ts`, REQ-HUE-024) en vez
+ * de inventar una segunda tabla de prefijos E.164: ni `org` ni `location`/`hotel` tienen
+ * ninguna columna de jurisdicción (packages/db/migrations/0002_org_location_hotel.sql)
+ * -- la única señal de país que el sistema conoce hoy para un huésped puntual es el
+ * prefijo E.164 de su propio teléfono (dos huéspedes del MISMO hotel pueden escribir
+ * desde países distintos, así que "país" nunca se deriva del hotel/tenant), y ya existe
+ * exactamente una función de dominio que lo deriva -- reutilizarla evita una segunda
+ * tabla de prefijos desincronizándose de la primera con el tiempo. Un teléfono sin
+ * prefijo reconocible cae en "OTRA"/"DESCONOCIDA" (los mismos cajones honestos de esa
+ * función) en vez de romper el límite: la clave sigue siendo única por tenant+teléfono
+ * aunque el país no se pueda clasificar, así que un formato de teléfono raro NUNCA queda
+ * sin límite -- solo pierde la granularidad extra de país.
+ */
+export interface GuestContactOtpRateLimitKeyInput {
+  /** `org.id` (tenant) -- mismo valor que `guest_contact_change_request.tenant_id`. */
+  readonly tenantId: string;
+  /** El teléfono YA REGISTRADO del huésped (`guest.phone`, el canal original al que se
+   *  envía el OTP) -- NUNCA el `valorNuevo` solicitado, mismo principio que el resto de
+   *  este archivo: limitar por el valor que un atacante no controla. */
+  readonly phone: string;
+}
+
+/** Compone la clave de límite de tasa exigida por REQ-AGT-010: (número, tenant, país).
+ *  Determinista y pura -- dos llamadas con los mismos `tenantId`/`phone` SIEMPRE
+ *  producen la misma clave (mismo país derivado), y cualquiera de las 3 dimensiones
+ *  distinta produce una clave distinta (huéspedes de hoteles/tenants distintos, o
+ *  números de países distintos, nunca comparten balde aunque coincida el resto). */
+export function buildGuestContactOtpRateLimitKey(input: GuestContactOtpRateLimitKeyInput): string {
+  const pais = resolveConsentJurisdiction(input.phone);
+  return `otp-contacto:${input.tenantId}:${pais}:${input.phone}`;
 }

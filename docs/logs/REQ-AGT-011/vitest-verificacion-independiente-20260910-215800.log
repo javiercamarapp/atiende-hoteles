@@ -1,0 +1,23 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-req-agt-011[39m
+
+ [32m✓[39m tests/unit/agent-core/runner.spec.ts [2m([22m[2m33 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/provider.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m tests/integration/agent-core/fallback-proveedor.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 12314[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AGT-011: fallback de proveedor de modelo en canales conversacionales (router propio + Postgres real)[2m > [22mproveedor primario falla A MITAD de una llamada ya en curso (transitorio) -> AgentRunner.fallbackProvider reintenta la MISMA ronda, sin repetir ninguna tool ya ejecutada, y la traza deja rastro (provider_fallback) [33m 434[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AGT-011: fallback de proveedor de modelo en canales conversacionales (router propio + Postgres real)[2m > [22msi NINGÚN proveedor (ni primario ni respaldo) está disponible, la corrida se cierra explícitamente 'no_configurado' -- nunca fabrica una respuesta [33m 327[2mms[22m[39m
+ [32m✓[39m tests/adversarial/decisiones-reservadas-fundador.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 15088[2mms[22m[39m
+   [33m[2m✓[22m[39m adversarial: catálogo cerrado de decisiones reservadas al fundador (REQ-GOB-012)[2m > [22mcategoría "retencion_identidad_mayor_30_dias": extender la retención a 45 días se bloquea sin aprobación del fundador, y se permite una vez registrada [33m 891[2mms[22m[39m
+   [33m[2m✓[22m[39m adversarial: catálogo cerrado de decisiones reservadas al fundador (REQ-GOB-012)[2m > [22mcategoría "shadow_a_autopilot_revenue": subir auditor_nocturno a autopilot se bloquea sin aprobación, y se permite una vez registrada [33m 447[2mms[22m[39m
+   [33m[2m✓[22m[39m adversarial: catálogo cerrado de decisiones reservadas al fundador (REQ-GOB-012)[2m > [22mcategoría "precios_de_lista": fijar la estructura de precio de lista de un hotel se bloquea sin aprobación, y se permite una vez registrada [33m 492[2mms[22m[39m
+   [33m[2m✓[22m[39m adversarial: catálogo cerrado de decisiones reservadas al fundador (REQ-GOB-012)[2m > [22mcategoría "cambio_proveedor_modelo_telefonia_bd" (alcance plataforma): bloqueado sin aprobación (incluso para el fundador) y bloqueado para el owner incluso YA con aprobación [33m 664[2mms[22m[39m
+   [33m[2m✓[22m[39m adversarial: catálogo cerrado de decisiones reservadas al fundador (REQ-GOB-012)[2m > [22muna aprobación ya registrada es inmutable: intentar reescribir su texto/categoría (en vez de solo revocar) se bloquea [33m 408[2mms[22m[39m
+ [32m✓[39m tests/integration/api/agentes.spec.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 11971[2mms[22m[39m
+   [33m[2m✓[22m[39m PATCH /hoteles/:hotelId/agentes/:agente/config (transición de gate shadow -> propone -> autopilot)[2m > [22mun admin (owner/gm) SÍ puede pasar el gate a 'propone' y a 'autopilot', y cada transición deja bitácora (quién/cuándo/de-qué-a-qué) [33m 361[2mms[22m[39m
+   [33m[2m✓[22m[39m PATCH /hoteles/:hotelId/agentes/:agente/config (transición de gate shadow -> propone -> autopilot)[2m > [22mauditor_nocturno (revenue) a 'autopilot' exige aprobación del fundador incluso para owner: 409 claro sin ella, 200+auditado con ella [33m 355[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m      Tests [22m [1m[32m76 passed[39m[22m[90m (76)[39m
+[2m   Start at [22m 21:58:09
+[2m   Duration [22m 20.73s[2m (transform 4.52s, setup 0ms, collect 13.37s, tests 39.42s, environment 1ms, prepare 1.14s)[22m
+

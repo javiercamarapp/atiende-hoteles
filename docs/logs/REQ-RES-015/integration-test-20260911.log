@@ -1,0 +1,99 @@
+$ npx vitest run --config vitest.config.ts --pool=forks --poolOptions.forks.singleFork tests/integration/api/multi-moneda.spec.ts
+
+ RUN  v3.2.7 /tmp/wf-hoteles-fix-multimoneda
+
+ ✓ tests/integration/api/multi-moneda.spec.ts (9 tests) 950ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  03:55:18
+   Duration  1.68s (transform 367ms, setup 0ms, collect 614ms, tests 950ms, environment 0ms, prepare 30ms)
+
+
+$ npm run typecheck
+
+> atiende-hoteles@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json && tsc --noEmit -p apps/api/tsconfig.json
+
+(sin salida = 0 errores de tipo)
+
+
+$ npx eslint apps/api/src/pms/exchangeRate.ts apps/api/src/pms/quoteConversion.ts apps/api/src/pms/dbRoomRatePort.ts apps/api/src/routes/tarifas.ts apps/api/src/routes/quotes.ts apps/api/src/routes/reservas.ts tests/integration/api/multi-moneda.spec.ts
+
+(sin salida = 0 errores/warnings)
+
+
+$ npm run check:migraciones
+
+> atiende-hoteles@0.0.0 check:migraciones
+> node --experimental-strip-types scripts/check-migraciones.ts
+
+check-migraciones: OK (95 migración(es) verificadas contra el manifiesto base, 0 DROP/ALTER destructivo sin aprobar).
+
+
+$ npx vitest run --config vitest.config.ts tests/unit/domain-hotel
+
+ Test Files  35 passed (35)
+      Tests  498 passed (498)
+   Start at  03:56:02
+   Duration  1.71s (transform 679ms, setup 0ms, collect 4.25s, tests 245ms, environment 4ms, prepare 1.59s)
+
+
+$ npx vitest run --config vitest.config.ts --pool=forks --poolOptions.forks.singleFork tests/integration/api
+
+ ✓ tests/integration/api/housekeeping-mantenimiento.spec.ts (11 tests) 1079ms
+ ✓ tests/integration/api/agentes.spec.ts (14 tests) 1106ms
+ ✓ tests/integration/api/observabilidad.spec.ts (21 tests) 877ms
+ ✓ tests/integration/api/multi-moneda.spec.ts (9 tests) 903ms
+ ✓ tests/integration/api/voz-elevenlabs.spec.ts (16 tests) 953ms
+ ✓ tests/integration/api/email-outbox-handlers.spec.ts (5 tests) 924ms
+ ✓ tests/integration/api/pms-outbound-conector.spec.ts (10 tests) 994ms
+ ✓ tests/integration/api/mensajeria.spec.ts (9 tests) 864ms
+ ✓ tests/integration/api/reservas-y-folios.spec.ts (8 tests) 917ms
+ ✓ tests/integration/api/auditoria-conversaciones.spec.ts (9 tests) 938ms
+ ✓ tests/integration/api/correo-cuenta.spec.ts (5 tests) 1095ms
+ ✓ tests/integration/api/mensajeria-clasificacion-tickets.spec.ts (7 tests) 871ms
+ ✓ tests/integration/api/incidentes.spec.ts (5 tests) 914ms
+ ✓ tests/integration/api/consentimiento.spec.ts (9 tests) 921ms
+ ✓ tests/integration/api/auth-google.spec.ts (3 tests) 1686ms
+ ✓ tests/integration/api/auth-y-resumen.spec.ts (8 tests) 989ms
+ ✓ tests/integration/api/registro.spec.ts (3 tests) 953ms
+ ✓ tests/integration/api/recepcion.spec.ts (3 tests) 877ms
+ ✓ tests/integration/api/reservas-carga-concurrente.spec.ts (3 tests) 879ms
+ ✓ tests/integration/api/back-office-cobros.spec.ts (4 tests) 861ms
+ ✓ tests/integration/api/registro-onboarding.spec.ts (4 tests) 883ms
+ ✓ tests/integration/api/mensajeria-webhook-verificacion.spec.ts (5 tests) 788ms
+ ✓ tests/integration/api/tarifas-impuestos.spec.ts (2 tests) 839ms
+
+ Test Files  23 passed (23)
+      Tests  173 passed (173)
+   Start at  03:56:08
+   Duration  23.77s
+
+
+$ npx vitest run --config vitest.config.ts --pool=forks --poolOptions.forks.singleFork tests/integration/reservas tests/integration/folio tests/integration/gates
+
+ Test Files  16 passed (16)
+      Tests  67 passed (67)
+   Start at  03:56:36
+   Duration  15.66s
+
+
+$ npx vitest run --config vitest.config.ts --pool=forks --poolOptions.forks.singleFork tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts tests/adversarial/tarifas-roles.spec.ts tests/adversarial/idempotencia-concurrente.spec.ts tests/adversarial/reservas-aislamiento.spec.ts tests/adversarial/reserva-concurrencia-y-limites.spec.ts tests/adversarial/roles.spec.ts
+
+ Test Files  6 passed (6)
+      Tests  45 passed (45)
+   Start at  03:55:40
+   Duration  8.77s
+
+Resumen: cableado real de REQ-RES-015 (endpoint POST/GET /hoteles/:hotelId/tipo-cambio +
+conversión activa en routes/quotes.ts y routes/reservas.ts vía
+apps/api/src/pms/quoteConversion.ts + apps/api/src/pms/exchangeRate.ts) verificado con
+9 tests de integración NUEVOS contra Postgres embebido real (multi-moneda.spec.ts, sin
+mocks: registrar/consultar tipo de cambio, cotizar y reservar una tarifa fijada en USD
+con conversión reflejada en la respuesta real, dos monedas activas en el mismo periodo,
+y dos casos negativos fail-closed sin tasa vigente -- uno en /quotes y uno en /reservas,
+verificando además que la reserva NUNCA queda creada) + 0 regresión en las 498 pruebas
+unitarias de domain-hotel, 173 de tests/integration/api, 67 de
+reservas/folio/gates y 45 de la suite adversarial de tarifas/reservas/roles/idempotencia
+ya existentes.

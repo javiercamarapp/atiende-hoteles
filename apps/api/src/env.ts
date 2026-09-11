@@ -69,6 +69,17 @@ export interface AppEnv {
    *  IP): más estricta que el resto de la API porque un abuso aquí crea filas de
    *  org/hotel/staff_user reales, no solo lee datos. */
   rateLimitRegistroPorIpPorHora: number;
+  /** REQ-AGT-010 (P1/SEG): límite de tasa de `POST .../huespedes/:guestId/contacto/
+   *  solicitudes` -- cada llamada genera un OTP real y dispara un envío de WhatsApp
+   *  real (o simulado, según credenciales), así que un abuso aquí es tanto costo
+   *  (cuota de plantillas de Meta) como acoso al huésped (recibir OTPs sin haberlos
+   *  pedido). La clave del límite es (número, tenant, país) -- ver
+   *  `buildGuestContactOtpRateLimitKey` en `@atiende-hoteles/domain-hotel` -- nunca solo
+   *  IP: la ruta exige rol de staff autenticado (`MANAGE_RESERVATIONS_ROLES`), así que
+   *  el vector real a limitar es "cuántas veces se puede pedir un OTP para ESTE
+   *  huésped/tenant/país", sin importar desde qué IP se autenticó ni qué miembro del
+   *  staff lo pidió. */
+  rateLimitOtpContactoPorNumeroTenantPaisPorHora: number;
 }
 
 const DEV_ONLY_JWT_SECRET = "atiende-hoteles-dev-only-jwt-secret-nunca-usar-en-produccion";
@@ -123,5 +134,6 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     googleIssuer: source.GOOGLE_ISSUER ?? "https://accounts.google.com",
     frontendUrl: source.FRONTEND_URL ?? corsAllowedOrigins[0]!,
     rateLimitRegistroPorIpPorHora: Number(source.RATE_LIMIT_REGISTRO_POR_IP_POR_HORA ?? 5),
+    rateLimitOtpContactoPorNumeroTenantPaisPorHora: Number(source.RATE_LIMIT_OTP_CONTACTO_POR_NUMERO_TENANT_PAIS_POR_HORA ?? 5),
   };
 }

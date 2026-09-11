@@ -1,0 +1,11 @@
+$ npx vitest run tests/unit/domain-hotel/mantenimiento-preventivo.spec.ts
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-calendario-de-mantenimiento-preventivo[39m
+
+ [32m✓[39m tests/unit/domain-hotel/mantenimiento-preventivo.spec.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m18 passed[39m[22m[90m (18)[39m
+[2m   Start at [22m 00:37:47
+[2m   Duration [22m 3.48s[2m (transform 1.22s, setup 0ms, collect 2.16s, tests 8ms, environment 0ms, prepare 88ms)[22m
+

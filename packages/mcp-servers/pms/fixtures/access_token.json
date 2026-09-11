@@ -1,0 +1,24 @@
+{
+  "source": "cloudbeds-simulator",
+  "recordedAt": "2026-09-11T03:56:04.126Z",
+  "endpoint": "access_token",
+  "request": {
+    "method": "POST",
+    "path": "/access_token"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "access_token": "sim-access-a2e1942c-2cf5-4a68-8cad-f259acde7898",
+      "token_type": "bearer",
+      "expires_in": 3600,
+      "refresh_token": "sim-refresh-token-efb19bc4-4a00-49ff-bbd2-19f94909f5fb",
+      "resources": [
+        {
+          "type": "property",
+          "id": "SIM-PROPERTY-1"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,16 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-mix-de-canal-en-revenue-management[39m
+
+ [32m✓[39m tests/unit/domain-hotel/channel-mix-engine.spec.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/integration/revenue/mix-canal.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 25255[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-REV-006: decide/ejecuta el mix de canal registrando la razón de cada decisión[2m > [22muna ocupación proyectada de alta demanda decide y persiste cerrar_ota con razón no vacía, y ejecuta el cierre en la config vigente [33m 673[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-REV-006: decide/ejecuta el mix de canal registrando la razón de cada decisión[2m > [22mPostgres RECHAZA un intento directo de insertar una decisión con razón vacía o en blanco (autoridad real, no solo la aplicación) [33m 712[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-REV-006: decide/ejecuta el mix de canal registrando la razón de cada decisión[2m > [22mPostgres RECHAZA una acción inconsistente con el tipo de canal (subir_puja sobre un canal 'ota') [33m 344[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-REV-006: decide/ejecuta el mix de canal registrando la razón de cada decisión[2m > [22mPostgres RECHAZA una configuración de canal 'ota' con campos de metasearch (o viceversa) -- consistencia de esquema [33m 1000[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-REV-006: decide/ejecuta el mix de canal registrando la razón de cada decisión[2m > [22mno genera ni persiste ninguna decisión cuando la ocupación proyectada está en la banda neutral (sin ruido) [33m 469[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m41 passed[39m[22m[90m (41)[39m
+[2m   Start at [22m 01:00:44
+[2m   Duration [22m 29.34s[2m (transform 1.16s, setup 0ms, collect 4.02s, tests 25.26s, environment 0ms, prepare 286ms)[22m
+

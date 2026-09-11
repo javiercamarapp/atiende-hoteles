@@ -18,9 +18,13 @@ import { startNightAuditScheduler } from "./jobs/nightAuditScheduler.ts";
 import { startIdentityVaultPurgeScheduler } from "./jobs/purgeIdentityVaultScheduler.ts";
 import { startConversationPurgeScheduler } from "./jobs/purgeConversationsScheduler.ts";
 import { startTicketEscalationScheduler } from "./jobs/ticketEscalationScheduler.ts";
+import { startQuoteAbandonmentScheduler } from "./jobs/quoteAbandonmentScheduler.ts";
 import { startEmailOutboxScheduler, resolveEmailPort } from "./emailOutbox/runEmailOutboxWorker.ts";
 import { startPaymentPreauthPurgeScheduler } from "./jobs/purgePaymentPreauthScheduler.ts";
 import { startPmsCloudbedsSyncScheduler } from "./jobs/pmsCloudbedsSyncScheduler.ts";
+import { startBarReputacionScheduler } from "./jobs/barReputacionScheduler.ts";
+import { startGroupFollowUpScheduler } from "./jobs/seguimientoSolicitudGrupoScheduler.ts";
+import { startFnbUpsellScheduler } from "./jobs/fnbUpsellScheduler.ts";
 
 async function main() {
   // REQ-SEG-013 · antes de leer cualquier secreto de `process.env`, le da a Vault/KMS
@@ -141,6 +145,16 @@ async function main() {
     onError: (err) => logger.error({ err }, "escalación de tickets: error en tick"),
   });
 
+  // REQ-RES-011 · detección de cotizaciones/reservas abandonadas en el motor propio
+  // (lock por hotel, ver jobs/quoteAbandonmentScheduler.ts) -- también ejecutable de
+  // forma independiente vía `node scripts/run-quote-abandonment-scheduler.ts`. No
+  // despacha correo directo: encola `reservation.abandonment_contact` en
+  // `public.outbox`, que el `emailOutboxScheduler` de abajo ya drena.
+  const quoteAbandonmentScheduler = startQuoteAbandonmentScheduler(engine.admin, {
+    onTick: (results) => logger.info({ results }, "detección de cotizaciones abandonadas: tick"),
+    onError: (err) => logger.error({ err }, "detección de cotizaciones abandonadas: error en tick"),
+  });
+
   // H12a · REQ-LAUNCH-043: drena `public.outbox` hacia correos reales (recibo de pago,
   // confirmación de reserva, aviso de CFDI, invitación de staff...) -- mismo `EmailPort`
   // que `deps.emailPort` de arriba (Resend/SMTP/Fake), así que un pago/reserva/CFDI real
@@ -172,15 +186,47 @@ async function main() {
     onError: (err) => logger.error({ err }, "sincronizacion de tarifas Cloudbeds: error en tick"),
   });
 
+  // REQ-REV-017 · recomienda un ajuste de BAR cuando el índice de reputación (derivado
+  // de `guest_review.sentiment_score`, REQ-CRM-002) sube sobre el umbral en la ventana
+  // configurada (ver jobs/barReputacionEvaluator.ts) -- idempotente por diseño de BD
+  // (`bar_reputation_recommendation`, 0131), así que un intervalo generoso (1h) no
+  // arriesga duplicar recomendaciones si un tick se atrasa.
+  const barReputacionScheduler = startBarReputacionScheduler(engine.admin, {
+    onTick: (results) => logger.info({ results }, "recomendación de BAR por reputación: tick"),
+    onError: (err) => logger.error({ err }, "recomendación de BAR por reputación: error en tick"),
+  });
+
+  // REQ-RES-013 · seguimiento automático (48h/7 días) de `solicitud_grupo` sin
+  // respuesta (lock por hotel, ver jobs/seguimientoSolicitudGrupoScheduler.ts) --
+  // también ejecutable de forma independiente vía
+  // `node scripts/run-seguimiento-solicitud-grupo-scheduler.ts`.
+  const groupFollowUpScheduler = startGroupFollowUpScheduler(engine.admin, {
+    logger,
+    onTick: (results) => logger.info({ results }, "seguimiento de solicitudes de grupo: tick"),
+    onError: (err) => logger.error({ err }, "seguimiento de solicitudes de grupo: error en tick"),
+  });
+
+  // REQ-AB-014 · disparo de ofertas de upsell F&B en T-7/T-3/check-in (lock por hotel,
+  // ver jobs/fnbUpsellScheduler.ts) -- también ejecutable de forma independiente vía
+  // `node scripts/run-fnb-upsell-scheduler.ts`.
+  const fnbUpsellScheduler = startFnbUpsellScheduler(engine.admin, {
+    onTick: (results) => logger.info({ results }, "upsell F&B: tick"),
+    onError: (err) => logger.error({ err }, "upsell F&B: error en tick"),
+  });
+
   const shutdown = async () => {
     logger.info("apagando apps/api");
     nightAuditScheduler.stop();
     identityVaultPurgeScheduler.stop();
     conversationPurgeScheduler.stop();
     ticketEscalationScheduler.stop();
+    quoteAbandonmentScheduler.stop();
     emailOutboxScheduler.stop();
     paymentPreauthPurgeScheduler.stop();
     pmsCloudbedsSyncScheduler.stop();
+    barReputacionScheduler.stop();
+    groupFollowUpScheduler.stop();
+    fnbUpsellScheduler.stop();
     await engine.stop();
     process.exit(0);
   };

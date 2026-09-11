@@ -1,0 +1,82 @@
+ [32m✓[39m tests/integration/ab/minibar-evidencia.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 3902[2mms[22m[39m
+ [32m✓[39m tests/integration/contracts/whatsapp/aprobaciones-boton.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 3498[2mms[22m[39m
+ [32m✓[39m tests/integration/api/email-outbox-handlers.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 3214[2mms[22m[39m
+ [32m✓[39m tests/integration/contracts/gate-connector.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/integration/api/pms-outbound-conector.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 3385[2mms[22m[39m
+ [32m✓[39m tests/integration/revenue/night-audit-scheduler.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 3047[2mms[22m[39m
+ [32m✓[39m tests/integration/contracts/cfdi/hospedaje.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 3503[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-BO-001 · contrato de CFDI de hospedaje (7 casos)[2m > [22m1) huésped extranjero: RFC genérico XEXX010101000 y uso CFDI S01, sin importar lo que el body pida [33m 350[2mms[22m[39m
+ [32m✓[39m tests/integration/folio/cargos-descuentos-reverso.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 2734[2mms[22m[39m
+ [32m✓[39m tests/integration/api/mensajeria.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 2651[2mms[22m[39m
+ [32m✓[39m tests/integration/revenue/night-audit.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 3303[2mms[22m[39m
+ [32m✓[39m tests/integration/audit-log-concurrencia.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 12654[2mms[22m[39m
+   [33m[2m✓[22m[39m audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO)[2m > [22mSIN el arreglo: dos record_audit_log() concurrentes del mismo tenant producen dos filas con prev_hash null (cadena bifurcada) [33m 3053[2mms[22m[39m
+   [33m[2m✓[22m[39m audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO)[2m > [22mCON el arreglo (packages/db/migrations/0015, audit_log_chain_head + SELECT FOR UPDATE): dos escrituras concurrentes SIEMPRE forman una cadena de un solo enlace [33m 2280[2mms[22m[39m
+   [33m[2m✓[22m[39m audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO)[2m > [22mCON el arreglo, 20 escrituras concurrentes reales (sin ningún pg_sleep inyectado) nunca bifurcan la cadena, repetido 8 veces para descartar suerte de scheduling [33m 2637[2mms[22m[39m
+   [33m[2m✓[22m[39m audit_log: la cadena de hash bajo escritura concurrente del mismo tenant (auditoría-1 ALTO)[2m > [22mdos tenants distintos escribiendo concurrentemente no se bloquean entre sí (el lock de la cabeza de cadena es por tenant, no global) [33m 4685[2mms[22m[39m
+ [32m✓[39m tests/integration/api/reservas-y-folios.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 3067[2mms[22m[39m
+ [32m✓[39m tests/integration/schema/location.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 2406[2mms[22m[39m
+ [32m✓[39m tests/integration/api/auditoria-conversaciones.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 2653[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/atribucion-canal.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 2762[2mms[22m[39m
+ [32m✓[39m tests/integration/api/correo-cuenta.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 3125[2mms[22m[39m
+ [32m✓[39m tests/integration/api/mensajeria-clasificacion-tickets.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 3629[2mms[22m[39m
+ [32m✓[39m tests/integration/api/incidentes.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 2635[2mms[22m[39m
+ [32m✓[39m tests/integration/agent-core/staff-notify.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 3060[2mms[22m[39m
+ [32m✓[39m tests/integration/agent-core/fallback-proveedor.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 2651[2mms[22m[39m
+ [32m✓[39m tests/integration/payment-preauth-purga.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 3095[2mms[22m[39m
+ [32m✓[39m tests/integration/pms/pms-cloudbeds-sync-scheduler.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 2651[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/club-segundo-viaje.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 3380[2mms[22m[39m
+ [32m✓[39m tests/integration/checkin-online.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 4479[2mms[22m[39m
+ [32m✓[39m tests/integration/folio/split-transferencia-cierre.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 5340[2mms[22m[39m
+   [33m[2m✓[22m[39m folio: split, transferencia entre folios, cierre (H5)[2m > [22msplit: mueve un cargo a un folio nuevo de la MISMA reserva, ambos saldos cuadran [33m 438[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/monto-exacto-multi-noche.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 5468[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/cancelacion-libera-inventario.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 3973[2mms[22m[39m
+ [32m✓[39m tests/integration/folio/ab012-bypass-por-concepto.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 3484[2mms[22m[39m
+ [32m✓[39m tests/integration/cfdi/idempotencia-timbrado.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 2894[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-BO-002 · idempotencia de timbrado CFDI[2m > [22mmisma Idempotency-Key repetida devuelve exactamente la misma respuesta (mismo UUID) [33m 309[2mms[22m[39m
+ [32m✓[39m tests/integration/api/consentimiento.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 2967[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/no-show-idempotente.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 2980[2mms[22m[39m
+ [32m✓[39m tests/integration/agent-core/postgres-approval-queue.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 6206[2mms[22m[39m
+   [33m[2m✓[22m[39m PostgresApprovalQueue (persistencia real)[2m > [22msobrevive un reinicio del PROCESO: el estado vive en Postgres, no en el objeto JS [33m 2954[2mms[22m[39m
+ [32m✓[39m tests/integration/idempotency-ttl.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 3109[2mms[22m[39m
+ [32m✓[39m tests/integration/contracts/payments/stripe-adapter.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 236[2mms[22m[39m
+ [32m✓[39m tests/integration/contracts/payments/conekta-adapter.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 223[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/folio-al-confirmar.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 2692[2mms[22m[39m
+ [32m✓[39m tests/integration/conocimiento-local/latencia.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 3418[2mms[22m[39m
+ [32m✓[39m tests/integration/api/auth-google.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 5659[2mms[22m[39m
+   [33m[2m✓[22m[39m GET /auth/google/iniciar -- sin configurar[2m > [22mresponde 503 no_configurado cuando faltan credenciales de Google [33m 2897[2mms[22m[39m
+ [32m✓[39m tests/integration/api/auth-y-resumen.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 3177[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/modificacion-concurrencia.spec.ts [2m([22m[2m1 test[22m[2m)[22m[33m 3247[2mms[22m[39m
+ [32m✓[39m tests/integration/contracts/outbound/webhook-outbound-adapter.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 439[2mms[22m[39m
+ [32m✓[39m tests/integration/folio/event-sourcing.spec.ts [2m([22m[2m1 test[22m[2m)[22m[33m 2725[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/overbooking-controlado.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 2821[2mms[22m[39m
+ [32m✓[39m tests/integration/pool-sin-fuga-de-claims.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 4365[2mms[22m[39m
+   [33m[2m✓[22m[39m pool de conexiones: set_config por transacción no filtra claims entre requests reciclados (auditoria-1/backend MEDIO)[2m > [22mcon poolMax=1 (misma conexión física forzada), el claim de la sesión A nunca es visible en la sesión B [33m 1862[2mms[22m[39m
+   [33m[2m✓[22m[39m pool de conexiones: set_config por transacción no filtra claims entre requests reciclados (auditoria-1/backend MEDIO)[2m > [22muna sesión sin userId (claim vacío) tras una sesión CON userId, en la misma conexión reciclada, queda anónima (auth.uid() null) — nunca hereda al actor anterior [33m 2503[2mms[22m[39m
+ [32m✓[39m tests/integration/api/registro.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 2393[2mms[22m[39m
+ [32m✓[39m tests/integration/api/recepcion.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1577[2mms[22m[39m
+ [32m✓[39m tests/integration/outbox-atomicity.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 1674[2mms[22m[39m
+ [32m✓[39m tests/integration/api/reservas-carga-concurrente.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1305[2mms[22m[39m
+ [32m✓[39m tests/integration/folio/pago-concurrente.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 1304[2mms[22m[39m
+ [32m✓[39m tests/integration/api/back-office-cobros.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 1258[2mms[22m[39m
+ [32m✓[39m tests/integration/api/registro-onboarding.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 1251[2mms[22m[39m
+ [32m✓[39m tests/integration/availability-concurrency.spec.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1100[2mms[22m[39m
+ [32m✓[39m tests/integration/api/mensajeria-webhook-verificacion.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 1146[2mms[22m[39m
+ [32m✓[39m tests/integration/idempotency-purga-por-lote.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1051[2mms[22m[39m
+ [32m✓[39m tests/integration/api/tarifas-impuestos.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 1215[2mms[22m[39m
+[90mstderr[2m | tests/integration/pool-error-logging.spec.ts[2m > [22m[2mpool.on("error") deja rastro (auditoria-2/operabilidad ALTO)[2m > [22m[2muna conexión ociosa del pool terminada del lado del servidor: se cuenta y se notifica, no desaparece en silencio
+[22m[39m{"level":"error","event":"db_pool_error","message":"terminating connection due to administrator command","pool_error_count":1,"timestamp":"2026-09-11T06:27:08.669Z"}
+
+ [32m✓[39m tests/integration/pool-error-logging.spec.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1075[2mms[22m[39m
+   [33m[2m✓[22m[39m pool.on("error") deja rastro (auditoria-2/operabilidad ALTO)[2m > [22muna conexión ociosa del pool terminada del lado del servidor: se cuenta y se notifica, no desaparece en silencio [33m 1075[2mms[22m[39m
+ [32m✓[39m tests/integration/fiscal/calendario-fiscal.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 1294[2mms[22m[39m
+ [32m✓[39m tests/integration/outbox-worker-indice.spec.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1672[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/disponibilidad-grid.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 1623[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m72 passed[39m[22m[90m (72)[39m
+[2m      Tests [22m [1m[32m445 passed[39m[22m[90m (445)[39m
+[2m   Start at [22m 00:23:14
+[2m   Duration [22m 239.10s[2m (transform 3.15s, setup 0ms, collect 18.16s, tests 219.82s, environment 0ms, prepare 61ms)[22m
+
+
+[exited with code 0]

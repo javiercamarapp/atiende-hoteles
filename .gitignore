@@ -15,7 +15,14 @@ packages/db/.pgdata/
 /backups/
 tests/**/screenshots/*.tmp.png
 *.tsbuildinfo
-.claude/
+.claude/*
+# REQ-AGT-021 (BP-138): "skills hoteleras ... documentada[s] en `.claude/skills/`" --
+# excepción explícita a la exclusión de `.claude/` (config/estado local de Claude Code,
+# worktrees, settings) para que las skills SÍ queden versionadas en el repo, que es el
+# punto del requisito (si se quedan solo en el disco local de quien las creó, no existen
+# para nadie más ni para CI).
+!.claude/skills/
+!.claude/skills/**
 .vercel/
 .gstack/
 supabase/.temp/

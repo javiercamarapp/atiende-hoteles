@@ -1,0 +1,21 @@
+{
+  "source": "cloudbeds-simulator",
+  "recordedAt": "2026-09-11T03:56:04.126Z",
+  "endpoint": "postCharge",
+  "request": {
+    "method": "POST",
+    "path": "/postCharge"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "paymentID": "SIM-PAY-1",
+        "transactionID": "SIM-TXN-1",
+        "paymentStatus": "succeeded",
+        "paymentType": "cards"
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-req-bo-020[39m
+
+ [32m✓[39m tests/unit/domain-hotel/turnos-lft.spec.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/turnos-forecast-lft.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m34 passed[39m[22m[90m (34)[39m
+[2m   Start at [22m 22:18:26
+[2m   Duration [22m 1.84s[2m (transform 467ms, setup 0ms, collect 1.59s, tests 24ms, environment 0ms, prepare 471ms)[22m
+

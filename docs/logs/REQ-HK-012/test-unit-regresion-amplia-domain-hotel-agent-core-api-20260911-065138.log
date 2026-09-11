@@ -1,0 +1,152 @@
+ [32m✓[39m tests/unit/domain-hotel/fnb-allergy-guard.spec.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/reporte-mensual-honestidad.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/usali-pl.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/api/secrets-provider.spec.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/api/security-breach-alert.spec.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [31m❯[39m tests/unit/rls/platform-admin.spec.ts [2m([22m[2m5 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[33m 155815[2mms[22m[39m
+   [33m[2m✓[22m[39m consola superadmin: platform_admin/admin_negocio (RLS + security definer)[2m > [22mun staff normal no ve filas de platform_admin ni de platform_admin_audit_log (RLS vacía) [33m 22520[2mms[22m[39m
+[31m   [31m×[31m consola superadmin: platform_admin/admin_negocio (RLS + security definer)[2m > [22madmin_negocio() lanza no_autorizado para un staff que no es superadmin de plataforma[39m[33m 30647[2mms[22m[39m
+[31m     → Hook timed out in 30000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".[39m
+[31m     → PGlite is closed[39m
+[31m   [31m×[31m consola superadmin: platform_admin/admin_negocio (RLS + security definer)[2m > [22madmin_negocio() agrega AMBOS hoteles cruzando tenants una vez otorgado platform_admin, y queda auditado[39m[33m 37872[2mms[22m[39m
+[31m     → Hook timed out in 30000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".[39m
+[31m   [31m×[31m consola superadmin: platform_admin/admin_negocio (RLS + security definer)[2m > [22madmin_reintentar_outbox() es la única escritura permitida: revive un evento dead-letter sin tocar datos de negocio[39m[33m 33529[2mms[22m[39m
+[31m     → Hook timed out in 30000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".[39m
+[31m   [31m×[31m consola superadmin: platform_admin/admin_negocio (RLS + security definer)[2m > [22madmin_reintentar_outbox() también lanza no_autorizado para un staff que no es superadmin[39m[33m 31247[2mms[22m[39m
+[31m     → Hook timed out in 30000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".[39m
+ [32m✓[39m tests/unit/domain-hotel/auditoria-conversaciones-semanal.spec.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/atribucion-canal.spec.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 165[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/folio-engine.spec.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/ocr-aislado-sin-internet.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 458[2mms[22m[39m
+   [33m[2m✓[22m[39m checkOcrAisladoSinInternet[2m > [22mel árbol real del repo (apps/**, packages/**) no produce violaciones hoy [33m 447[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/voice-guardrails.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/redact.spec.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/mantenimiento-activo-escalacion.spec.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/consent-ledger.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/api/money-alert-destination.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/waitlist.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 71[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/motor-precio-total.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/mrz.spec.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/rls/org-isolation.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 100159[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org[2m > [22mSELECT: un usuario del org compartido del fixture no ve nada del org independiente [33m 27121[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org[2m > [22mSELECT: un usuario del org independiente tampoco ve el org compartido del fixture [33m 24510[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org[2m > [22mcurrent_tenant_ids() del usuario del org independiente NO incluye el org del fixture [33m 22491[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org[2m > [22mINSERT: rechazado al intentar escribir en el hotel de otro org [33m 26032[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/roi-baseline.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/guest-contact-change-otp.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/rls/money-role.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 79115[2mms[22m[39m
+   [33m[2m✓[22m[39m acceso a dinero restringido por rol (folio/charge/payment)[2m > [22mhousekeeping no puede leer folio [33m 24493[2mms[22m[39m
+   [33m[2m✓[22m[39m acceso a dinero restringido por rol (folio/charge/payment)[2m > [22mhousekeeping no puede leer charge ni payment [33m 20639[2mms[22m[39m
+   [33m[2m✓[22m[39m acceso a dinero restringido por rol (folio/charge/payment)[2m > [22mhousekeeping no puede insertar un payment [33m 17212[2mms[22m[39m
+   [33m[2m✓[22m[39m acceso a dinero restringido por rol (folio/charge/payment)[2m > [22mgm (rol con acceso a dinero) si puede leer folio/charge/payment de su hotel [33m 16771[2mms[22m[39m
+ [32m✓[39m tests/unit/api/messaging-adapter-selection.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/conversational-guardrails.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 52[2mms[22m[39m
+ [32m✓[39m tests/unit/supabase-export.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 950[2mms[22m[39m
+   [33m[2m✓[22m[39m scripts/export-supabase-migrations.ts[2m > [22msupabase/migrations/ está sincronizado con packages/db/migrations/ (--check pasa) [33m 885[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/disclosure.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/context.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/roles.spec.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/rls/tenant-isolation.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 66309[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento de tenant entre hoteles (RLS, room_type)[2m > [22mSELECT: solo devuelve filas del hotel del usuario [33m 16078[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento de tenant entre hoteles (RLS, room_type)[2m > [22mINSERT: rechazado con violacion de politica al escribir en el hotel ajeno [33m 18242[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento de tenant entre hoteles (RLS, room_type)[2m > [22mUPDATE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion) [33m 16746[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento de tenant entre hoteles (RLS, room_type)[2m > [22mDELETE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion) [33m 15243[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/estado-maquina.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/club-segundo-viaje.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/api/logger-redact.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/restricciones-estadia.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/api/ticket-alert-destination.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/roi-tools.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/marketing-template-linter.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/impuestos-hospedaje.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/pricing-source.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/api/identity-encryption.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/api/money-alert-ids.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/cancelacion-policy.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/agents.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/payment-free-text-guard.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/overbooking.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/migrations.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 56479[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22maplica todas las migraciones desde una base vacia [33m 11336[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22mes idempotente: correrlo dos veces no reaplica nada la segunda vez [33m 11975[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22mrechaza continuar si una migracion ya aplicada fue editada (expand-only) [33m 12018[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22mdb:reset (dropAllMigratedObjects) deja la base lista para re-aplicar desde cero [33m 21149[2mms[22m[39m
+ [32m✓[39m tests/unit/api/rate-limiter.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/checkin-free-text-guard.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/api/db-production.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/pricing.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/trace.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/approval.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 5 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/unit/rls/platform-admin.spec.ts[2m > [22mconsola superadmin: platform_admin/admin_negocio (RLS + security definer)[2m > [22madmin_negocio() lanza no_autorizado para un staff que no es superadmin de plataforma
+[41m[1m FAIL [22m[49m tests/unit/rls/platform-admin.spec.ts[2m > [22mconsola superadmin: platform_admin/admin_negocio (RLS + security definer)[2m > [22madmin_negocio() agrega AMBOS hoteles cruzando tenants una vez otorgado platform_admin, y queda auditado
+[41m[1m FAIL [22m[49m tests/unit/rls/platform-admin.spec.ts[2m > [22mconsola superadmin: platform_admin/admin_negocio (RLS + security definer)[2m > [22madmin_reintentar_outbox() es la única escritura permitida: revive un evento dead-letter sin tocar datos de negocio
+[41m[1m FAIL [22m[49m tests/unit/rls/platform-admin.spec.ts[2m > [22mconsola superadmin: platform_admin/admin_negocio (RLS + security definer)[2m > [22madmin_reintentar_outbox() también lanza no_autorizado para un staff que no es superadmin
+[31m[1mError[22m: Hook timed out in 30000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".[39m
+[36m [2m❯[22m tests/unit/rls/platform-admin.spec.ts:[2m19:3[22m[39m
+    [90m 17| [39m  [35mlet[39m fixture[33m:[39m [33mPgliteFixture[39m[33m;[39m
+    [90m 18| [39m
+    [90m 19| [39m  [34mbeforeEach[39m([35masync[39m () [33m=>[39m {
+    [90m   | [39m  [31m^[39m
+    [90m 20| [39m    fixture [33m=[39m [35mawait[39m [34mcreatePgliteFixture[39m()[33m;[39m
+    [90m 21| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/unit/rls/platform-admin.spec.ts[2m > [22mconsola superadmin: platform_admin/admin_negocio (RLS + security definer)[2m > [22madmin_negocio() lanza no_autorizado para un staff que no es superadmin de plataforma
+[31m[1mError[22m: PGlite is closed[39m
+[90m [2m❯[22m N._checkReady node_modules/@electric-sql/pglite/src/pglite.ts:[2m883:13[22m[39m
+[90m [2m❯[22m N.close node_modules/@electric-sql/pglite/src/pglite.ts:[2m788:16[22m[39m
+[36m [2m❯[22m Object.close packages/db/src/engines.ts:[2m71:20[22m[39m
+    [90m 69| [39m    }[33m,[39m
+    [90m 70| [39m    [35masync[39m [34mclose[39m() {
+    [90m 71| [39m      [35mawait[39m pglite[33m.[39m[34mclose[39m()[33m;[39m
+    [90m   | [39m                   [31m^[39m
+    [90m 72| [39m    }[33m,[39m
+    [90m 73| [39m  }[33m;[39m
+[90m [2m❯[22m destroyPgliteFixture tests/support/pglite-fixture.ts:[2m20:24[22m[39m
+[90m [2m❯[22m tests/unit/rls/platform-admin.spec.ts:[2m24:11[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/unit/agent-core/tool-schema-strict.spec.ts[2m > [22mrecordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001)[2m > [22mcerrar un ticket con autorizar_gasto_mantenimiento deja una fila de audit_log con timestamp, agente y valor anterior/nuevo reales
+[31m[1mError[22m: Hook timed out in 30000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".[39m
+[36m [2m❯[22m tests/unit/agent-core/tool-schema-strict.spec.ts:[2m199:3[22m[39m
+    [90m197| [39m  [35mlet[39m fixture[33m:[39m [33mPgliteFixture[39m[33m;[39m
+    [90m198| [39m
+    [90m199| [39m  [34mbeforeEach[39m([35masync[39m () [33m=>[39m {
+    [90m   | [39m  [31m^[39m
+    [90m200| [39m    fixture [33m=[39m [35mawait[39m [34mcreatePgliteFixture[39m()[33m;[39m
+    [90m201| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/unit/agent-core/tool-schema-strict.spec.ts[2m > [22mrecordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001)[2m > [22mcerrar un ticket con autorizar_gasto_mantenimiento deja una fila de audit_log con timestamp, agente y valor anterior/nuevo reales
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'engine')[39m
+[36m [2m❯[22m destroyPgliteFixture tests/support/pglite-fixture.ts:[2m20:17[22m[39m
+    [90m 18| [39m
+    [90m 19| [39mexport async function destroyPgliteFixture(fixture: PgliteFixture): Pr…
+    [90m 20| [39m  [35mawait[39m fixture[33m.[39mengine[33m.[39m[34mclose[39m()[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m 21| [39m}
+    [90m 22| [39m
+[90m [2m❯[22m tests/unit/agent-core/tool-schema-strict.spec.ts:[2m204:11[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m68 passed[39m[22m[90m (70)[39m
+[2m      Tests [22m [1m[31m5 failed[39m[22m[2m | [22m[1m[32m811 passed[39m[22m[90m (816)[39m
+[2m   Start at [22m 00:48:44
+[2m   Duration [22m 657.67s[2m (transform 8.97s, setup 0ms, collect 34.09s, tests 619.05s, environment 0ms, prepare 112ms)[22m
+
+
+[exited with code 0]
