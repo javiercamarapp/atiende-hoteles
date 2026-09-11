@@ -18,6 +18,7 @@ import { startNightAuditScheduler } from "./jobs/nightAuditScheduler.ts";
 import { startIdentityVaultPurgeScheduler } from "./jobs/purgeIdentityVaultScheduler.ts";
 import { startConversationPurgeScheduler } from "./jobs/purgeConversationsScheduler.ts";
 import { startTicketEscalationScheduler } from "./jobs/ticketEscalationScheduler.ts";
+import { startQuoteAbandonmentScheduler } from "./jobs/quoteAbandonmentScheduler.ts";
 import { startEmailOutboxScheduler, resolveEmailPort } from "./emailOutbox/runEmailOutboxWorker.ts";
 import { startPaymentPreauthPurgeScheduler } from "./jobs/purgePaymentPreauthScheduler.ts";
 import { startPmsCloudbedsSyncScheduler } from "./jobs/pmsCloudbedsSyncScheduler.ts";
@@ -141,6 +142,16 @@ async function main() {
     onError: (err) => logger.error({ err }, "escalación de tickets: error en tick"),
   });
 
+  // REQ-RES-011 · detección de cotizaciones/reservas abandonadas en el motor propio
+  // (lock por hotel, ver jobs/quoteAbandonmentScheduler.ts) -- también ejecutable de
+  // forma independiente vía `node scripts/run-quote-abandonment-scheduler.ts`. No
+  // despacha correo directo: encola `reservation.abandonment_contact` en
+  // `public.outbox`, que el `emailOutboxScheduler` de abajo ya drena.
+  const quoteAbandonmentScheduler = startQuoteAbandonmentScheduler(engine.admin, {
+    onTick: (results) => logger.info({ results }, "detección de cotizaciones abandonadas: tick"),
+    onError: (err) => logger.error({ err }, "detección de cotizaciones abandonadas: error en tick"),
+  });
+
   // H12a · REQ-LAUNCH-043: drena `public.outbox` hacia correos reales (recibo de pago,
   // confirmación de reserva, aviso de CFDI, invitación de staff...) -- mismo `EmailPort`
   // que `deps.emailPort` de arriba (Resend/SMTP/Fake), así que un pago/reserva/CFDI real
@@ -178,6 +189,7 @@ async function main() {
     identityVaultPurgeScheduler.stop();
     conversationPurgeScheduler.stop();
     ticketEscalationScheduler.stop();
+    quoteAbandonmentScheduler.stop();
     emailOutboxScheduler.stop();
     paymentPreauthPurgeScheduler.stop();
     pmsCloudbedsSyncScheduler.stop();
