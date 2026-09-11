@@ -203,7 +203,7 @@ describe("REQ-HUE-022/REQ-SEG-003: consentimiento diferenciado de dato biométri
     }
   });
 
-  it("el esquema no tiene (ni permite registrar) un consentimiento diferenciado de biometría: consent_kind sólo admite 'tratamiento_datos'/'marketing' -- consistente con que este flujo nunca captura dato biométrico alguno que necesitaría uno", async () => {
+  it("el esquema no tiene (ni permite registrar) un consentimiento diferenciado de biometría: consent_kind sólo admite 'tratamiento_datos'/'marketing'/'contacto_real_ota' -- consistente con que este flujo nunca captura dato biométrico alguno que necesitaría uno", async () => {
     const { rows } = await fixture.engine.admin.query<{ enumlabel: string }>(
       `select e.enumlabel from pg_enum e
        join pg_type t on t.oid = e.enumtypid
@@ -211,7 +211,11 @@ describe("REQ-HUE-022/REQ-SEG-003: consentimiento diferenciado de dato biométri
        order by e.enumsortorder`,
     );
     const labels = rows.map((r) => r.enumlabel).sort();
-    expect(labels).toEqual(["marketing", "tratamiento_datos"]);
+    // REQ-RES-018 (migración 0130) agregó 'contacto_real_ota' -- consentimiento
+    // explícito de REVELAR el contacto real cuando una OTA lo enmascaraba, tan poco
+    // biométrico como 'marketing'/'tratamiento_datos'. Este test sigue verificando lo
+    // mismo de siempre: que NINGÚN valor del enum sea un consentimiento de biometría.
+    expect(labels).toEqual(["contacto_real_ota", "marketing", "tratamiento_datos"]);
   });
 
   it("`documentImageBase64` (foto del documento, declarada RECIBIDA-Y-DESCARTADA en el propio esquema) se descarta de verdad: no aparece en ninguna tabla tras completar el check-in", async () => {

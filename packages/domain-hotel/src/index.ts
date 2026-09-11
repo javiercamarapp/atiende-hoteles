@@ -267,6 +267,11 @@ export {
   type LoyaltyBenefitInput,
   type LoyaltyBenefitResult,
 } from "./reservas/clubSegundoViaje.ts";
+export {
+  esContactoEnmascaradoPorOta,
+  debeBloquearContactoPorCanalAjenoALaOta,
+  type ReservaContactoOtaInput,
+} from "./reservas/contactoOtaEnmascarado.ts";
 // H12c merge (integrador) · 2026-09-08: `./forecast/index.ts` (REQ-AGT-012, commit b1f3d47
 // en origin/main) sí existe con sus 2 archivos completos, pero nunca se re-exportó desde
 // este barrel -- `tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts` importa
