@@ -37,6 +37,7 @@ import { backOfficeRoutes } from "./routes/backOffice.ts";
 import { plUsaliRoutes } from "./routes/plUsali.ts";
 import { atribucionCanalRoutes } from "./routes/atribucionCanal.ts";
 import { clubSegundoViajeRoutes } from "./routes/clubSegundoViaje.ts";
+import { gruposRoutes } from "./routes/grupos.ts";
 import { fraudeRoutes } from "./routes/fraude.ts";
 import { pedidosFnbRoutes } from "./routes/pedidosFnb.ts";
 import { checkinOnlineRoutes } from "./routes/checkinOnline.ts";
@@ -289,6 +290,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", plUsaliRoutes(deps));
   app.route("/", atribucionCanalRoutes(deps));
   app.route("/", clubSegundoViajeRoutes(deps));
+  app.route("/", gruposRoutes(deps));
   app.route("/", fraudeRoutes(deps));
   app.route("/", pedidosFnbRoutes(deps));
   app.route("/", checkinOnlineRoutes(deps));
