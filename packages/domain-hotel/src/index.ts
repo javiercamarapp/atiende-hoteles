@@ -321,6 +321,15 @@ export {
   type ChannelAttributionReport,
 } from "./reservas/atribucionCanal.ts";
 export {
+  MANUAL_ORIGIN_ACTOR,
+  AGENTIC_ORIGIN_ACTOR,
+  isAgenticOrigin,
+  buildAgenticOriginReport,
+  type ReservationOriginInput,
+  type OriginActorSummary,
+  type AgenticOriginReport,
+} from "./reservas/atribucionOrigenAgentico.ts";
+export {
   LOYALTY_MEMBER_STATUSES,
   isActiveLoyaltyMember,
   assertValidLoyaltyDiscountPct,
