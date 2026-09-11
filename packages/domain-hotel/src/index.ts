@@ -132,7 +132,22 @@ export {
   type ShiftLftViolation,
   type ValidateTurnosLftInput,
   type ValidateTurnosLftResult,
+  summarizeDailyHours,
+  type DailyStaffHoursSummary,
 } from "./housekeeping/turnos-lft.ts";
+export {
+  generateTurnosFromForecast,
+  compareOvertimeVsBaseline,
+  type StaffingDemandEntry,
+  type StandardShiftBlock,
+  type AvailableStaffMember,
+  type ManualBaselineShift,
+  type GenerateTurnosFromForecastInput,
+  type GeneratedShift,
+  type UnmetStaffingDemand,
+  type OvertimeComparison,
+  type GenerateTurnosFromForecastResult,
+} from "./staffing/turnosForecast.ts";
 // Merge de reconciliación (2026-09-08): la sesión H12c había retirado estos 6 bloques
 // `export { … } from` (`./voiceGuardrails.ts`, `./pl/usaliPL.ts`, `./tickets/slaPolicy.ts`,
 // `./marketingTemplateLinter.ts`, `./conversationalGuardrails.ts`,
