@@ -21,6 +21,7 @@ interface HotelCtx {
   roomTypeId: string;
   gmToken: string;
   fnbToken: string;
+  frontdeskToken: string;
 }
 
 function isoDate(daysFromNow: number): string {
@@ -66,12 +67,14 @@ describe("REQ-AB-012: reporte de tasa de captura de cargos ≥99.5%", () => {
       roomTypeId: seedA.roomTypes[0]!.id,
       gmToken: await loginAs(fixture.app, seedA.staff.find((s) => s.role === "gm")!.email),
       fnbToken: await loginAs(fixture.app, seedA.staff.find((s) => s.role === "fnb")!.email),
+      frontdeskToken: await loginAs(fixture.app, seedA.staff.find((s) => s.role === "frontdesk")!.email),
     };
     hotelB = {
       hotelId: seedB.id,
       roomTypeId: seedB.roomTypes[0]!.id,
       gmToken: await loginAs(fixture.app, seedB.staff.find((s) => s.role === "gm")!.email),
       fnbToken: await loginAs(fixture.app, seedB.staff.find((s) => s.role === "fnb")!.email),
+      frontdeskToken: await loginAs(fixture.app, seedB.staff.find((s) => s.role === "frontdesk")!.email),
     };
     accountantTokenA = await loginAs(fixture.app, seedA.staff.find((s) => s.role === "accountant")!.email);
 
@@ -132,10 +135,10 @@ describe("REQ-AB-012: reporte de tasa de captura de cargos ≥99.5%", () => {
     return body.id;
   }
 
-  async function capturar(ctx: HotelCtx, folioId: string, intentoId: string, chargeId: string) {
+  async function capturar(ctx: HotelCtx, folioId: string, intentoId: string, chargeId: string, token: string = ctx.gmToken) {
     return fixture.app.request(`/hoteles/${ctx.hotelId}/folios/${folioId}/cargos-habitacion/intentos/${intentoId}/capturar`, {
       method: "POST",
-      headers: auth(ctx.gmToken),
+      headers: auth(token),
       body: JSON.stringify({ chargeId }),
     });
   }
@@ -231,6 +234,61 @@ describe("REQ-AB-012: reporte de tasa de captura de cargos ≥99.5%", () => {
     expect(resOk.status).toBe(200); // el intento de X NUNCA quedó mutado por el intento fallido vía Y
   });
 
+  // --- Hueco de fraude real diagnosticado en REQ-AB-012 (H10-020): el endpoint
+  // "capturar" vinculaba un intento a CUALQUIER `charge` real del mismo folio sin
+  // validar que el monto coincidiera, y nada impedía vincular el MISMO `charge` real a
+  // varios intentos distintos. Cualquier rol de MONEY_ROLES (frontdesk/fnb/reservations
+  // -- NO requiere rol administrativo) podía así reutilizar un único cargo legítimo
+  // pequeño para marcar "capturado" un número arbitrario de intentos de fuga real,
+  // inflando artificialmente la tasa de captura ≥99.5% que este REQ existe para
+  // vigilar. Los dos tests de abajo reproducen EXACTAMENTE ese escenario, con un actor
+  // frontdesk (no admin) -- mismo rol que ya puede declarar/vincular intentos hoy. ---
+
+  it("fraude REQ-AB-012: un rol frontdesk (no admin) NO puede vincular el MISMO charge real a un segundo intento de captura", async () => {
+    const folioId = await folioNuevo(hotelA);
+    const intentoUno = await declararIntento(hotelA, folioId, { descripcion: "consumo-1-real-nunca-posteado", monto: 250 });
+    const intentoDos = await declararIntento(hotelA, folioId, { descripcion: "consumo-2-real-nunca-posteado (fuga real, monto mucho mayor)", monto: 900 });
+    const chargeId = await postearCargoReal(hotelA, folioId, 250);
+
+    // El primer intento SÍ se puede vincular normalmente -- el rol frontdesk puede
+    // capturar, mismo criterio de acceso que declarar (MONEY_ROLES, sin rol admin).
+    const primero = await capturar(hotelA, folioId, intentoUno.id, chargeId, hotelA.frontdeskToken);
+    expect(primero.status).toBe(200);
+
+    // Reutilizar el MISMO charge real (ya "capturado" por el intento 1) para marcar
+    // "capturado" un SEGUNDO intento -- de una fuga real mucho mayor -- es exactamente
+    // el hueco: sin este rechazo, la tasa de captura reportada se infla artificialmente
+    // sin que ese dinero se haya cobrado de verdad.
+    const segundo = await capturar(hotelA, folioId, intentoDos.id, chargeId, hotelA.frontdeskToken);
+    expect(segundo.status).toBe(409);
+    const body = (await segundo.json()) as { code: string };
+    expect(body.code).toBe("charge_ya_capturado_por_otro_intento");
+
+    // El segundo intento NUNCA quedó mutado por el intento rechazado -- sigue
+    // 'pendiente' y se puede resolver normalmente por otra vía (fuga real).
+    const fugaRes = await marcarFuga(hotelA, folioId, intentoDos.id, hotelA.gmToken, "Confirmado como pérdida tras el intento de reutilización rechazado");
+    expect(fugaRes.status).toBe(200);
+  });
+
+  it("fraude REQ-AB-012: capturar un intento con un charge de monto distinto se rechaza (422, nunca se vincula a ciegas por monto)", async () => {
+    const folioId = await folioNuevo(hotelA);
+    const intento = await declararIntento(hotelA, folioId, { descripcion: "consumo-monto-grande-nunca-posteado", monto: 900 });
+    // Charge real del MISMO folio, pero por un monto muchísimo menor al del intento --
+    // sin el chequeo de monto, esto habría "capturado" el intento igual.
+    const chargeChico = await postearCargoReal(hotelA, folioId, 5);
+
+    const res = await capturar(hotelA, folioId, intento.id, chargeChico, hotelA.frontdeskToken);
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { code: string };
+    expect(body.code).toBe("monto_captura_no_coincide");
+
+    // El intento sigue 'pendiente' -- el rechazo por monto no lo mutó -- y SÍ se puede
+    // capturar normalmente con un charge del monto correcto.
+    const chargeCorrecto = await postearCargoReal(hotelA, folioId, 900);
+    const resOk = await capturar(hotelA, folioId, intento.id, chargeCorrecto, hotelA.frontdeskToken);
+    expect(resOk.status).toBe(200);
+  });
+
   it("un rol operativo (fnb) NO puede ver el reporte de captura -- restringido a owner/gm/accountant", async () => {
     const res = await reporte(hotelA, isoDate(0), isoDate(0), hotelA.fnbToken);
     expect(res.status).toBe(403);
@@ -267,7 +325,11 @@ describe("REQ-AB-012: reporte de tasa de captura de cargos ≥99.5%", () => {
     // ajena a lo que este REQ mide, no una necesidad del propio dominio.
     const folioId = await folioNuevo(hotelB);
     for (let i = 0; i < 200; i++) {
-      const intento = await declararIntento(hotelB, folioId, { descripcion: `lote-99.5-${i}`, ocurrioEn: ocurrioEnPositivo });
+      // Monto del intento y del charge real coinciden a propósito (50): desde el
+      // arreglo de REQ-AB-012, "capturar" exige que el charge vinculado sea por el
+      // MISMO monto que el intento -- ver los tests de fraude dedicados arriba (hotelA)
+      // para el caso donde NO coinciden.
+      const intento = await declararIntento(hotelB, folioId, { descripcion: `lote-99.5-${i}`, monto: 50, ocurrioEn: ocurrioEnPositivo });
       if (i < 199) {
         const chargeId = await postearCargoReal(hotelB, folioId, 50);
         const res = await capturar(hotelB, folioId, intento.id, chargeId);
@@ -305,7 +367,9 @@ describe("REQ-AB-012: reporte de tasa de captura de cargos ≥99.5%", () => {
     const folioId = await folioNuevo(hotelB); // mismo criterio que el caso positivo: un folio, N transacciones
 
     for (let i = 0; i < 17; i++) {
-      const intento = await declararIntento(hotelB, folioId, { descripcion: `lote-negativo-capturado-${i}`, ocurrioEn: ocurrioEnNegativo });
+      // Mismo criterio que el caso positivo de arriba: monto del intento y del charge
+      // real coinciden (60) -- el arreglo de REQ-AB-012 exige esa coincidencia.
+      const intento = await declararIntento(hotelB, folioId, { descripcion: `lote-negativo-capturado-${i}`, monto: 60, ocurrioEn: ocurrioEnNegativo });
       const chargeId = await postearCargoReal(hotelB, folioId, 60);
       const res = await capturar(hotelB, folioId, intento.id, chargeId);
       expect(res.status).toBe(200);

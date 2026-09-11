@@ -53,6 +53,11 @@ const fugaSchema = z.object({
   motivo: z.string().trim().min(1).max(300),
 });
 
+/** Tolerancia de un centavo -- mismo criterio que packages/domain-hotel/src/money.ts,
+ *  folioEngine.ts y fraude/deteccion.ts para no rechazar por un residuo de redondeo
+ *  real, y mismo umbral que `Errors.impuestoNoCoincide`. */
+const AMOUNT_TOLERANCE = 0.01;
+
 interface AttemptRow {
   id: string;
   folio_id: string;
@@ -96,9 +101,9 @@ async function loadPendingAttempt(
   hotelId: string,
   folioId: string,
   attemptId: string,
-): Promise<void> {
-  const { rows } = await db.query<{ reconciled_status: "pendiente" | "capturado" | "fuga" }>(
-    "select reconciled_status from public.room_charge_capture_attempt where id = $1 and hotel_id = $2 and folio_id = $3;",
+): Promise<{ amount: number }> {
+  const { rows } = await db.query<{ reconciled_status: "pendiente" | "capturado" | "fuga"; amount: string }>(
+    "select reconciled_status, amount from public.room_charge_capture_attempt where id = $1 and hotel_id = $2 and folio_id = $3;",
     [attemptId, hotelId, folioId],
   );
   const row = rows[0];
@@ -106,6 +111,7 @@ async function loadPendingAttempt(
   if (row.reconciled_status !== "pendiente") {
     throw Errors.conflict("El intento ya fue resuelto anteriormente (capturado o marcado como fuga).");
   }
+  return { amount: Number(row.amount) };
 }
 
 export function capturaCargosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
@@ -190,11 +196,26 @@ export function capturaCargosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings
     const body = parseBody(capturarSchema, await c.req.json().catch(() => ({})));
 
     await loadFolio(db, hotelId, folioId);
-    const { rows: chargeRows } = await db.query<{ id: string }>(
-      "select id from public.charge where id = $1 and folio_id = $2;",
+    const { rows: chargeRows } = await db.query<{ id: string; amount: string }>(
+      "select id, amount from public.charge where id = $1 and folio_id = $2;",
       [body.chargeId, folioId],
     );
-    if (chargeRows.length === 0) throw Errors.notFound("El charge indicado no existe en este folio.");
+    const charge = chargeRows[0];
+    if (!charge) throw Errors.notFound("El charge indicado no existe en este folio.");
+
+    // Fraude REQ-AB-012/H10-020: sin este chequeo, cualquier rol de dinero
+    // (frontdesk/fnb/reservations -- NO requiere rol administrativo) podía reutilizar
+    // un único `charge` real ya vinculado a otro intento para marcar "capturado" un
+    // número arbitrario de intentos de fuga real, inflando artificialmente la tasa de
+    // captura ≥99.5% que este REQ existe para vigilar. Backstop de aplicación ANTES de
+    // `resolve_room_charge_capture_attempt` (mismo criterio de "verificar antes de
+    // mutar" del comentario de abajo); el backstop de base de datos es el UNIQUE INDEX
+    // parcial `room_charge_capture_attempt_charge_id_unique_idx` (migración 0134).
+    const { rows: reuseRows } = await db.query<{ id: string }>(
+      "select id from public.room_charge_capture_attempt where charge_id = $1 and reconciled_status = 'capturado' limit 1;",
+      [body.chargeId],
+    );
+    if (reuseRows.length > 0) throw Errors.chargeYaCapturadoPorOtroIntento();
 
     // `resolve_room_charge_capture_attempt` es SECURITY DEFINER (bypasa RLS, mismo
     // patrón que `mark_charge_reversed`) -- por eso el scoping a ESTE folio/hotel debe
@@ -202,7 +223,16 @@ export function capturaCargosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings
     // intentoId de OTRO hotel ya habría sido mutado (resuelto con datos ajenos) para
     // cuando detectáramos el desajuste. `reverseCharge` (./folios.ts) sigue el mismo
     // principio con el `charge` original antes de `mark_charge_reversed`.
-    await loadPendingAttempt(db, hotelId, folioId, c.req.param("intentoId"));
+    const attempt = await loadPendingAttempt(db, hotelId, folioId, c.req.param("intentoId"));
+
+    // Fraude REQ-AB-012/H10-020: sin validar el monto, un intento de fuga real grande
+    // podía "capturarse" vinculándolo a un `charge` real minúsculo cualquiera del mismo
+    // folio -- el reporte lo contaría como capturado por construcción aunque el monto
+    // real fugado nunca se hubiera posteado.
+    const chargeAmount = Number(charge.amount);
+    if (Math.abs(chargeAmount - attempt.amount) > AMOUNT_TOLERANCE) {
+      throw Errors.montoCapturaNoCoincide(attempt.amount, chargeAmount);
+    }
 
     const { rows } = await db.query<AttemptRow>(
       `select id, folio_id, source, description, amount, occurred_at::text as occurred_at,
