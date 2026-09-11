@@ -396,3 +396,9 @@ export {
   type ConsentLedgerEntry,
   type ConsentLedgerSummaryBucket,
 } from "./consentLedger.ts";
+export {
+  normalizeGuestName,
+  findGuestDedupeMatch,
+  type GuestChannelProfile,
+  type GuestDedupeCandidate,
+} from "./guestContactDedup.ts";

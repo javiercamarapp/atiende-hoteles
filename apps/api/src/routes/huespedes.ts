@@ -13,13 +13,22 @@
 //    insertadas) si `containsDiscriminatoryContent` detecta contenido discriminatorio
 //    (packages/domain-hotel/src/conversationalGuardrails.ts) -- fail-closed, nunca se
 //    guarda una versión "editada" de la nota rechazada.
+//
+// REQ-RES-019 (P2/F) añade la deduplicación de contactos de huésped al POST de creación:
+// cuando `canal` es una OTA (no 'directo'), antes de insertar se busca un perfil YA
+// EXISTENTE en este hotel con una reserva previa en el MISMO canal y el MISMO nombre
+// normalizado (packages/domain-hotel/src/guestContactDedup.ts) -- si existe, se
+// reutiliza en vez de crear una fila duplicada para lo que es el mismo huésped humano
+// con un contacto proxy distinto por reserva.
 import { Hono } from "hono";
 import { z } from "zod";
 import { hashPassword, verifyPassword } from "@atiende-hoteles/db";
 import {
   containsDiscriminatoryContent,
   evaluateOtpConfirmation,
+  findGuestDedupeMatch,
   generateOtpCode,
+  isDirectChannel,
   OTP_MAX_ATTEMPTS,
   OTP_TTL_MINUTES,
 } from "@atiende-hoteles/domain-hotel";
@@ -34,6 +43,12 @@ const createGuestSchema = z.object({
   nombre: z.string().trim().min(1).max(200),
   email: z.string().trim().toLowerCase().email().optional().nullable(),
   telefono: z.string().trim().max(40).optional().nullable(),
+  // REQ-RES-019: canal de la reserva/importación que trae a este huésped (p. ej.
+  // 'booking_com', 'airbnb'). Opcional y ausente hoy en el único canal que la app
+  // produce en producción ('directo', REQ-RES-022) -- existe para cuando un channel
+  // manager/import de OTA cree huéspedes por esta vía y necesite señalar de qué OTA
+  // viene el contacto (enmascarado) que trae.
+  canal: z.string().trim().min(1).max(60).optional(),
 });
 
 // .strict(): jamás se acepta un campo adicional como "enviarA"/"telefonoDestino" --
@@ -205,6 +220,44 @@ export function huespedesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     const orgId = c.get("orgId");
     const hotelId = c.req.param("hotelId");
     const body = parseBody(createGuestSchema, await c.req.json().catch(() => ({})));
+    const canal = body.canal ?? "directo";
+
+    // REQ-RES-019 (P2/F): "deduplicar contactos con emails/teléfonos enmascarados de
+    // distintas reservas del mismo huésped en un solo perfil". El canal 'directo'
+    // (única vía que la app produce hoy, REQ-RES-022) NUNCA pasa por aquí -- ver
+    // packages/domain-hotel/src/guestContactDedup.ts para el porqué completo. Solo un
+    // canal no-directo (OTA) dispara la búsqueda de un perfil ya existente en este
+    // hotel con una reserva previa en el MISMO canal y el MISMO nombre normalizado.
+    if (!isDirectChannel(canal)) {
+      const { rows: profileRows } = await db.query<{ guest_id: string; full_name: string; channels: string[] }>(
+        `select g.id as guest_id, g.full_name, array_agg(distinct r.channel) as channels
+         from public.guest g
+         join public.reservation r on r.guest_id = g.id
+         where g.hotel_id = $1
+         group by g.id, g.full_name;`,
+        [hotelId],
+      );
+      const matchId = findGuestDedupeMatch(
+        { fullName: body.nombre, channel: canal },
+        profileRows.map((p) => ({ guestId: p.guest_id, fullName: p.full_name, channels: p.channels })),
+      );
+      if (matchId) {
+        // Reutiliza el perfil existente TAL CUAL -- nunca sobreescribe su email/teléfono
+        // ya guardado con el contacto (enmascarado, distinto por diseño) de esta nueva
+        // reserva: mismo criterio fail-closed que REQ-HUE-023, donde solo el flujo de
+        // OTP puede cambiar el contacto de un huésped ya registrado.
+        const { rows: existing } = await db.query<{ id: string; full_name: string; email: string | null }>(
+          "select id, full_name, email from public.guest where id = $1 and hotel_id = $2;",
+          [matchId, hotelId],
+        );
+        if (existing[0]) {
+          return c.json(
+            { id: existing[0].id, nombre: existing[0].full_name, email: existing[0].email, reutilizado: true },
+            200,
+          );
+        }
+      }
+    }
 
     const { rows } = await db.query<{ id: string }>(
       `insert into public.guest (tenant_id, hotel_id, full_name, email, phone)
@@ -213,7 +266,7 @@ export function huespedesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       [orgId, hotelId, body.nombre, body.email ?? null, body.telefono ?? null],
     );
 
-    return c.json({ id: rows[0]!.id, nombre: body.nombre, email: body.email ?? null }, 201);
+    return c.json({ id: rows[0]!.id, nombre: body.nombre, email: body.email ?? null, reutilizado: false }, 201);
   });
 
   // REQ-HUE-023: paso 1/2 -- solicita el cambio de `email`/`telefono` de un huésped ya
