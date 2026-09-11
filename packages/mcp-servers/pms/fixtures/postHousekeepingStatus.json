@@ -1,0 +1,20 @@
+{
+  "source": "cloudbeds-simulator",
+  "recordedAt": "2026-09-11T03:56:04.126Z",
+  "endpoint": "postHousekeepingStatus",
+  "request": {
+    "method": "POST",
+    "path": "/postHousekeepingStatus"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "date": "2026-09-11",
+        "roomID": "SIM-RT-STD-101",
+        "roomCondition": "clean"
+      }
+    }
+  }
+}

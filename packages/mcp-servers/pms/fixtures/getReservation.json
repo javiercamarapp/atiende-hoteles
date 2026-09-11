@@ -1,0 +1,39 @@
+{
+  "source": "cloudbeds-simulator",
+  "recordedAt": "2026-09-11T03:56:04.126Z",
+  "endpoint": "getReservation",
+  "request": {
+    "method": "GET",
+    "path": "/getReservation?reservationID=SIM-RES-1"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "propertyID": "SIM-PROPERTY-1",
+        "reservationID": "SIM-RES-1",
+        "status": "confirmed",
+        "startDate": "2026-10-10",
+        "endDate": "2026-10-13",
+        "total": 4500,
+        "dateModified": "2026-09-01T10:00:00Z",
+        "guestList": {
+          "SIM-GUEST-1": {
+            "guestID": "SIM-GUEST-1",
+            "guestFirstName": "Ana",
+            "guestLastName": "Reyes",
+            "guestEmail": "ana@example.com",
+            "isMainGuest": true
+          }
+        },
+        "assigned": [
+          {
+            "roomTypeID": "SIM-RT-STD"
+          }
+        ],
+        "unassigned": []
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "_nota": "Dataset SINTÉTICO de ejemplo para la skill revenue-backtest (REQ-AGT-021/BP-138) -- NO son ingresos reales de ningún hotel. Sirve para demostrar el CLI end-to-end y como fixture de la validación en CI. Un backtest real recibe engineRevenue/baselineRevenue ya calculados por fuera con el método contrafactual declarado (REQ-REV-018/GOB-037), nunca inventados por este archivo.",
+  "series": { "startDate": "2026-01-01", "endDate": "2026-06-30" },
+  "windowSpec": { "trainDays": 60, "testDays": 14, "stepDays": 14 },
+  "counterfactualMethod": "misma_tarifa_periodo_anterior",
+  "windowRevenues": [
+    { "engineRevenue": 118500, "baselineRevenue": 110000 },
+    { "engineRevenue": 121200, "baselineRevenue": 112500 },
+    { "engineRevenue": 108000, "baselineRevenue": 109000 },
+    { "engineRevenue": 132000, "baselineRevenue": 119000 },
+    { "engineRevenue": 126800, "baselineRevenue": 121000 },
+    { "engineRevenue": 140500, "baselineRevenue": 128000 },
+    { "engineRevenue": 133200, "baselineRevenue": 130500 },
+    { "engineRevenue": 145900, "baselineRevenue": 133000 }
+  ],
+  "minWindows": 3,
+  "minImprovementPct": 0,
+  "minWindowWinRatio": 0.5
+}
