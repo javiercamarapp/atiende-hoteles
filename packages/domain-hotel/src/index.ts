@@ -146,6 +146,21 @@ export {
   type CalculoDiarioLavanderiaInput,
   type CalculoDiarioLavanderiaResult,
 } from "./housekeeping/parLavanderia.ts";
+export {
+  STANDARD_INSPECTION_PHOTO_TYPES,
+  PHYSICAL_SUPERVISION_SAMPLE_RATE,
+  InspeccionVisionError,
+  PhysicalSupervisionNoteRequiredError,
+  evaluateVisionInspection,
+  requiresPhysicalSupervision,
+  assertHumanClosureAllowed,
+  type StandardInspectionPhotoType,
+  type InspectionPhotoSubmission,
+  type InspectionVerdict,
+  type InspectionCorrectionItem,
+  type InspectionVisionOutcome,
+  type EvaluateVisionInspectionInput,
+} from "./housekeeping/inspeccionVision.ts";
 // Merge de reconciliación (2026-09-08): la sesión H12c había retirado estos 6 bloques
 // `export { … } from` (`./voiceGuardrails.ts`, `./pl/usaliPL.ts`, `./tickets/slaPolicy.ts`,
 // `./marketingTemplateLinter.ts`, `./conversationalGuardrails.ts`,
