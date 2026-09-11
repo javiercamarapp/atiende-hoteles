@@ -1,0 +1,62 @@
+   [33m[2m✓[22m[39m drainOutboxOnce: reintentos y dead-letter[2m > [22mtras maxAttempts fallos consecutivos, el evento se marca 'fallido' (dead-letter) y deja de reintentarse [33m 15971[2mms[22m[39m
+   [33m[2m✓[22m[39m drainOutboxOnce: reintentos y dead-letter[2m > [22mauditoria-1/backend [ALTO]: la causa real del error queda persistida en outbox.last_error, no descartada por un catch{} mudo [33m 14378[2mms[22m[39m
+   [33m[2m✓[22m[39m drainOutboxOnce: reintentos y dead-letter[2m > [22mauditoria-1/backend [ALTO]: el dead-letter final también conserva la causa real del último intento [33m 13232[2mms[22m[39m
+   [33m[2m✓[22m[39m drainOutboxOnce: reintentos y dead-letter[2m > [22mauditoria-1/backend [ALTO]: un handler colgado (nunca resuelve) se trata como fallo por timeout sin bloquear el resto del batch [33m 17316[2mms[22m[39m
+   [33m[2m✓[22m[39m drainOutboxOnce: reintentos y dead-letter[2m > [22mun event_type sin handler registrado se trata como fallo (nunca se marca 'enviado' silenciosamente) [33m 20350[2mms[22m[39m
+ [32m✓[39m tests/unit/reservation-state-machine.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 87470[2mms[22m[39m
+   [33m[2m✓[22m[39m maquina de estados de reservation[2m > [22muna reserva nueva arranca en 'cotizada' y queda registrada en el evento inicial [33m 17222[2mms[22m[39m
+   [33m[2m✓[22m[39m maquina de estados de reservation[2m > [22mpermite la cadena de transiciones valida completa [33m 15127[2mms[22m[39m
+   [33m[2m✓[22m[39m maquina de estados de reservation[2m > [22mrechaza un salto invalido (cotizada -> en_estancia, saltandose confirmada/check_in) [33m 13236[2mms[22m[39m
+   [33m[2m✓[22m[39m maquina de estados de reservation[2m > [22mrechaza reabrir una reserva cerrada (estado terminal) [33m 21895[2mms[22m[39m
+   [33m[2m✓[22m[39m maquina de estados de reservation[2m > [22mrechaza confirmar una reserva ya cancelada [33m 19978[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/pms/registro-conectores.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/web/csp-meta.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/api/rate-limiter.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+ [32m✓[39m tests/unit/schema/dinero-numeric.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 21655[2mms[22m[39m
+ [32m✓[39m tests/unit/schema/hotel-timezone.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 25378[2mms[22m[39m
+ [32m✓[39m tests/unit/web/offline-csp.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/shared/idempotency.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/checkin-free-text-guard.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m tests/unit/api/db-production.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/shared/rate-limiter.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/shared/credentials.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/pricing.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/trace.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/ui/format-money.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 98[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/approval.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/idempotency-key.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 59235[2mms[22m[39m
+   [33m[2m✓[22m[39m idempotency_key: unicidad por (tenant_id, scope, key)[2m > [22mun INSERT plano con la misma clave dos veces es rechazado por el constraint UNIQUE [33m 25387[2mms[22m[39m
+   [33m[2m✓[22m[39m idempotency_key: unicidad por (tenant_id, scope, key)[2m > [22mINSERT ... ON CONFLICT DO NOTHING con la misma clave no duplica la fila (patron real de la app) [33m 17962[2mms[22m[39m
+   [33m[2m✓[22m[39m idempotency_key: unicidad por (tenant_id, scope, key)[2m > [22mla misma clave en dos tenants distintos NO colisiona (unicidad es por tenant) [33m 15875[2mms[22m[39m
+ [32m✓[39m tests/unit/rls/tenant-isolation.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 83199[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento de tenant entre hoteles (RLS, room_type)[2m > [22mSELECT: solo devuelve filas del hotel del usuario [33m 26358[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento de tenant entre hoteles (RLS, room_type)[2m > [22mINSERT: rechazado con violacion de politica al escribir en el hotel ajeno [33m 19186[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento de tenant entre hoteles (RLS, room_type)[2m > [22mUPDATE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion) [33m 17077[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento de tenant entre hoteles (RLS, room_type)[2m > [22mDELETE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion) [33m 20577[2mms[22m[39m
+ [32m✓[39m tests/unit/migrations.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 76317[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22maplica todas las migraciones desde una base vacia [33m 19498[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22mes idempotente: correrlo dos veces no reaplica nada la segunda vez [33m 14728[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22mrechaza continuar si una migracion ya aplicada fue editada (expand-only) [33m 18235[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22mdb:reset (dropAllMigratedObjects) deja la base lista para re-aplicar desde cero [33m 23855[2mms[22m[39m
+ [32m✓[39m tests/unit/attendance-log.spec.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 225879[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mregistra entrada/salida vía record_attendance_event() dentro de una sesión real de staff [33m 25420[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mSIEMPRE registra al propio auth.uid(): no existe ningún parámetro para fichar a nombre de otro empleado [33m 17971[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mrechaza registrar asistencia en un hotel al que el empleado no pertenece [33m 17457[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mcada fila referencia el hash de la fila anterior DEL MISMO empleado, y la primera no tiene prev_hash [33m 14489[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mdos empleados distintos tienen cadenas de hash INDEPENDIENTES (una no referencia a la otra) [33m 16327[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mel hash almacenado es verificable de forma independiente (recalculado desde las columnas persistidas coincide) [33m 12156[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mrechaza UPDATE incluso ejecutado con el cliente admin/propietario de la migración [33m 19055[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mrechaza DELETE incluso ejecutado con el cliente admin/propietario de la migración [33m 21135[2mms[22m[39m
+   [33m[2m✓[22m[39m staff_schedule: horario programado (mutable, administrado por owner/gm)[2m > [22mowner/gm puede programar un turno para un empleado de su propio hotel [33m 17261[2mms[22m[39m
+   [33m[2m✓[22m[39m staff_schedule: horario programado (mutable, administrado por owner/gm)[2m > [22mun rol sin administración (ej. housekeeping) NO puede programar horarios [33m 16287[2mms[22m[39m
+   [33m[2m✓[22m[39m staff_schedule: horario programado (mutable, administrado por owner/gm)[2m > [22mrechaza programar un horario para un empleado que no pertenece a ese hotel [33m 21510[2mms[22m[39m
+   [33m[2m✓[22m[39m staff_schedule: horario programado (mutable, administrado por owner/gm)[2m > [22mrechaza un rango con scheduled_end anterior o igual a scheduled_start [33m 15416[2mms[22m[39m
+   [33m[2m✓[22m[39m staff_schedule: horario programado (mutable, administrado por owner/gm)[2m > [22mun segundo upsert para el mismo (hotel, empleado, fecha) reemplaza el turno en vez de duplicarlo [33m 11391[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m114 passed[39m[22m[90m (114)[39m
+[2m      Tests [22m [1m[32m1328 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (1329)[39m
+[2m   Start at [22m 22:09:14
+[2m   Duration [22m 231.89s[2m (transform 12.12s, setup 0ms, collect 75.04s, tests 1107.85s, environment 15ms, prepare 27.32s)[22m
+
+
+[exited with code 0]

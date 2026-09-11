@@ -13,10 +13,20 @@
 //    insertadas) si `containsDiscriminatoryContent` detecta contenido discriminatorio
 //    (packages/domain-hotel/src/conversationalGuardrails.ts) -- fail-closed, nunca se
 //    guarda una versión "editada" de la nota rechazada.
+//
+// REQ-AGT-010 (P1/SEG) añade el límite de tasa que le faltaba a `/contacto/solicitudes`:
+// "rate limits por número/tenant/país" además del OTP que REQ-HUE-023 ya exigía. La
+// clave (`buildGuestContactOtpRateLimitKey`, packages/domain-hotel) combina las 3
+// dimensiones; el conteo en sí reutiliza `RateLimiter` -- mismo mecanismo en memoria ya
+// usado por POST /registro y POST /correo/olvide-contrasena, ninguna tabla nueva. Se
+// verifica ANTES de generar el código/tocar la base/llamar a WhatsApp (mismo orden
+// fail-closed que `registroLimiter` en routes/registro.ts): la N+1 solicitud nunca
+// genera un OTP real ni gasta una plantilla de WhatsApp.
 import { Hono } from "hono";
 import { z } from "zod";
 import { hashPassword, verifyPassword } from "@atiende-hoteles/db";
 import {
+  buildGuestContactOtpRateLimitKey,
   containsDiscriminatoryContent,
   evaluateOtpConfirmation,
   generateOtpCode,
@@ -25,6 +35,7 @@ import {
 } from "@atiende-hoteles/domain-hotel";
 import { Errors } from "../lib/errors.ts";
 import { sharedWhatsappAdapter } from "../lib/messaging.ts";
+import { RateLimiter } from "../lib/rateLimit.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
 import { MANAGE_RESERVATIONS_ROLES } from "../domain/roles.ts";
@@ -73,6 +84,14 @@ interface ContactChangeRequestRow {
 
 export function huespedesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
   const app = new Hono<HonoEnvBindings>();
+
+  // REQ-AGT-010 · instanciado por-app (no por-request), mismo criterio que
+  // `registroLimiter`/`olvideLimiter`: el conteo debe persistir entre llamadas dentro
+  // del mismo proceso, no reiniciarse en cada petición.
+  const contactoOtpLimiter = new RateLimiter({
+    limit: deps.env.rateLimitOtpContactoPorNumeroTenantPaisPorHora,
+    windowMs: 60 * 60 * 1000,
+  });
 
   // RENDIMIENTO: un solo `app.use` (patrón "path*") -- registrar la ruta exacta Y
   // "/huespedes/*" por separado ejecutaba AMBOS middlewares para
@@ -239,6 +258,19 @@ export function huespedesRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       // valor nuevo solicitado ni contra ningún otro dato del cuerpo de la petición.
       throw Errors.conflict(
         "Este huésped no tiene un teléfono registrado; no hay un canal original al cual enviar el OTP de verificación.",
+      );
+    }
+
+    // REQ-AGT-010: límite de tasa por (número, tenant, país) -- verificado ANTES de
+    // generar el código/tocar `guest_contact_change_request`/llamar a WhatsApp, mismo
+    // orden fail-closed que `registroLimiter` (routes/registro.ts): la N+1 solicitud
+    // sobre el límite jamás gasta un envío real ni dispara un OTP nuevo.
+    const rateLimitKey = buildGuestContactOtpRateLimitKey({ tenantId: c.get("orgId"), phone: canalOriginal });
+    const rateLimit = contactoOtpLimiter.check(rateLimitKey);
+    if (!rateLimit.allowed) {
+      throw Errors.rateLimited(
+        (rateLimit.resetAt - Date.now()) / 1000,
+        "Se alcanzó el límite de solicitudes de verificación para este número. Intenta de nuevo más tarde.",
       );
     }
 
