@@ -15,6 +15,27 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiFixture, destroyApiFixture, loginAs, type ApiFixture } from "../support/api-fixture.ts";
 
+// FECHA_TURNO/FECHA_TURNO_SIGUIENTE: la parte (d) usa un workDate/ventana
+// sintéticos para el cruce cruce-contra-horario. Antes era el literal fijo
+// "2026-09-10"/"2026-09-11". El día que esa fecha coincidió con el reloj
+// real (hoy), los checadores REALES de frontdesk en las partes (a)/(b)/(c)
+// de este mismo archivo (que sí usan el `now()` del servidor) empezaron a
+// caer dentro de la ventana de búsqueda de eventos de esta prueba (6h antes
+// / 12h después del horario programado) -- contaminando el emparejamiento
+// entrada/salida y produciendo "en_curso" en vez de "completo" pese a que
+// los dos eventos sintéticos insertados eran correctos (verificado aislando
+// la prueba con `-t`, que sí pasa: la causa es contaminación cruzada con
+// las partes (a)/(b)/(c), no un bug en crossCheckAttendance). Se calcula
+// siempre lejos de "hoy" (+30 días) para que un checador real de otra
+// prueba en el mismo archivo nunca vuelva a caer en esta ventana.
+function fechaTurnoISO(diasAdelante: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + 30 + diasAdelante);
+  return d.toISOString().slice(0, 10);
+}
+const FECHA_TURNO = fechaTurnoISO(0);
+const FECHA_TURNO_SIGUIENTE = fechaTurnoISO(1);
+
 async function checar(
   fixture: ApiFixture,
   token: string,
@@ -145,9 +166,9 @@ describe("REQ-BO-024: checador de asistencia (append-only) + cruce contra horari
         headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
         body: JSON.stringify({
           staffUserId: frontdesk.id,
-          workDate: "2026-09-10",
-          scheduledStart: "2026-09-10T14:00:00Z",
-          scheduledEnd: "2026-09-10T22:00:00Z",
+          workDate: FECHA_TURNO,
+          scheduledStart: `${FECHA_TURNO}T14:00:00Z`,
+          scheduledEnd: `${FECHA_TURNO}T22:00:00Z`,
         }),
       });
       expect(res.status).toBe(403);
@@ -177,9 +198,9 @@ describe("REQ-BO-024: checador de asistencia (append-only) + cruce contra horari
         headers: { authorization: `Bearer ${gmToken}`, "content-type": "application/json" },
         body: JSON.stringify({
           staffUserId: frontdesk.id,
-          workDate: "2026-09-10",
-          scheduledStart: "2026-09-10T14:00:00Z",
-          scheduledEnd: "2026-09-10T22:00:00Z",
+          workDate: FECHA_TURNO,
+          scheduledStart: `${FECHA_TURNO}T14:00:00Z`,
+          scheduledEnd: `${FECHA_TURNO}T22:00:00Z`,
           authorizedOvertimeMinutes: 30,
         }),
       });
@@ -196,11 +217,11 @@ describe("REQ-BO-024: checador de asistencia (append-only) + cruce contra horari
       await fixture.engine.admin.query(
         `insert into public.attendance_log (hotel_id, staff_user_id, event_type, recorded_at)
          values ($1, $2, 'entrada', $3), ($1, $2, 'salida', $4);`,
-        [hotelId, frontdesk.id, "2026-09-10T14:00:00Z", "2026-09-10T23:30:00Z"], // +90 min sobre lo programado
+        [hotelId, frontdesk.id, `${FECHA_TURNO}T14:00:00Z`, `${FECHA_TURNO}T23:30:00Z`], // +90 min sobre lo programado
       );
 
       const cruceRes = await fixture.app.request(
-        `/hoteles/${hotelId}/asistencia/cruce?staffUserId=${frontdesk.id}&desde=2026-09-10&hasta=2026-09-10`,
+        `/hoteles/${hotelId}/asistencia/cruce?staffUserId=${frontdesk.id}&desde=${FECHA_TURNO}&hasta=${FECHA_TURNO}`,
         { headers: { authorization: `Bearer ${gmToken}` } },
       );
       expect(cruceRes.status).toBe(200);
@@ -224,7 +245,7 @@ describe("REQ-BO-024: checador de asistencia (append-only) + cruce contra horari
       // El mismo cruce, en el CSV para la STPS: la fila existe y trae el mismo
       // excedente no autorizado.
       const csvRes = await fixture.app.request(
-        `/hoteles/${hotelId}/asistencia/exportar-stps?staffUserId=${frontdesk.id}&desde=2026-09-10&hasta=2026-09-10`,
+        `/hoteles/${hotelId}/asistencia/exportar-stps?staffUserId=${frontdesk.id}&desde=${FECHA_TURNO}&hasta=${FECHA_TURNO}`,
         { headers: { authorization: `Bearer ${gmToken}` } },
       );
       expect(csvRes.status).toBe(200);
@@ -244,11 +265,11 @@ describe("REQ-BO-024: checador de asistencia (append-only) + cruce contra horari
       await fixture.engine.admin.query(
         `insert into public.attendance_log (hotel_id, staff_user_id, event_type, recorded_at)
          values ($1, $2, 'entrada', $3), ($1, $2, 'salida', $4);`,
-        [hotelId, accountant.id, "2026-09-11T09:00:00Z", "2026-09-11T13:00:00Z"],
+        [hotelId, accountant.id, `${FECHA_TURNO_SIGUIENTE}T09:00:00Z`, `${FECHA_TURNO_SIGUIENTE}T13:00:00Z`],
       );
 
       const res = await fixture.app.request(
-        `/hoteles/${hotelId}/asistencia/cruce?staffUserId=${accountant.id}&desde=2026-09-11&hasta=2026-09-11`,
+        `/hoteles/${hotelId}/asistencia/cruce?staffUserId=${accountant.id}&desde=${FECHA_TURNO_SIGUIENTE}&hasta=${FECHA_TURNO_SIGUIENTE}`,
         { headers: { authorization: `Bearer ${gmToken}` } },
       );
       const [entry] = (await res.json()) as { estado: string; horasExtraNoAutorizadas: number; alerta: boolean }[];
