@@ -133,6 +133,19 @@ export {
   type ValidateTurnosLftInput,
   type ValidateTurnosLftResult,
 } from "./housekeeping/turnos-lft.ts";
+export {
+  computeExpectedLaundryKg,
+  evaluateLinenPar,
+  calcularLavanderiaDiaria,
+  type RoomTurnoverForecast,
+  type LinenKgConfig,
+  type EntregaLavanderiaExterna,
+  type LinenParInput,
+  type MotivoAlertaLavanderia,
+  type LinenParEvaluation,
+  type CalculoDiarioLavanderiaInput,
+  type CalculoDiarioLavanderiaResult,
+} from "./housekeeping/parLavanderia.ts";
 // Merge de reconciliación (2026-09-08): la sesión H12c había retirado estos 6 bloques
 // `export { … } from` (`./voiceGuardrails.ts`, `./pl/usaliPL.ts`, `./tickets/slaPolicy.ts`,
 // `./marketingTemplateLinter.ts`, `./conversationalGuardrails.ts`,
