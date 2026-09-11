@@ -1,0 +1,22 @@
+-- ORIGEN: packages/db/migrations/0130_ugc_consent_kind.sql sha256:29b25137abab50dfa1fe0ea1439cbeff233db34600db99f5d42bfe13df8caf18
+-- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
+-- nuevo el script tras cambiar la migración fuente.
+
+-- REQ-CRM-010: "El sistema debe capturar contenido generado por el huésped (UGC) vía
+-- WhatsApp post-estancia con registro explícito de consentimiento de uso..."
+--
+-- El consentimiento de USO del UGC reutiliza el ledger append-only ya existente
+-- (`consent`/`record_consent()`, migración 0068, REQ-HUE-024) en vez de inventar una
+-- tabla paralela -- mismo dato, mismo reporte multi-país, misma auditoría. Le falta un
+-- `consent_kind` propio: 'tratamiento_datos' y 'marketing' no describen "autorizo que mi
+-- foto/video se use en publicaciones del hotel" (es un consentimiento de uso de
+-- CONTENIDO, no de tratamiento de datos personales ni de recibir marketing).
+--
+-- `ALTER TYPE ... ADD VALUE` va en su PROPIA migración (nunca junto con el `CREATE
+-- TABLE`/función que lo consumen) a propósito: cada archivo de `packages/db/migrations`
+-- corre en su propia transacción (`runner.ts`, `begin;...commit;`) y un valor de enum
+-- agregado en una transacción no puede usarse de forma fiable dentro de la MISMA
+-- transacción que lo agrega -- separarlo en dos migraciones consecutivas (0130 se
+-- confirma antes de que 0131 empiece) evita ese problema de raíz, sin depender de un
+-- detalle de implementación de Postgres que podría cambiar entre versiones.
+alter type public.consent_kind add value 'ugc';

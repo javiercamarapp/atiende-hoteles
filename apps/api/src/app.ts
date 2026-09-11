@@ -54,6 +54,7 @@ import { vozElevenlabsRoutes } from "./routes/vozElevenlabs.ts";
 import { roiRoutes } from "./routes/roi.ts";
 import { privacidadRoutes } from "./routes/privacidad.ts";
 import { consentimientoRoutes } from "./routes/consentimiento.ts";
+import { ugcRoutes } from "./routes/ugc.ts";
 import { auditoriaConversacionesRoutes } from "./routes/auditoriaConversaciones.ts";
 import { adminRoutes } from "./routes/admin.ts";
 import { suscripcionRoutes } from "./routes/suscripcion.ts";
@@ -311,6 +312,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", roiRoutes(deps));
   app.route("/", privacidadRoutes(deps));
   app.route("/", consentimientoRoutes(deps));
+  app.route("/", ugcRoutes(deps));
   app.route("/", auditoriaConversacionesRoutes(deps));
   app.route("/", adminRoutes(deps));
   app.route("/", suscripcionRoutes(resolvedDeps));
