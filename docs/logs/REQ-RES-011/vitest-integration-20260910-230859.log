@@ -1,0 +1,15 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-abandono-de-reservas-detecci-n-y-flujo[39m
+
+ [32m✓[39m tests/integration/marketing/abandono.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 6451[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-RES-011: detección de cotizaciones abandonadas (motor propio) + contacto en 10min/2h/24h[2m > [22mNO contacta un minuto antes de los 10 min (caso negativo: nada dispara antes de tiempo) [33m 402[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-RES-011: detección de cotizaciones abandonadas (motor propio) + contacto en 10min/2h/24h[2m > [22mdispara EXACTAMENTE 3 contactos en 10min/2h/24h, ninguno antes ni después, con oferta no monetaria por ventana [33m 302[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-RES-011: detección de cotizaciones abandonadas (motor propio) + contacto en 10min/2h/24h[2m > [22muna cotización CONFIRMADA antes de una ventana nunca recibe ese contacto (caso negativo: confirmar detiene el abandono) [33m 369[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-RES-011: detección de cotizaciones abandonadas (motor propio) + contacto en 10min/2h/24h[2m > [22mel planificador (QuoteAbandonmentScheduler) detecta de punta a punta contra TODOS los hoteles reales, con reloj inyectado [33m 383[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-RES-011: detección de cotizaciones abandonadas (motor propio) + contacto en 10min/2h/24h[2m > [22muna cotización sin correo del huésped en el expediente no genera ningún correo, pero SÍ queda marcada/auditada (nunca bloquea la detección) [33m 321[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 23:09:05
+[2m   Duration [22m 10.52s[2m (transform 1.96s, setup 0ms, collect 3.68s, tests 6.45s, environment 0ms, prepare 71ms)[22m
+

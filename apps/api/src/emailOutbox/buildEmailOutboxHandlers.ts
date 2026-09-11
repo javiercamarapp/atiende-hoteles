@@ -20,8 +20,20 @@
 //   - `cfdi.emitted` -> aviso de CFDI disponible: mismo cierre -- `routes/cfdi.ts` emite
 //     el evento tras timbrar (hospedaje y pago) solo cuando el timbrado insertó una fila
 //     NUEVA con `status === "timbrado"` (nunca en un reintento idempotente).
+//   - `reservation.abandonment_contact` (REQ-RES-011) -> contacto de cotización
+//     abandonada: REALMENTE conectado -- `apps/api/src/jobs/quoteAbandonment.ts` emite
+//     este evento por cada ventana (10 min/2h/24h) que una `reservation` en `cotizada`
+//     alcanza sin confirmarse, con `window` en el payload para que este handler resuelva
+//     la oferta no monetaria exacta de esa ventana
+//     (`@atiende-hoteles/domain-hotel::resolveQuoteAbandonmentWindow`).
 import type { EmailPort } from "@atiende-hoteles/email";
-import { renderReciboPago, renderConfirmacionReserva, renderCfdiDisponible } from "@atiende-hoteles/email";
+import {
+  renderReciboPago,
+  renderConfirmacionReserva,
+  renderCfdiDisponible,
+  renderCotizacionAbandonada,
+} from "@atiende-hoteles/email";
+import { resolveQuoteAbandonmentWindow, type QuoteAbandonmentWindowKey } from "@atiende-hoteles/domain-hotel";
 import type { DbClient } from "@atiende-hoteles/db";
 import type { OutboxHandler, OutboxRow } from "../outbox/worker.ts";
 
@@ -173,15 +185,88 @@ function cfdiEmittedHandler(deps: EmailOutboxHandlerDeps): OutboxHandler {
   };
 }
 
+interface AbandonmentEmailRow {
+  status: string;
+  check_in_date: string;
+  check_out_date: string;
+  total_amount: string;
+  hotel_name: string;
+  room_type_name: string | null;
+  guest_email: string | null;
+  guest_name: string | null;
+}
+
+function isQuoteAbandonmentWindowKey(value: unknown): value is QuoteAbandonmentWindowKey {
+  return value === "10m" || value === "2h" || value === "24h";
+}
+
+/** REQ-RES-011: traduce `reservation.abandonment_contact` (emitido por
+ *  `jobs/quoteAbandonment.ts`, payload `{reservationId, window}`) a un correo real con
+ *  la oferta no monetaria de la ventana correspondiente. */
+function reservationAbandonmentContactHandler(deps: EmailOutboxHandlerDeps): OutboxHandler {
+  return async (row: OutboxRow) => {
+    const payload = row.payload as { window?: unknown } | null;
+    const windowKey = payload?.window;
+    // Payload sin `window` reconocible: no hay ventana de la que sacar la oferta -- se
+    // trata como entregado (nunca reintenta indefinidamente por un dato que no va a
+    // cambiar), mismo criterio que "sin correo del huésped" más abajo.
+    if (!isQuoteAbandonmentWindowKey(windowKey)) return;
+
+    const { rows } = await deps.db.query<AbandonmentEmailRow>(
+      `select r.status::text, r.check_in_date::text, r.check_out_date::text, r.total_amount,
+              l.name as hotel_name, rt.name as room_type_name, g.email as guest_email, g.full_name as guest_name
+       from public.reservation r
+       join public.location l on l.id = r.hotel_id
+       left join public.room_type rt on rt.id = r.room_type_id
+       left join public.guest g on g.id = r.guest_id
+       where r.id = $1;`,
+      [row.aggregate_id],
+    );
+    const reservation = rows[0];
+    // Sin fila, sin correo del huésped en el expediente, o la reserva YA avanzó de
+    // estado entre el tick que la marcó y este drenado (se confirmó/canceló mientras
+    // tanto): no hay nada que enviar -- entregado, nunca fallo, mismo criterio que
+    // `paymentRecordedHandler`.
+    if (!reservation || !reservation.guest_email || reservation.status !== "cotizada") return;
+
+    const ventana = resolveQuoteAbandonmentWindow(windowKey);
+
+    const rendered = renderCotizacionAbandonada({
+      nombreHuesped: reservation.guest_name ?? "Huésped",
+      nombreHotel: reservation.hotel_name,
+      checkIn: reservation.check_in_date,
+      checkOut: reservation.check_out_date,
+      tipoHabitacion: reservation.room_type_name ?? "Habitación",
+      totalAmount: Number(reservation.total_amount),
+      moneda: "MXN",
+      ventanaEtiqueta: ventana.etiqueta,
+      ofertaNoMonetaria: ventana.ofertaNoMonetaria,
+    });
+
+    await deps.emailPort.send({
+      ...rendered,
+      to: { email: reservation.guest_email, name: reservation.guest_name ?? undefined },
+      template: "cotizacion-abandonada",
+      // Clave por ventana (no solo por reserva): las 3 ventanas de la MISMA reserva son
+      // 3 contactos distintos y legítimos, a diferencia del resto de plantillas donde
+      // un solo evento por agregado ya es la unidad de deduplicación correcta.
+      dedupeKey: `cotizacion-abandonada:${row.aggregate_id}:${windowKey}`,
+      tenantId: row.tenant_id,
+      hotelId: row.hotel_id,
+    });
+  };
+}
+
 /** Handlers de `public.outbox` -> correo, para pasar a `drainOutboxOnce({handlers})`
- *  (ver `runEmailOutboxWorker.ts`). Solo `payment.recorded` corresponde a un
- *  `event_type` que algún código YA emite hoy (ver cabecera del archivo) -- los otros
- *  dos quedan listos para el día que `routes/reservas.ts`/`routes/cfdi.ts` empiecen a
- *  emitirlos. */
+ *  (ver `runEmailOutboxWorker.ts`). `payment.recorded`/`reservation.confirmed`/
+ *  `reservation.abandonment_contact` corresponden a `event_type` que algún código YA
+ *  emite hoy (ver cabecera del archivo) -- `cfdi.emitted` queda listo para el día que
+ *  `routes/cfdi.ts` empiece a emitirlo. */
 export function buildEmailOutboxHandlers(deps: EmailOutboxHandlerDeps): Record<string, OutboxHandler> {
   return {
     "payment.recorded": paymentRecordedHandler(deps),
     "reservation.confirmed": reservationConfirmedHandler(deps),
     "cfdi.emitted": cfdiEmittedHandler(deps),
+    "reservation.abandonment_contact": reservationAbandonmentContactHandler(deps),
   };
 }

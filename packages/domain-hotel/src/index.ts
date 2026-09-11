@@ -396,3 +396,11 @@ export {
   type ConsentLedgerEntry,
   type ConsentLedgerSummaryBucket,
 } from "./consentLedger.ts";
+export {
+  QUOTE_ABANDONMENT_WINDOWS,
+  resolveQuoteAbandonmentWindow,
+  computeAbandonmentContactAt,
+  isAbandonmentContactDue,
+  type QuoteAbandonmentWindowKey,
+  type QuoteAbandonmentWindow,
+} from "./reservas/quoteAbandonment.ts";

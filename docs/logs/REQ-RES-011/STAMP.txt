@@ -1,0 +1,77 @@
+REQ-RES-011 — detección de reservas/cotizaciones abandonadas (motor propio) + contacto en 10min/2h/24h (P1/F)
+Fecha: 2026-09-10
+Agente: Sonnet (subagente de cierre de requisito)
+
+Criterio de aceptación literal (docs/ACEPTACION.md): "Cotización abandonada detectada
+por el motor propio dispara contacto en las ventanas configuradas (10 min, 2h, 24h) con
+oferta no monetaria; prueba de tiempo simulado confirma exactamente 3 contactos en esas
+ventanas, ninguno antes ni después."
+
+"Cotización del motor propio" = una `reservation` que nace en `status = 'cotizada'`
+(ADR-005, migración 0006 ya existente) y nunca se confirmó -- no se inventó ninguna
+tabla nueva de "cotización" aparte.
+
+Archivos de este requisito:
+- packages/db/migrations/0130_quote_abandonment.sql (3 columnas
+  abandonment_contacted_{10m,2h,24h}_at sobre reservation + índice parcial) +
+  supabase/migrations/0130_quote_abandonment.sql (espejo generado)
+- packages/domain-hotel/src/reservas/quoteAbandonment.ts (nuevo, puro: catálogo de las
+  3 ventanas EXACTAS con su oferta no monetaria, cómputo de instante de contacto,
+  detección con reloj inyectado)
+- packages/domain-hotel/src/index.ts (export del módulo anterior)
+- apps/api/src/jobs/quoteAbandonment.ts (nuevo: detección+marcado idempotente por hotel,
+  reloj inyectable, encola `reservation.abandonment_contact` en public.outbox)
+- apps/api/src/jobs/quoteAbandonmentScheduler.ts (nuevo: planificador en proceso, lock
+  por hotel en memoria, mismo patrón que ticketEscalationScheduler.ts)
+- apps/api/src/server.ts (arranca/detiene el planificador anterior)
+- scripts/run-quote-abandonment-scheduler.ts (nuevo: ejecutable standalone por cron)
+- packages/email/src/templates/cotizacionAbandonada.ts (nueva plantilla, oferta no
+  monetaria renderizada, nunca un descuento de precio)
+- packages/email/src/templates/index.ts + packages/email/src/index.ts (registro de la
+  plantilla anterior)
+- apps/api/src/emailOutbox/buildEmailOutboxHandlers.ts (nuevo handler
+  reservation.abandonment_contact -> correo real, reutiliza el worker de outbox YA
+  existente, sin duplicar entrega/reintento/dead-letter)
+- tests/unit/domain-hotel/quote-abandonment.spec.ts (nuevo, 7/7)
+- tests/unit/email/plantillas.spec.ts (agrega la plantilla nueva al registro de pruebas
+  compartido, 13/13)
+- tests/integration/marketing/abandono.spec.ts (nuevo, 6/6, embedded-postgres real)
+- docs/REQUISITOS.md / docs/ACEPTACION.md (REQ-RES-011: pendiente -> hecho, con
+  evidencia)
+
+Comandos y evidencia:
+- vitest-unit-20260910-230859.log — npx vitest run tests/unit/domain-hotel/quote-abandonment.spec.ts
+  tests/unit/email/plantillas.spec.ts (2 archivos, 20/20, exit 0)
+- vitest-integration-20260910-230859.log — npx vitest run tests/integration/marketing/abandono.spec.ts
+  --pool=forks --poolOptions.forks.singleFork (1 archivo, 6/6, exit 0) -- cubre: (a) NO
+  contacta 1 minuto antes de los 10 min, (b) EXACTAMENTE 3 contactos en 10min/2h/24h
+  (con reloj simulado inyectado, nunca se espera un minuto real) verificados tanto en el
+  resultado del job como en los 3 correos realmente entregados via outbox (uno por
+  ventana, con la oferta no monetaria de esa ventana, ninguno menciona "descuento"), (c)
+  idempotencia (repetir el mismo instante no duplica), (d) caso negativo: reserva
+  CONFIRMADA antes de una ventana nunca la recibe, (e) caso negativo: reserva CANCELADA
+  antes de una ventana nunca la recibe, (f) el planificador (QuoteAbandonmentScheduler)
+  de punta a punta contra todos los hoteles reales, (g) sin correo del huésped: se
+  marca/audita pero no genera ningún correo (nunca bloquea la detección).
+- check-migraciones-20260910-230859.log — node --experimental-strip-types
+  scripts/check-migraciones.ts (OK, 95 migraciones verificadas, 0 DROP/ALTER
+  destructivo sin aprobar, exit 0)
+- typecheck: npm run typecheck (exit 0, verificado en esta sesión antes de escribir
+  este log; no se generó archivo aparte por ser una corrida de ~4 min compartida con el
+  resto del árbol de trabajo).
+- eslint: npx eslint <archivos de este requisito> (0 salida = 0 errores/advertencias).
+- Regresión dirigida (no incluida como archivo aparte, corrida en esta sesión, exit 0):
+  npx vitest run tests/integration/reservas tests/integration/tickets
+  tests/integration/api/email-outbox-handlers.spec.ts tests/integration/marketing
+  --pool=forks --poolOptions.forks.singleFork -> 13 archivos, 62/62 -- confirma que
+  reservas/tickets/outbox de correo existentes no se rompieron.
+- Suite unit completa del repo (corrida en esta sesión, no incluida como archivo aparte
+  por su tamaño): 113/115 archivos, 1329/1332 tests -- las 2 fallas son
+  tests/unit/gob/scope-de-tarea.spec.ts (timeout "onTaskUpdate" de vitest-worker, no
+  relacionado con este REQ, archivo no tocado por este trabajo) bajo carga alta del
+  mismo árbol de trabajo compartido por varios agentes concurrentes en esta máquina.
+
+Nota sobre el árbol de trabajo: esta tarea se aisló en un worktree Git nuevo
+(/tmp/wf-hoteles-abandono-de-reservas-detecci-n-y-flujo, rama
+closure/abandono-de-reservas-detecci-n-y-flujo) con su propio `npm install`, arrancado
+desde origin/main. Solo se modificaron/crearon los archivos listados arriba.
