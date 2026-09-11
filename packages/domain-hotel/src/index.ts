@@ -298,6 +298,19 @@ export {
   type FnbOrderSafetyState,
 } from "./fnbAllergyGuard.ts";
 export {
+  FNB_CENTROS_CONSUMO,
+  FNB_MERMA_CAUSAS,
+  isFnbCentroConsumo,
+  isFnbMermaCausa,
+  assertValidFnbMerma,
+  summarizeFnbMermaByCausa,
+  FnbMermaInvalidError,
+  type FnbCentroConsumo,
+  type FnbMermaCausa,
+  type FnbMermaInput,
+  type FnbMermaCausaResumen,
+} from "./fnbMermaGuard.ts";
+export {
   FRAUD_PATTERNS,
   recipientRolesForPattern,
   detectDiscountOutsidePolicy,
