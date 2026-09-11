@@ -39,7 +39,7 @@ describe("apps/api: mantenimiento preventivo (REQ-HK-015, integración real)", (
   const jsonHeaders = (token: string) => ({ ...authOf(token), "content-type": "application/json" });
 
   it("caso negativo: housekeeping no puede dar de alta un activo crítico (403)", async () => {
-    const res = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos`, {
+    const res = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos-criticos`, {
       method: "POST",
       headers: jsonHeaders(housekeepingToken),
       body: JSON.stringify({
@@ -54,7 +54,7 @@ describe("apps/api: mantenimiento preventivo (REQ-HK-015, integración real)", (
   });
 
   it("caso negativo: crear un activo con una habitación que no existe en el hotel falla con 400", async () => {
-    const res = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos`, {
+    const res = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos-criticos`, {
       method: "POST",
       headers: jsonHeaders(ownerToken),
       body: JSON.stringify({
@@ -70,7 +70,7 @@ describe("apps/api: mantenimiento preventivo (REQ-HK-015, integración real)", (
   });
 
   it("calendario ajustado a temporada: una ventana que cubre todo el año aprieta la frecuencia base", async () => {
-    const crearActivo = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos`, {
+    const crearActivo = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos-criticos`, {
       method: "POST",
       headers: jsonHeaders(ownerToken),
       body: JSON.stringify({
@@ -159,7 +159,7 @@ describe("apps/api: mantenimiento preventivo (REQ-HK-015, integración real)", (
   });
 
   it("un activo sin habitación (no room_id) nunca se pospone por ocupación", async () => {
-    const crearActivo = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos`, {
+    const crearActivo = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos-criticos`, {
       method: "POST",
       headers: jsonHeaders(ownerToken),
       body: JSON.stringify({ name: "Generador de emergencia", category: "generador", installDate: "2024-01-01", replacementCost: 150_000, baseFrequencyDays: 180 }),
@@ -179,7 +179,7 @@ describe("apps/api: mantenimiento preventivo (REQ-HK-015, integración real)", (
   // distinto, recomendación distinta.
   it("recomendación reparar vs. reemplazar difiere entre 2 activos de costo de reemplazo distinto con el mismo historial", async () => {
     const crear = async (name: string, replacementCost: number) => {
-      const res = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos`, {
+      const res = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos-criticos`, {
         method: "POST",
         headers: jsonHeaders(ownerToken),
         body: JSON.stringify({ name, category: "bomba", installDate: "2020-01-01", replacementCost, baseFrequencyDays: 365 }),
@@ -193,7 +193,7 @@ describe("apps/api: mantenimiento preventivo (REQ-HK-015, integración real)", (
 
     for (const assetId of [activoBaratoId, activoCaroId]) {
       for (const cost of [2000, 2500, 1500]) {
-        const res = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos/${assetId}/registrar-preventivo`, {
+        const res = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos-criticos/${assetId}/registrar-preventivo`, {
           method: "POST",
           headers: jsonHeaders(ownerToken),
           body: JSON.stringify({ cost, note: "Reparación registrada en la prueba" }),
@@ -202,14 +202,14 @@ describe("apps/api: mantenimiento preventivo (REQ-HK-015, integración real)", (
       }
     }
 
-    const recBarato = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos/${activoBaratoId}/recomendacion`, { headers: authOf(ownerToken) });
+    const recBarato = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos-criticos/${activoBaratoId}/recomendacion`, { headers: authOf(ownerToken) });
     expect(recBarato.status).toBe(200);
     const bodyBarato = (await recBarato.json()) as { recomendacion: string; ratioCosto: number; costoAcumulado12Meses: number };
     expect(bodyBarato.costoAcumulado12Meses).toBe(6000);
     expect(bodyBarato.ratioCosto).toBeCloseTo(0.75, 5);
     expect(bodyBarato.recomendacion).toBe("reemplazar");
 
-    const recCaro = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos/${activoCaroId}/recomendacion`, { headers: authOf(ownerToken) });
+    const recCaro = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos-criticos/${activoCaroId}/recomendacion`, { headers: authOf(ownerToken) });
     expect(recCaro.status).toBe(200);
     const bodyCaro = (await recCaro.json()) as { recomendacion: string; ratioCosto: number; costoAcumulado12Meses: number };
     expect(bodyCaro.costoAcumulado12Meses).toBe(6000);
@@ -218,14 +218,14 @@ describe("apps/api: mantenimiento preventivo (REQ-HK-015, integración real)", (
   });
 
   it("un activo sin ningún historial de costo recomienda reparar (no hay evidencia de que reemplazar convenga)", async () => {
-    const crear = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos`, {
+    const crear = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos-criticos`, {
       method: "POST",
       headers: jsonHeaders(ownerToken),
       body: JSON.stringify({ name: "Cerradura electrónica nueva", category: "cerradura", installDate: "2026-01-01", replacementCost: 3000, baseFrequencyDays: 365 }),
     });
     const { id: assetId } = (await crear.json()) as { id: string };
 
-    const res = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos/${assetId}/recomendacion`, { headers: authOf(ownerToken) });
+    const res = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos-criticos/${assetId}/recomendacion`, { headers: authOf(ownerToken) });
     expect(res.status).toBe(200);
     const body = (await res.json()) as { recomendacion: string; numeroEventosDeCosto: number };
     expect(body.recomendacion).toBe("reparar");
@@ -233,14 +233,14 @@ describe("apps/api: mantenimiento preventivo (REQ-HK-015, integración real)", (
   });
 
   it("caso negativo: recomendación de un activo inexistente devuelve 404", async () => {
-    const res = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos/00000000-0000-0000-0000-000000000000/recomendacion`, {
+    const res = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos-criticos/00000000-0000-0000-0000-000000000000/recomendacion`, {
       headers: authOf(ownerToken),
     });
     expect(res.status).toBe(404);
   });
 
   it("GET /activos lista los activos críticos del hotel con su habitación (cuando aplica)", async () => {
-    const res = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos`, { headers: authOf(ownerToken) });
+    const res = await fixture.app.request(`/hoteles/${hotelId}/mantenimiento/activos-criticos`, { headers: authOf(ownerToken) });
     expect(res.status).toBe(200);
     const body = (await res.json()) as Array<{ nombre: string; habitacionCodigo: string | null }>;
     expect(body.length).toBeGreaterThan(0);

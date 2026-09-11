@@ -1,4 +1,4 @@
--- ORIGEN: packages/db/migrations/0132_critical_asset_mantenimiento_preventivo.sql sha256:67aa6de29d96223bcbff3c5f564a532d4fd1ae52330d74b74b782746bad40d28
+-- ORIGEN: packages/db/migrations/0132_critical_asset_mantenimiento_preventivo.sql sha256:e1fca7161cffc042f179c71efd6f0713fe9db21232996a86844024dd93f36a5b
 -- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
 -- nuevo el script tras cambiar la migración fuente.
 
@@ -160,5 +160,12 @@ grant select, insert, delete on public.critical_asset_maintenance_event to authe
 -- CFDI de contratistas") junto con critical_asset_maintenance_event de arriba.
 -- Nullable/expand-only: un ticket sin activo asociado (la inmensa mayoría hoy, ya que
 -- REQ-HK-011 no exige capturar el activo) sigue siendo válido.
-alter table public.maintenance_ticket add column asset_id uuid references public.critical_asset(id) on delete set null;
-create index maintenance_ticket_asset_idx on public.maintenance_ticket (asset_id) where asset_id is not null;
+-- Reconciliación de fusión (closure/todos-los-req-hoteles-lote1): esta columna se llama
+-- `critical_asset_id` (no `asset_id`) porque la migración 0134 (REQ-HK-012, mezclada
+-- después) agrega su PROPIA `maintenance_ticket.asset_id` apuntando a la tabla, distinta,
+-- `maintenance_asset` (catálogo ligero para historial/escalación de tickets). Son dos
+-- catálogos de activo con propósito distinto (éste, `critical_asset`, es para costo de
+-- reemplazo/calendario de MP) -- dos columnas separadas evita que una sobrescriba/colisione
+-- con la otra en la misma tabla.
+alter table public.maintenance_ticket add column critical_asset_id uuid references public.critical_asset(id) on delete set null;
+create index maintenance_ticket_critical_asset_idx on public.maintenance_ticket (critical_asset_id) where critical_asset_id is not null;

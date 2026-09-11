@@ -84,7 +84,10 @@ const CRITICAL_ASSET_CATEGORIES = ["minisplit", "bomba", "calentador", "ptar", "
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH_DAY_RE = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 
-const crearActivoSchema = z.object({
+// Reconciliación de fusión: renombrado de `crearActivoSchema` a `crearActivoCriticoSchema`
+// (colisión de nombre con el catálogo ligero de REQ-HK-012, arriba -- son dos conceptos
+// de "activo" distintos, ver nota de `/mantenimiento/activos-criticos` más abajo).
+const crearActivoCriticoSchema = z.object({
   name: z.string().trim().min(1).max(150),
   category: z.enum(CRITICAL_ASSET_CATEGORIES).default("otro"),
   roomCode: z.string().trim().min(1).max(20).optional(),
@@ -413,8 +416,16 @@ export function mantenimientoRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings
   });
 
   // --- REQ-HK-015: activos críticos, temporadas y calendario de MP ---------------
+  // Reconciliación de fusión (closure/todos-los-req-hoteles-lote1): estas rutas viven en
+  // `/mantenimiento/activos-criticos` (NO `/mantenimiento/activos`) porque REQ-HK-012
+  // (arriba) ya registró GET/POST en ese path exacto para su propio catálogo ligero
+  // `maintenance_asset` (el que sí liga directo a `maintenance_ticket.asset_id` para
+  // historial/escalación) -- son dos catálogos de "activo" con propósito distinto
+  // (costo-de-reemplazo/calendario-de-MP vs. equipo-para-tickets), sobre tablas
+  // distintas (`critical_asset` vs. `maintenance_asset`), y Hono no soporta dos handlers
+  // en el mismo método+path.
 
-  interface AssetRow {
+  interface CriticalAssetRow {
     id: string;
     room_id: string | null;
     room_code: string | null;
@@ -427,9 +438,9 @@ export function mantenimientoRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings
     active: boolean;
   }
 
-  app.get("/hoteles/:hotelId/mantenimiento/activos", async (c) => {
+  app.get("/hoteles/:hotelId/mantenimiento/activos-criticos", async (c) => {
     const db = c.get("db");
-    const { rows } = await db.query<AssetRow>(
+    const { rows } = await db.query<CriticalAssetRow>(
       `select ca.id, ca.room_id, r.code as room_code, r.status::text as room_status, ca.name, ca.category::text as category,
               ca.install_date::text as install_date, ca.replacement_cost::text as replacement_cost,
               ca.base_frequency_days, ca.active
@@ -453,11 +464,11 @@ export function mantenimientoRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings
     );
   });
 
-  app.post("/hoteles/:hotelId/mantenimiento/activos", async (c) => {
+  app.post("/hoteles/:hotelId/mantenimiento/activos-criticos", async (c) => {
     assertRole(c, MANAGE_MAINTENANCE_PLAN_ROLES);
     const db = c.get("db");
     const hotelId = c.req.param("hotelId");
-    const body = parseBody(crearActivoSchema, await c.req.json().catch(() => ({})));
+    const body = parseBody(crearActivoCriticoSchema, await c.req.json().catch(() => ({})));
 
     let roomId: string | null = null;
     if (body.roomCode) {
@@ -476,7 +487,7 @@ export function mantenimientoRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings
     return c.json({ id: rows[0]!.id }, 201);
   });
 
-  app.post("/hoteles/:hotelId/mantenimiento/activos/:assetId/registrar-preventivo", async (c) => {
+  app.post("/hoteles/:hotelId/mantenimiento/activos-criticos/:assetId/registrar-preventivo", async (c) => {
     assertRole(c, [...LOG_PREVENTIVE_EVENT_ROLES]);
     const db = c.get("db");
     const hotelId = c.req.param("hotelId");
@@ -566,7 +577,7 @@ export function mantenimientoRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings
       frequencyDays: w.frequency_days,
     }));
 
-    const { rows: assets } = await db.query<AssetRow>(
+    const { rows: assets } = await db.query<CriticalAssetRow>(
       `select ca.id, ca.room_id, r.code as room_code, r.status::text as room_status, ca.name, ca.category::text as category,
               ca.install_date::text as install_date, ca.replacement_cost::text as replacement_cost,
               ca.base_frequency_days, ca.active
@@ -640,7 +651,7 @@ export function mantenimientoRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings
   // registrada (`critical_asset_maintenance_event.cost`) y de tickets CORRECTIVOS
   // cerrados del mismo activo (`maintenance_ticket.actual_cost`) en los últimos 12
   // meses -- las dos fuentes de "historial y costo por activo" del criterio.
-  app.get("/hoteles/:hotelId/mantenimiento/activos/:assetId/recomendacion", async (c) => {
+  app.get("/hoteles/:hotelId/mantenimiento/activos-criticos/:assetId/recomendacion", async (c) => {
     const db = c.get("db");
     const hotelId = c.req.param("hotelId");
     const assetId = c.req.param("assetId");
@@ -658,7 +669,7 @@ export function mantenimientoRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings
     );
     const { rows: ticketCosts } = await db.query<{ actual_cost: string }>(
       `select actual_cost::text as actual_cost from public.maintenance_ticket
-       where asset_id = $1 and hotel_id = $2 and status = 'cerrado' and actual_cost is not null
+       where critical_asset_id = $1 and hotel_id = $2 and status = 'cerrado' and actual_cost is not null
          and coalesce(closed_at, created_at) >= now() - interval '12 months';`,
       [assetId, hotelId],
     );
