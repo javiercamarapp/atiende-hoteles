@@ -22,6 +22,8 @@ import { resumenRoutes } from "./routes/resumen.ts";
 import { reservasRoutes } from "./routes/reservas.ts";
 import { listaEsperaRoutes } from "./routes/listaEspera.ts";
 import { disponibilidadRoutes } from "./routes/disponibilidad.ts";
+import { mcpHotelRoutes } from "./routes/mcpHotel.ts";
+import { mcpAgentesRoutes } from "./routes/mcpAgentes.ts";
 import { recepcionRoutes } from "./routes/recepcion.ts";
 import { huespedesRoutes } from "./routes/huespedes.ts";
 import { foliosRoutes } from "./routes/folios.ts";
@@ -274,6 +276,11 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", reservasRoutes(deps));
   app.route("/", listaEsperaRoutes(deps));
   app.route("/", disponibilidadRoutes(deps));
+  // REQ-RES-021: `mcpHotelRoutes` es pública (sin sesión de staff, API key de agente
+  // MCP externo) -- mismo criterio de orden que `cancelacionPublica.ts`/
+  // `experienciasPublicas.ts` (montada junto a su ruta hermana de gestión).
+  app.route("/", mcpHotelRoutes(deps));
+  app.route("/", mcpAgentesRoutes(deps));
   app.route("/", recepcionRoutes(deps));
   app.route("/", huespedesRoutes(deps));
   app.route("/", foliosRoutes(resolvedDeps));

@@ -396,3 +396,11 @@ export {
   type ConsentLedgerEntry,
   type ConsentLedgerSummaryBucket,
 } from "./consentLedger.ts";
+export {
+  buildHotelAvailabilityJsonLd,
+  hotelAvailabilityJsonLdSchema,
+  type HotelAvailabilityInput,
+  type HotelAvailabilityJsonLd,
+  type RoomTypeAvailabilityInput,
+  type MoneyAvailability,
+} from "./mcpHotelOffer.ts";
