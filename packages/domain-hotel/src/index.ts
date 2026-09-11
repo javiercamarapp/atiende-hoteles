@@ -430,3 +430,19 @@ export {
   type QuoteAbandonmentWindowKey,
   type QuoteAbandonmentWindow,
 } from "./reservas/quoteAbandonment.ts";
+export {
+  isMonthDayInSeasonWindow,
+  computeNextPreventiveDueDate,
+  adjustDueDateForRoomOccupancy,
+  recommendRepairOrReplace,
+  REPLACEMENT_COST_RATIO_THRESHOLD,
+  RECURRING_FAILURE_MIN_COUNT,
+  RECURRING_FAILURE_COST_RATIO_THRESHOLD,
+  type SeasonWindow,
+  type CriticalAssetScheduleInput,
+  type CriticalAssetScheduleResult,
+  type OccupancyAdjustmentResult,
+  type RepairOrReplaceRecommendation,
+  type RepairOrReplaceInput,
+  type RepairOrReplaceResult,
+} from "./mantenimiento/preventivo.ts";
