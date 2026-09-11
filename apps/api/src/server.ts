@@ -23,6 +23,7 @@ import { startEmailOutboxScheduler, resolveEmailPort } from "./emailOutbox/runEm
 import { startPaymentPreauthPurgeScheduler } from "./jobs/purgePaymentPreauthScheduler.ts";
 import { startPmsCloudbedsSyncScheduler } from "./jobs/pmsCloudbedsSyncScheduler.ts";
 import { startBarReputacionScheduler } from "./jobs/barReputacionScheduler.ts";
+import { startGroupFollowUpScheduler } from "./jobs/seguimientoSolicitudGrupoScheduler.ts";
 
 async function main() {
   // REQ-SEG-013 · antes de leer cualquier secreto de `process.env`, le da a Vault/KMS
@@ -187,11 +188,21 @@ async function main() {
   // REQ-REV-017 · recomienda un ajuste de BAR cuando el índice de reputación (derivado
   // de `guest_review.sentiment_score`, REQ-CRM-002) sube sobre el umbral en la ventana
   // configurada (ver jobs/barReputacionEvaluator.ts) -- idempotente por diseño de BD
-  // (`bar_reputation_recommendation`, 0130), así que un intervalo generoso (1h) no
+  // (`bar_reputation_recommendation`, 0131), así que un intervalo generoso (1h) no
   // arriesga duplicar recomendaciones si un tick se atrasa.
   const barReputacionScheduler = startBarReputacionScheduler(engine.admin, {
     onTick: (results) => logger.info({ results }, "recomendación de BAR por reputación: tick"),
     onError: (err) => logger.error({ err }, "recomendación de BAR por reputación: error en tick"),
+  });
+
+  // REQ-RES-013 · seguimiento automático (48h/7 días) de `solicitud_grupo` sin
+  // respuesta (lock por hotel, ver jobs/seguimientoSolicitudGrupoScheduler.ts) --
+  // también ejecutable de forma independiente vía
+  // `node scripts/run-seguimiento-solicitud-grupo-scheduler.ts`.
+  const groupFollowUpScheduler = startGroupFollowUpScheduler(engine.admin, {
+    logger,
+    onTick: (results) => logger.info({ results }, "seguimiento de solicitudes de grupo: tick"),
+    onError: (err) => logger.error({ err }, "seguimiento de solicitudes de grupo: error en tick"),
   });
 
   const shutdown = async () => {
@@ -205,6 +216,7 @@ async function main() {
     paymentPreauthPurgeScheduler.stop();
     pmsCloudbedsSyncScheduler.stop();
     barReputacionScheduler.stop();
+    groupFollowUpScheduler.stop();
     await engine.stop();
     process.exit(0);
   };
