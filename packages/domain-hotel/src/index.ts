@@ -197,6 +197,15 @@ export {
   type GuestMessageClassification,
 } from "./tickets/slaPolicy.ts";
 export {
+  DEFAULT_ASSET_ESCALATION_POLICY,
+  DEFAULT_ASSET_ESCALATION_ROLES,
+  resolveAssetEscalationPolicy,
+  computeEscalationWindowStart,
+  shouldEscalateAsset,
+  type AssetEscalationPolicy,
+  type AssetTicketHistoryEntry,
+} from "./tickets/assetEscalation.ts";
+export {
   lintMarketingTemplateBody,
   type MarketingTemplateLintResult,
 } from "./marketingTemplateLinter.ts";
