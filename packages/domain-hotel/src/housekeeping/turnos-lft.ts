@@ -369,6 +369,43 @@ export function validateTurnosLft(input: ValidateTurnosLftInput): ValidateTurnos
   return { valid: violations.length === 0, violations };
 }
 
+export interface DailyStaffHoursSummary {
+  staffId: string;
+  workDate: string;
+  shiftType: ShiftType;
+  totalMinutes: number;
+  /** Minutos por encima de la jornada ordinaria del día (art. 61), SIN capar al tope legal
+   *  de 3h/día -- a propósito: esto describe el tiempo extra real trabajado/programado, sea
+   *  o no legal; `validateTurnosLft` es quien decide si excede el tope permitido. Lo usa
+   *  REQ-BO-020 (`turnosForecast.ts`) para comparar horas extra generadas vs. baseline
+   *  manual sin duplicar la lógica de agregación por día que ya vive aquí. */
+  overtimeMinutes: number;
+}
+
+/** Agregado diario de horas por colaborador, reutilizando el mismo cruce por
+ *  día/colaborador que usa `validateTurnosLft` -- expuesto para que otros módulos (p. ej.
+ *  el generador de REQ-BO-020) puedan medir horas extra sin reimplementar la clasificación
+ *  diurna/nocturna/mixta ni el límite ordinario por tipo de jornada (art. 60/61). No valida
+ *  nada por sí mismo: es solo el agregado, no la puerta de publicación. */
+export function summarizeDailyHours(shifts: readonly ProposedShift[]): DailyStaffHoursSummary[] {
+  const byStaff = aggregateByStaffAndDay(shifts as ProposedShift[]);
+  const summary: DailyStaffHoursSummary[] = [];
+  for (const [staffId, byDay] of byStaff) {
+    for (const day of byDay.values()) {
+      const shiftType = dailyShiftType(day);
+      const limit = ordinaryDailyLimitMinutes(shiftType);
+      summary.push({
+        staffId,
+        workDate: day.workDate,
+        shiftType,
+        totalMinutes: day.totalMinutes,
+        overtimeMinutes: Math.max(0, day.totalMinutes - limit),
+      });
+    }
+  }
+  return summary.sort((a, b) => (a.staffId === b.staffId ? (a.workDate < b.workDate ? -1 : 1) : a.staffId < b.staffId ? -1 : 1));
+}
+
 export class TurnosLftViolationError extends Error {
   code = "turnos_lft_violacion";
   violations: ShiftLftViolation[];
