@@ -89,6 +89,7 @@ export {
   normalizar as normalizarTextoResena,
   detectarTemas,
   analizarSentimiento,
+  esSentimientoNegativo,
   decidirAcciones,
   clasificarResena,
   type KnownReviewTopic,
@@ -103,6 +104,13 @@ export {
   type ClasificarResenaInput,
   type ResultadoClasificacion,
 } from "./reputacion/clasificador.ts";
+export {
+  ACUMULACION_TICKET_DEFAULT,
+  evaluarAcumulacionTicket,
+  type AcumulacionTicketConfig,
+  type EvaluarAcumulacionTicketInput,
+  type ResultadoAcumulacionTicket,
+} from "./reputacion/acumulacionTickets.ts";
 export {
   detectAndRedactPaymentData,
   luhnValid,
