@@ -433,3 +433,17 @@ export {
   type ResolvedAllergen,
   type ResolvedMenuItem,
 } from "./menuQr.ts";
+export {
+  UPSELL_OFFER_TYPES,
+  isUpsellOfferType,
+  UPSELL_TRIGGER_MOMENTS,
+  isUpsellTriggerMoment,
+  FnbUpsellEngineError,
+  daysUntilCheckIn,
+  dueUpsellTriggerMoments,
+  parseRevenuePricedCatalogRow,
+  resolveOfferPrice,
+  type UpsellOfferType,
+  type UpsellTriggerMoment,
+  type RevenuePricedCatalogRow,
+} from "./fnbUpsellEngine.ts";
