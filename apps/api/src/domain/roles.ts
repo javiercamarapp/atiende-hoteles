@@ -22,3 +22,7 @@ export const MANAGE_INVENTORY_ROLES: HotelRole[] = ["owner", "gm", "reservations
 export const MANAGE_RESERVATIONS_ROLES: HotelRole[] = ["owner", "gm", "frontdesk", "reservations"];
 export const MANAGE_ROOM_STATUS_ROLES: HotelRole[] = ["owner", "gm", "frontdesk", "housekeeping", "maintenance"];
 export const ADMIN_ROLES: HotelRole[] = ["owner", "gm"];
+// REQ-AB-011: quién captura las bitácoras NOM-251 de cocina/bar (temperatura,
+// recepción, limpieza) -- espejo de aplicación de los roles aceptados por
+// `record_bitacora_nom251_entry()` en packages/db/migrations/0130_bitacora_nom251.sql.
+export const MANAGE_FNB_COMPLIANCE_ROLES: HotelRole[] = ["owner", "gm", "fnb"];
