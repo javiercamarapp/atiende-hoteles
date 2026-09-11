@@ -17,9 +17,34 @@
  * `provider` de este registro (el channel manager/PMS certificado), nunca por una
  * llamada directa a una API de OTA. `scripts/checks/no-ota-directa.ts` y
  * `scripts/checks/orden-conectores-pms.ts` verifican esto de forma estática.
+ *
+ * REQ-REV-015/REQ-QA-010: cada entrada declara sus `capabilities` -- el subconjunto de
+ * operaciones de `PmsPort` (ver `port.ts`) que el conector realmente implementa hoy,
+ * NUNCA aspiracional. `scripts/checks/registro-conectores-pms.ts` audita, de solo
+ * lectura, que cada capability aquí declarada tenga un contract test que la cubra
+ * (marcador `contrato-capacidad-pms: <provider>:<capability>` en un `it(...)` bajo
+ * `tests/unit/mcp-servers/pms/` o `tests/integration/contracts/`) -- una capability sin
+ * ese marcador es un hallazgo bloqueante, no una advertencia silenciosa.
  */
 
 export type PmsConnectorStatus = "implementado" | "pendiente";
+
+/**
+ * Capacidades del contrato `PmsPort` (ver `port.ts`) que un conector puede declarar.
+ * Deliberadamente NO incluye `status()`: es introspección del propio adaptador
+ * (¿hay credenciales?), no una operación de negocio contra el PMS -- no tiene sentido
+ * pedirle un "contract test de capability" propio.
+ */
+export const PMS_CAPABILITIES = [
+  "getReservation",
+  "listRatePlans",
+  "createCharge",
+  "applyReservationUpdate",
+  "updateHousekeepingStatus",
+  "getGuestProfile",
+  "verifyAndNormalizeWebhook",
+] as const;
+export type PmsCapability = (typeof PMS_CAPABILITIES)[number];
 
 export interface PmsConnectorRegistryEntry {
   /** Identificador estable del proveedor -- este es el ÚNICO lugar donde se declara
@@ -32,6 +57,10 @@ export interface PmsConnectorRegistryEntry {
   priority: 1 | 2 | 3 | 4;
   label: string;
   status: PmsConnectorStatus;
+  /** Capacidades de `PmsPort` que este conector declara implementadas HOY (ver
+   *  docstring del módulo). Un conector `"pendiente"` declara `[]` -- no hay adaptador,
+   *  no hay nada que un contract test pueda cubrir todavía. */
+  capabilities: readonly PmsCapability[];
   notes: string;
 }
 
@@ -41,6 +70,7 @@ export const PMS_CONNECTOR_REGISTRY: readonly PmsConnectorRegistryEntry[] = [
     priority: 1,
     label: "Cloudbeds",
     status: "implementado",
+    capabilities: PMS_CAPABILITIES,
     notes: "Adaptador real (cloudbeds-adapter.ts) + doble de prueba (fake-cloudbeds-adapter.ts) para desarrollo sin sandbox.",
   },
   {
@@ -48,6 +78,7 @@ export const PMS_CONNECTOR_REGISTRY: readonly PmsConnectorRegistryEntry[] = [
     priority: 2,
     label: "Mews",
     status: "pendiente",
+    capabilities: [],
     notes: "Sin adaptador todavía -- siguiente en el orden de construcción tras Cloudbeds.",
   },
   {
@@ -55,6 +86,7 @@ export const PMS_CONNECTOR_REGISTRY: readonly PmsConnectorRegistryEntry[] = [
     priority: 3,
     label: "SiteMinder / pmsXchange (SMX)",
     status: "pendiente",
+    capabilities: [],
     notes: "Conector genérico OTA-XML vía pmsXchange/SMX (REQ-REV-011) -- sin adaptador todavía.",
   },
   {
@@ -62,6 +94,7 @@ export const PMS_CONNECTOR_REGISTRY: readonly PmsConnectorRegistryEntry[] = [
     priority: 4,
     label: "Oracle OPERA (OHIP)",
     status: "pendiente",
+    capabilities: [],
     notes: "Requiere patrocinio OHIP de Oracle; Apaleo queda como referencia de interfaz, sin implementación propia.",
   },
 ] as const;
