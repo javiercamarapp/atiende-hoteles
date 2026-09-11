@@ -453,6 +453,23 @@ export {
   type RecomendacionAjusteBar,
 } from "./revenue/barPorReputacion.ts";
 export {
+  PricingTechoError,
+  TECHO_FRACCION_MAXIMA,
+  TECHO_FRACCION_PISO,
+  DESCUENTO_TAMANO_FACTOR,
+  DESCUENTO_TAMANO_UMBRAL_HABITACIONES,
+  DESCUENTO_ADR_FACTOR,
+  DESCUENTO_ADR_UMBRAL_MXN,
+  FACTOR_DEDUPLICACION_DEFAULT,
+  calcularValorConservadorDeduplicado,
+  calcularFraccionTecho,
+  calcularPrecioTechoMxn,
+  evaluarPrecioVentaPropuesto,
+  type AgenteValorConservador,
+  type ParametrosHotelPricing,
+  type EvaluacionPrecioVenta,
+} from "./revenue/pricingTechoRoi.ts";
+export {
   DEFAULT_WEEKLY_AUDIT_SAMPLE_SIZE,
   CONVERSATION_AUDIT_CATEGORIES,
   ConversationAuditError,
