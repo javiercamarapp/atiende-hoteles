@@ -1,4 +1,4 @@
--- ORIGEN: packages/db/migrations/0130_contacto_ota_enmascarado.sql sha256:2d530ec4e39aba1870651e2752c1c47fbea4c3b8c96cac0c4eaa904ef7e3a9c3
+-- ORIGEN: packages/db/migrations/0133_contacto_ota_enmascarado.sql sha256:2d530ec4e39aba1870651e2752c1c47fbea4c3b8c96cac0c4eaa904ef7e3a9c3
 -- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
 -- nuevo el script tras cambiar la migración fuente.
 

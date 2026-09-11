@@ -36,7 +36,7 @@ import { sharedWhatsappAdapter, whatsappAdapterSimulated } from "../lib/messagin
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
-import { ADMIN_ROLES, MANAGE_ROOM_STATUS_ROLES } from "../domain/roles.ts";
+import { ADMIN_ROLES, MANAGE_MAINTENANCE_ASSETS_ROLES, MANAGE_ROOM_STATUS_ROLES } from "../domain/roles.ts";
 import type { DbClient } from "@atiende-hoteles/db";
 import type { HonoEnvBindings, ResolvedAppDeps } from "../types.ts";
 
@@ -53,11 +53,23 @@ const LOG_PREVENTIVE_EVENT_ROLES = [...ADMIN_ROLES, "maintenance"] as const;
 // `null` ("sin estimar") en vez de inventar un cero -- ver migración 0080.
 const crearTicketSchema = z.object({
   roomCode: z.string().trim().min(1).max(20).optional(),
+  // REQ-HK-012: código del activo/equipo (opcional, ver comentario de `assetCode` en
+  // `createMaintenanceTicketInput`, packages/agent-core/src/tools/housekeepingTools.ts).
+  assetCode: z.string().trim().min(1).max(20).optional(),
   title: z.string().trim().min(1).max(150),
   description: z.string().trim().min(1).max(1000),
   origin: z.enum(["huesped", "staff", "agente", "sensor"]).default("staff"),
   severity: z.enum(["alta", "media", "baja"]).default("media"),
   estimatedCost: z.number().nonnegative().max(1_000_000).optional(),
+});
+
+// REQ-HK-012: catálogo mínimo de activos/equipos (packages/db/migrations/0130) -- ver
+// comentario de cabecera de esa migración sobre por qué es deliberadamente ligero.
+const crearActivoSchema = z.object({
+  code: z.string().trim().min(1).max(20),
+  name: z.string().trim().min(1).max(150),
+  category: z.string().trim().min(1).max(80).optional(),
+  roomCode: z.string().trim().min(1).max(20).optional(),
 });
 
 const asignarSchema = z.object({ assignedTo: z.string().uuid().nullable() });
@@ -96,6 +108,8 @@ const crearTemporadaSchema = z.object({
 interface TicketRow {
   id: string;
   room_code: string | null;
+  asset_id: string | null;
+  asset_code: string | null;
   title: string;
   description: string;
   origin: string;
@@ -105,6 +119,17 @@ interface TicketRow {
   estimated_cost: string | null;
   actual_cost: string | null;
   approval_id: string | null;
+  escalated_at: string | null;
+  escalated_to_roles: string[];
+  created_at: string;
+}
+
+interface AssetRow {
+  id: string;
+  code: string;
+  name: string;
+  category: string | null;
+  room_code: string | null;
   created_at: string;
 }
 
@@ -121,12 +146,13 @@ export function mantenimientoRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings
   app.get("/hoteles/:hotelId/mantenimiento", async (c) => {
     const db = c.get("db");
     const { rows } = await db.query<TicketRow>(
-      `select mt.id, r.code as room_code, mt.title, mt.description, mt.origin::text as origin,
-              mt.severity::text as severity, mt.status::text as status, mt.assigned_to,
-              mt.estimated_cost::text as estimated_cost, mt.actual_cost::text as actual_cost,
-              mt.approval_id, mt.created_at::text as created_at
+      `select mt.id, r.code as room_code, mt.asset_id, ma.code as asset_code, mt.title, mt.description,
+              mt.origin::text as origin, mt.severity::text as severity, mt.status::text as status,
+              mt.assigned_to, mt.estimated_cost::text as estimated_cost, mt.actual_cost::text as actual_cost,
+              mt.approval_id, mt.escalated_at::text as escalated_at, mt.escalated_to_roles, mt.created_at::text as created_at
        from public.maintenance_ticket mt
        left join public.room r on r.id = mt.room_id
+       left join public.maintenance_asset ma on ma.id = mt.asset_id
        where mt.hotel_id = $1
        order by mt.created_at desc;`,
       [c.req.param("hotelId")],
@@ -135,6 +161,8 @@ export function mantenimientoRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings
       rows.map((t) => ({
         id: t.id,
         roomCode: t.room_code,
+        assetId: t.asset_id,
+        assetCode: t.asset_code,
         titulo: t.title,
         descripcion: t.description,
         origen: t.origin,
@@ -144,9 +172,110 @@ export function mantenimientoRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings
         costoEstimado: t.estimated_cost != null ? Number(t.estimated_cost) : null,
         costoReal: t.actual_cost != null ? Number(t.actual_cost) : null,
         aprobacionId: t.approval_id,
+        escaladoEn: t.escalated_at,
+        escaladoARoles: t.escalated_to_roles,
         creadoEn: t.created_at,
       })),
     );
+  });
+
+  // REQ-HK-012: catálogo de activos/equipos del hotel (packages/db/migrations/0130).
+  app.get("/hoteles/:hotelId/mantenimiento/activos", async (c) => {
+    const db = c.get("db");
+    const { rows } = await db.query<AssetRow>(
+      `select ma.id, ma.code, ma.name, ma.category, r.code as room_code, ma.created_at::text as created_at
+       from public.maintenance_asset ma
+       left join public.room r on r.id = ma.room_id
+       where ma.hotel_id = $1
+       order by ma.code;`,
+      [c.req.param("hotelId")],
+    );
+    return c.json(
+      rows.map((a) => ({
+        id: a.id,
+        code: a.code,
+        nombre: a.name,
+        categoria: a.category,
+        roomCode: a.room_code,
+        creadoEn: a.created_at,
+      })),
+    );
+  });
+
+  app.post("/hoteles/:hotelId/mantenimiento/activos", async (c) => {
+    assertRole(c, MANAGE_MAINTENANCE_ASSETS_ROLES);
+    const db = c.get("db");
+    const hotelId = c.req.param("hotelId");
+    const body = parseBody(crearActivoSchema, await c.req.json().catch(() => ({})));
+
+    let roomId: string | null = null;
+    if (body.roomCode) {
+      const { rows: roomRows } = await db.query<{ id: string }>(
+        "select id from public.room where hotel_id = $1 and code = $2;",
+        [hotelId, body.roomCode],
+      );
+      if (!roomRows[0]) throw Errors.validation(`No existe la habitación "${body.roomCode}" en este hotel.`);
+      roomId = roomRows[0].id;
+    }
+
+    const { rows } = await db.query<{ id: string }>(
+      `insert into public.maintenance_asset (tenant_id, hotel_id, room_id, code, name, category)
+       values ($1, $2, $3, $4, $5, $6)
+       returning id;`,
+      [c.get("orgId"), hotelId, roomId, body.code, body.name, body.category ?? null],
+    );
+    return c.json({ id: rows[0]!.id, code: body.code, nombre: body.name }, 201);
+  });
+
+  // REQ-HK-012 "enriquecer cada ticket con el historial del activo asociado": historial
+  // completo de tickets de un activo, más recientes primero, más la política de
+  // escalación efectiva (configurada del hotel o el default) para que el panel pueda
+  // mostrar cuánto falta para la próxima escalación automática.
+  app.get("/hoteles/:hotelId/mantenimiento/activos/:assetId/historial", async (c) => {
+    const db = c.get("db");
+    const hotelId = c.req.param("hotelId");
+    const assetId = c.req.param("assetId");
+
+    const { rows: assetRows } = await db.query<{ code: string; name: string }>(
+      "select code, name from public.maintenance_asset where id = $1 and hotel_id = $2;",
+      [assetId, hotelId],
+    );
+    if (!assetRows[0]) throw Errors.notFound("Activo no encontrado.");
+
+    const { rows: historyRows } = await db.query<{
+      id: string;
+      title: string;
+      severity: string;
+      status: string;
+      escalated_at: string | null;
+      created_at: string;
+    }>(
+      `select id, title, severity::text as severity, status::text as status,
+              escalated_at::text as escalated_at, created_at::text as created_at
+       from public.maintenance_ticket
+       where hotel_id = $1 and asset_id = $2
+       order by created_at desc;`,
+      [hotelId, assetId],
+    );
+
+    const { rows: policyRows } = await db.query<{ threshold_count: number; window_days: number }>(
+      "select threshold_count, window_days from public.maintenance_escalation_policy where hotel_id = $1;",
+      [hotelId],
+    );
+    const policy = policyRows[0] ?? { threshold_count: 3, window_days: 14 };
+
+    return c.json({
+      activo: { id: assetId, code: assetRows[0].code, nombre: assetRows[0].name },
+      politicaEscalacion: { umbral: policy.threshold_count, ventanaDias: policy.window_days },
+      historial: historyRows.map((h) => ({
+        ticketId: h.id,
+        titulo: h.title,
+        severidad: h.severity,
+        estado: h.status,
+        escaladoEn: h.escalated_at,
+        creadoEn: h.created_at,
+      })),
+    });
   });
 
   app.post("/hoteles/:hotelId/mantenimiento", async (c) => {
