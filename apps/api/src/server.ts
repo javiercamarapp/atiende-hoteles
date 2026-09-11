@@ -21,6 +21,7 @@ import { startTicketEscalationScheduler } from "./jobs/ticketEscalationScheduler
 import { startEmailOutboxScheduler, resolveEmailPort } from "./emailOutbox/runEmailOutboxWorker.ts";
 import { startPaymentPreauthPurgeScheduler } from "./jobs/purgePaymentPreauthScheduler.ts";
 import { startPmsCloudbedsSyncScheduler } from "./jobs/pmsCloudbedsSyncScheduler.ts";
+import { startGroupFollowUpScheduler } from "./jobs/seguimientoSolicitudGrupoScheduler.ts";
 
 async function main() {
   // REQ-SEG-013 · antes de leer cualquier secreto de `process.env`, le da a Vault/KMS
@@ -172,6 +173,16 @@ async function main() {
     onError: (err) => logger.error({ err }, "sincronizacion de tarifas Cloudbeds: error en tick"),
   });
 
+  // REQ-RES-013 · seguimiento automático (48h/7 días) de `solicitud_grupo` sin
+  // respuesta (lock por hotel, ver jobs/seguimientoSolicitudGrupoScheduler.ts) --
+  // también ejecutable de forma independiente vía
+  // `node scripts/run-seguimiento-solicitud-grupo-scheduler.ts`.
+  const groupFollowUpScheduler = startGroupFollowUpScheduler(engine.admin, {
+    logger,
+    onTick: (results) => logger.info({ results }, "seguimiento de solicitudes de grupo: tick"),
+    onError: (err) => logger.error({ err }, "seguimiento de solicitudes de grupo: error en tick"),
+  });
+
   const shutdown = async () => {
     logger.info("apagando apps/api");
     nightAuditScheduler.stop();
@@ -181,6 +192,7 @@ async function main() {
     emailOutboxScheduler.stop();
     paymentPreauthPurgeScheduler.stop();
     pmsCloudbedsSyncScheduler.stop();
+    groupFollowUpScheduler.stop();
     await engine.stop();
     process.exit(0);
   };
