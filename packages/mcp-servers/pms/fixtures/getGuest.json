@@ -1,0 +1,20 @@
+{
+  "source": "cloudbeds-simulator",
+  "recordedAt": "2026-09-11T03:56:04.126Z",
+  "endpoint": "getGuest",
+  "request": {
+    "method": "GET",
+    "path": "/getGuest?reservationID=SIM-RES-1"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "firstName": "Ana",
+        "lastName": "Reyes",
+        "email": "ana@example.com"
+      }
+    }
+  }
+}
