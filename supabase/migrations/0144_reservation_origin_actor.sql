@@ -1,4 +1,4 @@
--- ORIGEN: packages/db/migrations/0130_reservation_origin_actor.sql sha256:b4d40eb77227ca527a8417984b88c4d3331e3aaf517e07e40e8131ef7980e212
+-- ORIGEN: packages/db/migrations/0144_reservation_origin_actor.sql sha256:b4d40eb77227ca527a8417984b88c4d3331e3aaf517e07e40e8131ef7980e212
 -- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
 -- nuevo el script tras cambiar la migración fuente.
 
