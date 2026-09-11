@@ -80,6 +80,13 @@ jobs:
       # este paso además la hace fallar rápido, antes de la suite completa
       # (ADR-009).
       - run: node scripts/checks/registro-unico-conectores.ts
+      # Patrón Likida/atiende.ai #2: falla si packages/domain-hotel/src (dominio puro,
+      # su package.json solo depende de zod) importa hono/@hono/*/express/node:http o
+      # cualquier paquete de apps/* -- ver scripts/checks/frontera-dominio-framework.ts.
+      # Corre también dentro de `npm test`
+      # (tests/unit/domain-hotel/frontera-dominio-framework.spec.ts), este paso además
+      # la hace fallar rápido, antes de la suite completa (ADR-009).
+      - run: node scripts/checks/frontera-dominio-framework.ts
       # REQ-AGT-019 (BP-132..135/GOB-048): falla si una tarea del backlog de archivos
       # (tasks/**, GOB-045) que module archivos de agentes/precios/dinero/control físico
       # no declara un `gate` válido (`connector`/`money`/`physical`/`none`), si el `gate`
