@@ -17,6 +17,21 @@
 // "pendiente-credenciales": esta ruta clasifica CUALQUIER texto de reseña/encuesta que
 // ya llegó al sistema por el canal que sea (hoy, típicamente una encuesta propia
 // capturada por frontdesk/reservations), sin fabricar esa integración pendiente.
+//
+// REQ-CRM-003 (P1/F): además de la acción inmediata de arriba, esta ruta evalúa si
+// ALGÚN tema mencionado negativamente en la reseña recién clasificada acumula N
+// menciones negativas del MISMO tema dentro de una ventana de tiempo (default 3 en 14
+// días, `ACUMULACION_TICKET_DEFAULT`) contando también reseñas ANTERIORES del mismo
+// hotel -- y si es así, dispara su propio ticket de mantenimiento automático. Esto
+// aporta valor real sobre todo para temas que una sola mención NO amerita ticketear de
+// inmediato (cualquier tema fuera de `TICKET_TOPICS`: personal, ubicación, desayuno,
+// check-in, precio, seguridad, o un tema local nunca antes visto) -- para los temas que
+// SÍ están en `TICKET_TOPICS` (limpieza, wifi, ruido, aire acondicionado, alberca) el
+// ticket ya se creó en la primera mención negativa (ver `persistirAcciones` arriba), así
+// que la comprobación de "ya existe un ticket reciente" (`yaExisteTicketReciente`) evita
+// duplicar el ticket para esos temas. Ver `packages/domain-hotel/src/reputacion/
+// acumulacionTickets.ts` para la política pura (fechas adentro, decisión afuera) y por
+// qué vive separada de `clasificador.ts`.
 import { Hono } from "hono";
 import { z } from "zod";
 import type { DbClient } from "@atiende-hoteles/db";
@@ -27,7 +42,15 @@ import {
   type CreateMaintenanceTicketInput,
   type OutboundTaskSyncLike,
 } from "@atiende-hoteles/agent-core";
-import { clasificarResena, type AccionReputacion, type StayState } from "@atiende-hoteles/domain-hotel";
+import {
+  ACUMULACION_TICKET_DEFAULT,
+  clasificarResena,
+  esSentimientoNegativo,
+  evaluarAcumulacionTicket,
+  type AccionReputacion,
+  type ReviewTopicId,
+  type StayState,
+} from "@atiende-hoteles/domain-hotel";
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
 import { assertRole, authMiddleware, dbSession, requireHotelMembership } from "../middleware.ts";
@@ -149,6 +172,90 @@ async function persistirAcciones(
   }
 
   return persistidas;
+}
+
+/**
+ * REQ-CRM-003: para cada tema mencionado negativamente en la reseña recién
+ * clasificada, calcula cuántas reseñas ANTERIORES del mismo hotel (dentro de la
+ * ventana configurada) mencionaron ese mismo tema con sentimiento negativo, y llama a
+ * la política pura `evaluarAcumulacionTicket` para decidir si corresponde un ticket
+ * automático adicional. Se salta cualquier tema que YA recibió un ticket en ESTA
+ * misma reseña (`accionesYaPersistidas`, típicamente un tema de `TICKET_TOPICS` vía
+ * REQ-CRM-002) para no evaluarlo dos veces en la misma petición.
+ */
+async function evaluarAcumulacionPorTemas(
+  db: DbClient,
+  ctx: { hotelId: string },
+  reviewId: string,
+  fechaActual: Date,
+  temasNegativosActuales: ReviewTopicId[],
+  accionesYaPersistidas: AccionPersistida[],
+): Promise<AccionReputacion[]> {
+  const config = ACUMULACION_TICKET_DEFAULT;
+  const ventanaInicioIso = new Date(fechaActual.getTime() - config.ventanaDias * 24 * 60 * 60 * 1000).toISOString();
+
+  const temasYaTicketeadosEnEstaResena = new Set(
+    accionesYaPersistidas.filter((a) => a.tipo === "ticket_mantenimiento").map((a) => (a.detalle as { tema?: string }).tema),
+  );
+  const temasACheck = temasNegativosActuales.filter((t) => !temasYaTicketeadosEnEstaResena.has(t));
+  if (temasACheck.length === 0) return [];
+
+  // Una sola consulta trae todas las reseñas negativas previas del hotel dentro de la
+  // ventana (excluyendo la reseña actual) -- el filtro por tema exacto se hace en
+  // memoria porque `topics` es un arreglo jsonb de objetos {topic,...}, no una columna
+  // indexable por tema individual (volumen esperado por hotel/ventana de 14 días es
+  // bajo, no amerita una tabla de agregación separada todavía).
+  const { rows: historicoRows } = await db.query<{ created_at: string; topics: { topic: string }[] }>(
+    `select created_at::text as created_at, topics
+     from public.guest_review
+     where hotel_id = $1 and id <> $2 and sentiment in ('negativo', 'muy_negativo')
+       and created_at >= $3 and created_at <= $4;`,
+    [ctx.hotelId, reviewId, ventanaInicioIso, fechaActual.toISOString()],
+  );
+
+  const acciones: AccionReputacion[] = [];
+  for (const tema of temasACheck) {
+    const fechasMencionesPrevias = historicoRows
+      .filter((r) => r.topics.some((t) => t.topic === tema))
+      .map((r) => new Date(r.created_at));
+
+    // ¿Ya existe un ticket de mantenimiento (de esta regla o de REQ-CRM-002) para este
+    // mismo tema dentro de la ventana? Si sí, la acumulación actual ya está cubierta --
+    // nunca se abre un segundo ticket para el mismo patrón todavía sin resolver.
+    const { rows: ticketRecienteRows } = await db.query<{ id: string }>(
+      `select gra.id
+       from public.guest_review_action gra
+       where gra.hotel_id = $1 and gra.action_type = 'ticket_mantenimiento'
+         and gra.detail->>'tema' = $2 and gra.created_at >= $3
+       limit 1;`,
+      [ctx.hotelId, tema, ventanaInicioIso],
+    );
+
+    const evaluacion = evaluarAcumulacionTicket({
+      fechaActual,
+      fechasMencionesPrevias,
+      yaExisteTicketReciente: ticketRecienteRows.length > 0,
+      config,
+    });
+
+    if (!evaluacion.disparaTicket) continue;
+
+    acciones.push({
+      tipo: "ticket_mantenimiento",
+      tema,
+      severidad: "alta",
+      titulo: `Ticket automático por acumulación de reseñas negativas: ${tema}`,
+      descripcion:
+        `${evaluacion.totalMenciones} menciones negativas del tema "${tema}" en los últimos ${evaluacion.ventanaDias} días ` +
+        `(umbral configurado: ${evaluacion.umbralMenciones}).`,
+      razon:
+        `REQ-CRM-003: se acumularon ${evaluacion.totalMenciones} menciones negativas del tema "${tema}" dentro de una ` +
+        `ventana de ${evaluacion.ventanaDias} días (umbral: ${evaluacion.umbralMenciones}) -- ningún ticket previo cubre ` +
+        "esta acumulación todavía.",
+    });
+  }
+
+  return acciones;
 }
 
 interface AccionRow {
@@ -284,13 +391,38 @@ export function reputacionRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
     }
 
     const reviewId = insertRows[0]!.id;
-    const acciones = await persistirAcciones(
+    let acciones = await persistirAcciones(
       db,
       { orgId, hotelId, userId: c.get("userId"), requestId: c.get("requestId") },
       reviewId,
       resultado.acciones,
       deps.outboundTaskSyncGateway,
     );
+
+    // REQ-CRM-003: evalúa acumulación de menciones negativas del mismo tema entre
+    // reseñas (ver comentario de archivo) -- solo tiene sentido cuando esta reseña en
+    // sí es negativa (una reseña positiva nunca aporta una "mención negativa" al
+    // conteo, mismo criterio que REQ-CRM-002).
+    if (esSentimientoNegativo(resultado.sentimiento.etiqueta) && resultado.temas.length > 0) {
+      const accionesAcumulacion = await evaluarAcumulacionPorTemas(
+        db,
+        { hotelId },
+        reviewId,
+        new Date(insertRows[0]!.created_at),
+        resultado.temas.map((t) => t.topic),
+        acciones,
+      );
+      if (accionesAcumulacion.length > 0) {
+        const persistidasAcumulacion = await persistirAcciones(
+          db,
+          { orgId, hotelId, userId: c.get("userId"), requestId: c.get("requestId") },
+          reviewId,
+          accionesAcumulacion,
+          deps.outboundTaskSyncGateway,
+        );
+        acciones = acciones.concat(persistidasAcumulacion);
+      }
+    }
 
     return c.json(
       {

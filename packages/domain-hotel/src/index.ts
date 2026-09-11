@@ -12,6 +12,31 @@ export {
   type QuoteNightBreakdown,
 } from "./quote.ts";
 export {
+  GROUP_QUOTE_SLA_MINUTES,
+  computeGroupQuote,
+  parseGroupQuoteInput,
+  groupQuoteInputSchema,
+  GroupQuoteError,
+  type GroupQuoteInput,
+  type GroupQuote,
+  type NightlyDisplacement,
+} from "./reservas/groupQuote.ts";
+export {
+  ROOM_BLOCK_STATUSES,
+  CUTOFF_WARNING_WINDOW_DAYS,
+  CUTOFF_MIN_PICKUP_PCT,
+  RoomBlockError,
+  assertValidPickup,
+  daysUntilCutoff,
+  pickupPct,
+  evaluateCutoffAlert,
+  roomsToRelease,
+  isValidRoomBlockStatus,
+  type RoomBlockStatus,
+  type CutoffAlertLevel,
+  type CutoffAlertEvaluation,
+} from "./reservas/roomBlock.ts";
+export {
   RESERVATION_STATUSES,
   isValidStatus,
   canTransition,
@@ -64,6 +89,7 @@ export {
   normalizar as normalizarTextoResena,
   detectarTemas,
   analizarSentimiento,
+  esSentimientoNegativo,
   decidirAcciones,
   clasificarResena,
   type KnownReviewTopic,
@@ -78,6 +104,13 @@ export {
   type ClasificarResenaInput,
   type ResultadoClasificacion,
 } from "./reputacion/clasificador.ts";
+export {
+  ACUMULACION_TICKET_DEFAULT,
+  evaluarAcumulacionTicket,
+  type AcumulacionTicketConfig,
+  type EvaluarAcumulacionTicketInput,
+  type ResultadoAcumulacionTicket,
+} from "./reputacion/acumulacionTickets.ts";
 export {
   detectAndRedactPaymentData,
   luhnValid,
@@ -132,7 +165,63 @@ export {
   type ShiftLftViolation,
   type ValidateTurnosLftInput,
   type ValidateTurnosLftResult,
+  summarizeDailyHours,
+  type DailyStaffHoursSummary,
 } from "./housekeeping/turnos-lft.ts";
+export {
+  computeExpectedLaundryKg,
+  evaluateLinenPar,
+  calcularLavanderiaDiaria,
+  type RoomTurnoverForecast,
+  type LinenKgConfig,
+  type EntregaLavanderiaExterna,
+  type LinenParInput,
+  type MotivoAlertaLavanderia,
+  type LinenParEvaluation,
+  type CalculoDiarioLavanderiaInput,
+  type CalculoDiarioLavanderiaResult,
+} from "./housekeeping/parLavanderia.ts";
+export {
+  STANDARD_INSPECTION_PHOTO_TYPES,
+  PHYSICAL_SUPERVISION_SAMPLE_RATE,
+  InspeccionVisionError,
+  PhysicalSupervisionNoteRequiredError,
+  evaluateVisionInspection,
+  requiresPhysicalSupervision,
+  assertHumanClosureAllowed,
+  type StandardInspectionPhotoType,
+  type InspectionPhotoSubmission,
+  type InspectionVerdict,
+  type InspectionCorrectionItem,
+  type InspectionVisionOutcome,
+  type EvaluateVisionInspectionInput,
+} from "./housekeeping/inspeccionVision.ts";
+export {
+  HousekeepingReportError,
+  assertValidTargetReadyTime,
+  assertValidReportDate,
+  resolveBusinessDayWindow,
+  buildHousekeepingDailyReport,
+  type HousekeepingTaskDailyStatus,
+  type HousekeepingInspectionResult,
+  type HousekeepingTaskRecord,
+  type HousekeepingDailyReportInput,
+  type CamaristaDailyStats,
+  type HousekeepingDailyReport,
+} from "./housekeeping/reporteDiario.ts";
+export {
+  generateTurnosFromForecast,
+  compareOvertimeVsBaseline,
+  type StaffingDemandEntry,
+  type StandardShiftBlock,
+  type AvailableStaffMember,
+  type ManualBaselineShift,
+  type GenerateTurnosFromForecastInput,
+  type GeneratedShift,
+  type UnmetStaffingDemand,
+  type OvertimeComparison,
+  type GenerateTurnosFromForecastResult,
+} from "./staffing/turnosForecast.ts";
 // Merge de reconciliación (2026-09-08): la sesión H12c había retirado estos 6 bloques
 // `export { … } from` (`./voiceGuardrails.ts`, `./pl/usaliPL.ts`, `./tickets/slaPolicy.ts`,
 // `./marketingTemplateLinter.ts`, `./conversationalGuardrails.ts`,
@@ -197,9 +286,26 @@ export {
   type GuestMessageClassification,
 } from "./tickets/slaPolicy.ts";
 export {
+  DEFAULT_ASSET_ESCALATION_POLICY,
+  DEFAULT_ASSET_ESCALATION_ROLES,
+  resolveAssetEscalationPolicy,
+  computeEscalationWindowStart,
+  shouldEscalateAsset,
+  type AssetEscalationPolicy,
+  type AssetTicketHistoryEntry,
+} from "./tickets/assetEscalation.ts";
+export {
   lintMarketingTemplateBody,
   type MarketingTemplateLintResult,
 } from "./marketingTemplateLinter.ts";
+export {
+  LOCAL_KNOWLEDGE_QUERY_CATEGORIES,
+  WHATSAPP_TEXT_MESSAGE_MAX_LENGTH,
+  detectLocalKnowledgeCategory,
+  buildLocalKnowledgeReply,
+  type LocalKnowledgeQueryCategory,
+  type LocalKnowledgeEntryForAgent,
+} from "./localKnowledgeAgent.ts";
 export {
   classifyUnaccompaniedMinorEscalation,
   containsDiscriminatoryContent,
@@ -213,9 +319,11 @@ export {
   OTP_MAX_ATTEMPTS,
   generateOtpCode,
   evaluateOtpConfirmation,
+  buildGuestContactOtpRateLimitKey,
   type OtpConfirmationOutcome,
   type EvaluateOtpConfirmationInput,
   type EvaluateOtpConfirmationResult,
+  type GuestContactOtpRateLimitKeyInput,
 } from "./guestContactChangeOtp.ts";
 export {
   WAITLIST_STATUSES,
@@ -246,6 +354,15 @@ export {
   type ChannelAttributionReport,
 } from "./reservas/atribucionCanal.ts";
 export {
+  MANUAL_ORIGIN_ACTOR,
+  AGENTIC_ORIGIN_ACTOR,
+  isAgenticOrigin,
+  buildAgenticOriginReport,
+  type ReservationOriginInput,
+  type OriginActorSummary,
+  type AgenticOriginReport,
+} from "./reservas/atribucionOrigenAgentico.ts";
+export {
   LOYALTY_MEMBER_STATUSES,
   isActiveLoyaltyMember,
   assertValidLoyaltyDiscountPct,
@@ -254,6 +371,50 @@ export {
   type LoyaltyBenefitInput,
   type LoyaltyBenefitResult,
 } from "./reservas/clubSegundoViaje.ts";
+export {
+  esContactoEnmascaradoPorOta,
+  debeBloquearContactoPorCanalAjenoALaOta,
+  type ReservaContactoOtaInput,
+} from "./reservas/contactoOtaEnmascarado.ts";
+export {
+  LOYALTY_REDEEMABLE_BENEFIT_TYPES,
+  LOYALTY_REDEMPTION_CHANNELS,
+  evaluateLoyaltyRedemption,
+  assertValidLateCheckoutHours,
+  assertValidFnbCreditAmount,
+  assertValidReconocimientoTexto,
+  type LoyaltyRedeemableBenefitType,
+  type LoyaltyRedemptionChannel,
+  type LoyaltyBenefitsConfig,
+  type LoyaltyRedemptionRejectReason,
+  type LoyaltyRedemptionSnapshot,
+  type EvaluateLoyaltyRedemptionInput,
+  type EvaluateLoyaltyRedemptionResult,
+} from "./reservas/programaLealtad.ts";
+export {
+  GROUP_FOLLOW_UP_TYPES,
+  GROUP_FOLLOW_UP_WINDOW_HOURS,
+  computeGroupFollowUpSchedule,
+  isGroupFollowUpDue,
+  selectDueGroupFollowUps,
+  PropuestaRfpSinValidacionError,
+  assertHumanValidationBeforeProposal,
+  type GroupFollowUpType,
+  type GroupFollowUpSchedule,
+  type PendingGroupFollowUp,
+  type HumanValidationRecord,
+} from "./reservas/seguimientoSolicitudGrupo.ts";
+export {
+  ExchangeRateError,
+  resolveVigenteExchangeRate,
+  convertToReportingCurrency,
+  summarizeMultiCurrencyTotals,
+  type ExchangeRateRecord,
+  type MoneyInCurrency,
+  type ConvertedAmount,
+  type MultiCurrencyTotalInput,
+  type MultiCurrencyTotalResult,
+} from "./reservas/multiMoneda.ts";
 // H12c merge (integrador) · 2026-09-08: `./forecast/index.ts` (REQ-AGT-012, commit b1f3d47
 // en origin/main) sí existe con sus 2 archivos completos, pero nunca se re-exportó desde
 // este barrel -- `tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts` importa
@@ -286,6 +447,13 @@ export {
   type CobroPorResultadoActivationCheck,
 } from "./roi/roiBaseline.ts";
 export {
+  evaluarVariabilizacionPlantilla,
+  buildReporteAhorroLaborHousekeeping,
+  type PlantillaVariabilizacionEvidence,
+  type AhorroLaborHousekeepingInput,
+  type AhorroLaborHousekeepingReport,
+} from "./roi/roiLaborEtiquetado.ts";
+export {
   looksLikeAllergyDeclaration,
   resolveAllergyDeclared,
   canAssureDishIsSafe,
@@ -297,6 +465,51 @@ export {
   type ResolveAllergyDeclaredResult,
   type FnbOrderSafetyState,
 } from "./fnbAllergyGuard.ts";
+export {
+  MINIBAR_EVIDENCE_TYPES,
+  validateMinibarEvidence,
+  MinibarEvidenceMissingError,
+  assertMinibarEvidencePresent,
+  MINIBAR_DISPUTE_RATE_THRESHOLD_PERCENT,
+  computeMinibarDisputeRate,
+  type MinibarEvidenceType,
+  type MinibarChecklistItem,
+  type MinibarEvidenceInput,
+  type MinibarEvidenceValidation,
+  type MinibarDisputeRateInput,
+  type MinibarDisputeRateResult,
+} from "./minibarEvidence.ts";
+export {
+  FNB_CENTROS_CONSUMO,
+  FNB_MERMA_CAUSAS,
+  isFnbCentroConsumo,
+  isFnbMermaCausa,
+  assertValidFnbMerma,
+  summarizeFnbMermaByCausa,
+  FnbMermaInvalidError,
+  type FnbCentroConsumo,
+  type FnbMermaCausa,
+  type FnbMermaInput,
+  type FnbMermaCausaResumen,
+} from "./fnbMermaGuard.ts";
+export {
+  validateFnbOfflineQueueItem,
+  type FnbOfflineOperationType,
+  type FnbOfflineQueueItemInput,
+  type FnbOfflineQueueValidation,
+} from "./fnbOfflineQueueGuard.ts";
+export {
+  ROOM_CHARGE_CAPTURE_SOURCES,
+  validateRoomChargeCaptureAttempt,
+  buildChargeCaptureReport,
+  type RoomChargeCaptureSource,
+  type RoomChargeCaptureStatus,
+  type RoomChargeCaptureAttemptInput,
+  type RoomChargeCaptureValidation,
+  type RoomChargeCaptureAttemptRecord,
+  type ChargeCaptureReportOptions,
+  type ChargeCaptureReportResult,
+} from "./chargeCaptureReport.ts";
 export {
   FRAUD_PATTERNS,
   recipientRolesForPattern,
@@ -324,6 +537,19 @@ export {
   type ParityChannelViolation,
   type ParityCheckResult,
 } from "./revenue/parity-guard.ts";
+export {
+  CHANNEL_TYPES,
+  CHANNEL_MIX_ACTIONS,
+  ChannelMixEngineError,
+  assertValidStayDate,
+  assertValidChannelMixChannelConfig,
+  evaluateChannelMixDecision,
+  evaluateChannelMix,
+  type ChannelType,
+  type ChannelMixAction,
+  type ChannelMixChannelConfig,
+  type ChannelMixDecision,
+} from "./revenue/channelMixEngine.ts";
 export {
   REVENUE_GATE_STATES,
   MIN_SHADOW_DAYS,
@@ -370,6 +596,36 @@ export {
   type PriceRecommendationExplanation,
 } from "./revenue/priceRecommendationExplainer.ts";
 export {
+  REPUTATION_INDEX_MIN,
+  REPUTATION_INDEX_MAX,
+  DEFAULT_BAR_REPUTATION_THRESHOLD,
+  DEFAULT_BAR_REPUTATION_WINDOW_DAYS,
+  sentimentScoreToIndice,
+  calcularIndiceReputacion,
+  detectarCruceDeUmbral,
+  recomendarAjusteBar,
+  type IndiceReputacionPunto,
+  type CruceUmbralResult,
+  type RecomendacionAjusteBar,
+} from "./revenue/barPorReputacion.ts";
+export {
+  PricingTechoError,
+  TECHO_FRACCION_MAXIMA,
+  TECHO_FRACCION_PISO,
+  DESCUENTO_TAMANO_FACTOR,
+  DESCUENTO_TAMANO_UMBRAL_HABITACIONES,
+  DESCUENTO_ADR_FACTOR,
+  DESCUENTO_ADR_UMBRAL_MXN,
+  FACTOR_DEDUPLICACION_DEFAULT,
+  calcularValorConservadorDeduplicado,
+  calcularFraccionTecho,
+  calcularPrecioTechoMxn,
+  evaluarPrecioVentaPropuesto,
+  type AgenteValorConservador,
+  type ParametrosHotelPricing,
+  type EvaluacionPrecioVenta,
+} from "./revenue/pricingTechoRoi.ts";
+export {
   DEFAULT_WEEKLY_AUDIT_SAMPLE_SIZE,
   CONVERSATION_AUDIT_CATEGORIES,
   ConversationAuditError,
@@ -396,3 +652,130 @@ export {
   type ConsentLedgerEntry,
   type ConsentLedgerSummaryBucket,
 } from "./consentLedger.ts";
+export {
+  QUOTE_ABANDONMENT_WINDOWS,
+  resolveQuoteAbandonmentWindow,
+  computeAbandonmentContactAt,
+  isAbandonmentContactDue,
+  type QuoteAbandonmentWindowKey,
+  type QuoteAbandonmentWindow,
+} from "./reservas/quoteAbandonment.ts";
+export {
+  isMonthDayInSeasonWindow,
+  computeNextPreventiveDueDate,
+  adjustDueDateForRoomOccupancy,
+  recommendRepairOrReplace,
+  REPLACEMENT_COST_RATIO_THRESHOLD,
+  RECURRING_FAILURE_MIN_COUNT,
+  RECURRING_FAILURE_COST_RATIO_THRESHOLD,
+  type SeasonWindow,
+  type CriticalAssetScheduleInput,
+  type CriticalAssetScheduleResult,
+  type OccupancyAdjustmentResult,
+  type RepairOrReplaceRecommendation,
+  type RepairOrReplaceInput,
+  type RepairOrReplaceResult,
+} from "./mantenimiento/preventivo.ts";
+export {
+  normalizeGuestName,
+  findGuestDedupeMatch,
+  type GuestChannelProfile,
+  type GuestDedupeCandidate,
+} from "./guestContactDedup.ts";
+export {
+  DEFAULT_LINEN_DEVIATION_THRESHOLD_PCT,
+  messageBlamesGuest,
+  assertLinenOptOutMessageDoesNotBlameGuest,
+  describeLinenOptOutConfirmationMessage,
+  evaluateLinenCountDeviation,
+  LinenOptOutMessageBlamesGuestError,
+  type LinenCountDeviationInput,
+  type LinenCountDeviationResult,
+} from "./housekeeping/linenOptOut.ts";
+export {
+  FNB_CONSUMPTION_CENTER_TYPES,
+  planFnbInventoryTransfer,
+  computeTheoreticalBreakfastCost,
+  type FnbConsumptionCenterType,
+  type FnbCenterRef,
+  type PlanFnbInventoryTransferInput,
+  type FnbInventoryTransferPlan,
+  type TheoreticalBreakfastCostInput,
+  type TheoreticalBreakfastCostResult,
+} from "./fnbCentrosConsumo.ts";
+export {
+  BITACORA_NOM251_TIPOS,
+  BITACORA_NOM251_CSV_HEADERS,
+  RANGO_TEMPERATURA_SEGURO,
+  temperaturaEquipoSchema,
+  temperaturaPayloadSchema,
+  recepcionPayloadSchema,
+  limpiezaTipoSchema,
+  limpiezaPayloadSchema,
+  bitacoraNom251EntradaSchema,
+  evaluarLecturaTemperatura,
+  detectarAnomaliaBitacora,
+  buildBitacoraNom251Csv,
+  type BitacoraNom251Tipo,
+  type TemperaturaEquipo,
+  type RangoTemperatura,
+  type TemperaturaLecturaResultado,
+  type TemperaturaPayload,
+  type RecepcionPayload,
+  type LimpiezaTipo,
+  type LimpiezaPayload,
+  type BitacoraNom251Entrada,
+  type BitacoraNom251Anomalia,
+  type BitacoraNom251Registro,
+  type BitacoraNom251EntradaConMeta,
+} from "./bitacorasNom251.ts";
+export {
+  buildHotelAvailabilityJsonLd,
+  hotelAvailabilityJsonLdSchema,
+  type HotelAvailabilityInput,
+  type HotelAvailabilityJsonLd,
+  type RoomTypeAvailabilityInput,
+  type MoneyAvailability,
+} from "./mcpHotelOffer.ts";
+export {
+  ugcMediaTypeSchema,
+  filterUsableUgc,
+  generateMonthlyContentCalendar,
+  type UgcMediaType,
+  type GuestUgcSubmission,
+  type ContentCalendarEntry,
+  type MonthlyContentCalendar,
+} from "./ugcContentCalendar.ts";
+export {
+  LOCATION_TYPES,
+  isLocationType,
+  InvalidPhysicalNumberError,
+  buildLocationCode,
+  buildMenuQrTargetUrl,
+  ALLERGEN_CODES,
+  SUPPORTED_MENU_LANGUAGES,
+  ALLERGEN_LABELS,
+  translateAllergen,
+  resolveMenuForGuest,
+  type LocationType,
+  type AllergenCode,
+  type MenuLanguage,
+  type FareContext,
+  type MenuItemCatalog,
+  type ResolvedAllergen,
+  type ResolvedMenuItem,
+} from "./menuQr.ts";
+export {
+  UPSELL_OFFER_TYPES,
+  isUpsellOfferType,
+  UPSELL_TRIGGER_MOMENTS,
+  isUpsellTriggerMoment,
+  FnbUpsellEngineError,
+  daysUntilCheckIn,
+  dueUpsellTriggerMoments,
+  parseRevenuePricedCatalogRow,
+  resolveOfferPrice,
+  type UpsellOfferType,
+  type UpsellTriggerMoment,
+  type RevenuePricedCatalogRow,
+} from "./fnbUpsellEngine.ts";

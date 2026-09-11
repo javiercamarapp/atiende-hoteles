@@ -1,9 +1,16 @@
 // REQ-UX-005/REQ-HUE-026 · /hoteles/:hotelId/conocimiento-local — panel del gerente
-// para editar el conocimiento local (sargazo, clima, playa, ferry, eventos) que en
-// producción consultaría en vivo el agente conversacional (todavía sin construir,
-// requiere WhatsApp/voz reales -- ver docs/cierre-p0/inventario.md §2). Esta ruta es la
-// fuente de datos REAL: lectura sin caché, reflejada de inmediato tras cada
-// escritura (probado en tests/integration/conocimiento-local/latencia.spec.ts).
+// para editar el conocimiento local (sargazo, clima, playa, ferry, eventos) que el
+// agente conversacional consulta en vivo por WhatsApp. Esta ruta es la fuente de datos
+// REAL: lectura sin caché, reflejada de inmediato tras cada escritura (probado en
+// tests/integration/conocimiento-local/latencia.spec.ts). La CONEXIÓN de esa fuente con
+// las respuestas del agente (lo que este comentario admitía como pendiente) vive en
+// `apps/api/src/routes/mensajeria.ts` -- el único punto real de este repo que procesa un
+// mensaje entrante de huésped: detecta si el texto pregunta por una de estas categorías
+// (`detectLocalKnowledgeCategory`, domain-hotel) y responde leyendo esta misma tabla
+// (`buildLocalKnowledgeReply`), sin caché intermedio -- eso es lo que hace real el
+// "<30 s" del criterio de aceptación, con el canal WhatsApp simulado hoy
+// (`FakeWhatsappAdapter`, ADR-007, sin credenciales de Meta) igual que
+// REQ-HUE-006/014/021/023/024.
 import { Hono } from "hono";
 import { z } from "zod";
 import { Errors } from "../lib/errors.ts";

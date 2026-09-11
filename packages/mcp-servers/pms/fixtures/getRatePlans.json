@@ -1,0 +1,45 @@
+{
+  "source": "cloudbeds-simulator",
+  "recordedAt": "2026-09-11T03:56:04.126Z",
+  "endpoint": "getRatePlans",
+  "request": {
+    "method": "GET",
+    "path": "/getRatePlans?roomTypeID=SIM-RT-STD&startDate=2026-10-10&endDate=2026-10-13"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": [
+        {
+          "rateID": "SIM-RATE-1",
+          "ratePlanID": "SIM-RP-FLEX",
+          "ratePlanNamePublic": "Tarifa flexible (simulada)",
+          "roomRateDetailed": [
+            {
+              "date": "2026-10-10",
+              "rateBase": 1500,
+              "totalRate": 1500
+            },
+            {
+              "date": "2026-10-11",
+              "rateBase": 1500,
+              "totalRate": 1500
+            },
+            {
+              "date": "2026-10-12",
+              "rateBase": 1500,
+              "totalRate": 1500
+            },
+            {
+              "date": "2026-10-13",
+              "rateBase": 1500,
+              "totalRate": 1500
+            }
+          ]
+        }
+      ],
+      "roomTypeID": "SIM-RT-STD"
+    }
+  }
+}

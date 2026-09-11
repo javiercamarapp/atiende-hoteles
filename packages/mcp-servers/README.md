@@ -22,6 +22,7 @@ fabricar una respuesta. Ver `docs/ARQUITECTURA.md` ADR-007/ADR-011.
 | `mcp-energy` | `EnergyPort` | Home Assistant + Shelly (`HomeAssistantAdapter`) | `SimulatedEnergyAdapter` | **[PENDIENTE DE HARDWARE]** | REQ-BO-027, REQ-BO-028, REQ-BO-029, REQ-INT-007 |
 | `mcp-locks` | `LockPort` | Seam (`SeamAdapter`) | `SimulatedLockAdapter` | **[PENDIENTE DE HARDWARE/CREDENCIALES]** | REQ-RES-017, REQ-REC-009, REQ-SEG-015, REQ-INT-008 |
 | `mcp-shared` | -- (utilidades, no es un puerto) | -- | -- | disponible | backoff, HMAC+replay, idempotencia, rate limiter, chequeo de credenciales |
+| `mcp-hotel` | -- (servidor MCP propio, no un puerto hacia un tercero) | -- (no hay proveedor externo: expone este sistema hacia afuera) | -- | disponible | REQ-RES-021 |
 
 Ninguna fila se declara `hecho`/"integración completa" -- el criterio "10 de 10" del
 encargo se satisface aquí con la prueba de contrato contra el adaptador simulado (y,

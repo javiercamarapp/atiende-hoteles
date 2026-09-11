@@ -77,6 +77,7 @@ describe("CloudbedsAdapter (real) contra el simulador local", () => {
     await expect(adapter.getReservation("NO-EXISTE")).rejects.toBeInstanceOf(PortNotFoundError);
   });
 
+  // contrato-capacidad-pms: cloudbeds:listRatePlans
   it("listRatePlans devuelve una tarifa por cada fecha del rango, con la moneda default de la property", async () => {
     const adapter = new CloudbedsAdapter({ baseUrl });
     const plans = await adapter.listRatePlans({ roomTypeExternalId: "SIM-RT-STD", from: "2026-10-10", to: "2026-10-12" });
@@ -102,6 +103,7 @@ describe("CloudbedsAdapter (real) contra el simulador local", () => {
     expect(after - before).toBe(1);
   });
 
+  // contrato-capacidad-pms: cloudbeds:applyReservationUpdate
   it("applyReservationUpdate detecta conflicto de version real (409) sin escribir, y aplica cuando la version coincide", async () => {
     const adapter = new CloudbedsAdapter({ baseUrl });
     const before = await adapter.getReservation("SIM-RES-1");
@@ -141,6 +143,7 @@ describe("CloudbedsAdapter (real) contra el simulador local", () => {
     expect(simulator.requestLog.length).toBe(before);
   });
 
+  // contrato-capacidad-pms: cloudbeds:getGuestProfile
   it("getGuestProfile devuelve el huesped del fixture", async () => {
     const adapter = new CloudbedsAdapter({ baseUrl });
     const guest = await adapter.getGuestProfile("SIM-GUEST-1");

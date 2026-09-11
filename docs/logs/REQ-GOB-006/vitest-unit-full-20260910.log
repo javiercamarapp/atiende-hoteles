@@ -1,0 +1,192 @@
+
+> atiende-hoteles@0.0.0 test:unit
+> vitest run --config vitest.config.ts tests/unit
+
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-req-gob-006[39m
+
+ [32m✓[39m tests/unit/gob/scope-de-tarea.spec.ts [2m([22m[2m26 tests[22m[2m)[22m[33m 1681[2mms[22m[39m
+   [33m[2m✓[22m[39m obtenerArchivosCambiadosGit: contra un repositorio git real[2m > [22mdetecta un archivo trackeado modificado y un archivo nuevo sin trackear, ninguno más [33m 698[2mms[22m[39m
+   [33m[2m✓[22m[39m obtenerArchivosCambiadosGit: contra un repositorio git real[2m > [22mun working tree limpio (sin cambios desde HEAD) devuelve arreglo vacío [33m 422[2mms[22m[39m
+   [33m[2m✓[22m[39m obtenerArchivosCambiadosGit: contra un repositorio git real[2m > [22mcheckScopeDeTarea end-to-end contra el repo git real: archivo fuera de scope real -> violación real [33m 480[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/reputacion-clasificador.spec.ts [2m([22m[2m42 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/no-parallel-tool-money.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/runner.spec.ts [2m([22m[2m33 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/pronostico-series-tiempo.spec.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/gob/backlog-state-machine.spec.ts [2m([22m[2m37 tests[22m[2m)[22m[32m 68[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/revenue-engine-gate.spec.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/whatsapp/meta-adapter-real.spec.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 131[2mms[22m[39m
+ [32m✓[39m tests/unit/gob/cierre-tarea-conventional-commits.spec.ts [2m([22m[2m46 tests[22m[2m)[22m[33m 3249[2mms[22m[39m
+   [33m[2m✓[22m[39m obtenerCommitsGitReal: contra un repositorio git real[2m > [22mlee hash/asunto/cuerpo de commits reales, en orden de git log (más reciente primero) [33m 1171[2mms[22m[39m
+   [33m[2m✓[22m[39m obtenerCommitsGitReal: contra un repositorio git real[2m > [22mcheckCierreTareaConventionalCommits end-to-end contra el repo git real: tarea con su commit real -> 0 violaciones [33m 945[2mms[22m[39m
+   [33m[2m✓[22m[39m obtenerCommitsGitReal: contra un repositorio git real[2m > [22mcheckCierreTareaConventionalCommits end-to-end: commit real que NO sigue Conventional Commits -> violación real [33m 681[2mms[22m[39m
+ [32m✓[39m tests/unit/gob/auditoria-periodica.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 934[2mms[22m[39m
+   [33m[2m✓[22m[39m discoverChecklist / runChecklistItemReal: contra el catálogo real de scripts/checks/[2m > [22mrunChecklistItemReal corre un check real que pasa (exit 0) -> ok:true [33m 714[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/turnos-lft.spec.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/gob/evidencia-obligatoria-cierre.spec.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/price-recommendation-explainer.spec.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/parity-guard.spec.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/attendance.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/gob/gate-por-tarea.spec.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/postgres-approval-concurrency.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/env-provider-openrouter.spec.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 694[2mms[22m[39m
+ [32m✓[39m tests/unit/qa/no-tests-skip.spec.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 260[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/tool.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/walk-forward-backtest.spec.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/ticket-sla-policy.spec.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/pms/contract.spec.ts [2m([22m[2m16 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/provider.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 225[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/pms/cloudbeds-adapter-simulator.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 278[2mms[22m[39m
+ [32m✓[39m tests/unit/gob/pms-mirror-solo-lectura.spec.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 71[2mms[22m[39m
+ [32m✓[39m tests/unit/check-migraciones.spec.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/gob/focus-vigente.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/fraude-deteccion.spec.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/energy/contract.spec.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/fnb-allergy-guard.spec.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/reporte-mensual-honestidad.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/api/secrets-provider.spec.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/payments/adapter-swap.spec.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/usali-pl.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/api/security-breach-alert.spec.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/cfdi/pac-doble.spec.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 57[2mms[22m[39m
+ [32m✓[39m tests/unit/llm-juez-solo-sintetico.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 66[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/pms/registro-unico-conectores.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 300[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/auditoria-conversaciones-semanal.spec.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/gob/seleccion-tarea.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 47[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/locks/contract.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/atribucion-canal.spec.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/folio-engine.spec.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/whatsapp/contract.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/ocr-aislado-sin-internet.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 234[2mms[22m[39m
+ [32m✓[39m tests/unit/gob/tres-intentos-bloqueo.spec.ts [2m([22m[2m30 tests[22m[2m)[22m[33m 18348[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/voice-guardrails.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 87[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/redact.spec.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/consent-ledger.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/gob/bloqueo-sin-criterio.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/api/money-alert-destination.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/waitlist.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/tool-schema-strict.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 33972[2mms[22m[39m
+   [33m[2m✓[22m[39m recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001)[2m > [22mcerrar un ticket con autorizar_gasto_mantenimiento deja una fila de audit_log con timestamp, agente y valor anterior/nuevo reales [33m 18020[2mms[22m[39m
+   [33m[2m✓[22m[39m recordToolAudit + autorizar_gasto_mantenimiento: fila de audit_log real (REQ-AGT-001)[2m > [22maudit_log sigue siendo append-only e inmutable para la fila que dejo la tool (ADR-005/GOB-026) [33m 15940[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/motor-precio-total.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/mrz.spec.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 63[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/roi-baseline.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 77[2mms[22m[39m
+ [32m✓[39m tests/unit/check-runtime-flags.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/guest-contact-change-otp.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/outbound/gateway.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 19581[2mms[22m[39m
+   [33m[2m✓[22m[39m OutboundTaskSyncGateway[2m > [22msin fila de configuración -- no llama al port, devuelve null [33m 316[2mms[22m[39m
+ [32m✓[39m tests/unit/api/messaging-adapter-selection.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/conversational-guardrails.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/audit-log.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 82086[2mms[22m[39m
+   [33m[2m✓[22m[39m audit_log: append-only + cadena de hash[2m > [22mcada fila referencia el hash de la fila anterior del mismo tenant y el primero no tiene prev_hash [33m 18652[2mms[22m[39m
+   [33m[2m✓[22m[39m audit_log: append-only + cadena de hash[2m > [22mel hash almacenado es verificable de forma independiente (recalculado desde las columnas persistidas coincide) [33m 17557[2mms[22m[39m
+   [33m[2m✓[22m[39m audit_log: append-only + cadena de hash[2m > [22muna alteracion manual del payload rompe la verificacion del hash (detectada, no silenciosa) [33m 15741[2mms[22m[39m
+   [33m[2m✓[22m[39m audit_log: append-only + cadena de hash[2m > [22mrechaza UPDATE incluso ejecutado con el rol admin/propietario [33m 15158[2mms[22m[39m
+   [33m[2m✓[22m[39m audit_log: append-only + cadena de hash[2m > [22mrechaza DELETE incluso ejecutado con el rol admin/propietario [33m 14964[2mms[22m[39m
+ [32m✓[39m tests/unit/email/adaptadores.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 75[2mms[22m[39m
+ [32m✓[39m tests/unit/rls/platform-admin.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 81479[2mms[22m[39m
+   [33m[2m✓[22m[39m consola superadmin: platform_admin/admin_negocio (RLS + security definer)[2m > [22mun staff normal no ve filas de platform_admin ni de platform_admin_audit_log (RLS vacía) [33m 19181[2mms[22m[39m
+   [33m[2m✓[22m[39m consola superadmin: platform_admin/admin_negocio (RLS + security definer)[2m > [22madmin_negocio() lanza no_autorizado para un staff que no es superadmin de plataforma [33m 16657[2mms[22m[39m
+   [33m[2m✓[22m[39m consola superadmin: platform_admin/admin_negocio (RLS + security definer)[2m > [22madmin_negocio() agrega AMBOS hoteles cruzando tenants una vez otorgado platform_admin, y queda auditado [33m 15209[2mms[22m[39m
+   [33m[2m✓[22m[39m consola superadmin: platform_admin/admin_negocio (RLS + security definer)[2m > [22madmin_reintentar_outbox() es la única escritura permitida: revive un evento dead-letter sin tocar datos de negocio [33m 14862[2mms[22m[39m
+   [33m[2m✓[22m[39m consola superadmin: platform_admin/admin_negocio (RLS + security definer)[2m > [22madmin_reintentar_outbox() también lanza no_autorizado para un staff que no es superadmin [33m 15498[2mms[22m[39m
+ [32m✓[39m tests/unit/gob/no-comandos-destructivos-agente.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/supabase-export.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 615[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/disclosure.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/rls/org-isolation.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 63521[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org[2m > [22mSELECT: un usuario del org compartido del fixture no ve nada del org independiente [33m 19678[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org[2m > [22mSELECT: un usuario del org independiente tampoco ve el org compartido del fixture [33m 15045[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org[2m > [22mcurrent_tenant_ids() del usuario del org independiente NO incluye el org del fixture [33m 14445[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento entre ORGS (tenants) distintos, no solo entre hoteles del mismo org[2m > [22mINSERT: rechazado al intentar escribir en el hotel de otro org [33m 14353[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/context.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/roles.spec.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/club-segundo-viaje.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/estado-maquina.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/api/logger-redact.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/architecture/lock-isolation.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/unit/rls/money-role.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 64930[2mms[22m[39m
+   [33m[2m✓[22m[39m acceso a dinero restringido por rol (folio/charge/payment)[2m > [22mhousekeeping no puede leer folio [33m 19585[2mms[22m[39m
+   [33m[2m✓[22m[39m acceso a dinero restringido por rol (folio/charge/payment)[2m > [22mhousekeeping no puede leer charge ni payment [33m 14076[2mms[22m[39m
+   [33m[2m✓[22m[39m acceso a dinero restringido por rol (folio/charge/payment)[2m > [22mhousekeeping no puede insertar un payment [33m 15735[2mms[22m[39m
+   [33m[2m✓[22m[39m acceso a dinero restringido por rol (folio/charge/payment)[2m > [22mgm (rol con acceso a dinero) si puede leer folio/charge/payment de su hotel [33m 15528[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/shared/backoff.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/restricciones-estadia.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/shared/hmac.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/api/ticket-alert-destination.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/unit/restore-verify.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/roi-tools.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/marketing-template-linter.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/impuestos-hospedaje.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/pricing-source.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/api/identity-encryption.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/api/money-alert-ids.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/email/sanitizacion.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/cancelacion-policy.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/email/plantillas.spec.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/agents.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/payment-free-text-guard.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/overbooking.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/api/outbox-worker.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 109751[2mms[22m[39m
+   [33m[2m✓[22m[39m drainOutboxOnce: reintentos y dead-letter[2m > [22mun handler exitoso marca el evento 'enviado' y no lo vuelve a drenar [33m 19007[2mms[22m[39m
+   [33m[2m✓[22m[39m drainOutboxOnce: reintentos y dead-letter[2m > [22mun handler que falla incrementa attempts y pospone available_at con backoff exponencial [33m 16308[2mms[22m[39m
+   [33m[2m✓[22m[39m drainOutboxOnce: reintentos y dead-letter[2m > [22mtras maxAttempts fallos consecutivos, el evento se marca 'fallido' (dead-letter) y deja de reintentarse [33m 15071[2mms[22m[39m
+   [33m[2m✓[22m[39m drainOutboxOnce: reintentos y dead-letter[2m > [22mauditoria-1/backend [ALTO]: la causa real del error queda persistida en outbox.last_error, no descartada por un catch{} mudo [33m 13951[2mms[22m[39m
+   [33m[2m✓[22m[39m drainOutboxOnce: reintentos y dead-letter[2m > [22mauditoria-1/backend [ALTO]: el dead-letter final también conserva la causa real del último intento [33m 14921[2mms[22m[39m
+   [33m[2m✓[22m[39m drainOutboxOnce: reintentos y dead-letter[2m > [22mauditoria-1/backend [ALTO]: un handler colgado (nunca resuelve) se trata como fallo por timeout sin bloquear el resto del batch [33m 13947[2mms[22m[39m
+   [33m[2m✓[22m[39m drainOutboxOnce: reintentos y dead-letter[2m > [22mun event_type sin handler registrado se trata como fallo (nunca se marca 'enviado' silenciosamente) [33m 16538[2mms[22m[39m
+ [32m✓[39m tests/unit/reservation-state-machine.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 74878[2mms[22m[39m
+   [33m[2m✓[22m[39m maquina de estados de reservation[2m > [22muna reserva nueva arranca en 'cotizada' y queda registrada en el evento inicial [33m 17461[2mms[22m[39m
+   [33m[2m✓[22m[39m maquina de estados de reservation[2m > [22mpermite la cadena de transiciones valida completa [33m 15346[2mms[22m[39m
+   [33m[2m✓[22m[39m maquina de estados de reservation[2m > [22mrechaza un salto invalido (cotizada -> en_estancia, saltandose confirmada/check_in) [33m 14038[2mms[22m[39m
+   [33m[2m✓[22m[39m maquina de estados de reservation[2m > [22mrechaza reabrir una reserva cerrada (estado terminal) [33m 15094[2mms[22m[39m
+   [33m[2m✓[22m[39m maquina de estados de reservation[2m > [22mrechaza confirmar una reserva ya cancelada [33m 12939[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/pms/registro-conectores.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/web/csp-meta.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/api/rate-limiter.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/shared/idempotency.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/web/offline-csp.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/domain-hotel/checkin-free-text-guard.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 63[2mms[22m[39m
+ [32m✓[39m tests/unit/schema/hotel-timezone.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 17526[2mms[22m[39m
+ [32m✓[39m tests/unit/api/db-production.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/shared/rate-limiter.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/schema/dinero-numeric.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 16856[2mms[22m[39m
+ [32m✓[39m tests/unit/mcp-servers/shared/credentials.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/pricing.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/trace.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/agent-core/approval.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/unit/ui/format-money.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 97[2mms[22m[39m
+ [32m✓[39m tests/unit/idempotency-key.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 40607[2mms[22m[39m
+   [33m[2m✓[22m[39m idempotency_key: unicidad por (tenant_id, scope, key)[2m > [22mun INSERT plano con la misma clave dos veces es rechazado por el constraint UNIQUE [33m 17822[2mms[22m[39m
+   [33m[2m✓[22m[39m idempotency_key: unicidad por (tenant_id, scope, key)[2m > [22mINSERT ... ON CONFLICT DO NOTHING con la misma clave no duplica la fila (patron real de la app) [33m 13488[2mms[22m[39m
+   [33m[2m✓[22m[39m idempotency_key: unicidad por (tenant_id, scope, key)[2m > [22mla misma clave en dos tenants distintos NO colisiona (unicidad es por tenant) [33m 9295[2mms[22m[39m
+ [32m✓[39m tests/unit/rls/tenant-isolation.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 51685[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento de tenant entre hoteles (RLS, room_type)[2m > [22mSELECT: solo devuelve filas del hotel del usuario [33m 18370[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento de tenant entre hoteles (RLS, room_type)[2m > [22mINSERT: rechazado con violacion de politica al escribir en el hotel ajeno [33m 14135[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento de tenant entre hoteles (RLS, room_type)[2m > [22mUPDATE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion) [33m 10060[2mms[22m[39m
+   [33m[2m✓[22m[39m aislamiento de tenant entre hoteles (RLS, room_type)[2m > [22mDELETE: 0 filas afectadas sobre una fila del hotel ajeno (no error de aplicacion) [33m 9120[2mms[22m[39m
+ [32m✓[39m tests/unit/migrations.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 36002[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22maplica todas las migraciones desde una base vacia [33m 14449[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22mes idempotente: correrlo dos veces no reaplica nada la segunda vez [33m 7661[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22mrechaza continuar si una migracion ya aplicada fue editada (expand-only) [33m 7541[2mms[22m[39m
+   [33m[2m✓[22m[39m runner de migraciones (PGlite)[2m > [22mdb:reset (dropAllMigratedObjects) deja la base lista para re-aplicar desde cero [33m 6349[2mms[22m[39m
+ [32m✓[39m tests/unit/attendance-log.spec.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 160758[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mregistra entrada/salida vía record_attendance_event() dentro de una sesión real de staff [33m 19047[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mSIEMPRE registra al propio auth.uid(): no existe ningún parámetro para fichar a nombre de otro empleado [33m 16210[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mrechaza registrar asistencia en un hotel al que el empleado no pertenece [33m 16007[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mcada fila referencia el hash de la fila anterior DEL MISMO empleado, y la primera no tiene prev_hash [33m 15251[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mdos empleados distintos tienen cadenas de hash INDEPENDIENTES (una no referencia a la otra) [33m 14377[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mel hash almacenado es verificable de forma independiente (recalculado desde las columnas persistidas coincide) [33m 15016[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mrechaza UPDATE incluso ejecutado con el cliente admin/propietario de la migración [33m 13707[2mms[22m[39m
+   [33m[2m✓[22m[39m attendance_log: append-only + cadena de hash por empleado[2m > [22mrechaza DELETE incluso ejecutado con el cliente admin/propietario de la migración [33m 14254[2mms[22m[39m
+   [33m[2m✓[22m[39m staff_schedule: horario programado (mutable, administrado por owner/gm)[2m > [22mowner/gm puede programar un turno para un empleado de su propio hotel [33m 12485[2mms[22m[39m
+   [33m[2m✓[22m[39m staff_schedule: horario programado (mutable, administrado por owner/gm)[2m > [22mun rol sin administración (ej. housekeeping) NO puede programar horarios [33m 8987[2mms[22m[39m
+   [33m[2m✓[22m[39m staff_schedule: horario programado (mutable, administrado por owner/gm)[2m > [22mrechaza programar un horario para un empleado que no pertenece a ese hotel [33m 7546[2mms[22m[39m
+   [33m[2m✓[22m[39m staff_schedule: horario programado (mutable, administrado por owner/gm)[2m > [22mrechaza un rango con scheduled_end anterior o igual a scheduled_start [33m 4768[2mms[22m[39m
+   [33m[2m✓[22m[39m staff_schedule: horario programado (mutable, administrado por owner/gm)[2m > [22mun segundo upsert para el mismo (hotel, empleado, fecha) reemplaza el turno en vez de duplicarlo [33m 3102[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m114 passed[39m[22m[90m (114)[39m
+[2m      Tests [22m [1m[32m1323 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (1324)[39m
+[2m   Start at [22m 22:24:38
+[2m   Duration [22m 165.33s[2m (transform 8.56s, setup 0ms, collect 54.81s, tests 882.13s, environment 41ms, prepare 26.11s)[22m
+
+EXIT:0

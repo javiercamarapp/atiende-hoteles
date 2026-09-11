@@ -1,0 +1,6 @@
+
+> atiende-hoteles@0.0.0 check:migraciones
+> node --experimental-strip-types scripts/check-migraciones.ts
+
+check-migraciones: OK (95 migración(es) verificadas contra el manifiesto base, 0 DROP/ALTER destructivo sin aprobar).
+EXIT: 0

@@ -1,0 +1,13 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-req-hue-026[39m
+
+ [32m✓[39m tests/adversarial/disclosure-ia.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 1815[2mms[22m[39m
+ [32m✓[39m tests/integration/api/mensajeria-webhook-verificacion.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 1906[2mms[22m[39m
+ [32m✓[39m tests/integration/api/mensajeria.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 1817[2mms[22m[39m
+ [32m✓[39m tests/integration/api/mensajeria-clasificacion-tickets.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 1996[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m28 passed[39m[22m[90m (28)[39m
+[2m   Start at [22m 22:28:20
+[2m   Duration [22m 9.81s[2m (transform 724ms, setup 0ms, collect 2.05s, tests 7.53s, environment 0ms, prepare 46ms)[22m
+

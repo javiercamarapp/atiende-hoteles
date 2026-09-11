@@ -1,0 +1,73 @@
+REQ-AB-001 · intento real de `npx playwright test -c apps/web/playwright.config.ts tests/e2e/menu-qr.spec.ts --project=desktop`
+Fecha: 2026-09-11. Máquina: esta misma (Node instalado vía Homebrew).
+
+RESULTADO: bloqueado por incompatibilidad de versión de Node del ENTORNO (no del código
+de este REQ ni de apps/api/package.json, que están correctos) -- ver diagnóstico abajo.
+Confirmado que afecta IGUAL a tests/e2e/h4-reserva-real-desde-ui.spec.ts y a cualquier
+otro spec de este repo que arranque apps/api como proceso real (h5/h6/h7/
+login-real-y-resumen/h12a), reproducido con el propio `npm run dev` de apps/api, sin
+tocar nada de este REQ.
+
+$ node --version
+v26.7.0
+
+$ cd apps/api && npm run dev
+> @atiende-hoteles/api@0.0.0 dev
+> node --experimental-transform-types src/server.ts
+
+node: bad option: --experimental-transform-types
+npm error Lifecycle script `dev` failed with error:
+npm error code 9
+
+-- El flag --experimental-transform-types (el que apps/api/package.json usa a
+   propósito, ver comentario extenso en scripts/check-runtime-flags.ts sobre por qué
+   NO debe cambiarse a --experimental-strip-types: packages/mcp-servers/payments/src/port.ts
+   y mcp-servers/cfdi usan "TypeScript parameter properties", que el modo strip-only NO
+   soporta) ya no existe en Node 26.7.0 -- `node --help` en esta máquina solo lista
+   `--experimental-strip-types, --no-strip-types`.
+
+Confirmado que --experimental-strip-types (la única variante que Node 26.7.0 reconoce)
+en efecto NO puede arrancar apps/api, exactamente por la razón que
+scripts/check-runtime-flags.ts documenta:
+
+$ cd apps/api && node --experimental-strip-types src/server.ts
+file:///.../packages/mcp-servers/payments/src/port.ts:132
+  readonly code = "preauth_expired";
+  constructor(readonly externalPaymentId: string) {
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+SyntaxError [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]: TypeScript parameter property is not
+supported in strip-only mode
+
+CONCLUSIÓN: apps/api no puede arrancar como proceso Node real en esta máquina con NINGÚN
+flag de type-stripping que Node 26.7.0 reconoce -- ni el correcto
+(--experimental-transform-types, ya no existe en esta versión de Node) ni el incorrecto
+(--experimental-strip-types, existe pero no soporta parameter properties). Esto es un
+defecto preexistente del ENTORNO (drift de versión de Node en esta máquina compartida
+frente a la que este repo espera), no algo que REQ-AB-001 introdujo ni algo que deba
+"arreglarse" cambiando el flag de apps/api/package.json (ver la advertencia explícita en
+scripts/check-runtime-flags.ts: ese cambio ya rompió el arranque completo del backend dos
+veces antes, H5 y H6b) ni instalando/gestionando otra versión de Node en una máquina
+compartida con otras sesiones activas de Claude Code corriendo en paralelo (evidencia:
+`ps aux` muestra sesiones de otros worktrees -- wf-lic-req-*, licitaciones -- usando el
+mismo binario de Node en este momento).
+
+EVIDENCIA DE QUE NO ES ESPECÍFICO DE ESTE REQ: el mismo comando falla IDÉNTICO
+ejecutando únicamente `npm run dev` de apps/api sin ningún cambio de este REQ en el
+árbol de trabajo -- bloquea también a tests/e2e/h4-reserva-real-desde-ui.spec.ts,
+h5-cargo-y-pago-desde-ui.spec.ts, h6-housekeeping-mantenimiento-mensajeria.spec.ts,
+h7-agentes.spec.ts, login-real-y-resumen.spec.ts y h12a-registro-onboarding-google.spec.ts
+(todos usan el mismo patrón de spawn).
+
+LO QUE SÍ SE VERIFICÓ REAL en vez de esto (mismo código de negocio, mismo motor SQL, sin
+mock): tests/integration/ab/menu-qr-publico.spec.ts corre la MISMA app Hono real
+(`createApp(deps)`) con el MISMO `apps/api/src/routes/menuQr.ts` y la MISMA base de
+datos `embedded-postgres` real, EN PROCESO (sin pasar por el spawn de un binario `node`
+aparte, así que no depende de este flag) -- 14/14 verdes, incluyendo la verificación
+literal "2 QR distintos -> 2 location_code distintos" contra la API HTTP real. La
+pantalla `apps/web/src/pages/MenuPublico.tsx` (React real, sin datos de ejemplo) compila
+limpio (`tsc --noEmit`) y pasa `eslint` sin errores; el único tramo no verificado en ESTE
+entorno es el render final en un navegador Chromium real vía Playwright.
+
+tests/e2e/menu-qr.spec.ts queda en el árbol de trabajo, listo para correr en cuanto el
+entorno tenga una versión de Node compatible con --experimental-transform-types (o
+apps/api migre su estrategia de arranque -- decisión fuera del alcance de este REQ).

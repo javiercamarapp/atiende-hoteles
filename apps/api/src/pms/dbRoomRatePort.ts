@@ -47,3 +47,45 @@ export async function loadNightlyRates(
     closedToDeparture: r.closed_to_departure,
   }));
 }
+
+// REQ-RES-015: `rate_plan.currency` (migración 0004_room_inventory.sql, default
+// 'MXN') existe desde el principio pero `loadNightlyRates` de arriba nunca la
+// seleccionaba -- el motor de cotización trataba TODA tarifa como si estuviera en la
+// moneda de reporte, sin importar en qué moneda el hotel realmente la había
+// registrado (exactamente el bug que describe REQ-RES-015: el módulo de dominio puro
+// `multiMoneda.ts` ya existía y estaba probado, pero nada en el producto lo invocaba).
+// Esta variante SÍ expone la moneda real de cada noche, para que el llamador
+// (`pms/quoteConversion.ts`) decida si hace falta convertir con el tipo de cambio
+// vigente (`pms/exchangeRate.ts`) antes de cotizar/reservar.
+export interface NightlyRateWithCurrency extends NightlyRate {
+  readonly currency: string;
+}
+
+export async function loadNightlyRatesWithCurrency(
+  db: DbClient,
+  params: { hotelId: string; roomTypeId: string; fromDateInclusive: string; toDateInclusive: string },
+): Promise<NightlyRateWithCurrency[]> {
+  const { rows } = await db.query<{
+    date: string;
+    price: string;
+    currency: string;
+    min_stay: number;
+    closed_to_arrival: boolean;
+    closed_to_departure: boolean;
+  }>(
+    `select date::text as date, price, currency, min_stay, closed_to_arrival, closed_to_departure
+     from public.rate_plan
+     where hotel_id = $1 and room_type_id = $2 and date between $3 and $4
+     order by date asc;`,
+    [params.hotelId, params.roomTypeId, params.fromDateInclusive, params.toDateInclusive],
+  );
+
+  return rows.map((r) => ({
+    date: r.date,
+    price: Number(r.price),
+    currency: r.currency,
+    minStay: r.min_stay,
+    closedToArrival: r.closed_to_arrival,
+    closedToDeparture: r.closed_to_departure,
+  }));
+}

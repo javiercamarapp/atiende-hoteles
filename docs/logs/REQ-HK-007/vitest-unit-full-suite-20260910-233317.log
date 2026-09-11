@@ -1,0 +1,82 @@
+    [90m   | [39m  [31m^[39m
+    [90m 19| [39m    engine [33m=[39m [35mawait[39m [34mopenPglite[39m()[33m;[39m
+    [90m 20| [39m    [35mawait[39m [34mapplyMigrations[39m(engine[33m.[39madmin)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/unit/schema/hotel-timezone.spec.ts[2m > [22mhotel.timezone: cimiento para anclar 'qué día es hoy' a la zona real del hotel
+[31m[1mError[22m: Hook timed out in 30000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".[39m
+[36m [2m❯[22m tests/unit/schema/hotel-timezone.spec.ts:[2m12:3[22m[39m
+    [90m 10| [39m  [35mlet[39m seed[33m:[39m [33mSeedResult[39m[33m;[39m
+    [90m 11| [39m
+    [90m 12| [39m  [34mbeforeAll[39m([35masync[39m () [33m=>[39m {
+    [90m   | [39m  [31m^[39m
+    [90m 13| [39m    engine [33m=[39m [35mawait[39m [34mopenPglite[39m()[33m;[39m
+    [90m 14| [39m    [35mawait[39m [34mapplyMigrations[39m(engine[33m.[39madmin)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯[22m[39m
+
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/unit/idempotency-key.spec.ts[2m > [22midempotency_key: unicidad por (tenant_id, scope, key)[2m > [22mun INSERT plano con la misma clave dos veces es rechazado por el constraint UNIQUE
+[31m[1mError[22m: Hook timed out in 30000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".[39m
+[36m [2m❯[22m tests/unit/idempotency-key.spec.ts:[2m10:3[22m[39m
+    [90m  8| [39m  [35mlet[39m fixture[33m:[39m [33mPgliteFixture[39m[33m;[39m
+    [90m  9| [39m
+    [90m 10| [39m  [34mbeforeEach[39m([35masync[39m () [33m=>[39m {
+    [90m   | [39m  [31m^[39m
+    [90m 11| [39m    fixture [33m=[39m [35mawait[39m [34mcreatePgliteFixture[39m()[33m;[39m
+    [90m 12| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/unit/idempotency-key.spec.ts[2m > [22midempotency_key: unicidad por (tenant_id, scope, key)[2m > [22mun INSERT plano con la misma clave dos veces es rechazado por el constraint UNIQUE
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'engine')[39m
+[36m [2m❯[22m destroyPgliteFixture tests/support/pglite-fixture.ts:[2m20:17[22m[39m
+    [90m 18| [39m
+    [90m 19| [39mexport async function destroyPgliteFixture(fixture: PgliteFixture): Pr…
+    [90m 20| [39m  [35mawait[39m fixture[33m.[39mengine[33m.[39m[34mclose[39m()[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m 21| [39m}
+    [90m 22| [39m
+[90m [2m❯[22m tests/unit/idempotency-key.spec.ts:[2m15:11[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/unit/rls/tenant-isolation.spec.ts[2m > [22maislamiento de tenant entre hoteles (RLS, room_type)[2m > [22mSELECT: solo devuelve filas del hotel del usuario
+[31m[1mError[22m: Hook timed out in 30000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".[39m
+[36m [2m❯[22m tests/unit/rls/tenant-isolation.spec.ts:[2m11:3[22m[39m
+    [90m  9| [39m  [35mlet[39m fixture[33m:[39m [33mPgliteFixture[39m[33m;[39m
+    [90m 10| [39m
+    [90m 11| [39m  [34mbeforeEach[39m([35masync[39m () [33m=>[39m {
+    [90m   | [39m  [31m^[39m
+    [90m 12| [39m    fixture [33m=[39m [35mawait[39m [34mcreatePgliteFixture[39m()[33m;[39m
+    [90m 13| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/unit/rls/tenant-isolation.spec.ts[2m > [22maislamiento de tenant entre hoteles (RLS, room_type)[2m > [22mSELECT: solo devuelve filas del hotel del usuario
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'engine')[39m
+[36m [2m❯[22m destroyPgliteFixture tests/support/pglite-fixture.ts:[2m20:17[22m[39m
+    [90m 18| [39m
+    [90m 19| [39mexport async function destroyPgliteFixture(fixture: PgliteFixture): Pr…
+    [90m 20| [39m  [35mawait[39m fixture[33m.[39mengine[33m.[39m[34mclose[39m()[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m 21| [39m}
+    [90m 22| [39m
+[90m [2m❯[22m tests/unit/rls/tenant-isolation.spec.ts:[2m16:11[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m111 passed[39m[22m[90m (115)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m1331 passed[39m[22m[2m | [22m[33m11 skipped[39m[90m (1344)[39m
+[2m   Start at [22m 23:28:21
+[2m   Duration [22m 245.70s[2m (transform 5.51s, setup 0ms, collect 57.86s, tests 1279.32s, environment 147ms, prepare 28.20s)[22m
+
+
+[exited with code 0]

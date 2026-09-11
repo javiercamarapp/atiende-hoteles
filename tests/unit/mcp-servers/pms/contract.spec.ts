@@ -41,6 +41,7 @@ describe("mapeo de estados Cloudbeds <-> dominio", () => {
 /** Suite de contrato reutilizable contra cualquier implementación de `PmsPort`. */
 function runPmsPortContract(label: string, getPort: () => PmsPort) {
   describe(`contrato PmsPort -- ${label}`, () => {
+    // contrato-capacidad-pms: cloudbeds:getReservation
     it("getReservation retorna una reserva válida contra el esquema Zod", async () => {
       const reservation = await getPort().getReservation("CB-RES-1001");
       expect(() => PmsReservation.parse(reservation)).not.toThrow();
@@ -51,6 +52,7 @@ function runPmsPortContract(label: string, getPort: () => PmsPort) {
       await expect(getPort().getReservation("NO-EXISTE")).rejects.toBeInstanceOf(PortNotFoundError);
     });
 
+    // contrato-capacidad-pms: cloudbeds:createCharge
     it("createCharge es idempotente: la misma clave no genera un segundo cargo", async () => {
       const port = getPort() as FakeCloudbedsAdapter;
       const input = {
@@ -66,6 +68,7 @@ function runPmsPortContract(label: string, getPort: () => PmsPort) {
       expect(port.chargeCallCount).toBe(1);
     });
 
+    // contrato-capacidad-pms: cloudbeds:updateHousekeepingStatus
     it("updateHousekeepingStatus hace el round-trip dominio -> nativo -> dominio de forma consistente", async () => {
       const status = await getPort().updateHousekeepingStatus({ roomExternalId: "CB-ROOM-101", status: "limpia" });
       expect(status.status).toBe("limpia");
@@ -102,6 +105,7 @@ describe("CloudbedsAdapter (real) sin credenciales -- declaración honesta", () 
 // SIN id de deduplicación propio -- ya no se usan los campos ficticios
 // `event_id`/`event_type`/`occurred_at` de la versión anterior de este archivo.
 describe("webhook de Cloudbeds -- firma HMAC + replay", () => {
+  // contrato-capacidad-pms: cloudbeds:verifyAndNormalizeWebhook
   it("firma válida se acepta y normaliza el evento", async () => {
     const fake = new FakeCloudbedsAdapter();
     const { rawBody, signature } = FakeCloudbedsAdapter.signWebhookFixture({

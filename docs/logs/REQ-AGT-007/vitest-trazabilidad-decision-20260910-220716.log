@@ -1,0 +1,13 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-req-agt-007[39m
+
+ [32m✓[39m tests/integration/agent-core/trazabilidad-decision.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 14170[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AGT-007: trazabilidad/explicabilidad de una decisión económica de agente (AgentRunner + Postgres real)[2m > [22muna decisión económica APROBADA (autorizar_gasto_mantenimiento) se reconstruye por completo desde su fila de audit_log: input real + regla/prompt + resultado [33m 753[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AGT-007: trazabilidad/explicabilidad de una decisión económica de agente (AgentRunner + Postgres real)[2m > [22muna decisión económica DENEGADA (ticket inexistente) es IGUAL de trazable: input + regla/prompt quedan registrados aunque la acción se rechace -- caso negativo [33m 602[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AGT-007: trazabilidad/explicabilidad de una decisión económica de agente (AgentRunner + Postgres real)[2m > [22muna tool SIN valor económico (crear_ticket_mantenimiento, effect="write") NO adjunta toolInput/promptVersion -- el alcance es económico/legal, no cualquier tool_call [33m 434[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 22:07:19
+[2m   Duration [22m 16.57s[2m (transform 679ms, setup 0ms, collect 1.55s, tests 14.17s, environment 0ms, prepare 343ms)[22m
+

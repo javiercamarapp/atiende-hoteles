@@ -1,0 +1,21 @@
+{
+  "source": "cloudbeds-simulator",
+  "recordedAt": "2026-09-11T03:56:04.126Z",
+  "endpoint": "getCurrencySettings",
+  "request": {
+    "method": "GET",
+    "path": "/getCurrencySettings"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "default": "MXN",
+        "acceptable": [
+          "MXN"
+        ]
+      }
+    }
+  }
+}

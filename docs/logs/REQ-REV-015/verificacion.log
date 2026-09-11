@@ -1,0 +1,59 @@
+REQ-REV-015 -- "Un subagente/proceso de auditoría de solo lectura debe verificar que
+cada capability declarada de un conector PMS tenga contract test y que no exista
+`if pms === X` fuera del registro central de conectores."
+
+Implementación: packages/mcp-servers/pms/src/registry.ts (PMS_CAPABILITIES +
+`capabilities` por entrada de PMS_CONNECTOR_REGISTRY) + scripts/checks/registro-conectores-pms.ts
+(el auditor). Marcadores `contrato-capacidad-pms: <provider>:<capability>` en
+tests/unit/mcp-servers/pms/contract.spec.ts y
+tests/unit/mcp-servers/pms/cloudbeds-adapter-simulator.spec.ts asocian cada capability
+declarada con el `it(...)` real que la cubre.
+
+--- 1) estado limpio (repo real, con las 7 capabilities de Cloudbeds cubiertas por marcador) ---
+$ node --experimental-strip-types scripts/checks/registro-conectores-pms.ts
+REQ-REV-015 OK: toda capability declarada de un conector PMS implementado tiene contract test, y 0 bifurcaciones por proveedor fuera del registro central.
+exit code: 0
+
+--- 2) violación deliberada: se retira temporalmente el marcador
+    'contrato-capacidad-pms: cloudbeds:createCharge' de
+    tests/unit/mcp-servers/pms/contract.spec.ts (dejando el it() real intacto, solo sin
+    la etiqueta que lo asocia a la capability) ---
+$ node --experimental-strip-types scripts/checks/registro-conectores-pms.ts
+REQ-REV-015 (parte 1, capability sin contract test): se encontraron capabilities declaradas en PMS_CONNECTOR_REGISTRY sin contract test:
+  cloudbeds:createCharge: capability declarada en PMS_CONNECTOR_REGISTRY sin contract test (falta el marcador 'contrato-capacidad-pms: cloudbeds:createCharge' en un it(...) bajo tests/unit/mcp-servers/pms/ o tests/integration/contracts/)
+exit code: 1
+
+--- 3) marcador restaurado -- se confirma que vuelve a estado limpio (no fue una
+    coincidencia de la corrida 1) ---
+$ node --experimental-strip-types scripts/checks/registro-conectores-pms.ts
+REQ-REV-015 OK: toda capability declarada de un conector PMS implementado tiene contract test, y 0 bifurcaciones por proveedor fuera del registro central.
+exit code: 0
+
+--- 4) suite de pruebas del propio check (unit, directorios sintéticos + verificación
+    contra el repo real) ---
+$ npx vitest run --config vitest.config.ts tests/unit/mcp-servers/pms
+ ✓ tests/unit/mcp-servers/pms/registro-conectores.spec.ts (4 tests)
+ ✓ tests/unit/mcp-servers/pms/contract.spec.ts (16 tests | 1 skipped)
+ ✓ tests/unit/mcp-servers/pms/registro-conectores-pms.spec.ts (8 tests)
+ ✓ tests/unit/mcp-servers/pms/registro-unico-conectores.spec.ts (11 tests)
+ ✓ tests/unit/mcp-servers/pms/cloudbeds-adapter-simulator.spec.ts (11 tests)
+ Test Files  5 passed (5)
+      Tests  49 passed | 1 skipped (50)
+exit code: 0
+
+--- 5) typecheck + lint del repo completo (sin regresiones por el cambio de forma de
+    PmsConnectorRegistryEntry -- se le agregó el campo `capabilities`) ---
+$ npm run typecheck
+tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json && tsc --noEmit -p apps/api/tsconfig.json
+exit code: 0
+
+$ npm run lint
+eslint .
+1 problem (0 errors, 1 warning) -- warning preexistente en tests/e2e/paridad-restaurantes-login.spec.ts, no relacionado con este cambio.
+exit code: 0
+
+NOTA (honestidad de alcance): este auditor cubre el requisito EXACTO de REQ-REV-015
+(conectores PMS). REQ-QA-010 pide lo mismo pero para PMS+pago+CFDI -- ese requisito
+permanece `pendiente` porque los conectores de pago/CFDI todavía no tienen un registro
+único con `capabilities` declaradas de forma análoga; extenderlo a esos dominios es
+trabajo aparte, deliberadamente fuera de esta pieza.

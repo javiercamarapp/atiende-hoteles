@@ -5,17 +5,22 @@
 // registro." Ver también REQ-REV-015/REQ-INT-015 (mismo patrón, redactados como
 // consecuencia de este requisito).
 //
-// El registro central HOY es `packages/mcp-servers/pms/src/registry.ts`
-// (`PMS_CONNECTOR_REGISTRY`, ver su propio docstring) -- el ÚNICO lugar donde este
-// repo tiene permitido nombrar un proveedor de conector concreto ("cloudbeds",
-// "mews", ...) para decidir comportamiento. Este chequeo escanea el resto del código
-// fuente ejecutable (apps/*/src, packages/**) buscando un `if`/`else if`/`switch` cuya
-// condición compare (con `===`) o conmute sobre un identificador `provider`/`pms`
-// (en cualquier nivel de acceso a propiedad, p.ej. `config.provider`) -- exactamente
-// la forma que el requisito prohíbe fuera del registro. `scripts/checks/
-// orden-conectores-pms.ts` (REQ-REV-008) complementa esto verificando el CONTENIDO
-// del registro (orden de prioridad); este chequeo verifica su UNICIDAD como único
-// punto de bifurcación por proveedor.
+// Los registros centrales HOY son `packages/mcp-servers/pms/src/registry.ts`
+// (`PMS_CONNECTOR_REGISTRY`), `packages/mcp-servers/payments/src/registry.ts`
+// (`PAYMENT_CONNECTOR_REGISTRY`) y `packages/mcp-servers/cfdi/src/registry.ts`
+// (`CFDI_CONNECTOR_REGISTRY`) -- ver el docstring de cada uno. REQ-INT-015 exige que el
+// patrón de "registro único" (nacido con PMS en REQ-REV-008/REQ-AGT-018) no sea
+// exclusivo de PMS: por eso pagos y CFDI tienen su propio registro homólogo, cada uno el
+// ÚNICO lugar donde su tipo de conector tiene permitido nombrar un proveedor concreto
+// ("stripe", "finkok", ...) para decidir comportamiento. Este chequeo escanea el resto
+// del código fuente ejecutable (apps/*/src, packages/**) buscando un `if`/`else if`/
+// `switch` cuya condición compare (con `===`) o conmute sobre un identificador
+// `provider`/`pms` (en cualquier nivel de acceso a propiedad, p.ej. `config.provider`)
+// -- exactamente la forma que el requisito prohíbe fuera del registro, sin importar de
+// qué tipo de conector se trate. `scripts/checks/orden-conectores-pms.ts` (REQ-REV-008)
+// complementa esto verificando el CONTENIDO del registro de PMS (orden de prioridad);
+// este chequeo verifica la UNICIDAD de los tres registros como único punto de
+// bifurcación por proveedor, para todos los tipos de conector.
 //
 // Se excluye deliberadamente:
 //   - `node_modules`, `dist`: generado/vendorizado, no código propio.
@@ -24,9 +29,10 @@
 //   - Líneas de comentario puro (`//`, `/*`, `*`, `--`): documentan la regla, no la
 //     violan.
 //   - `CENTRAL_REGISTRY_FILES`: el/los registro(s) central(es) declarados abajo --
-//     es el único lugar donde nombrar un proveedor concreto está permitido. Hoy solo
-//     existe el registro de PMS; si se añade un registro central análogo para otro
-//     tipo de conector (pagos, CFDI, WhatsApp) su ruta se agrega a esa lista.
+//     es el único lugar donde nombrar un proveedor concreto está permitido, por tipo de
+//     conector. Si se añade un registro central análogo para OTRO tipo de conector aún
+//     sin registro (WhatsApp, voz/PBX, cerraduras, contabilidad, clima/vuelos) su ruta
+//     se agrega a esa lista.
 //
 // Uso: `node scripts/checks/registro-unico-conectores.ts` -- sale con código 1 si
 // encuentra una coincidencia fuera del registro, imprimiendo archivo:línea.
@@ -41,7 +47,11 @@ const EXCLUDE_DIR_NAMES = new Set(["node_modules", "dist", "checks"]);
 // El/los registro(s) central(es) de conectores -- ÚNICO lugar donde nombrar un
 // proveedor concreto está permitido. Rutas relativas a `relativeTo` (por defecto
 // ROOT).
-const DEFAULT_CENTRAL_REGISTRY_FILES = new Set(["packages/mcp-servers/pms/src/registry.ts"]);
+const DEFAULT_CENTRAL_REGISTRY_FILES = new Set([
+  "packages/mcp-servers/pms/src/registry.ts",
+  "packages/mcp-servers/payments/src/registry.ts",
+  "packages/mcp-servers/cfdi/src/registry.ts",
+]);
 
 function isCommentLine(line: string): boolean {
   const trimmed = line.trim();
@@ -136,8 +146,8 @@ if (isMain) {
   const violations = checkRegistroUnicoConectores();
   if (violations.length > 0) {
     console.error(
-      "REQ-AGT-018: se encontró bifurcación por proveedor (`if`/`switch` sobre `provider`/`pms`) fuera del " +
-        "registro central de conectores (packages/mcp-servers/pms/src/registry.ts):",
+      "REQ-AGT-018/REQ-INT-015: se encontró bifurcación por proveedor (`if`/`switch` sobre `provider`/`pms`) " +
+        "fuera de los registros centrales de conectores (packages/mcp-servers/{pms,payments,cfdi}/src/registry.ts):",
     );
     for (const v of violations) {
       console.error(`  ${v.file}:${v.line} [${v.kind}]: ${v.text}`);
@@ -146,8 +156,8 @@ if (isMain) {
   }
 
   console.log(
-    "REQ-AGT-018 OK: 0 ocurrencias de `if provider === X`/`if pms === X` (ni `switch(provider|pms)`) fuera del " +
-      "registro central de conectores, en apps/api/src, apps/web/src y packages/**.",
+    "REQ-AGT-018/REQ-INT-015 OK: 0 ocurrencias de `if provider === X`/`if pms === X` (ni `switch(provider|pms)`) " +
+      "fuera de los registros centrales de conectores (PMS, pagos, CFDI), en apps/api/src, apps/web/src y packages/**.",
   );
   process.exit(0);
 }

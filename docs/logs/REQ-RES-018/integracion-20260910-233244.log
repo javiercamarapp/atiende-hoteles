@@ -1,0 +1,11 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-desenmascarado-de-tel-fono-de-hu-sped-proveniente-[39m
+
+ [32m✓[39m tests/integration/ota/contacto-enmascarado.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 5949[2mms[22m[39m
+   [33m[2m✓[22m[39m adversarial+integración: REQ-RES-018 -- contacto de huésped enmascarado por OTA[2m > [22m(e) NEGATIVO: checkin-link-ota rechaza una reserva que aún no está marcada enmascarada [33m 317[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 23:32:53
+[2m   Duration [22m 10.21s[2m (transform 1.82s, setup 0ms, collect 3.60s, tests 5.95s, environment 0ms, prepare 68ms)[22m
+

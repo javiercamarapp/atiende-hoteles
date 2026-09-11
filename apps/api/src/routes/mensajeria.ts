@@ -54,6 +54,14 @@
 // `deps.env.frontendUrl`, mismo criterio que routes/registro.ts/correo.ts para construir
 // enlaces absolutos) -- este webhook es el ÚNICO "primer contacto" real por WhatsApp de
 // todo el repo, así que es donde debía vivir el enlace, no solo el texto de GOB-034.
+//
+// REQ-HUE-026 (H08-024): mismo criterio que REQ-HUE-006/014 de arriba -- este webhook es
+// el único punto real que procesa un mensaje entrante, así que es donde se conecta la
+// consulta al panel de "conocimiento local" (`local_knowledge_entry`, migración 0052)
+// cuando el texto pregunta por sargazo/clima/playa/ferry/eventos
+// (`detectLocalKnowledgeCategory`/`buildLocalKnowledgeReply`, domain-hotel): la lectura
+// es directa a Postgres sin caché, así que un cambio guardado por el gerente ya está
+// disponible en la siguiente pregunta de un huésped.
 import { randomUUID } from "node:crypto";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -69,6 +77,7 @@ import {
   createSendWhatsappTemplateTool,
   createTransactionalTemplateApprovalQueue,
   isMarketingSendBlocked,
+  isGuestContactMaskedByOta,
   esPreguntaSiEsHumano,
   PostgresApprovalQueue,
   RESPUESTA_FIJA_ES_HUMANO,
@@ -77,8 +86,10 @@ import {
 } from "@atiende-hoteles/agent-core";
 import { WebhookReplayError, WebhookSignatureError } from "@atiende-hoteles/mcp-shared";
 import {
+  buildLocalKnowledgeReply,
   classifyGuestMessage,
   detectAndRedactPaymentData,
+  detectLocalKnowledgeCategory,
   lintMarketingTemplateBody,
   looksLikeCheckinDataInFreeText,
 } from "@atiende-hoteles/domain-hotel";
@@ -375,6 +386,81 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
         );
       }
 
+      // Gate único de `recepcion_virtual` (agent_config) para TODA acción autónoma de
+      // este agente sobre WhatsApp -- conocimiento local (REQ-HUE-026, abajo) y ticket
+      // (REQ-HUE-014, más abajo) comparten la MISMA resolución de gate (una sola
+      // consulta, no una por acción): mismo criterio que `routes/vozElevenlabs.ts` punto
+      // 3 de su comentario de archivo para el canal de voz del mismo agente. Disclosure/
+      // "es humano"/tarjeta/check-in NO se gatean aquí a propósito: son respuestas de
+      // cumplimiento/seguridad fijas (GOB-034/REQ-HUE-010/REQ-RES-016), no una decisión
+      // del agente sobre si "ayudar" al huésped -- eso sí depende del gate.
+      const agentConfig = await resolveAgentConfig(deps.engine.admin, hotelId, RECEPCION_VIRTUAL_DEF);
+      const recepcionVirtualActiva = agentConfig.gate !== "shadow";
+
+      // REQ-HUE-026 (H08-024): "el panel de conocimiento local ... editable por el
+      // gerente y reflejado en las respuestas del agente conversacional en <30 s." La
+      // fuente de datos real (`local_knowledge_entry`, migración 0052) y su CRUD
+      // (`routes/conocimientoLocal.ts`) ya existían; el comentario de cabecera de esa
+      // ruta admitía explícitamente que faltaba la CONEXIÓN -- que el agente
+      // conversacional realmente la consultara al responder. Este es ese punto de
+      // conexión: el mismo webhook (único punto real de entrada de un mensaje de
+      // huésped, ver comentario de archivo) detecta si el texto pregunta por sargazo/
+      // clima/playa/ferry/eventos (`detectLocalKnowledgeCategory`, domain-hotel) y, si
+      // hay una entrada vigente para esa categoría en ESTE hotel, responde con su
+      // contenido ACTUAL -- lectura directa a Postgres sin caché intermedio (misma
+      // fuente y mismo criterio de latencia que `tests/integration/conocimiento-local/
+      // latencia.spec.ts`), así que un cambio que el gerente guarda un segundo antes de
+      // que el huésped pregunte YA está reflejado en la respuesta.
+      //
+      // `sendTextMessage` (no `sendTemplateMessage`): esta es una respuesta DENTRO de la
+      // ventana de servicio de 24h que el propio mensaje entrante acaba de abrir (mismo
+      // criterio documentado en `MessagingPort.sendTextMessage`, packages/mcp-servers/
+      // whatsapp/src/port.ts) -- no requiere plantilla pre-aprobada por Meta.
+      //
+      // Sin ninguna entrada para esa categoría en este hotel: no se envía nada aquí
+      // (`buildLocalKnowledgeReply` devuelve `null`, nunca inventa contenido que el
+      // gerente no escribió, mismo criterio de "estado vacío honesto" de REQ-UX-002) y
+      // el mensaje sigue su curso normal hacia el ticket de abajo -- una pregunta sin
+      // respuesta configurada termina en frontdesk, no en silencio.
+      let categoriaConocimientoLocalRespondida = false;
+      const categoriaConocimientoLocal = recepcionVirtualActiva ? detectLocalKnowledgeCategory(event.textBody) : null;
+      if (categoriaConocimientoLocal) {
+        const { rows: entradasConocimiento } = await deps.engine.admin.query<{
+          title: string;
+          content: string;
+          updated_at: string;
+        }>(
+          `select title, content, updated_at::text as updated_at
+           from public.local_knowledge_entry where hotel_id = $1 and category = $2;`,
+          [hotelId, categoriaConocimientoLocal],
+        );
+        const respuestaConocimientoLocal = buildLocalKnowledgeReply(
+          categoriaConocimientoLocal,
+          entradasConocimiento.map((fila) => ({ title: fila.title, content: fila.content, updatedAt: fila.updated_at })),
+        );
+        if (respuestaConocimientoLocal) {
+          const envioConocimiento = await sharedWhatsappAdapter.sendTextMessage({
+            to: event.from,
+            body: respuestaConocimientoLocal,
+            clientMessageId: `conocimiento-local-${event.eventId}`,
+          });
+          await deps.engine.admin.query(
+            `insert into public.message (tenant_id, hotel_id, conversation_id, direction, channel, body, external_message_id, delivery_status, simulated)
+             values ($1, $2, $3, 'saliente', 'whatsapp', $4, $5, $6, $7);`,
+            [
+              configRows[0].tenant_id,
+              hotelId,
+              convRows[0]!.id,
+              respuestaConocimientoLocal,
+              envioConocimiento.externalMessageId,
+              envioConocimiento.status,
+              whatsappAdapterSimulated,
+            ],
+          );
+          categoriaConocimientoLocalRespondida = true;
+        }
+      }
+
       // REQ-HUE-014: "cada mensaje/petición del huésped debe convertirse en un ticket
       // con departamento/habitación/prioridad/SLA" -- este webhook es el ÚNICO punto
       // real de este repo que procesa un mensaje entrante de WhatsApp (ver comentario de
@@ -389,13 +475,19 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       // comentario de cabecera de `ticketTools.ts`).
       //
       // Se omite cuando el mensaje ya disparó una de las respuestas fijas de arriba
-      // (pregunta "¿eres humano?", número de tarjeta, intento de check-in por texto):
-      // esos ya tienen su propia respuesta resuelta, no son peticiones operativas que un
-      // departamento deba atender. El disclosure de primer turno NO es una exclusión --
-      // es incondicional por turno, no una clasificación de contenido, así que el mismo
-      // mensaje que dispara el disclosure también puede generar su ticket.
+      // (pregunta "¿eres humano?", número de tarjeta, intento de check-in por texto) o
+      // una respuesta REAL de conocimiento local (REQ-HUE-026, arriba): esos ya tienen
+      // su propia respuesta resuelta, no son peticiones operativas que un departamento
+      // deba atender. Una pregunta de conocimiento local SIN entrada configurada
+      // (`categoriaConocimientoLocalRespondida === false` pese a haber detectado
+      // categoría) NO se excluye a propósito: cae al ticket de abajo para que frontdesk
+      // la atienda, en vez de quedar sin ninguna respuesta. El disclosure de primer
+      // turno NO es una exclusión -- es incondicional por turno, no una clasificación de
+      // contenido, así que el mismo mensaje que dispara el disclosure también puede
+      // generar su ticket.
       //
-      // Gate del hotel para `recepcion_virtual` (agent_config) -- MISMO criterio que
+      // Gate del hotel para `recepcion_virtual` (`recepcionVirtualActiva`, resuelto una
+      // sola vez arriba junto con el gate de conocimiento local) -- MISMO criterio que
       // `routes/vozElevenlabs.ts` punto 3 de su comentario de archivo: mientras el gate
       // siga en "shadow" (default, BP-016), no se crea ningún ticket real desde este
       // canal -- el WhatsApp entrante es otro transporte del MISMO agente
@@ -415,10 +507,12 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
       // en vez de adivinar una habitación -- honestidad de "esqueleto real" (ADR-006/
       // 007) sobre inventar una asociación que este repo no puede verificar hoy.
       const mensajeYaAtendidoPorPatronFijo =
-        esPreguntaSiEsHumano(event.textBody) || pago.containsCardNumber || looksLikeCheckinDataInFreeText(event.textBody);
+        esPreguntaSiEsHumano(event.textBody) ||
+        pago.containsCardNumber ||
+        looksLikeCheckinDataInFreeText(event.textBody) ||
+        categoriaConocimientoLocalRespondida;
       if (event.textBody && event.textBody.trim().length > 0 && !mensajeYaAtendidoPorPatronFijo) {
-        const agentConfig = await resolveAgentConfig(deps.engine.admin, hotelId, RECEPCION_VIRTUAL_DEF);
-        if (agentConfig.gate !== "shadow") {
+        if (recepcionVirtualActiva) {
           const classification = classifyGuestMessage(bodyParaGuardar);
           const ticketCtx = buildToolContext(
             {
@@ -596,6 +690,16 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     const hotelId = c.req.param("hotelId");
     const body = parseBody(enviarSchema, await c.req.json().catch(() => ({})));
     await ensureMessagingConfig(db, hotelId, orgId);
+
+    // REQ-RES-018: mismo criterio de rechazo temprano que el gate de marketing de abajo
+    // -- un envío a un contacto que sigue siendo el relay enmascarado de una OTA nunca
+    // debe quedar "pendiente_aprobacion" (`tool.run()` lo bloquea igual, defensa en
+    // profundidad para AgentRunner/aprobación diferida, ver `isGuestContactMaskedByOta`).
+    if (await isGuestContactMaskedByOta({ db, hotelId, guestPhone: body.guestPhone })) {
+      throw Errors.conflict(
+        `${body.guestPhone} pertenece a una reserva cuyo contacto sigue siendo el relay enmascarado de una OTA -- envía el enlace de check-in por el canal de la OTA (POST .../checkin-link-ota) en vez de WhatsApp hasta que el huésped comparta su contacto real.`,
+      );
+    }
 
     // REQ-HUE-021/REQ-SEG-007: se rechaza ANTES de crear una solicitud de aprobación --
     // sin este chequeo temprano, una plantilla de marketing sin opt-in quedaría

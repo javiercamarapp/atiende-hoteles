@@ -1,4 +1,4 @@
-// H12a · Registro central de las 12 plantillas de correo. `TEMPLATES` es el punto único
+// H12a · Registro central de las 13 plantillas de correo. `TEMPLATES` es el punto único
 // que otros paquetes (apps/api, scripts/preview.ts) usan para resolver una plantilla por
 // su slug -- el slug ES el string que se guarda en `EmailMessage.template`/
 // `email_outbox.template`, así que nunca debe cambiar sin coordinar una migración de
@@ -20,6 +20,7 @@ import { renderAgradecimientoPostEstancia, sampleAgradecimientoPostEstanciaData 
 import { renderReciboPago, sampleReciboPagoData } from "./reciboPago.ts";
 import { renderCfdiDisponible, sampleCfdiDisponibleData } from "./cfdiDisponible.ts";
 import { renderProspeccionComercial, sampleProspeccionComercialData } from "./prospeccionComercial.ts";
+import { renderCotizacionAbandonada, sampleCotizacionAbandonadaData } from "./cotizacionAbandonada.ts";
 
 export interface TemplateEntry {
   etiqueta: string;
@@ -52,4 +53,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   "recibo-pago": entry("Recibo de pago", renderReciboPago, sampleReciboPagoData),
   "cfdi-disponible": entry("CFDI disponible", renderCfdiDisponible, sampleCfdiDisponibleData),
   "prospeccion-comercial": entry("Prospección comercial", renderProspeccionComercial, sampleProspeccionComercialData),
+  "cotizacion-abandonada": entry("Cotización abandonada", renderCotizacionAbandonada, sampleCotizacionAbandonadaData),
 };

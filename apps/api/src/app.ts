@@ -22,9 +22,12 @@ import { resumenRoutes } from "./routes/resumen.ts";
 import { reservasRoutes } from "./routes/reservas.ts";
 import { listaEsperaRoutes } from "./routes/listaEspera.ts";
 import { disponibilidadRoutes } from "./routes/disponibilidad.ts";
+import { mcpHotelRoutes } from "./routes/mcpHotel.ts";
+import { mcpAgentesRoutes } from "./routes/mcpAgentes.ts";
 import { recepcionRoutes } from "./routes/recepcion.ts";
 import { huespedesRoutes } from "./routes/huespedes.ts";
 import { foliosRoutes } from "./routes/folios.ts";
+import { minibarRoutes } from "./routes/minibar.ts";
 import { nightAuditRoutes } from "./routes/night-audit.ts";
 import { cfdiRoutes } from "./routes/cfdi.ts";
 import { quotesRoutes } from "./routes/quotes.ts";
@@ -36,9 +39,19 @@ import { conocimientoLocalRoutes } from "./routes/conocimientoLocal.ts";
 import { backOfficeRoutes } from "./routes/backOffice.ts";
 import { plUsaliRoutes } from "./routes/plUsali.ts";
 import { atribucionCanalRoutes } from "./routes/atribucionCanal.ts";
+import { roomNightsDirectasRoutes } from "./routes/roomNightsDirectas.ts";
 import { clubSegundoViajeRoutes } from "./routes/clubSegundoViaje.ts";
+import { programaLealtadRoutes } from "./routes/programaLealtad.ts";
+import { gruposRoutes } from "./routes/grupos.ts";
 import { fraudeRoutes } from "./routes/fraude.ts";
 import { pedidosFnbRoutes } from "./routes/pedidosFnb.ts";
+import { fnbCentrosConsumoRoutes } from "./routes/fnbCentrosConsumo.ts";
+import { fnbMermaRoutes } from "./routes/fnbMerma.ts";
+import { bitacorasNom251Routes } from "./routes/bitacorasNom251.ts";
+import { menuQrRoutes } from "./routes/menuQr.ts";
+import { fnbOfflineQueueRoutes } from "./routes/fnbOfflineQueue.ts";
+import { upsellFnbRoutes } from "./routes/upsellFnb.ts";
+import { capturaCargosRoutes } from "./routes/capturaCargos.ts";
 import { checkinOnlineRoutes } from "./routes/checkinOnline.ts";
 import { housekeepingRoutes } from "./routes/housekeeping.ts";
 import { mantenimientoRoutes } from "./routes/mantenimiento.ts";
@@ -54,6 +67,7 @@ import { vozElevenlabsRoutes } from "./routes/vozElevenlabs.ts";
 import { roiRoutes } from "./routes/roi.ts";
 import { privacidadRoutes } from "./routes/privacidad.ts";
 import { consentimientoRoutes } from "./routes/consentimiento.ts";
+import { ugcRoutes } from "./routes/ugc.ts";
 import { auditoriaConversacionesRoutes } from "./routes/auditoriaConversaciones.ts";
 import { adminRoutes } from "./routes/admin.ts";
 import { suscripcionRoutes } from "./routes/suscripcion.ts";
@@ -274,9 +288,15 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", reservasRoutes(deps));
   app.route("/", listaEsperaRoutes(deps));
   app.route("/", disponibilidadRoutes(deps));
+  // REQ-RES-021: `mcpHotelRoutes` es pública (sin sesión de staff, API key de agente
+  // MCP externo) -- mismo criterio de orden que `cancelacionPublica.ts`/
+  // `experienciasPublicas.ts` (montada junto a su ruta hermana de gestión).
+  app.route("/", mcpHotelRoutes(deps));
+  app.route("/", mcpAgentesRoutes(deps));
   app.route("/", recepcionRoutes(deps));
   app.route("/", huespedesRoutes(deps));
   app.route("/", foliosRoutes(resolvedDeps));
+  app.route("/", minibarRoutes(resolvedDeps));
   app.route("/", nightAuditRoutes(deps));
   app.route("/", cfdiRoutes(resolvedDeps));
   app.route("/", quotesRoutes(deps));
@@ -288,9 +308,19 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", backOfficeRoutes(deps));
   app.route("/", plUsaliRoutes(deps));
   app.route("/", atribucionCanalRoutes(deps));
+  app.route("/", roomNightsDirectasRoutes(deps));
   app.route("/", clubSegundoViajeRoutes(deps));
+  app.route("/", programaLealtadRoutes(deps));
+  app.route("/", gruposRoutes(deps));
   app.route("/", fraudeRoutes(deps));
   app.route("/", pedidosFnbRoutes(deps));
+  app.route("/", fnbCentrosConsumoRoutes(deps));
+  app.route("/", fnbMermaRoutes(deps));
+  app.route("/", bitacorasNom251Routes(deps));
+  app.route("/", menuQrRoutes(deps));
+  app.route("/", upsellFnbRoutes(deps));
+  app.route("/", fnbOfflineQueueRoutes(resolvedDeps));
+  app.route("/", capturaCargosRoutes(resolvedDeps));
   app.route("/", checkinOnlineRoutes(deps));
   // H18 · conector-pms-enterprise: estas 4 rutas crean housekeeping_task/
   // maintenance_ticket/guest_ticket -- necesitan `resolvedDeps.outboundTaskSyncGateway`
@@ -311,6 +341,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", roiRoutes(deps));
   app.route("/", privacidadRoutes(deps));
   app.route("/", consentimientoRoutes(deps));
+  app.route("/", ugcRoutes(deps));
   app.route("/", auditoriaConversacionesRoutes(deps));
   app.route("/", adminRoutes(deps));
   app.route("/", suscripcionRoutes(resolvedDeps));

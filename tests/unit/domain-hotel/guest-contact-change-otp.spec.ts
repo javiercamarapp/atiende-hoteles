@@ -3,8 +3,19 @@
 // La prueba end-to-end (envío real al `guest.phone` original vía `FakeWhatsappAdapter`,
 // nunca al valor nuevo solicitado) vive en
 // tests/adversarial/guardrails-conversacionales.spec.ts.
+//
+// REQ-AGT-010, mitad "clave del límite de tasa" (número, tenant, país):
+// `buildGuestContactOtpRateLimitKey` es pura (solo arma el string, no cuenta nada), así
+// que se prueba aquí igual que el resto del archivo. El 429 real contra la ruta HTTP
+// (N+1 solicitud sobre el límite configurado) vive en
+// tests/adversarial/rate-limits-otp.spec.ts, junto con el caso negativo de OTP.
 import { describe, expect, it } from "vitest";
-import { OTP_CODE_LENGTH, evaluateOtpConfirmation, generateOtpCode } from "@atiende-hoteles/domain-hotel";
+import {
+  buildGuestContactOtpRateLimitKey,
+  OTP_CODE_LENGTH,
+  evaluateOtpConfirmation,
+  generateOtpCode,
+} from "@atiende-hoteles/domain-hotel";
 
 describe("generateOtpCode", () => {
   it("genera un código numérico de OTP_CODE_LENGTH dígitos, con ceros a la izquierda si hace falta", () => {
@@ -84,5 +95,43 @@ describe("evaluateOtpConfirmation", () => {
     const result = evaluateOtpConfirmation({ ...base, attemptsBefore: 5, codeMatches: true });
     expect(result.outcome).toBe("rechazado_intentos_agotados");
     expect(result.applyChange).toBe(false);
+  });
+});
+
+describe("buildGuestContactOtpRateLimitKey (REQ-AGT-010)", () => {
+  it("es determinista: las mismas 2 entradas SIEMPRE producen la misma clave", () => {
+    const a = buildGuestContactOtpRateLimitKey({ tenantId: "tenant-1", phone: "+5219981111111" });
+    const b = buildGuestContactOtpRateLimitKey({ tenantId: "tenant-1", phone: "+5219981111111" });
+    expect(a).toBe(b);
+  });
+
+  it("incluye el país derivado del prefijo E.164 del teléfono -- dos países distintos, misma clave-base, dan claves distintas", () => {
+    const mx = buildGuestContactOtpRateLimitKey({ tenantId: "tenant-1", phone: "+5219981111111" });
+    const us = buildGuestContactOtpRateLimitKey({ tenantId: "tenant-1", phone: "+14155551234" });
+    expect(mx).not.toBe(us);
+    // "país" es una dimensión real de la clave, no solo el número entero repetido.
+    expect(mx).toContain("MX");
+    expect(us).toContain("US_CA");
+  });
+
+  it("distingue por tenant: el MISMO número bajo tenants distintos nunca comparte balde", () => {
+    const tenantA = buildGuestContactOtpRateLimitKey({ tenantId: "tenant-a", phone: "+5219981111111" });
+    const tenantB = buildGuestContactOtpRateLimitKey({ tenantId: "tenant-b", phone: "+5219981111111" });
+    expect(tenantA).not.toBe(tenantB);
+  });
+
+  it("distingue por número: 2 huéspedes del MISMO tenant/país nunca comparten balde", () => {
+    const numero1 = buildGuestContactOtpRateLimitKey({ tenantId: "tenant-1", phone: "+5219981111111" });
+    const numero2 = buildGuestContactOtpRateLimitKey({ tenantId: "tenant-1", phone: "+5219982222222" });
+    expect(numero1).not.toBe(numero2);
+  });
+
+  it("un teléfono sin prefijo E.164 reconocible NUNCA rompe la clave -- cae a un país honesto, no lanza", () => {
+    expect(() => buildGuestContactOtpRateLimitKey({ tenantId: "tenant-1", phone: "no-es-un-telefono" })).not.toThrow();
+    const desconocido = buildGuestContactOtpRateLimitKey({ tenantId: "tenant-1", phone: "no-es-un-telefono" });
+    expect(desconocido).toContain("DESCONOCIDA");
+    // Sigue siendo única por tenant+teléfono aunque el país no se pueda clasificar.
+    const otroTenant = buildGuestContactOtpRateLimitKey({ tenantId: "tenant-2", phone: "no-es-un-telefono" });
+    expect(desconocido).not.toBe(otroTenant);
   });
 });

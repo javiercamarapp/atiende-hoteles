@@ -1,0 +1,74 @@
+=== REQ-AGT-021: FOCUS.md por fase hotelera + skills hoteleras dedicadas (BP-136, BP-138) ===
+Fecha: 2026-09-11T04:12:56Z
+
+--- $ node --experimental-strip-types scripts/checks/focus-y-skills-existen.ts ---
+REQ-AGT-021 OK: docs/FOCUS.md parsea correctamente (fase vigente + módulos abiertos) y las 3 skills hoteleras requeridas (pms-fixture-record, edge-lab, revenue-backtest) existen en .claude/skills/, documentadas y con su comando de ejecución corriendo sin error.
+exit code: 0
+
+--- $ node --experimental-strip-types scripts/skills/edge-lab.ts ---
+[PASS] folioEngine/folio-cierre-frontera-redondeo-dentro: OK: allowed = true
+[PASS] folioEngine/folio-cierre-frontera-redondeo-fuera: OK: allowed = false
+[PASS] folioEngine/folio-cargo-negativo-rechazado: OK: computeChargeAmounts(-100) lanzó "netAmount de un cargo real no puede ser negativo (usa descuento/reverso para montos negativos)."
+[PASS] folioEngine/folio-propina-nunca-lleva-impuesto: OK: taxAmount = 0
+[PASS] folioEngine/folio-descuento-frontera-umbral-exacto: OK: allowed = true
+[PASS] folioEngine/folio-descuento-un-centavo-sobre-umbral-sin-autorizacion: OK: allowed = false
+[PASS] folioEngine/folio-identidad-discrepancia-nunca-overridable-por-admin: OK: allowed = false
+[PASS] folioEngine/folio-identidad-ausencia-de-reclamo-si-overridable-por-admin: OK: allowed = true
+[PASS] fnbAllergyGuard/allergy-texto-libre-no-reconocido-se-trata-como-declarado: OK: allergyDeclared = true
+[PASS] fnbAllergyGuard/allergy-nota-vacia-no-declara: OK: allergyDeclared = false
+[PASS] fnbAllergyGuard/allergy-sin-confirmacion-cocina-nunca-asegura: OK: canAssureDishIsSafe = false
+[PASS] revenueEngineGate/revenue-shadow-a-autopilot-directo-bloqueado: OK: allowed = false
+[PASS] revenueEngineGate/revenue-variacion-frontera-exacta-15pct-permitida: OK: withinLimit = true
+[PASS] revenueEngineGate/revenue-variacion-un-centesimo-sobre-15pct-rechazada: OK: withinLimit = false
+[PASS] revenueEngineGate/revenue-demotion-siempre-permitida-sin-contexto: OK: allowed = true
+
+edge-lab OK: 15/15 escenario(s) de frontera pasaron.
+exit code: 0
+
+--- $ node --experimental-strip-types scripts/skills/pms-fixture-record.ts validate ---
+pms-fixture-record OK: 7 fixture(s) válido(s) en /private/tmp/wf-hoteles-req-agt-021/packages/mcp-servers/pms/fixtures: access_token.json, getCurrencySettings.json, getGuest.json, getRatePlans.json, getReservation.json, postCharge.json, postHousekeepingStatus.json
+exit code: 0
+
+--- $ node --experimental-strip-types scripts/skills/revenue-backtest.ts ---
+revenue-backtest: 8 ventana(s) walk-forward evaluada(s) (método contrafactual: misma_tarifa_periodo_anterior)
+  ingreso motor total:    1026100.00
+  ingreso baseline total: 963000.00
+  mejora:                 6.55%
+  ventanas ganadas:       7/8 (87.5%)
+  PASA (listo para promover shadow->propone->autopilot según REQ-REV-003): SÍ
+exit code: 0
+
+--- $ npx vitest run --config vitest.config.ts tests/unit/gob/focus-y-skills-existen.spec.ts tests/unit/gob/edge-lab.spec.ts tests/unit/gob/revenue-backtest-skill.spec.ts tests/unit/gob/pms-fixture-record.spec.ts ---
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-req-agt-021[39m
+
+ [32m✓[39m tests/unit/gob/revenue-backtest-skill.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/gob/edge-lab.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/gob/focus-y-skills-existen.spec.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 714[2mms[22m[39m
+   [33m[2m✓[22m[39m checkSkills contra el repo real (sin overrides)[2m > [22mlas 3 skills requeridas por BP-138 existen en .claude/skills/ y su comando real corre sin error [33m 700[2mms[22m[39m
+pms-fixture-record: 0 fixtures en /var/folders/l3/czqfpdq5057__w_l5dxpp5pc0000gn/T/pms-fixture-record-v6pXd0 -- corre "record" primero.
+ [32m✓[39m tests/unit/gob/pms-fixture-record.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 1260[2mms[22m[39m
+   [33m[2m✓[22m[39m pms-fixture-record CLI: record -> validate -> list de punta a punta (real, sin mocks)[2m > [22mrecord levanta CloudbedsSimulator real, graba fixtures válidos, y validate/list los leen correctamente [33m 1019[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m29 passed[39m[22m[90m (29)[39m
+[2m   Start at [22m 22:13:40
+[2m   Duration [22m 2.08s[2m (transform 284ms, setup 0ms, collect 662ms, tests 1.98s, environment 1ms, prepare 781ms)[22m
+
+exit code: 0
+
+--- $ npm run typecheck ---
+
+> atiende-hoteles@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json && tsc --noEmit -p apps/api/tsconfig.json
+
+exit code: 0
+
+--- $ npx eslint scripts/skills/ scripts/checks/focus-y-skills-existen.ts tests/unit/gob/*.spec.ts (nuevos) ---
+exit code: 0 (sin salida arriba = limpio)
+
+--- $ npm run test:unit (suite completa, corrida por separado, resumen) ---
+Test Files  118 passed (118)
+Tests  1352 passed | 1 skipped (1353)
+Duration  211.14s
+(corrida completa capturada en esta sesion; sin fallas nuevas ni relacionadas con este cambio -- el unico "skipped" es preexistente, ver REQ-AGT-013/otros logs de auditoria previos)

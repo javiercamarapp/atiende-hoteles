@@ -1,0 +1,127 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-desenmascarado-de-tel-fono-de-hu-sped-proveniente-[39m
+
+ [32m✓[39m tests/adversarial/auditoria-2-lote-a-seguridad-legal.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 8414[2mms[22m[39m
+   [33m[2m✓[22m[39m auditoria-2 lote A: seguridad multi-tenant + legal/privacidad[2m > [22m[S1/D1 CRÍTICO] checkin_link ya no puede secuestrar la reserva de otro hotel[2m > [22memitir un checkin-link para una reservationId de OTRO hotel es rechazado (404, defensa de app) y nunca corrompe al guest ajeno [33m 339[2mms[22m[39m
+   [33m[2m✓[22m[39m auditoria-2 lote A: seguridad multi-tenant + legal/privacidad[2m > [22m[D2 ALTO] reservation.guest_id ya no puede apuntar a un guest de otro hotel[2m > [22mborrar un guest sigue desvinculando (SET NULL) solo guest_id, nunca hotel_id, de sus reservas propias [33m 364[2mms[22m[39m
+   [33m[2m✓[22m[39m auditoria-2 lote A: seguridad multi-tenant + legal/privacidad[2m > [22m[S4 CRÍTICO] sat_filing_approval no puede forjarse desde otro hotel (FK compuesta)[2m > [22mun owner con doble membresía (Hotel C + accountant en Hotel B) no puede insertar una aprobación de Hotel C para una obligación de Hotel B [33m 579[2mms[22m[39m
+   [33m[2m✓[22m[39m auditoria-2 lote A: seguridad multi-tenant + legal/privacidad[2m > [22m[ALTO] set_identity_checkout valida el hotel real de la reserva[2m > [22mun actor de OTRO hotel no puede adelantar el reloj de retención de una reserva ajena [33m 444[2mms[22m[39m
+   [33m[2m✓[22m[39m auditoria-2 lote A: seguridad multi-tenant + legal/privacidad[2m > [22m[D3 CRÍTICO] un folio cerrado ya no admite un cargo colado por una carrera cargo-vs-cierre[2m > [22m10 repeticiones: cargo + cierre saldo_cero en paralelo NUNCA dejan un folio 'cerrado' con un cargo sin cuadrar [33m 2236[2mms[22m[39m
+(node:40749) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ [32m✓[39m tests/adversarial/prompt-injection.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 3086[2mms[22m[39m
+ [32m✓[39m tests/adversarial/opt-in-marketing.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 3495[2mms[22m[39m
+ [32m✓[39m tests/adversarial/roi-sin-linea-base.spec.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 4802[2mms[22m[39m
+ [32m✓[39m tests/adversarial/boveda-identidad.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 7577[2mms[22m[39m
+ [32m✓[39m tests/integration/crm/clasificacion-tematica.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 5485[2mms[22m[39m
+   [33m[2m✓[22m[39m clasificación temática de reseñas (REQ-CRM-002)[2m > [22mun tema local nuevo (nunca antes en ningún diccionario) se clasifica y dispara la acción correspondiente [33m 745[2mms[22m[39m
+ [32m✓[39m tests/integration/agent-core/journey-checkin-incidencia.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 3204[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/lista-espera.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 3738[2mms[22m[39m
+   [33m[2m✓[22m[39m lista de espera automática (REQ-RES-006, embedded-postgres real)[2m > [22mal cancelar una reserva con lista de espera activa, se oferta automáticamente al PRIMER contacto FIFO, al precio directo (mismo neto que la reserva cancelada) — nunca al segundo [33m 336[2mms[22m[39m
+ [32m✓[39m tests/integration/contracts/whatsapp/aprobaciones-boton.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 3632[2mms[22m[39m
+ [32m✓[39m tests/integration/contracts/cfdi/hospedaje.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 3648[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-BO-001 · contrato de CFDI de hospedaje (7 casos)[2m > [22m6) anticipo: un CFDI puede relacionarse con uno previo (tipo de relación 07, registrado en related_cfdi_id) [33m 323[2mms[22m[39m
+ [32m✓[39m tests/integration/api/mensajeria.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 3353[2mms[22m[39m
+ [32m✓[39m tests/adversarial/consent-ledger.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 3629[2mms[22m[39m
+ [32m✓[39m tests/adversarial/consentimiento-biometrico.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 4763[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-HUE-022/REQ-SEG-003: consentimiento diferenciado de dato biométrico en check-in online[2m > [22mcontrol positivo: la búsqueda SÍ encuentra un valor real persistido (RFC legítimo en checkin_submission) -- confirma que el mecanismo de búsqueda funciona, para que un '0' más abajo no sea un falso negativo por una query rota [33m 501[2mms[22m[39m
+ [32m✓[39m tests/integration/api/email-outbox-handlers.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 3471[2mms[22m[39m
+ [32m✓[39m tests/integration/revenue/night-audit.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 3350[2mms[22m[39m
+ [32m✓[39m tests/integration/api/reservas-y-folios.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 3454[2mms[22m[39m
+ [32m✓[39m tests/integration/ota/contacto-enmascarado.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 2846[2mms[22m[39m
+   [33m[2m✓[22m[39m adversarial+integración: REQ-RES-018 -- contacto de huésped enmascarado por OTA[2m > [22m(e) NEGATIVO: checkin-link-ota rechaza una reserva que aún no está marcada enmascarada [33m 343[2mms[22m[39m
+ [32m✓[39m tests/adversarial/rpc-security-definer.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 3537[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/atribucion-canal.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 4073[2mms[22m[39m
+ [32m✓[39m tests/adversarial/registro-huespedes-migratorio.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 3215[2mms[22m[39m
+ [32m✓[39m tests/integration/api/consentimiento.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 3390[2mms[22m[39m
+ [32m✓[39m tests/integration/checkin-online.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 5232[2mms[22m[39m
+ [32m✓[39m tests/integration/folio/split-transferencia-cierre.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 5323[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/cancelacion-libera-inventario.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 4448[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/no-show-idempotente.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 2808[2mms[22m[39m
+ [32m✓[39m tests/integration/idempotency-ttl.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 4082[2mms[22m[39m
+ [32m✓[39m tests/adversarial/checkin-chat-libre.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 11219[2mms[22m[39m
+   [33m[2m✓[22m[39m adversarial: check-in por chat libre es rechazado y redirigido (REQ-RES-016)[2m > [22mun mensaje que parece traer datos de check-in dispara una redirección al flujo estructurado [33m 314[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/folio-al-confirmar.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 11906[2mms[22m[39m
+   [33m[2m✓[22m[39m el folio se crea al confirmar la reserva, alcanzable SIN el cliente admin (auditoría-1 ALTO)[2m > [22mconfirmar una reserva crea su folio (sin insertarlo por el cliente admin) y GET de la reserva expone folioId [33m 799[2mms[22m[39m
+ [32m✓[39m tests/adversarial/idempotencia-concurrente.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 12453[2mms[22m[39m
+   [33m[2m✓[22m[39m adversarial: Idempotency-Key idéntica en requests CONCURRENTES (auditoría-1/pruebas)[2m > [22mdos POST /reservas concurrentes con la MISMA Idempotency-Key crean una sola reserva (una gana, la otra recibe la MISMA respuesta) [33m 484[2mms[22m[39m
+ [32m✓[39m tests/adversarial/cancelacion-identidad.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 12110[2mms[22m[39m
+   [33m[2m✓[22m[39m adversarial: cancelación pública exige código de reserva + apellido correctos (REQ-RES-005)[2m > [22mcódigo correcto + apellido incorrecto → 0 cancelaciones ejecutadas (rechazada) [33m 489[2mms[22m[39m
+   [33m[2m✓[22m[39m adversarial: cancelación pública exige código de reserva + apellido correctos (REQ-RES-005)[2m > [22mcódigo incorrecto + apellido correcto → 0 cancelaciones ejecutadas (rechazada, no revela cuál dato falló) [33m 622[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/modificacion-concurrencia.spec.ts [2m([22m[2m1 test[22m[2m)[22m[33m 25564[2mms[22m[39m
+   [33m[2m✓[22m[39m modificación de fechas bajo concurrencia real (embedded-postgres)[2m > [22mdos modificaciones concurrentes a la misma noche: exactamente una 200, la otra 409, sin sobreventa [33m 5362[2mms[22m[39m
+ [31m❯[39m tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts [2m([22m[2m4 tests[22m[2m | [22m[33m4 skipped[39m[2m)[22m[33m 30010[2mms[22m[39m
+   [2m[90m↓[39m[22m adversarial: tarifas restringidas por rol + aislamiento de reservas entre hoteles[2m > [22mfrontdesk (recepción) NO puede modificar una tarifa (403), gm SÍ puede
+   [2m[90m↓[39m[22m adversarial: tarifas restringidas por rol + aislamiento de reservas entre hoteles[2m > [22mfrontdesk NO puede cambiar impuestos (IVA/ISH) ni la política de cancelación del hotel (403)
+   [2m[90m↓[39m[22m adversarial: tarifas restringidas por rol + aislamiento de reservas entre hoteles[2m > [22mstaff de hotel B NO puede leer las reservas de hotel A (403, ninguna fila expuesta)
+   [2m[90m↓[39m[22m adversarial: tarifas restringidas por rol + aislamiento de reservas entre hoteles[2m > [22mstaff de hotel B tampoco puede leer una reserva puntual de hotel A por id (403)
+ [31m❯[39m tests/integration/api/recepcion.spec.ts [2m([22m[2m3 tests[22m[2m | [22m[33m3 skipped[39m[2m)[22m[33m 30009[2mms[22m[39m
+   [2m[90m↓[39m[22m GET /hoteles/:hotelId/recepcion (auditoria-2/frontend)[2m > [22msin ningún movimiento de check-in/check-out todavía: [] honesto (nunca un error)
+   [2m[90m↓[39m[22m GET /hoteles/:hotelId/recepcion (auditoria-2/frontend)[2m > [22mrefleja check-in y check-out reales una vez que la reserva transiciona (sin PMS)
+   [2m[90m↓[39m[22m GET /hoteles/:hotelId/recepcion (auditoria-2/frontend)[2m > [22mrequiere ser miembro del hotel (mismo criterio que /reservas)
+ [32m✓[39m tests/adversarial/reservas-aislamiento.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 19964[2mms[22m[39m
+   [33m[2m✓[22m[39m adversarial: aislamiento de reservas entre hoteles[2m > [22mstaff del hotel B no puede leer la reserva del hotel A ni por su id directo (403) [33m 372[2mms[22m[39m
+   [33m[2m✓[22m[39m adversarial: aislamiento de reservas entre hoteles[2m > [22mel header X-Hotel-Id no permite cruzar hacia el hotel ajeno (403 antes de llegar a la reserva) [33m 524[2mms[22m[39m
+ [32m✓[39m tests/integration/api/reservas-carga-concurrente.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 17381[2mms[22m[39m
+   [33m[2m✓[22m[39m rendimiento: GET /reservas bajo concurrencia no agota el pool (una sola sesión de BD por request)[2m > [22m50 GET /hoteles/:hotelId/reservas concurrentes: 0 fallos, p95 < 500ms [33m 403[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts[2m > [22madversarial: tarifas restringidas por rol + aislamiento de reservas entre hoteles
+[31m[1mError[22m: Hook timed out in 30000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".[39m
+[36m [2m❯[22m tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts:[2m26:3[22m[39m
+    [90m 24| [39m  [35mlet[39m fixture[33m:[39m [33mApiFixture[39m[33m;[39m
+    [90m 25| [39m
+    [90m 26| [39m  [34mbeforeAll[39m([35masync[39m () [33m=>[39m {
+    [90m   | [39m  [31m^[39m
+    [90m 27| [39m    fixture [33m=[39m [35mawait[39m [34mcreateApiFixture[39m()[33m;[39m
+    [90m 28| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts[2m > [22madversarial: tarifas restringidas por rol + aislamiento de reservas entre hoteles
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'engine')[39m
+[36m [2m❯[22m destroyApiFixture tests/support/api-fixture.ts:[2m39:17[22m[39m
+    [90m 37| [39m
+    [90m 38| [39mexport async function destroyApiFixture(fixture: ApiFixture): Promise<…
+    [90m 39| [39m  [35mawait[39m fixture[33m.[39mengine[33m.[39m[34mstop[39m()[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m 40| [39m}
+    [90m 41| [39m
+[90m [2m❯[22m tests/adversarial/tarifas-y-aislamiento-reservas.spec.ts:[2m31:11[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/integration/api/recepcion.spec.ts[2m > [22mGET /hoteles/:hotelId/recepcion (auditoria-2/frontend)
+[31m[1mError[22m: Hook timed out in 30000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".[39m
+[36m [2m❯[22m tests/integration/api/recepcion.spec.ts:[2m26:3[22m[39m
+    [90m 24| [39m  [35mlet[39m roomTypeId[33m:[39m string[33m;[39m
+    [90m 25| [39m
+    [90m 26| [39m  [34mbeforeAll[39m([35masync[39m () [33m=>[39m {
+    [90m   | [39m  [31m^[39m
+    [90m 27| [39m    fixture [33m=[39m [35mawait[39m [34mcreateApiFixture[39m()[33m;[39m
+    [90m 28| [39m    [35mconst[39m hotelA [33m=[39m fixture[33m.[39mseed[33m.[39mhotels[[34m0[39m][33m![39m[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/integration/api/recepcion.spec.ts[2m > [22mGET /hoteles/:hotelId/recepcion (auditoria-2/frontend)
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'engine')[39m
+[36m [2m❯[22m destroyApiFixture tests/support/api-fixture.ts:[2m39:17[22m[39m
+    [90m 37| [39m
+    [90m 38| [39mexport async function destroyApiFixture(fixture: ApiFixture): Promise<…
+    [90m 39| [39m  [35mawait[39m fixture[33m.[39mengine[33m.[39m[34mstop[39m()[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m 40| [39m}
+    [90m 41| [39m
+[90m [2m❯[22m tests/integration/api/recepcion.spec.ts:[2m35:11[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m33 passed[39m[22m[90m (35)[39m
+[2m      Tests [22m [1m[32m201 passed[39m[22m[2m | [22m[33m7 skipped[39m[90m (208)[39m
+[2m   Start at [22m 23:35:54
+[2m   Duration [22m 294.09s[2m (transform 2.15s, setup 0ms, collect 13.94s, tests 278.67s, environment 0ms, prepare 80ms)[22m
+

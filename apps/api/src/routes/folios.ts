@@ -101,7 +101,7 @@ interface PaymentRow {
   external_ref: string | null;
   created_at: string;
 }
-interface FolioRow {
+export interface FolioRow {
   id: string;
   status: string;
   reservation_id: string;
@@ -111,7 +111,7 @@ interface FolioRow {
   close_reason: string | null;
 }
 
-async function loadFolio(db: DbClient, hotelId: string, folioId: string): Promise<FolioRow> {
+export async function loadFolio(db: DbClient, hotelId: string, folioId: string): Promise<FolioRow> {
   const { rows } = await db.query<FolioRow>(
     `select id, status, reservation_id, label, is_primary, closed_at::text as closed_at, close_reason
      from public.folio where id = $1 and hotel_id = $2;`,
@@ -193,7 +193,7 @@ function serializeFolio(folio: FolioRow, charges: ChargeRow[], payments: Payment
  *  de cortesía/interno). Se extrae el "apellido" de forma simple (última palabra de
  *  `full_name`) porque `guest` no separa nombre/apellido en columnas -- documentado
  *  aquí para que quien lo lea no asuma que hay parsing más sofisticado. */
-async function loadFolioGuestIdentity(
+export async function loadFolioGuestIdentity(
   db: DbClient,
   folio: FolioRow,
 ): Promise<{ lastName: string | null; phoneLast4: string | null }> {
@@ -213,12 +213,143 @@ async function loadFolioGuestIdentity(
   return { lastName, phoneLast4 };
 }
 
-async function isAdminStaff(db: DbClient, hotelId: string, userId: string): Promise<boolean> {
+export async function isAdminStaff(db: DbClient, hotelId: string, userId: string): Promise<boolean> {
   const { rows } = await db.query<{ role: string }>(
     "select role from public.hotel_staff where hotel_id = $1 and user_id = $2;",
     [hotelId, userId],
   );
   return rows.length > 0 && (ADMIN_ROLES as string[]).includes(rows[0]!.role);
+}
+
+export interface RoomServiceIdentityClaimInput {
+  readonly apellido: string;
+  readonly telefonoUlt4: string;
+}
+
+export interface CreateRoomServiceChargeInput {
+  readonly db: DbClient;
+  readonly orgId: string;
+  readonly hotelId: string;
+  readonly folio: FolioRow;
+  readonly descripcion: string;
+  readonly monto: number;
+  readonly concepto: ChargeConcept;
+  readonly impuestoDeclarado?: number | null;
+  readonly actorHasAdminRole: boolean;
+  readonly verificacionIdentidad?: RoomServiceIdentityClaimInput | null;
+  readonly autorizacionIdentidadPorUserId?: string | null;
+  /** JSON exacto a persistir en `record_audit_log` -- cada llamador decide qué forma
+   *  tiene (la ruta HTTP normal audita el body completo de la solicitud; la cola
+   *  offline de F&B, REQ-AB-003, audita su propio ítem con `viaOfflineQueue: true`). */
+  readonly auditPayload: unknown;
+}
+
+/** Núcleo (sin I/O de HTTP) de "postear un cargo de consumo/servicio a un folio":
+ *  verificación de identidad de REQ-AB-012 (por el CONCEPTO REAL, ver
+ *  `assertRoomChargeIdentityVerified`) + cálculo determinista de impuesto + inserción
+ *  + bitácora de auditoría. Extraído para que la ruta HTTP normal
+ *  (`POST /folios/:folioId/cargos`) y la cola offline de F&B (REQ-AB-003,
+ *  `fnbOfflineQueue.ts`) apliquen EXACTAMENTE la misma regla -- nunca una segunda
+ *  implementación que pudiera divergir (la lección de los dos intentos fallidos de
+ *  REQ-AB-012, ver `folioEngine.ts`). No verifica el estado del folio (abierto/cerrado):
+ *  cada llamador ya lo hizo con su propio mensaje de error antes de invocar esto. */
+export async function createRoomServiceCharge(
+  input: CreateRoomServiceChargeInput,
+): Promise<{ id: string; concepto: ChargeConcept; monto: number; impuesto: number }> {
+  const { db, orgId, hotelId, folio, descripcion, monto, concepto } = input;
+
+  if (ROOM_CHARGE_CONCEPTS_REQUIRING_IDENTITY.has(concepto)) {
+    const guest = await loadFolioGuestIdentity(db, folio);
+    const authorizedByAdmin = input.autorizacionIdentidadPorUserId
+      ? await isAdminStaff(db, hotelId, input.autorizacionIdentidadPorUserId)
+      : false;
+    const verification = assertRoomChargeIdentityVerified({
+      concept: concepto,
+      claim: input.verificacionIdentidad
+        ? { declaredLastName: input.verificacionIdentidad.apellido, declaredPhoneLast4: input.verificacionIdentidad.telefonoUlt4 }
+        : null,
+      guestLastName: guest.lastName,
+      guestPhoneLast4: guest.phoneLast4,
+      actorHasAdminRole: input.actorHasAdminRole,
+      authorizedByAdminUserId: authorizedByAdmin ? input.autorizacionIdentidadPorUserId : null,
+    });
+    if (!verification.allowed) throw Errors.forbidden(verification.reason);
+  }
+
+  const taxConfig = await loadHotelMoneyConfig(db, hotelId);
+  const calc = computeChargeAmounts({ concept: concepto, netAmount: monto, taxConfig });
+  if (input.impuestoDeclarado != null && Math.abs(input.impuestoDeclarado - calc.taxAmount) > 0.01) {
+    throw Errors.impuestoNoCoincide(calc.taxAmount, input.impuestoDeclarado);
+  }
+
+  const { rows } = await db.query<{ id: string }>(
+    `insert into public.charge (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept)
+     values ($1, $2, $3, $4, $5, $6, $7)
+     returning id;`,
+    [orgId, hotelId, folio.id, descripcion, calc.netAmount, calc.taxAmount, concepto],
+  );
+  await db.query(
+    "select public.record_audit_log($1, $2, 'charge.created', 'charge', $3, $4);",
+    [orgId, hotelId, rows[0]!.id, JSON.stringify(input.auditPayload)],
+  );
+  return { id: rows[0]!.id, concepto, monto: calc.netAmount, impuesto: calc.taxAmount };
+}
+
+export interface ReverseChargeInput {
+  readonly db: DbClient;
+  readonly orgId: string;
+  readonly hotelId: string;
+  readonly folioId: string;
+  readonly chargeId: string;
+  readonly motivo: string;
+}
+
+/** Núcleo (sin I/O de HTTP) de "reversar un cargo" (REQ-REC-004): nunca borra la fila
+ *  original, inserta una nueva de signo contrario y marca el origen vía
+ *  `mark_charge_reversed()`. Extraído del handler de
+ *  `POST /folios/:folioId/cargos/:chargeId/reverso` para que la cola offline de F&B
+ *  (REQ-AB-003) reutilice EXACTAMENTE esta misma función para su caso 'reverso', en
+ *  vez de una segunda implementación que pudiera divergir. No verifica el estado del
+ *  folio: cada llamador ya lo hizo con su propio mensaje de error antes de invocar
+ *  esto. */
+export async function reverseCharge(input: ReverseChargeInput): Promise<{ reversalId: string; reversedChargeId: string }> {
+  const { db, orgId, hotelId, folioId, chargeId, motivo } = input;
+
+  const { rows: originalRows } = await db.query<ChargeRow>(
+    `select id, description, amount, tax_amount, concept, reversed_by, reverses_charge_id,
+            transferred_from_charge_id, created_at
+     from public.charge where id = $1 and folio_id = $2;`,
+    [chargeId, folioId],
+  );
+  const original = originalRows[0];
+  if (!original) throw Errors.notFound("Cargo no encontrado en este folio.");
+  if (original.reversed_by) throw Errors.conflict("Este cargo ya fue reversado anteriormente.");
+  if (original.concept === "reverso") throw Errors.conflict("No se puede reversar un reverso.");
+
+  const { rows: reversalRows } = await db.query<{ id: string }>(
+    `insert into public.charge
+       (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, reverses_charge_id)
+     values ($1, $2, $3, $4, $5, $6, 'reverso', $7)
+     returning id;`,
+    [
+      orgId,
+      hotelId,
+      folioId,
+      `Reverso: ${original.description} (${motivo})`,
+      -Number(original.amount),
+      -Number(original.tax_amount),
+      original.id,
+    ],
+  );
+  const reversalId = reversalRows[0]!.id;
+
+  await db.query("select public.mark_charge_reversed($1, $2);", [original.id, reversalId]);
+  await db.query(
+    "select public.record_audit_log($1, $2, 'charge.reversed', 'charge', $3, $4);",
+    [orgId, hotelId, original.id, JSON.stringify({ reversalId, motivo })],
+  );
+
+  return { reversalId, reversedChargeId: original.id };
 }
 
 export function foliosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
@@ -290,49 +421,23 @@ export function foliosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
         // condicionada a que el cliente haya elegido declararla -- ver el comentario
         // de assertRoomChargeIdentityVerified sobre los dos intentos previos que
         // fallaron por depender del valor de `concepto` para decidir si aplicar el
-        // control.
-        if (ROOM_CHARGE_CONCEPTS_REQUIRING_IDENTITY.has(body.concepto)) {
-          const guest = await loadFolioGuestIdentity(db, folio);
-          const authorizedByAdmin = body.autorizacionIdentidadPorUserId
-            ? await isAdminStaff(db, hotelId, body.autorizacionIdentidadPorUserId)
-            : false;
-          const verification = assertRoomChargeIdentityVerified({
-            concept: body.concepto,
-            claim: body.verificacionIdentidad
-              ? { declaredLastName: body.verificacionIdentidad.apellido, declaredPhoneLast4: body.verificacionIdentidad.telefonoUlt4 }
-              : null,
-            guestLastName: guest.lastName,
-            guestPhoneLast4: guest.phoneLast4,
-            actorHasAdminRole: (ADMIN_ROLES as string[]).includes(role),
-            authorizedByAdminUserId: authorizedByAdmin ? body.autorizacionIdentidadPorUserId : null,
-          });
-          if (!verification.allowed) throw Errors.forbidden(verification.reason);
-        }
-
-        const taxConfig = await loadHotelMoneyConfig(db, hotelId);
-        // F1/REQ-BO-001: el impuesto SIEMPRE lo calcula el motor determinista desde
-        // `hotel_tax_config` -- un cliente (incluido un rol de dinero como frontdesk)
-        // JAMÁS puede fijarlo. Si igual lo manda (compatibilidad con integraciones que
-        // ya lo calcularon aguas arriba), se exige que coincida EXACTO (tolerancia de
-        // un centavo por redondeo) con lo calculado aquí; si no coincide, 422 -- nunca
-        // se usa en silencio el valor del cliente sobre el calculado.
-        const calc = computeChargeAmounts({ concept: body.concepto, netAmount: body.monto, taxConfig });
-        if (body.impuesto != null && Math.abs(body.impuesto - calc.taxAmount) > 0.01) {
-          throw Errors.impuestoNoCoincide(calc.taxAmount, body.impuesto);
-        }
-        const taxAmount = calc.taxAmount;
-
-        const { rows } = await db.query<{ id: string }>(
-          `insert into public.charge (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept)
-           values ($1, $2, $3, $4, $5, $6, $7)
-           returning id;`,
-          [orgId, hotelId, folioId, body.descripcion, calc.netAmount, taxAmount, body.concepto],
-        );
-        await db.query(
-          "select public.record_audit_log($1, $2, 'charge.created', 'charge', $3, $4);",
-          [orgId, hotelId, rows[0]!.id, JSON.stringify(body)],
-        );
-        return { status: 201, body: { id: rows[0]!.id, concepto: body.concepto, monto: calc.netAmount, impuesto: taxAmount } };
+        // control. Núcleo compartido con la cola offline de F&B (REQ-AB-003), ver
+        // `createRoomServiceCharge`.
+        const created = await createRoomServiceCharge({
+          db,
+          orgId,
+          hotelId,
+          folio,
+          descripcion: body.descripcion,
+          monto: body.monto,
+          concepto: body.concepto,
+          impuestoDeclarado: body.impuesto,
+          actorHasAdminRole: (ADMIN_ROLES as string[]).includes(role),
+          verificacionIdentidad: body.verificacionIdentidad,
+          autorizacionIdentidadPorUserId: body.autorizacionIdentidadPorUserId,
+          auditPayload: body,
+        });
+        return { status: 201, body: created };
       },
     );
 
@@ -415,41 +520,8 @@ export function foliosRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings> {
       db,
       { tenantId: orgId, scope: "charge.reverse", key: idempotencyKey, body: { chargeId, ...body } },
       async () => {
-        const { rows: originalRows } = await db.query<ChargeRow>(
-          `select id, description, amount, tax_amount, concept, reversed_by, reverses_charge_id,
-                  transferred_from_charge_id, created_at
-           from public.charge where id = $1 and folio_id = $2;`,
-          [chargeId, folioId],
-        );
-        const original = originalRows[0];
-        if (!original) throw Errors.notFound("Cargo no encontrado en este folio.");
-        if (original.reversed_by) throw Errors.conflict("Este cargo ya fue reversado anteriormente.");
-        if (original.concept === "reverso") throw Errors.conflict("No se puede reversar un reverso.");
-
-        const { rows: reversalRows } = await db.query<{ id: string }>(
-          `insert into public.charge
-             (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, reverses_charge_id)
-           values ($1, $2, $3, $4, $5, $6, 'reverso', $7)
-           returning id;`,
-          [
-            orgId,
-            hotelId,
-            folioId,
-            `Reverso: ${original.description} (${body.motivo})`,
-            -Number(original.amount),
-            -Number(original.tax_amount),
-            original.id,
-          ],
-        );
-        const reversalId = reversalRows[0]!.id;
-
-        await db.query("select public.mark_charge_reversed($1, $2);", [original.id, reversalId]);
-        await db.query(
-          "select public.record_audit_log($1, $2, 'charge.reversed', 'charge', $3, $4);",
-          [orgId, hotelId, original.id, JSON.stringify({ reversalId, motivo: body.motivo })],
-        );
-
-        return { status: 201, body: { id: reversalId, reversaDe: original.id } };
+        const { reversalId, reversedChargeId } = await reverseCharge({ db, orgId, hotelId, folioId, chargeId, motivo: body.motivo });
+        return { status: 201, body: { id: reversalId, reversaDe: reversedChargeId } };
       },
     );
 

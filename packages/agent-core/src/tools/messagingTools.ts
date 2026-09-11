@@ -136,6 +136,57 @@ export async function isMarketingSendBlocked(params: MarketingOptInGateParams): 
   return !(optInRows[0]?.granted ?? false);
 }
 
+// REQ-RES-018: "sin contactar antes por un canal ajeno a la plataforma de la OTA" --
+// error gemelo de `MarketingOptInRequiredError` (mismo criterio: identificable por
+// prefijo, para que CUALQUIER capa que llame a `tool.run()` lo mapee al mismo 409, sin
+// filtrar detalle interno).
+export class OtaContactoEnmascaradoError extends Error {
+  constructor(public readonly guestPhone: string) {
+    super(
+      `contacto_enmascarado_por_ota: ${guestPhone} pertenece a una reserva cuyo contacto sigue siendo el relay ` +
+        `enmascarado de una OTA -- no puede contactarse por WhatsApp (canal ajeno a la OTA) hasta que el huésped ` +
+        `comparta su contacto real (típicamente al completar el check-in online, ver REQ-RES-018).`,
+    );
+    this.name = "OtaContactoEnmascaradoError";
+  }
+}
+
+export interface OtaMaskedContactGateParams {
+  readonly db: SqlClient;
+  readonly hotelId: string;
+  readonly guestPhone: string;
+}
+
+/**
+ * REQ-RES-018: determina si ESTE envío de WhatsApp está bloqueado porque el destinatario
+ * es hoy el relay enmascarado de una OTA, no el huésped real. Equivalente exacto (mismo
+ * criterio, sin poder importar `@atiende-hoteles/domain-hotel` -- agent-core es núcleo
+ * puro sin esa dependencia, ver comentario de `getMarketingTemplateBody`) de
+ * `esContactoEnmascaradoPorOta()`/`packages/domain-hotel/src/reservas/
+ * contactoOtaEnmascarado.ts`: `channel != 'directo'` Y `guest_contact_masked_by_ota =
+ * true` para ALGUNA reserva del huésped dueño de `guestPhone` en este hotel. Sin ningún
+ * huésped identificable por ese teléfono, o sin ninguna reserva enmascarada, el envío NO
+ * se bloquea por este motivo (deny únicamente cuando el dato positivamente lo confirma --
+ * a diferencia del opt-in de marketing, aquí "no encontrado" no es el caso peligroso: un
+ * teléfono que no pertenece a ninguna reserva enmascarada es, por definición, un contacto
+ * directo real u otro huésped, nunca el relay de una OTA).
+ */
+export async function isGuestContactMaskedByOta(params: OtaMaskedContactGateParams): Promise<boolean> {
+  const { rows } = await params.db.query<{ masked: boolean }>(
+    `select exists (
+       select 1
+       from public.reservation r
+       join public.guest g on g.id = r.guest_id
+       where r.hotel_id = $1
+         and g.phone = $2
+         and r.channel <> 'directo'
+         and r.guest_contact_masked_by_ota = true
+     ) as masked;`,
+    [params.hotelId, params.guestPhone],
+  );
+  return rows[0]?.masked ?? false;
+}
+
 export interface MarketingTemplateBodyParams {
   readonly db: SqlClient;
   readonly hotelId: string;
@@ -183,6 +234,15 @@ export function createSendWhatsappTemplateTool(deps: MessagingToolDeps): ToolDef
     effect: "external",
     needsApproval: true,
     run: async (ctx, input) => {
+      // REQ-RES-018: gate de contacto-enmascarado-por-OTA ANTES que cualquier otra cosa
+      // (incluido el gate de opt-in de abajo) -- ni una fila en `conversation`/`message`
+      // ni una llamada a `deps.messaging.sendTemplateMessage` mientras el destinatario
+      // siga siendo el relay de una OTA, sin importar qué capa haya invocado esta tool
+      // (ruta directa, AgentRunner, o ejecución diferida de una aprobación).
+      if (await isGuestContactMaskedByOta({ db: deps.db, hotelId: ctx.hotelId, guestPhone: input.guestPhone })) {
+        throw new OtaContactoEnmascaradoError(input.guestPhone);
+      }
+
       // REQ-HUE-021/REQ-SEG-007: gate de opt-in ANTES de tocar `conversation`/`message`
       // o llamar al adaptador de mensajería -- ningún envío de marketing sin opt-in dara
       // como resultado NI UNA fila en `message` ni una llamada a

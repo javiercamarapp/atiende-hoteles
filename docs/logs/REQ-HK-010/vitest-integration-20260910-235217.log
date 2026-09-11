@@ -1,0 +1,16 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-reporte-diario-de-housekeeping-al-gerente[39m
+
+ [32m✓[39m tests/integration/housekeeping/reporte-diario.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 6708[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-HK-010: reporte diario de housekeeping al gerente (integración real)[2m > [22mconfigura la hora objetivo del hotel vía PATCH /housekeeping/config (solo owner/gm) [33m 318[2mms[22m[39m
+ [32m✓[39m tests/integration/api/housekeeping-mantenimiento.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 7573[2mms[22m[39m
+   [33m[2m✓[22m[39m apps/api: housekeeping + mantenimiento + aprobaciones (integración real)[2m > [22mcerrar-con-costo: requiere DOBLE confirmación de owner + gm, luego cierra el ticket y ejecuta la tool [33m 641[2mms[22m[39m
+   [33m[2m✓[22m[39m apps/api: housekeeping + mantenimiento + aprobaciones (integración real)[2m > [22mbackend ALTO/CRÍTICO: un segundo 'owner' NO puede completar la doble confirmación mintiendo su rol en el body -- el rol SIEMPRE sale de la sesión real (GOB-026) [33m 440[2mms[22m[39m
+   [33m[2m✓[22m[39m apps/api: housekeeping + mantenimiento + aprobaciones (integración real)[2m > [22mA2/CRÍTICO: bajar el agente a 'shadow' DESPUÉS de pedir la aprobación detiene la ejecución diferida (freno de emergencia real) [33m 342[2mms[22m[39m
+   [33m[2m✓[22m[39m apps/api: housekeeping + mantenimiento + aprobaciones (integración real)[2m > [22mA6 (auditoria-2 agentico ALTO): segundo aprobador delegado para hoteles de un solo administrador[2m > [22mowner designa a maintenance como delegado -> maintenance SÍ puede completar la segunda confirmación (rol real distinto, GOB-026 intacto) [33m 528[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m19 passed[39m[22m[90m (19)[39m
+[2m   Start at [22m 23:55:32
+[2m   Duration [22m 11.09s[2m (transform 2.03s, setup 0ms, collect 5.82s, tests 14.28s, environment 0ms, prepare 310ms)[22m
+

@@ -1,0 +1,13 @@
+
+ RUN  v3.2.7 /private/tmp/wf-hoteles-fix-ugc-docs
+
+ ✓ tests/integration/api/ugc.spec.ts (8 tests) 928ms
+ ✓ tests/adversarial/ugc-consentimiento.spec.ts (6 tests) 948ms
+ ✓ tests/unit/domain-hotel/ugc-content-calendar.spec.ts (8 tests) 1ms
+
+ Test Files  3 passed (3)
+      Tests  22 passed (22)
+   Start at  03:44:22
+   Duration  2.60s (transform 342ms, setup 0ms, collect 606ms, tests 1.88s, environment 0ms, prepare 25ms)
+
+exit: 0

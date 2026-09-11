@@ -1,0 +1,15 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-room-block-rfp-de-grupos[39m
+
+[90mstderr[2m | tests/integration/grupos/room-block.spec.ts[2m > [22m[2mciclo de vida del room block (REQ-RES-012, embedded-postgres real)
+[22m[39m{"level":"error","event":"db_pool_error","message":"terminating connection due to administrator command","pool_error_count":1,"timestamp":"2026-09-11T05:27:25.787Z"}
+
+ [32m✓[39m tests/integration/grupos/room-block.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 7838[2mms[22m[39m
+ [32m✓[39m tests/integration/grupos/cotizacion.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 9393[2mms[22m[39m
+   [33m[2m✓[22m[39m cotización de grupo / room block (REQ-RES-012, embedded-postgres real)[2m > [22mcaso positivo — alta ocupación (4/5 = 80% >= 70%): el precio de grupo NUNCA es igual al precio manual [33m 519[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 23:27:11
+[2m   Duration [22m 15.79s[2m (transform 3.41s, setup 0ms, collect 11.31s, tests 17.23s, environment 0ms, prepare 205ms)[22m
+
