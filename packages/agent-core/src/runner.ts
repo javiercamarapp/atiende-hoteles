@@ -17,7 +17,7 @@ import {
 } from "./provider.ts";
 import { ProviderUnavailableError } from "./errors.ts";
 import type { AgentGate } from "./roles.ts";
-import type { AgentTraceEvent, CostLedger } from "./trace.ts";
+import { computeSystemPromptVersion, type AgentTraceEvent, type CostLedger } from "./trace.ts";
 import { estimateCostUsd, type PricingTable } from "./pricing.ts";
 import { maskPhoneFieldsForApproval, redact } from "./redact.ts";
 
@@ -166,6 +166,10 @@ export class AgentRunner {
     const messages: LlmMessage[] = [{ role: "user", content: userMessage }];
     const pendingApprovalIds: string[] = [];
     const terminal = new Set(opts.terminalToolNames ?? []);
+    // REQ-AGT-007: la "regla/prompt que originó" la decisión es el `systemPrompt`
+    // vigente para ESTA corrida -- se hashea UNA sola vez por corrida (no cambia entre
+    // pasos) y se adjunta a cada `tool_call` de una tool económica más abajo.
+    const promptVersion = computeSystemPromptVersion(opts.systemPrompt);
 
     let activeProvider = opts.provider;
     let usedFallback = false;
@@ -499,11 +503,26 @@ export class AgentRunner {
         }
 
         const result = await tool.run(ctx, parsed.data);
+        // REQ-AGT-007: una decisión económica/legal de agente (`effect==="money"`, o una
+        // tool marcada `isPriceOrEmission` -- GOB-026, "precio/tarifa/emisión de cargo")
+        // debe quedar reconstruible SOLO desde este registro: qué se pidió (`toolInput`,
+        // el input real ya validado, redactado igual que ve el aprobador humano) y bajo
+        // qué regla (`promptVersion`, hash del `systemPrompt` vigente) -- sin estos dos
+        // campos, `message` (el resumen de la propia tool) es el único rastro, y no basta
+        // para responder "¿con qué datos exactos, bajo qué instrucciones del agente?" ni
+        // ante el huésped ni ante una autoridad. Se agregan SOLO para tools económicas
+        // (nunca en `read`/`write`/`external` sin valor económico, aud-1: minimizar lo
+        // que se persiste) y sin importar `result.ok` -- una decisión que NIEGA algo
+        // (p.ej. "no procede el reembolso") es tan trazable como una que sí ejecuta.
+        const esDecisionEconomicaOLegal = tool.effect === "money" || tool.isPriceOrEmission === true;
         this.emit(ctx, runId, step, "tool_call", {
           toolName: tool.name,
           effect: tool.effect,
           gate: opts.gate,
           message: redact(result.summary),
+          ...(esDecisionEconomicaOLegal
+            ? { toolInput: describeApprovalInput(parsed.data), promptVersion }
+            : {}),
         });
 
         // REQ-AGT-003 (H17-001/GOB-037): toda tool effect="money" que en verdad movio
