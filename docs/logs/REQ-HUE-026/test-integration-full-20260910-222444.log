@@ -1,0 +1,102 @@
+   [33m[2m✓[22m[39m REQ-AB-012: el bypass por concepto declarado queda cerrado (auditoría adversarial)[2m > [22mBYPASS ORIGINAL (concepto='extras', sin verificación, actor NO admin): ahora se rechaza con 403 [33m 861[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AB-012: el bypass por concepto declarado queda cerrado (auditoría adversarial)[2m > [22mBYPASS ORIGINAL (concepto omitido -> default 'otro'): también se rechaza [33m 1115[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AB-012: el bypass por concepto declarado queda cerrado (auditoría adversarial)[2m > [22mcon verificación de identidad que SÍ coincide con el huésped real, el cargo se acepta [33m 591[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-AB-012: el bypass por concepto declarado queda cerrado (auditoría adversarial)[2m > [22mun rol administrativo (gm/owner) SIN reclamo de identidad SÍ puede postear (override, folio sin discrepancia activa) [33m 635[2mms[22m[39m
+ [32m✓[39m tests/integration/cfdi/idempotencia-timbrado.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 12428[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-BO-002 · idempotencia de timbrado CFDI[2m > [22mmisma Idempotency-Key repetida devuelve exactamente la misma respuesta (mismo UUID) [33m 1000[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-BO-002 · idempotencia de timbrado CFDI[2m > [22mdos solicitudes de timbrado CONCURRENTES sobre el mismo folio: exactamente 1 fila en cfdi_emision [33m 300[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-BO-002 · idempotencia de timbrado CFDI[2m > [22mcancelar un CFDI ya cancelado se rechaza explícitamente (nunca se re-envía la cancelación al PAC en silencio) [33m 439[2mms[22m[39m
+ [32m✓[39m tests/integration/api/consentimiento.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 12406[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-HUE-024: consent ledger multi-país[2m > [22mPOST registra un consentimiento de marketing para un huésped MX, devolviendo la jurisdicción derivada [33m 562[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/no-show-idempotente.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 15963[2mms[22m[39m
+   [33m[2m✓[22m[39m job de no-show idempotente (REQ-RES-008)[2m > [22mprimera corrida: marca no_show, libera inventario y calcula el cargo (100% del total, política sembrada) [33m 1040[2mms[22m[39m
+   [33m[2m✓[22m[39m job de no-show idempotente (REQ-RES-008)[2m > [22mB1/CRÍTICO: dos disparos CONCURRENTES del mismo no-show (doble clic/reintento) postean UN SOLO cargo de penalización [33m 488[2mms[22m[39m
+   [33m[2m✓[22m[39m job de no-show idempotente (REQ-RES-008)[2m > [22mfrontdesk/reservations NO pueden disparar el job (solo owner/gm, ADMIN_ROLES) [33m 371[2mms[22m[39m
+ [32m✓[39m tests/integration/agent-core/postgres-approval-queue.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 31728[2mms[22m[39m
+   [33m[2m✓[22m[39m PostgresApprovalQueue (contrato ApprovalQueue)[2m > [22mrechaza que el mismo actor confirme dos veces una aprobacion de dinero [33m 784[2mms[22m[39m
+   [33m[2m✓[22m[39m PostgresApprovalQueue (contrato ApprovalQueue)[2m > [22mNO reusa la solicitud entre huespedes/folios distintos aunque tool+input+hotel coincidan (aud-1 tool-calling.md CRITICO #1: una aprobacion de un huesped no debe autorizar a otro) [33m 488[2mms[22m[39m
+   [33m[2m✓[22m[39m PostgresApprovalQueue (contrato ApprovalQueue)[2m > [22mno reusa la solicitud entre hoteles distintos (misma tool+input) [33m 868[2mms[22m[39m
+   [33m[2m✓[22m[39m PostgresApprovalQueue (persistencia real)[2m > [22msobrevive un reinicio del PROCESO: el estado vive en Postgres, no en el objeto JS [33m 11454[2mms[22m[39m
+ [32m✓[39m tests/integration/idempotency-ttl.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 9223[2mms[22m[39m
+ [32m✓[39m tests/integration/contracts/payments/stripe-adapter.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 269[2mms[22m[39m
+ [32m✓[39m tests/integration/contracts/payments/conekta-adapter.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 230[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/folio-al-confirmar.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 23947[2mms[22m[39m
+   [33m[2m✓[22m[39m el folio se crea al confirmar la reserva, alcanzable SIN el cliente admin (auditoría-1 ALTO)[2m > [22mconfirmar una reserva crea su folio (sin insertarlo por el cliente admin) y GET de la reserva expone folioId [33m 417[2mms[22m[39m
+   [33m[2m✓[22m[39m el folio se crea al confirmar la reserva, alcanzable SIN el cliente admin (auditoría-1 ALTO)[2m > [22mre-confirmar (transición no-op) o llegar a check_in no duplica el folio (única fila por reserva) [33m 552[2mms[22m[39m
+ [32m✓[39m tests/integration/conocimiento-local/latencia.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 22056[2mms[22m[39m
+   [33m[2m✓[22m[39m conocimiento local: panel del gerente + latencia de reflejo (REQ-UX-005)[2m > [22msin ninguna entrada registrada, el panel devuelve una lista vacía honesta (nunca datos simulados, REQ-UX-002) [33m 403[2mms[22m[39m
+ [32m✓[39m tests/integration/api/auth-google.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 44062[2mms[22m[39m
+   [33m[2m✓[22m[39m GET /auth/google/iniciar + /auth/google/callback -- flujo feliz[2m > [22mlogin: vincula la identidad de Google a un staff_user YA existente e inicia sesión [33m 446[2mms[22m[39m
+   [33m[2m✓[22m[39m GET /auth/google/iniciar + /auth/google/callback -- flujo feliz[2m > [22mregistro: crea org+hotel+owner nuevos y envía el correo de bienvenida [33m 484[2mms[22m[39m
+   [33m[2m✓[22m[39m GET /auth/google/iniciar -- sin configurar[2m > [22mresponde 503 no_configurado cuando faltan credenciales de Google [33m 20481[2mms[22m[39m
+ [32m✓[39m tests/integration/api/auth-y-resumen.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 19324[2mms[22m[39m
+   [33m[2m✓[22m[39m apps/api: auth + resumen (integración real)[2m > [22mGET /auth/me devuelve los hoteles/roles reales del usuario autenticado [33m 1472[2mms[22m[39m
+   [33m[2m✓[22m[39m apps/api: auth + resumen (integración real)[2m > [22mGET /hoteles/:id/resumen con datos de la seed devuelve cifras reales (no null) [33m 437[2mms[22m[39m
+   [33m[2m✓[22m[39m apps/api: auth + resumen (integración real)[2m > [22mresumen de un hotel sin availability para hoy responde null honesto, nunca 0 fabricado [33m 644[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/modificacion-concurrencia.spec.ts [2m([22m[2m1 test[22m[2m)[22m[33m 15230[2mms[22m[39m
+   [33m[2m✓[22m[39m modificación de fechas bajo concurrencia real (embedded-postgres)[2m > [22mdos modificaciones concurrentes a la misma noche: exactamente una 200, la otra 409, sin sobreventa [33m 1832[2mms[22m[39m
+ [32m✓[39m tests/integration/contracts/outbound/webhook-outbound-adapter.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 1255[2mms[22m[39m
+   [33m[2m✓[22m[39m contrato: WebhookOutboundAdapter real contra simulador HTTP local[2m > [22mpushTask(): 429 sostenido agota los reintentos y lanza (nunca finge éxito) [33m 842[2mms[22m[39m
+ [32m✓[39m tests/integration/folio/event-sourcing.spec.ts [2m([22m[2m1 test[22m[2m)[22m[33m 13049[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-REC-004 · event sourcing de folio: reverso/transferencia/split nunca borran[2m > [22mel conteo de filas de charge NUNCA disminuye a través de cargo -> reverso -> transferencia -> split [33m 903[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/overbooking-controlado.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 9278[2mms[22m[39m
+   [33m[2m✓[22m[39m sobreventa controlada (REQ-RES-007, embedded-postgres real)[2m > [22mpermite exactamente 2 sobreventas (max_overbook_rooms=2) y rechaza la 3ª con 409 [33m 857[2mms[22m[39m
+ [32m✓[39m tests/integration/pool-sin-fuga-de-claims.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 13104[2mms[22m[39m
+   [33m[2m✓[22m[39m pool de conexiones: set_config por transacción no filtra claims entre requests reciclados (auditoria-1/backend MEDIO)[2m > [22mcon poolMax=1 (misma conexión física forzada), el claim de la sesión A nunca es visible en la sesión B [33m 6251[2mms[22m[39m
+   [33m[2m✓[22m[39m pool de conexiones: set_config por transacción no filtra claims entre requests reciclados (auditoria-1/backend MEDIO)[2m > [22muna sesión sin userId (claim vacío) tras una sesión CON userId, en la misma conexión reciclada, queda anónima (auth.uid() null) — nunca hereda al actor anterior [33m 6853[2mms[22m[39m
+ [32m✓[39m tests/integration/api/registro.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 11221[2mms[22m[39m
+   [33m[2m✓[22m[39m POST /registro -- alta autoservicio[2m > [22mcrea org+hotel+owner, envía correo de verificación, y bloquea el login hasta confirmar [33m 701[2mms[22m[39m
+   [33m[2m✓[22m[39m POST /registro -- alta autoservicio[2m > [22mrechaza un correo que ya tiene cuenta (409) [33m 423[2mms[22m[39m
+[90mstderr[2m | tests/integration/api/recepcion.spec.ts[2m > [22m[2mGET /hoteles/:hotelId/recepcion (auditoria-2/frontend)
+[22m[39m{"level":"error","event":"db_pool_error","message":"terminating connection due to administrator command","pool_error_count":1,"timestamp":"2026-09-11T04:25:03.541Z"}
+
+ [32m✓[39m tests/integration/api/recepcion.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 11184[2mms[22m[39m
+   [33m[2m✓[22m[39m GET /hoteles/:hotelId/recepcion (auditoria-2/frontend)[2m > [22mrefleja check-in y check-out reales una vez que la reserva transiciona (sin PMS) [33m 382[2mms[22m[39m
+ [32m✓[39m tests/integration/outbox-atomicity.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 12217[2mms[22m[39m
+ [31m❯[39m tests/integration/api/reservas-carga-concurrente.spec.ts [2m([22m[2m3 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 14890[2mms[22m[39m
+[31m   [31m×[31m rendimiento: GET /reservas bajo concurrencia no agota el pool (una sola sesión de BD por request)[2m > [22m50 GET /hoteles/:hotelId/reservas concurrentes: 0 fallos, p95 < 500ms[39m[33m 1079[2mms[22m[39m
+[31m     → expected 913.577459000051 to be less than 500[39m
+   [32m✓[39m rendimiento: GET /reservas bajo concurrencia no agota el pool (una sola sesión de BD por request)[2m > [22m50 GET /hoteles/:hotelId/huespedes concurrentes: 0 fallos (mismo defecto en huespedes.ts)[32m 97[2mms[22m[39m
+   [33m[2m✓[22m[39m rendimiento: GET /reservas bajo concurrencia no agota el pool (una sola sesión de BD por request)[2m > [22mno deja el pool sin capacidad para otra ruta concurrente en el mismo lote (idempotency-key distinta por request) [33m 789[2mms[22m[39m
+ [32m✓[39m tests/integration/folio/pago-concurrente.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 12797[2mms[22m[39m
+   [33m[2m✓[22m[39m pago concurrente con la misma Idempotency-Key (H5)[2m > [22mdos solicitudes de pago simultáneas con la MISMA Idempotency-Key -> exactamente 1 fila en payment [33m 1148[2mms[22m[39m
+   [33m[2m✓[22m[39m pago concurrente con la misma Idempotency-Key (H5)[2m > [22mdos solicitudes de pago con tarjeta y la MISMA Idempotency-Key -> PaymentsPort.charge() solo cobra una vez [33m 751[2mms[22m[39m
+ [32m✓[39m tests/integration/api/back-office-cobros.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 10430[2mms[22m[39m
+   [33m[2m✓[22m[39m GET /hoteles/:hotelId/back-office/cobros (REQ-UX-004)[2m > [22msin roi_event en este entorno (estado real de H7 en curso): devuelve [] honesto, nunca un error [33m 502[2mms[22m[39m
+ [32m✓[39m tests/integration/api/registro-onboarding.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 12825[2mms[22m[39m
+   [33m[2m✓[22m[39m POST /hoteles/:hotelId/onboarding/tipos-habitacion[2m > [22mcrea el tipo de habitación con sus cuartos y 30 días de tarifa/disponibilidad [33m 1620[2mms[22m[39m
+ [32m✓[39m tests/integration/availability-concurrency.spec.ts [2m([22m[2m1 test[22m[2m)[22m[33m 10377[2mms[22m[39m
+ [32m✓[39m tests/integration/api/mensajeria-webhook-verificacion.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 10447[2mms[22m[39m
+ [32m✓[39m tests/integration/idempotency-purga-por-lote.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 10710[2mms[22m[39m
+ [32m✓[39m tests/integration/api/tarifas-impuestos.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 9108[2mms[22m[39m
+[90mstderr[2m | tests/integration/pool-error-logging.spec.ts[2m > [22m[2mpool.on("error") deja rastro (auditoria-2/operabilidad ALTO)[2m > [22m[2muna conexión ociosa del pool terminada del lado del servidor: se cuenta y se notifica, no desaparece en silencio
+[22m[39m{"level":"error","event":"db_pool_error","message":"terminating connection due to administrator command","pool_error_count":1,"timestamp":"2026-09-11T04:26:59.220Z"}
+
+ [32m✓[39m tests/integration/pool-error-logging.spec.ts [2m([22m[2m1 test[22m[2m)[22m[33m 7185[2mms[22m[39m
+   [33m[2m✓[22m[39m pool.on("error") deja rastro (auditoria-2/operabilidad ALTO)[2m > [22muna conexión ociosa del pool terminada del lado del servidor: se cuenta y se notifica, no desaparece en silencio [33m 7185[2mms[22m[39m
+ [32m✓[39m tests/integration/fiscal/calendario-fiscal.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 5771[2mms[22m[39m
+ [32m✓[39m tests/integration/outbox-worker-indice.spec.ts [2m([22m[2m1 test[22m[2m)[22m[33m 6586[2mms[22m[39m
+ [32m✓[39m tests/integration/reservas/disponibilidad-grid.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 4633[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/integration/api/reservas-carga-concurrente.spec.ts[2m > [22mrendimiento: GET /reservas bajo concurrencia no agota el pool (una sola sesión de BD por request)[2m > [22m50 GET /hoteles/:hotelId/reservas concurrentes: 0 fallos, p95 < 500ms
+[31m[1mAssertionError[22m: expected 913.577459000051 to be less than 500[39m
+[36m [2m❯[22m tests/integration/api/reservas-carga-concurrente.spec.ts:[2m56:17[22m[39m
+    [90m 54| [39m    const sorted = timings.map((t) => t.elapsedMs).sort((a, b) => a - …
+    [90m 55| [39m    [35mconst[39m p95 [33m=[39m sorted[[33mMath[39m[33m.[39m[34mfloor[39m(sorted[33m.[39mlength [33m*[39m [34m0.95[39m)][33m![39m[33m;[39m
+    [90m 56| [39m    [34mexpect[39m(p95)[33m.[39m[34mtoBeLessThan[39m([34m500[39m)[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m 57| [39m  })[33m;[39m
+    [90m 58| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m71 passed[39m[22m[90m (72)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m439 passed[39m[22m[90m (440)[39m
+[2m   Start at [22m 22:14:02
+[2m   Duration [22m 795.08s[2m (transform 3.20s, setup 0ms, collect 40.34s, tests 753.38s, environment 0ms, prepare 115ms)[22m
+
+
+[exited with code 0]

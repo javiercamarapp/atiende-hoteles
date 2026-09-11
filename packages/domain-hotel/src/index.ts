@@ -266,6 +266,14 @@ export {
   type MarketingTemplateLintResult,
 } from "./marketingTemplateLinter.ts";
 export {
+  LOCAL_KNOWLEDGE_QUERY_CATEGORIES,
+  WHATSAPP_TEXT_MESSAGE_MAX_LENGTH,
+  detectLocalKnowledgeCategory,
+  buildLocalKnowledgeReply,
+  type LocalKnowledgeQueryCategory,
+  type LocalKnowledgeEntryForAgent,
+} from "./localKnowledgeAgent.ts";
+export {
   classifyUnaccompaniedMinorEscalation,
   containsDiscriminatoryContent,
   type UnaccompaniedMinorSignal,
