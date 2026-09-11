@@ -286,6 +286,13 @@ export {
   type CobroPorResultadoActivationCheck,
 } from "./roi/roiBaseline.ts";
 export {
+  evaluarVariabilizacionPlantilla,
+  buildReporteAhorroLaborHousekeeping,
+  type PlantillaVariabilizacionEvidence,
+  type AhorroLaborHousekeepingInput,
+  type AhorroLaborHousekeepingReport,
+} from "./roi/roiLaborEtiquetado.ts";
+export {
   looksLikeAllergyDeclaration,
   resolveAllergyDeclared,
   canAssureDishIsSafe,
