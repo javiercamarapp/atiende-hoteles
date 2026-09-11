@@ -325,6 +325,19 @@ export {
   type ParityCheckResult,
 } from "./revenue/parity-guard.ts";
 export {
+  CHANNEL_TYPES,
+  CHANNEL_MIX_ACTIONS,
+  ChannelMixEngineError,
+  assertValidStayDate,
+  assertValidChannelMixChannelConfig,
+  evaluateChannelMixDecision,
+  evaluateChannelMix,
+  type ChannelType,
+  type ChannelMixAction,
+  type ChannelMixChannelConfig,
+  type ChannelMixDecision,
+} from "./revenue/channelMixEngine.ts";
+export {
   REVENUE_GATE_STATES,
   MIN_SHADOW_DAYS,
   PROPONE_VARIATION_PCT_MIN,
