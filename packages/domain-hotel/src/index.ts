@@ -708,3 +708,12 @@ export {
   type RoomTypeAvailabilityInput,
   type MoneyAvailability,
 } from "./mcpHotelOffer.ts";
+export {
+  ugcMediaTypeSchema,
+  filterUsableUgc,
+  generateMonthlyContentCalendar,
+  type UgcMediaType,
+  type GuestUgcSubmission,
+  type ContentCalendarEntry,
+  type MonthlyContentCalendar,
+} from "./ugcContentCalendar.ts";

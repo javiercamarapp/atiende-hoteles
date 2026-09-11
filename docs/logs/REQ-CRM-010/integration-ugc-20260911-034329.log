@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /private/tmp/wf-hoteles-fix-ugc-docs
+
+ ✓ tests/integration/api/ugc.spec.ts (8 tests) 3597ms
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  03:43:34
+   Duration  4.28s (transform 356ms, setup 0ms, collect 577ms, tests 3.60s, environment 0ms, prepare 25ms)
+
+exit: 0
