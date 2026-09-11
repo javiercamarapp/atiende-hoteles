@@ -14,6 +14,11 @@ import {
   evaluateVisionInspection,
   requiresPhysicalSupervision,
   type InspectionPhotoSubmission,
+  assertLinenOptOutMessageDoesNotBlameGuest,
+  describeLinenOptOutConfirmationMessage,
+  evaluateLinenCountDeviation,
+  DEFAULT_LINEN_DEVIATION_THRESHOLD_PCT,
+  LinenOptOutMessageBlamesGuestError,
 } from "@atiende-hoteles/domain-hotel";
 import { sharedWhatsappAdapter, whatsappAdapterSimulated } from "../lib/messaging.ts";
 import { Errors } from "../lib/errors.ts";
@@ -23,6 +28,44 @@ import { ADMIN_ROLES } from "../domain/roles.ts";
 import type { HonoEnvBindings, ResolvedAppDeps } from "../types.ts";
 
 const SUPERVISOR_ROLES = ["owner", "gm", "frontdesk"] as const;
+// Mismos 4 roles operativos de piso que la RLS de housekeeping_linen_opt_out/
+// housekeeping_linen_count autoriza (migración 0130) -- owner/gm/frontdesk pueden
+// atender la solicitud del huésped en recepción; housekeeping la registra directo en la
+// habitación. Ningún rol nuevo, ningún caso donde la app permita algo que la RLS ya
+// negaría en silencio.
+const LINEN_OPT_OUT_ROLES = [...SUPERVISOR_ROLES, "housekeeping"] as const;
+
+const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/;
+function hoyIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** REQ-HK-005: umbral (%) de desviación de consumo de blancos/amenidades a partir del
+ *  cual el conteo se marca como alerta -- configurable por variable de entorno (mismo
+ *  patrón que `maintenanceApprovalThresholdMxn`,
+ *  packages/agent-core/src/tools/housekeepingTools.ts) para no fijar un número de
+ *  negocio en código; `DEFAULT_LINEN_DEVIATION_THRESHOLD_PCT` (dominio puro) es el
+ *  valor de respaldo cuando el hotel no lo configuró. */
+export function linenDeviationAlertThresholdPct(env: Record<string, string | undefined> = process.env): number {
+  const raw = env.HOUSEKEEPING_LINEN_DEVIATION_THRESHOLD_PCT;
+  const parsed = raw ? Number(raw) : NaN;
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_LINEN_DEVIATION_THRESHOLD_PCT;
+}
+
+const optOutSchema = z.object({
+  fecha: z.string().regex(FECHA_RE, "fecha debe tener formato YYYY-MM-DD").optional(),
+  incentivo: z.string().trim().min(1).max(300),
+  mensaje: z.string().trim().min(1).max(1000).optional(),
+});
+
+const linenItemTypeEnum = z.enum(["blancos", "amenidades"]);
+const conteoBlancosSchema = z.object({
+  tipo: linenItemTypeEnum,
+  contado: z.number().int().nonnegative().max(100_000),
+  teorico: z.number().int().nonnegative().max(100_000),
+  fotoUrl: z.string().trim().min(1).max(2000).url(),
+  taskId: z.string().uuid().optional(),
+});
 
 const crearTareaSchema = z.object({
   roomCode: z.string().trim().min(1).max(20),
@@ -366,6 +409,249 @@ export function housekeepingRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings>
     );
     if (rows.length === 0) throw Errors.notFound("Habitación no encontrada.");
     return c.json({ id: rows[0]!.id, housekeepingStatus: nuevoEstado });
+  });
+
+  // REQ-HK-005: registra que el huésped de una habitación pidió NO recibir limpieza/
+  // reposición de blancos un día de su estancia, a cambio de un incentivo. El mensaje
+  // de confirmación (el que se le mostraría/enviaría al huésped) se valida ANTES de
+  // persistir con `assertLinenOptOutMessageDoesNotBlameGuest` -- fail-closed, un mensaje
+  // que culpa al huésped nunca llega a la base de datos (400, no se registra nada).
+  // Idempotente por (habitación, día): un segundo registro para el mismo día devuelve
+  // el existente marcado `duplicate: true` en vez de fallar por la unique constraint o
+  // silenciosamente sobreescribir una decisión ya tomada.
+  app.post("/hoteles/:hotelId/housekeeping/habitaciones/:roomId/opt-out-limpieza", async (c) => {
+    assertRole(c, [...LINEN_OPT_OUT_ROLES]);
+    const db = c.get("db");
+    const hotelId = c.req.param("hotelId");
+    const roomId = c.req.param("roomId");
+    const body = parseBody(optOutSchema, await c.req.json().catch(() => ({})));
+    const fecha = body.fecha ?? hoyIso();
+
+    const { rows: roomRows } = await db.query<{ id: string }>(
+      "select id from public.room where id = $1 and hotel_id = $2;",
+      [roomId, hotelId],
+    );
+    if (roomRows.length === 0) throw Errors.notFound("Habitación no encontrada.");
+
+    const { rows: existentes } = await db.query<{ id: string; incentive_description: string; message_text: string; created_at: string }>(
+      `select id, incentive_description, message_text, created_at::text as created_at
+       from public.housekeeping_linen_opt_out
+       where hotel_id = $1 and room_id = $2 and stay_date = $3;`,
+      [hotelId, roomId, fecha],
+    );
+    if (existentes.length > 0) {
+      const existente = existentes[0]!;
+      return c.json(
+        {
+          id: existente.id,
+          roomId,
+          fecha,
+          incentivo: existente.incentive_description,
+          mensaje: existente.message_text,
+          creadoEn: existente.created_at,
+          duplicate: true,
+        },
+        200,
+      );
+    }
+
+    const mensaje = body.mensaje ?? describeLinenOptOutConfirmationMessage(body.incentivo);
+    try {
+      assertLinenOptOutMessageDoesNotBlameGuest(mensaje);
+    } catch (err) {
+      if (err instanceof LinenOptOutMessageBlamesGuestError) throw Errors.validation(err.message);
+      throw err;
+    }
+
+    const { rows } = await db.query<{ id: string; created_at: string }>(
+      `insert into public.housekeeping_linen_opt_out
+         (tenant_id, hotel_id, room_id, stay_date, incentive_description, message_text, registered_by)
+       values ($1, $2, $3, $4, $5, $6, $7)
+       returning id, created_at::text as created_at;`,
+      [c.get("orgId"), hotelId, roomId, fecha, body.incentivo, mensaje, c.get("userId")],
+    );
+
+    return c.json(
+      {
+        id: rows[0]!.id,
+        roomId,
+        fecha,
+        incentivo: body.incentivo,
+        mensaje,
+        creadoEn: rows[0]!.created_at,
+        duplicate: false,
+      },
+      201,
+    );
+  });
+
+  // Lista de opt-outs de limpieza del hotel (reporte operativo), opcionalmente filtrada
+  // por habitación y/o fecha.
+  app.get("/hoteles/:hotelId/housekeeping/opt-out-limpieza", async (c) => {
+    assertRole(c, [...LINEN_OPT_OUT_ROLES]);
+    const db = c.get("db");
+    const hotelId = c.req.param("hotelId");
+    const roomIdFiltro = c.req.query("roomId");
+    const fechaFiltro = c.req.query("fecha");
+    if (fechaFiltro && !FECHA_RE.test(fechaFiltro)) throw Errors.validation("fecha debe tener formato YYYY-MM-DD.");
+
+    const { rows } = await db.query<{
+      id: string;
+      room_id: string;
+      room_code: string;
+      stay_date: string;
+      incentive_description: string;
+      message_text: string;
+      created_at: string;
+    }>(
+      `select o.id, o.room_id, r.code as room_code, o.stay_date::text as stay_date,
+              o.incentive_description, o.message_text, o.created_at::text as created_at
+       from public.housekeeping_linen_opt_out o
+       join public.room r on r.id = o.room_id
+       where o.hotel_id = $1
+         and ($2::uuid is null or o.room_id = $2::uuid)
+         and ($3::date is null or o.stay_date = $3::date)
+       order by o.created_at desc;`,
+      [hotelId, roomIdFiltro ?? null, fechaFiltro ?? null],
+    );
+
+    return c.json(
+      rows.map((r) => ({
+        id: r.id,
+        roomId: r.room_id,
+        roomCode: r.room_code,
+        fecha: r.stay_date,
+        incentivo: r.incentive_description,
+        mensaje: r.message_text,
+        creadoEn: r.created_at,
+      })),
+    );
+  });
+
+  // REQ-HK-005: registra un conteo de blancos/amenidades VERIFICADO POR FOTO
+  // (`fotoUrl` obligatoria, ver `conteoBlancosSchema`) contra el consumo teórico
+  // esperado, y calcula si la desviación cruza el umbral configurado
+  // (`linenDeviationAlertThresholdPct`) -- `evaluateLinenCountDeviation` (dominio puro)
+  // es la única lógica que decide "alerta sí/no", nunca un cálculo ad-hoc en la ruta.
+  app.post("/hoteles/:hotelId/housekeeping/habitaciones/:roomId/conteo-blancos", async (c) => {
+    assertRole(c, [...LINEN_OPT_OUT_ROLES]);
+    const db = c.get("db");
+    const hotelId = c.req.param("hotelId");
+    const roomId = c.req.param("roomId");
+    const body = parseBody(conteoBlancosSchema, await c.req.json().catch(() => ({})));
+
+    const { rows: roomRows } = await db.query<{ id: string }>(
+      "select id from public.room where id = $1 and hotel_id = $2;",
+      [roomId, hotelId],
+    );
+    if (roomRows.length === 0) throw Errors.notFound("Habitación no encontrada.");
+
+    if (body.taskId) {
+      const { rows: taskRows } = await db.query<{ id: string }>(
+        "select id from public.housekeeping_task where id = $1 and hotel_id = $2;",
+        [body.taskId, hotelId],
+      );
+      if (taskRows.length === 0) throw Errors.notFound("Tarea de housekeeping no encontrada en este hotel.");
+    }
+
+    const thresholdPct = linenDeviationAlertThresholdPct();
+    const deviation = evaluateLinenCountDeviation({
+      countedQuantity: body.contado,
+      theoreticalQuantity: body.teorico,
+      thresholdPct,
+    });
+
+    const { rows } = await db.query<{ id: string; created_at: string }>(
+      `insert into public.housekeeping_linen_count
+         (tenant_id, hotel_id, room_id, task_id, item_type, counted_quantity, theoretical_quantity,
+          deviation_units, deviation_pct, threshold_pct, alert_triggered, photo_evidence_url, counted_by)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       returning id, created_at::text as created_at;`,
+      [
+        c.get("orgId"),
+        hotelId,
+        roomId,
+        body.taskId ?? null,
+        body.tipo,
+        body.contado,
+        body.teorico,
+        deviation.deviationUnits,
+        deviation.deviationPct,
+        thresholdPct,
+        deviation.alertTriggered,
+        body.fotoUrl,
+        c.get("userId"),
+      ],
+    );
+
+    return c.json(
+      {
+        id: rows[0]!.id,
+        roomId,
+        tipo: body.tipo,
+        contado: body.contado,
+        teorico: body.teorico,
+        desviacionUnidades: deviation.deviationUnits,
+        desviacionPct: deviation.deviationPct,
+        umbralPct: thresholdPct,
+        alerta: deviation.alertTriggered,
+        fotoUrl: body.fotoUrl,
+        creadoEn: rows[0]!.created_at,
+      },
+      201,
+    );
+  });
+
+  // Reporte de conteos de blancos/amenidades del hotel, opcionalmente filtrado a solo
+  // los que dispararon alerta de desviación -- lo que un gerente revisaría cada día.
+  app.get("/hoteles/:hotelId/housekeeping/conteo-blancos", async (c) => {
+    assertRole(c, [...LINEN_OPT_OUT_ROLES]);
+    const db = c.get("db");
+    const hotelId = c.req.param("hotelId");
+    const soloAlertas = c.req.query("soloAlertas") === "true" ? true : null;
+
+    const { rows } = await db.query<{
+      id: string;
+      room_id: string;
+      room_code: string;
+      item_type: string;
+      counted_quantity: number;
+      theoretical_quantity: number;
+      deviation_units: number;
+      deviation_pct: string;
+      threshold_pct: string;
+      alert_triggered: boolean;
+      photo_evidence_url: string;
+      created_at: string;
+    }>(
+      `select lc.id, lc.room_id, r.code as room_code, lc.item_type::text as item_type,
+              lc.counted_quantity, lc.theoretical_quantity, lc.deviation_units,
+              lc.deviation_pct::text as deviation_pct, lc.threshold_pct::text as threshold_pct,
+              lc.alert_triggered, lc.photo_evidence_url, lc.created_at::text as created_at
+       from public.housekeeping_linen_count lc
+       join public.room r on r.id = lc.room_id
+       where lc.hotel_id = $1
+         and ($2::boolean is null or lc.alert_triggered = $2::boolean)
+       order by lc.created_at desc;`,
+      [hotelId, soloAlertas],
+    );
+
+    return c.json(
+      rows.map((r) => ({
+        id: r.id,
+        roomId: r.room_id,
+        roomCode: r.room_code,
+        tipo: r.item_type,
+        contado: r.counted_quantity,
+        teorico: r.theoretical_quantity,
+        desviacionUnidades: r.deviation_units,
+        desviacionPct: Number(r.deviation_pct),
+        umbralPct: Number(r.threshold_pct),
+        alerta: r.alert_triggered,
+        fotoUrl: r.photo_evidence_url,
+        creadoEn: r.created_at,
+      })),
+    );
   });
 
   return app;

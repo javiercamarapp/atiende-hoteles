@@ -494,3 +494,13 @@ export {
   type GuestChannelProfile,
   type GuestDedupeCandidate,
 } from "./guestContactDedup.ts";
+export {
+  DEFAULT_LINEN_DEVIATION_THRESHOLD_PCT,
+  messageBlamesGuest,
+  assertLinenOptOutMessageDoesNotBlameGuest,
+  describeLinenOptOutConfirmationMessage,
+  evaluateLinenCountDeviation,
+  LinenOptOutMessageBlamesGuestError,
+  type LinenCountDeviationInput,
+  type LinenCountDeviationResult,
+} from "./housekeeping/linenOptOut.ts";
