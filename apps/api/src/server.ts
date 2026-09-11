@@ -21,6 +21,7 @@ import { startTicketEscalationScheduler } from "./jobs/ticketEscalationScheduler
 import { startEmailOutboxScheduler, resolveEmailPort } from "./emailOutbox/runEmailOutboxWorker.ts";
 import { startPaymentPreauthPurgeScheduler } from "./jobs/purgePaymentPreauthScheduler.ts";
 import { startPmsCloudbedsSyncScheduler } from "./jobs/pmsCloudbedsSyncScheduler.ts";
+import { startBarReputacionScheduler } from "./jobs/barReputacionScheduler.ts";
 
 async function main() {
   // REQ-SEG-013 · antes de leer cualquier secreto de `process.env`, le da a Vault/KMS
@@ -172,6 +173,16 @@ async function main() {
     onError: (err) => logger.error({ err }, "sincronizacion de tarifas Cloudbeds: error en tick"),
   });
 
+  // REQ-REV-017 · recomienda un ajuste de BAR cuando el índice de reputación (derivado
+  // de `guest_review.sentiment_score`, REQ-CRM-002) sube sobre el umbral en la ventana
+  // configurada (ver jobs/barReputacionEvaluator.ts) -- idempotente por diseño de BD
+  // (`bar_reputation_recommendation`, 0130), así que un intervalo generoso (1h) no
+  // arriesga duplicar recomendaciones si un tick se atrasa.
+  const barReputacionScheduler = startBarReputacionScheduler(engine.admin, {
+    onTick: (results) => logger.info({ results }, "recomendación de BAR por reputación: tick"),
+    onError: (err) => logger.error({ err }, "recomendación de BAR por reputación: error en tick"),
+  });
+
   const shutdown = async () => {
     logger.info("apagando apps/api");
     nightAuditScheduler.stop();
@@ -181,6 +192,7 @@ async function main() {
     emailOutboxScheduler.stop();
     paymentPreauthPurgeScheduler.stop();
     pmsCloudbedsSyncScheduler.stop();
+    barReputacionScheduler.stop();
     await engine.stop();
     process.exit(0);
   };
