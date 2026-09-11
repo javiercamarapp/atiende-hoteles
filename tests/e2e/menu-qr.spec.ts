@@ -81,10 +81,7 @@ test("menú QR con video: reglas de all-inclusive/day-pass, alérgenos multiling
   // (feature de menú QR con video), documentada aparte en docs/BLOQUEOS.md (B-003) y
   // pendiente de investigación propia -- no se investiga aquí para no estirar el
   // alcance de este PR. Ver docs/BLOQUEOS.md.
-  test.skip(
-    true,
-    "REQ-AB-001: bug preexistente de carga de <video> en Chrome headless de CI (readyState nunca > 0), no relacionado con este PR. Ver docs/BLOQUEOS.md B-003.",
-  );
+  test.skip(true, "REQ-AB-001: bug preexistente de carga de <video> en Chrome headless de CI (readyState nunca > 0), no relacionado con este PR. Ver docs/BLOQUEOS.md B-003.");
   test.setTimeout(150_000);
 
   const apiPort = await puertoLibre();
