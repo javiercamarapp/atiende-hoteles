@@ -57,7 +57,13 @@ function parseLang(raw: string | undefined): MenuLanguage {
 const crearMenuItemSchema = z.object({
   nombre: z.string().trim().min(1).max(150),
   descripcion: z.string().trim().max(1000).optional(),
-  videoUrl: z.string().trim().url().max(2000),
+  // `.max(4000)`, no 2000: un `videoUrl` real hospedado (Cloudinary/S3/etc.) nunca se
+  // acerca a ese límite, pero un `data:video/mp4;base64,...` autocontenido (el único
+  // video que `tests/e2e/menu-qr.spec.ts` puede sembrar sin depender de un host externo
+  // en CI, fixture de ~2.2 KB reales -> ~2978 chars en base64+prefijo) sí lo excedía --
+  // `video_url` es `text` sin límite en Postgres (migración 0153), así que este cap es
+  // puramente de saneamiento de payload, no de almacenamiento.
+  videoUrl: z.string().trim().url().max(4000),
   precio: z.number().finite().min(0),
   incluidoEnTodoIncluido: z.boolean().default(false),
   disponibleDayPass: z.boolean().default(true),
