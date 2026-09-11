@@ -7,6 +7,14 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { buildToolContext, createHousekeepingTaskTool, createRunBudget } from "@atiende-hoteles/agent-core";
+import {
+  InspeccionVisionError,
+  PhysicalSupervisionNoteRequiredError,
+  assertHumanClosureAllowed,
+  evaluateVisionInspection,
+  requiresPhysicalSupervision,
+  type InspectionPhotoSubmission,
+} from "@atiende-hoteles/domain-hotel";
 import { sharedWhatsappAdapter, whatsappAdapterSimulated } from "../lib/messaging.ts";
 import { Errors } from "../lib/errors.ts";
 import { parseBody } from "../lib/validate.ts";
@@ -29,6 +37,21 @@ const inspeccionarSchema = z.object({
   nota: z.string().trim().max(500).optional(),
 });
 const fueraDeServicioSchema = z.object({ fueraDeServicio: z.boolean() });
+
+// REQ-HK-003: el set estándar de 6 fotos (BP-075/H11-004) más los ítems del checklist
+// propio de la tarea que quien sube evidencia declara haber atendido. `tipo` no se
+// restringe aquí a `STANDARD_INSPECTION_PHOTO_TYPES` con un enum de zod a propósito --
+// un tipo desconocido es en sí mismo una corrección específica que
+// `evaluateVisionInspection` reporta (no un 400 genérico que oculte cuál vino mal).
+const fotoInspeccionSchema = z.object({
+  tipo: z.string().trim().min(1).max(60),
+  url: z.string().trim().url().max(2000),
+  tomadaEn: z.string().datetime({ offset: true }).or(z.string().datetime()),
+});
+const fotosInspeccionSchema = z.object({
+  fotos: z.array(fotoInspeccionSchema).min(1).max(20),
+  checklistCubierto: z.array(z.string().trim().min(1).max(200)).max(20).default([]),
+});
 
 interface TableroRow {
   room_id: string;
@@ -171,20 +194,152 @@ export function housekeepingRoutes(deps: ResolvedAppDeps): Hono<HonoEnvBindings>
     return c.json({ id: rows[0]!.id, estado: rows[0]!.status });
   });
 
+  // REQ-HK-003: envío del set estándar de 6 fotos tras terminar la limpieza. Produce
+  // una SUGERENCIA (aprobada/corrección específica) vía el módulo puro de dominio en
+  // <30 s medido -- NUNCA cierra la tarea ni toca `housekeeping_status`/`inspected_*`;
+  // el cierre real sigue siendo exclusivo de `POST .../inspeccionar` más abajo (decisión
+  // final siempre humana, BP-101). Abierto a housekeeping (quien limpió, sobre SU propia
+  // tarea -- RLS de 0041 ya lo garantiza) y a supervisión.
+  app.post("/hoteles/:hotelId/housekeeping/tareas/:taskId/fotos-inspeccion", async (c) => {
+    assertRole(c, [...SUPERVISOR_ROLES, "housekeeping"]);
+    const db = c.get("db");
+    const hotelId = c.req.param("hotelId");
+    const taskId = c.req.param("taskId");
+    const body = parseBody(fotosInspeccionSchema, await c.req.json().catch(() => ({})));
+
+    const medicionInicio = Date.now();
+
+    const { rows: tareas } = await db.query<{
+      id: string;
+      status: string;
+      started_at: string | null;
+      created_at: string;
+      checklist: string[];
+      vision_verdict: string | null;
+      vision_items: unknown;
+      vision_evaluated_at: string | null;
+      vision_elapsed_ms: number | null;
+      requires_physical_supervision: boolean;
+    }>(
+      `select id, status::text as status, started_at::text as started_at, created_at::text as created_at,
+              coalesce(checklist, '[]'::jsonb) as checklist, vision_verdict::text as vision_verdict,
+              vision_items, vision_evaluated_at::text as vision_evaluated_at, vision_elapsed_ms,
+              requires_physical_supervision
+       from public.housekeeping_task
+       where id = $1 and hotel_id = $2;`,
+      [taskId, hotelId],
+    );
+    if (tareas.length === 0) throw Errors.notFound("Tarea de housekeeping no encontrada.");
+    const tarea = tareas[0]!;
+
+    if (tarea.status !== "completada") {
+      throw Errors.validation(
+        `La tarea debe estar "completada" (terminar la limpieza) antes de enviar el set de fotos de inspección (estado actual: "${tarea.status}").`,
+      );
+    }
+
+    // Idempotente (mismo criterio que `auditoriaConversaciones.ts`): la evidencia de
+    // una inspección ya evaluada no se vuelve a juzgar ni se reemplaza -- se devuelve
+    // el veredicto ya fijado.
+    if (tarea.vision_verdict) {
+      return c.json({
+        id: tarea.id,
+        veredicto: tarea.vision_verdict,
+        items: tarea.vision_items,
+        evaluadoEn: tarea.vision_evaluated_at,
+        elapsedMs: tarea.vision_elapsed_ms,
+        requierePhysicalSupervision: tarea.requires_physical_supervision,
+        yaEvaluada: true,
+      });
+    }
+
+    const fotos: InspectionPhotoSubmission[] = body.fotos.map((f) => ({ tipo: f.tipo, url: f.url, tomadaEn: f.tomadaEn }));
+    const limpiezaIniciadaEn = tarea.started_at ?? tarea.created_at;
+    const ahoraIso = new Date().toISOString();
+
+    let resultado: ReturnType<typeof evaluateVisionInspection>;
+    try {
+      resultado = evaluateVisionInspection({
+        fotos,
+        checklist: tarea.checklist,
+        checklistCubierto: body.checklistCubierto,
+        limpiezaIniciadaEn,
+        ahora: ahoraIso,
+      });
+    } catch (err) {
+      if (err instanceof InspeccionVisionError) throw Errors.validation(err.message);
+      throw err;
+    }
+
+    const requierePhysicalSupervision = requiresPhysicalSupervision(tarea.id);
+    const elapsedMs = Date.now() - medicionInicio;
+
+    const { rows: actualizadas } = await db.query<{ id: string; vision_evaluated_at: string }>(
+      `update public.housekeeping_task
+       set evidence = $1::jsonb, vision_verdict = $2, vision_items = $3::jsonb,
+           vision_evaluated_at = now(), vision_elapsed_ms = $4, requires_physical_supervision = $5,
+           updated_at = now()
+       where id = $6 and hotel_id = $7
+       returning id, vision_evaluated_at::text as vision_evaluated_at;`,
+      [
+        JSON.stringify(fotos),
+        resultado.veredicto,
+        JSON.stringify(resultado.items),
+        elapsedMs,
+        requierePhysicalSupervision,
+        taskId,
+        hotelId,
+      ],
+    );
+    if (actualizadas.length === 0) throw Errors.notFound("Tarea de housekeeping no encontrada.");
+
+    return c.json(
+      {
+        id: actualizadas[0]!.id,
+        veredicto: resultado.veredicto,
+        items: resultado.items,
+        checklistPendiente: resultado.checklistPendiente,
+        evaluadoEn: actualizadas[0]!.vision_evaluated_at,
+        elapsedMs,
+        requierePhysicalSupervision,
+        yaEvaluada: false,
+      },
+      201,
+    );
+  });
+
   // Inspeccion: reservada a supervision (owner/gm/frontdesk) -- REQ-HK-003 exige muestreo
-  // de supervision fisica con decision final humana, nunca un cierre automatico.
+  // de supervision fisica con decision final humana, nunca un cierre automatico. Cuando
+  // la tarea entró al muestreo de supervisión física (25% determinístico, ver
+  // `requiresPhysicalSupervision`), el cierre EXIGE una nota real que documente la
+  // revisión física -- un clic vacío que solo repite la sugerencia de la evidencia
+  // fotográfica no cuenta como "decisión final humana" para el 20-30% muestreado.
   app.post("/hoteles/:hotelId/housekeeping/tareas/:taskId/inspeccionar", async (c) => {
     assertRole(c, [...SUPERVISOR_ROLES]);
     const db = c.get("db");
     const hotelId = c.req.param("hotelId");
+    const taskId = c.req.param("taskId");
     const body = parseBody(inspeccionarSchema, await c.req.json().catch(() => ({})));
+
+    const { rows: tareas } = await db.query<{ requires_physical_supervision: boolean }>(
+      `select requires_physical_supervision from public.housekeeping_task where id = $1 and hotel_id = $2;`,
+      [taskId, hotelId],
+    );
+    if (tareas.length === 0) throw Errors.notFound("Tarea de housekeeping no encontrada.");
+
+    try {
+      assertHumanClosureAllowed({ requiresPhysicalSupervision: tareas[0]!.requires_physical_supervision, nota: body.nota });
+    } catch (err) {
+      if (err instanceof PhysicalSupervisionNoteRequiredError) throw Errors.validation(err.message);
+      throw err;
+    }
 
     const { rows } = await db.query<{ id: string; room_id: string }>(
       `update public.housekeeping_task
        set inspected_by = $1, inspected_at = now(), notes = coalesce($2, notes), updated_at = now()
        where id = $3 and hotel_id = $4
        returning id, room_id;`,
-      [c.get("userId"), body.nota ?? null, c.req.param("taskId"), hotelId],
+      [c.get("userId"), body.nota ?? null, taskId, hotelId],
     );
     if (rows.length === 0) throw Errors.notFound("Tarea de housekeeping no encontrada.");
 

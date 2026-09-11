@@ -1,0 +1,15 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/private/tmp/wf-hoteles-inspecci-n-de-limpieza-por-visi-n-foto-imagen[39m
+
+ [32m✓[39m tests/integration/housekeeping/inspeccion-vision.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 82269[2mms[22m[39m
+   [33m[2m✓[22m[39m apps/api: inspección de housekeeping asistida por visión (REQ-HK-003)[2m > [22mset estándar completo y checklist cubierto -> "aprobada" generado en <30 s medido [33m 537[2mms[22m[39m
+   [33m[2m✓[22m[39m apps/api: inspección de housekeeping asistida por visión (REQ-HK-003)[2m > [22mfoto fechada antes de iniciar la limpieza -> corrección (evidencia reciclada de otra limpieza) [33m 316[2mms[22m[39m
+   [33m[2m✓[22m[39m apps/api: inspección de housekeeping asistida por visión (REQ-HK-003)[2m > [22mreenviar el set de una inspección ya evaluada es idempotente (no vuelve a sortear/juzgar) [33m 928[2mms[22m[39m
+   [33m[2m✓[22m[39m apps/api: inspección de housekeeping asistida por visión (REQ-HK-003)[2m > [22mel muestreo de supervisión física cae en 20-30% de las inspecciones, verificado por conteo real contra la BD [33m 67408[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m9 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 23:42:48
+[2m   Duration [22m 93.97s[2m (transform 5.86s, setup 0ms, collect 10.86s, tests 82.27s, environment 0ms, prepare 81ms)[22m
+
+EXIT: 0
