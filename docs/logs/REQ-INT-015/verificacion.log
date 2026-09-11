@@ -1,0 +1,76 @@
+REQ-INT-015 -- "El registro de conectores debe seguir el patrón de 'registro único'
+(fetchList/fetchDetail/fetchDocuments u homólogo con salida validada por esquema),
+evitando lógica condicional de proveedor dispersa fuera del registro central."
+
+Hallazgo inicial (2026-09-10): el patrón de registro único SÍ existía para PMS
+(packages/mcp-servers/pms/src/registry.ts, PMS_CONNECTOR_REGISTRY, cerrado por
+REQ-AGT-018/REQ-REV-008) pero NO era uniforme para los demás tipos de conector: pagos
+(packages/mcp-servers/payments) y CFDI/PAC (packages/mcp-servers/cfdi) tenían puerto
+(PaymentProviderPort/CfdiPort) y adaptadores reales, pero ningún registro declarativo
+central análogo a PMS_CONNECTOR_REGISTRY -- el propio docstring de
+scripts/checks/registro-unico-conectores.ts documentaba esto como pendiente ("Hoy solo
+existe el registro de PMS; si se añade un registro central análogo para otro tipo de
+conector (pagos, CFDI, WhatsApp) su ruta se agrega a esa lista"). El check de bifurcación
+(if/switch sobre provider/pms) SÍ escaneaba todo apps/api/src, apps/web/src y packages/**
+de forma agnóstica al tipo de conector (0 violaciones antes de este cambio, confirmado
+abajo en el paso 3), pero eso solo cubre la mitad del criterio ("evitando lógica
+dispersa"); la otra mitad ("patrón de registro único ... u homólogo") no estaba cerrada
+para pagos ni CFDI. Cierre: se agregan
+packages/mcp-servers/payments/src/registry.ts (PAYMENT_CONNECTOR_REGISTRY) y
+packages/mcp-servers/cfdi/src/registry.ts (CFDI_CONNECTOR_REGISTRY), mismo patrón
+declarativo que PMS, y se agregan ambas rutas a
+DEFAULT_CENTRAL_REGISTRY_FILES de scripts/checks/registro-unico-conectores.ts.
+
+--- 1) estado limpio (repo con los 3 registros: PMS, pagos, CFDI) ---
+$ node scripts/checks/registro-unico-conectores.ts
+REQ-AGT-018/REQ-INT-015 OK: 0 ocurrencias de `if provider === X`/`if pms === X` (ni `switch(provider|pms)`) fuera de los registros centrales de conectores (PMS, pagos, CFDI), en apps/api/src, apps/web/src y packages/**.
+exit code: 0
+
+--- 2) violación deliberada inyectada temporalmente en apps/api/src/_violacion-deliberada-req-int-015.ts (bifurcación por PROVEEDOR DE PAGO -- fuera de PMS, para probar que el check ya no es PMS-específico) ---
+contenido inyectado:
+export function buildPaymentConnector(provider: string) {
+  if (provider === "stripe") {
+    return "violacion-deliberada-pagos";
+  }
+  return null;
+}
+
+$ node scripts/checks/registro-unico-conectores.ts
+REQ-AGT-018/REQ-INT-015: se encontró bifurcación por proveedor (`if`/`switch` sobre `provider`/`pms`) fuera de los registros centrales de conectores (packages/mcp-servers/{pms,payments,cfdi}/src/registry.ts):
+  apps/api/src/_violacion-deliberada-req-int-015.ts:5 [if]: if (provider === "stripe") {
+exit code: 1
+
+--- 3) violación eliminada, vuelve a estado limpio ---
+$ node scripts/checks/registro-unico-conectores.ts
+REQ-AGT-018/REQ-INT-015 OK: 0 ocurrencias de `if provider === X`/`if pms === X` (ni `switch(provider|pms)`) fuera de los registros centrales de conectores (PMS, pagos, CFDI), en apps/api/src, apps/web/src y packages/**.
+exit code: 0
+
+--- 4) suite vitest: registros de conectores (PMS ya existía; pagos y CFDI son nuevos) + registro-unico-conectores.spec.ts (incluida la corrida contra el repo real vía defaults) ---
+$ npx vitest run --config vitest.config.ts tests/unit/mcp-servers/payments/registro-conectores.spec.ts tests/unit/mcp-servers/cfdi/registro-conectores.spec.ts tests/unit/mcp-servers/pms/registro-conectores.spec.ts tests/unit/mcp-servers/pms/registro-unico-conectores.spec.ts
+
+ ✓ tests/unit/mcp-servers/pms/registro-unico-conectores.spec.ts (11 tests) 119ms
+ ✓ tests/unit/mcp-servers/pms/registro-conectores.spec.ts (4 tests) 3ms
+ ✓ tests/unit/mcp-servers/payments/registro-conectores.spec.ts (4 tests) 2ms
+ ✓ tests/unit/mcp-servers/cfdi/registro-conectores.spec.ts (4 tests) 2ms
+
+ Test Files  4 passed (4)
+      Tests  23 passed (23)
+
+--- 5) typecheck del monorepo (incluye packages/mcp-servers/payments, packages/mcp-servers/cfdi, apps/api) ---
+$ npm run typecheck
+> tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json && tsc --noEmit -p apps/api/tsconfig.json
+(sin salida -- exit code 0)
+
+--- 6) lint del monorepo ---
+$ npm run lint
+> eslint .
+1 warning preexistente sin relación (tests/e2e/paridad-restaurantes-login.spec.ts:62, unused arg), 0 errores.
+
+--- 7) suite completa de tests unitarios del monorepo (confirma que el cambio no rompió nada más) ---
+$ npm run test:unit
+ Test Files  116 passed (116)
+      Tests  1331 passed | 1 skipped (1332)
+exit code: 0
+
+No se requirió migración de base de datos: REQ-INT-015 es un patrón de código
+(registro declarativo + revisión estática), sin estado persistido.
