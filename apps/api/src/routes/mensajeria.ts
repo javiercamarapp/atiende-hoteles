@@ -69,6 +69,7 @@ import {
   createSendWhatsappTemplateTool,
   createTransactionalTemplateApprovalQueue,
   isMarketingSendBlocked,
+  isGuestContactMaskedByOta,
   esPreguntaSiEsHumano,
   PostgresApprovalQueue,
   RESPUESTA_FIJA_ES_HUMANO,
@@ -596,6 +597,16 @@ export function mensajeriaRoutes(deps: AppDeps): Hono<HonoEnvBindings> {
     const hotelId = c.req.param("hotelId");
     const body = parseBody(enviarSchema, await c.req.json().catch(() => ({})));
     await ensureMessagingConfig(db, hotelId, orgId);
+
+    // REQ-RES-018: mismo criterio de rechazo temprano que el gate de marketing de abajo
+    // -- un envío a un contacto que sigue siendo el relay enmascarado de una OTA nunca
+    // debe quedar "pendiente_aprobacion" (`tool.run()` lo bloquea igual, defensa en
+    // profundidad para AgentRunner/aprobación diferida, ver `isGuestContactMaskedByOta`).
+    if (await isGuestContactMaskedByOta({ db, hotelId, guestPhone: body.guestPhone })) {
+      throw Errors.conflict(
+        `${body.guestPhone} pertenece a una reserva cuyo contacto sigue siendo el relay enmascarado de una OTA -- envía el enlace de check-in por el canal de la OTA (POST .../checkin-link-ota) en vez de WhatsApp hasta que el huésped comparta su contacto real.`,
+      );
+    }
 
     // REQ-HUE-021/REQ-SEG-007: se rechaza ANTES de crear una solicitud de aprobación --
     // sin este chequeo temprano, una plantilla de marketing sin opt-in quedaría
