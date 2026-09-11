@@ -40,6 +40,18 @@ Razones (verificadas en este repo, no genéricas):
    arrancado explícito en `fly.toml`) el problema es el mismo si se escala a >1 máquina,
    pero al menos es una decisión explícita de escalado, no un efecto secundario del
    modelo de invocación.
+   **Actualización (patrón Likida/atiende.ai #3):** por instrucción del audit que originó
+   este cambio, no se aprovisiona Redis nuevo — en su lugar ya existe `PostgresRateLimitStore`
+   (mismo archivo `rateLimit.ts`), un store REAL (no un esqueleto sin probar, ver
+   `tests/unit/api/postgres-rate-limit-store.spec.ts`) respaldado por
+   `public.rate_limit_bucket` (migración 0131), compartido entre TODAS las instancias
+   porque todas hablan al mismo Postgres. Con decisión explícita fail-open/fail-closed
+   ante una falla del store (`RateLimitFailurePolicy`, algo que `MemoryRateLimitStore`
+   nunca necesitó porque no puede fallar). **No** se sustituyó como default en
+   `server.ts`/`deploy/api/vercel/api/[[...route]].ts` — wirearlo ahí agrega un
+   round-trip a Postgres en cada request, una decisión de costo/latencia que le
+   corresponde a quien decide desplegar multi-instancia, no a este cambio. Queda
+   disponible y probado para cuando esa decisión se tome.
 
 La Opción (a) queda completa y funcional (ver "Cómo se verificó" abajo) por si el
 fundador prefiere Vercel para todo el stack (un solo proveedor) — es una decisión de
