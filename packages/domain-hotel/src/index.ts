@@ -263,9 +263,11 @@ export {
   OTP_MAX_ATTEMPTS,
   generateOtpCode,
   evaluateOtpConfirmation,
+  buildGuestContactOtpRateLimitKey,
   type OtpConfirmationOutcome,
   type EvaluateOtpConfirmationInput,
   type EvaluateOtpConfirmationResult,
+  type GuestContactOtpRateLimitKeyInput,
 } from "./guestContactChangeOtp.ts";
 export {
   WAITLIST_STATUSES,
