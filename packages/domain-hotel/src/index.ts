@@ -692,3 +692,11 @@ export {
   type BitacoraNom251Registro,
   type BitacoraNom251EntradaConMeta,
 } from "./bitacorasNom251.ts";
+export {
+  buildHotelAvailabilityJsonLd,
+  hotelAvailabilityJsonLdSchema,
+  type HotelAvailabilityInput,
+  type HotelAvailabilityJsonLd,
+  type RoomTypeAvailabilityInput,
+  type MoneyAvailability,
+} from "./mcpHotelOffer.ts";
