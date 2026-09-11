@@ -22,6 +22,11 @@ export type AgentTraceKind =
   /** REQ-AGT-003: una tool effect="money" se ejecuto con exito pero su ROIEvent NO se
    * pudo derivar/persistir -- la corrida se cierra `roi_event_faltante` justo despues. */
   | "roi_event_faltante"
+  /** Patrón Likida/atiende.ai #4: `close()` (runner.ts) reemplazó el `closingMessage`
+   * porque mencionaba precio/tarifa/disponibilidad sin que ninguna tool ya ejecutada
+   * en esta corrida lo respaldara (`priceHallucinationGuard.ts`) -- el huésped nunca
+   * recibió la cifra inventada; esta traza es la evidencia de que se bloqueó. */
+  | "price_hallucination_blocked"
   | "run_finished";
 
 export interface AgentTraceEvent {

@@ -20,6 +20,7 @@ import type { AgentGate } from "./roles.ts";
 import type { AgentTraceEvent, CostLedger } from "./trace.ts";
 import { estimateCostUsd, type PricingTable } from "./pricing.ts";
 import { maskPhoneFieldsForApproval, redact } from "./redact.ts";
+import { sanitizeClosingMessage } from "./priceHallucinationGuard.ts";
 
 /** REQ-AGT-003 (H17-001/GOB-037): quien persiste, del lado del llamador (apps/api, con
  * acceso a Postgres -- agent-core sigue sin depender de un motor de BD concreto, H6a),
@@ -156,6 +157,18 @@ export class AgentRunner {
   // modulo. Mismo comportamiento, sintaxis compatible.
   private readonly options: AgentRunnerOptions;
 
+  // Patrón Likida/atiende.ai #4: `result.summary` de CADA tool ejecutada en la corrida
+  // EN CURSO -- la única fuente que `close()` acepta como respaldo de una cifra de
+  // precio/disponibilidad que el modelo mencione en su mensaje de cierre (ver
+  // `priceHallucinationGuard.ts`). Campo de instancia (no local a `run()`) para que
+  // `close()` -- un metodo PRIVADO SEPARADO, sin acceso a las variables locales de
+  // `run()` -- pueda leerlo sin cambiar la firma de sus 13 puntos de llamada. Seguro
+  // porque cada `AgentRunner` se construye NUEVO por request (ver unico sitio real de
+  // construccion, apps/api/src/routes/agentes.ts) -- nunca se reusa entre corridas
+  // concurrentes; se reinicia al inicio de `run()` de todos modos por si alguna vez se
+  // reutiliza la misma instancia dos veces.
+  private toolResultSummariesThisRun: string[] = [];
+
   constructor(options: AgentRunnerOptions) {
     this.options = options;
   }
@@ -166,6 +179,7 @@ export class AgentRunner {
     const messages: LlmMessage[] = [{ role: "user", content: userMessage }];
     const pendingApprovalIds: string[] = [];
     const terminal = new Set(opts.terminalToolNames ?? []);
+    this.toolResultSummariesThisRun = [];
 
     let activeProvider = opts.provider;
     let usedFallback = false;
@@ -538,6 +552,8 @@ export class AgentRunner {
         }
 
         toolResultMessages.push({ role: "tool", toolCallId: call.id, toolName: call.name, content: result.summary });
+        // Patrón Likida/atiende.ai #4: ver comentario de `toolResultSummariesThisRun`.
+        this.toolResultSummariesThisRun.push(result.summary);
       }
 
       if (pendingApprovalIds.length > 0) {
@@ -579,14 +595,28 @@ export class AgentRunner {
     pendingApprovalIds: string[],
     message: string,
   ): AgentRunResult {
+    // Patrón Likida/atiende.ai #4: `message` (el texto que puede venir directo del
+    // modelo, p.ej. `completion.text` en la rama "completado") se verifica ANTES de
+    // combinarse con el disclosure -- si menciona precio/tarifa/disponibilidad sin que
+    // ninguna tool YA ejecutada en esta corrida lo respalde, se reemplaza por completo
+    // (nunca se deja pasar la cifra inventada). El disclosure en sí (texto fijo,
+    // `this.options.disclosureMessage`) nunca pasa por este chequeo -- no lo genera el
+    // modelo.
+    const sanitized = sanitizeClosingMessage(message, this.toolResultSummariesThisRun);
+    if (sanitized.blocked) {
+      this.emit(ctx, runId, steps, "price_hallucination_blocked", {
+        message: redact(message),
+      });
+    }
+
     // aud-1 agentico.md ALTO: REQ-HUE-006/GOB-034 exige que el humano/huesped sepa, desde
     // el PRIMER turno de la conversacion, que quien responde es un agente de IA. Se
     // antepone aqui, en el UNICO punto de salida de run(), para que se aplique sin
     // importar como termine la corrida (completado, esperando_aprobacion, error...).
     const closingMessage =
       ctx.isFirstTurn && this.options.disclosureMessage
-        ? `${this.options.disclosureMessage} ${message}`.trim()
-        : message;
+        ? `${this.options.disclosureMessage} ${sanitized.message}`.trim()
+        : sanitized.message;
     // aud-1 agentico.md ALTO: `run_finished` estaba DECLARADO en AgentTraceKind pero
     // jamas se emitia -- si el proceso muere justo despues de que run() retorna (antes
     // de que el llamador, fuera de este paquete, persista el AgentRunResult), no quedaba
