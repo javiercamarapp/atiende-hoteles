@@ -446,3 +446,9 @@ export {
   type RepairOrReplaceInput,
   type RepairOrReplaceResult,
 } from "./mantenimiento/preventivo.ts";
+export {
+  normalizeGuestName,
+  findGuestDedupeMatch,
+  type GuestChannelProfile,
+  type GuestDedupeCandidate,
+} from "./guestContactDedup.ts";
