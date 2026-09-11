@@ -2,7 +2,7 @@
 // LAUNCH-022): `PostgresRateLimitStore` es el store REAL (no un esqueleto sin probar)
 // que resuelve la brecha documentada en `deploy/README.md` -- `MemoryRateLimitStore`
 // guarda el conteo en memoria del proceso, sin efecto real entre instancias serverless
-// concurrentes. Corre contra PGlite real (packages/db/migrations/0131_rate_limit_bucket.sql),
+// concurrentes. Corre contra PGlite real (packages/db/migrations/0157_rate_limit_bucket.sql),
 // nunca contra un Map simulado.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AsyncRateLimiter, PostgresRateLimitStore, type RateLimitDbClient } from "../../../apps/api/src/lib/rateLimit.ts";

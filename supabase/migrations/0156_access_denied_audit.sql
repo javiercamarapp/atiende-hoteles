@@ -1,4 +1,4 @@
--- ORIGEN: packages/db/migrations/0130_access_denied_audit.sql sha256:3f10c73bdd90f1a9d9f986195a58fb4e43af0261787827f31ff10e3850cb9bcd
+-- ORIGEN: packages/db/migrations/0156_access_denied_audit.sql sha256:3f10c73bdd90f1a9d9f986195a58fb4e43af0261787827f31ff10e3850cb9bcd
 -- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
 -- nuevo el script tras cambiar la migración fuente.
 
