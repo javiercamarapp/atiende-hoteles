@@ -1,4 +1,4 @@
--- ORIGEN: packages/db/migrations/0130_minibar_consumption.sql sha256:b5c3504993b8cdb656b8917ed1a2434b64d385d0c51c132a03280c3d51552791
+-- ORIGEN: packages/db/migrations/0140_minibar_consumption.sql sha256:b5c3504993b8cdb656b8917ed1a2434b64d385d0c51c132a03280c3d51552791
 -- GENERADO por scripts/export-supabase-migrations.ts -- NO EDITAR A MANO: correr de
 -- nuevo el script tras cambiar la migración fuente.
 
