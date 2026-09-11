@@ -298,6 +298,12 @@ export {
   type FnbOrderSafetyState,
 } from "./fnbAllergyGuard.ts";
 export {
+  validateFnbOfflineQueueItem,
+  type FnbOfflineOperationType,
+  type FnbOfflineQueueItemInput,
+  type FnbOfflineQueueValidation,
+} from "./fnbOfflineQueueGuard.ts";
+export {
   FRAUD_PATTERNS,
   recipientRolesForPattern,
   detectDiscountOutsidePolicy,
