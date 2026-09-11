@@ -9,6 +9,16 @@ import { drainOutboxOnce } from "@atiende-hoteles/api";
 import { buildEmailOutboxHandlers } from "../../../apps/api/src/emailOutbox/buildEmailOutboxHandlers.ts";
 import { createApiFixtureH12a, destroyApiFixtureH12a, ultimoCorreoPara, type ApiFixtureH12a } from "../../support/api-fixture-h12a.ts";
 
+// Bug real de CI (10-sep-2026, mismo patrón que reservas-y-folios.spec.ts): fechas
+// que eran literales absolutos ("2026-09-10" etc.) se quedan fuera de la ventana de
+// tarifa/disponibilidad sembrada por seedDev (siempre desde "hoy" real) tarde o
+// temprano -- corregido a offsets relativos, nunca "hoy" mismo.
+function isoDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
 let fixture: ApiFixtureH12a;
 let hotelId: string;
 let ownerToken: string;
@@ -53,7 +63,7 @@ describe("payment.recorded -> recibo-pago (disparador REAL, sin tocar routes/fol
     const reserva = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
       headers: { ...auth(ownerToken), "idempotency-key": crypto.randomUUID() },
-      body: JSON.stringify({ roomTypeId, guestId, checkInDate: "2026-09-10", checkOutDate: "2026-09-12" }),
+      body: JSON.stringify({ roomTypeId, guestId, checkInDate: isoDate(1), checkOutDate: isoDate(3) }),
     });
     const reservationId = ((await reserva.json()) as { id: string }).id;
 
@@ -98,7 +108,7 @@ describe("payment.recorded -> recibo-pago (disparador REAL, sin tocar routes/fol
     const reserva = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
       headers: { ...auth(ownerToken), "idempotency-key": crypto.randomUUID() },
-      body: JSON.stringify({ roomTypeId, guestId, checkInDate: "2026-09-13", checkOutDate: "2026-09-14" }),
+      body: JSON.stringify({ roomTypeId, guestId, checkInDate: isoDate(4), checkOutDate: isoDate(5) }),
     });
     const reservationId = ((await reserva.json()) as { id: string }).id;
     const confirmada = await fixture.app.request(`/hoteles/${hotelId}/reservas/${reservationId}/transicion`, {
@@ -136,7 +146,7 @@ describe("reservation.confirmed -> confirmacion-reserva (disparador REAL, routes
     const reserva = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
       headers: { ...auth(ownerToken), "idempotency-key": crypto.randomUUID() },
-      body: JSON.stringify({ roomTypeId, guestId, checkInDate: "2026-09-15", checkOutDate: "2026-09-17" }),
+      body: JSON.stringify({ roomTypeId, guestId, checkInDate: isoDate(6), checkOutDate: isoDate(8) }),
     });
     const reservationId = ((await reserva.json()) as { id: string }).id;
 
@@ -172,7 +182,7 @@ describe("reservation.confirmed -> confirmacion-reserva (disparador REAL, routes
     const reserva = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
       headers: { ...auth(ownerToken), "idempotency-key": crypto.randomUUID() },
-      body: JSON.stringify({ roomTypeId, guestId, checkInDate: "2026-09-18", checkOutDate: "2026-09-19" }),
+      body: JSON.stringify({ roomTypeId, guestId, checkInDate: isoDate(9), checkOutDate: isoDate(10) }),
     });
     const reservationId = ((await reserva.json()) as { id: string }).id;
 
@@ -204,7 +214,7 @@ describe("cfdi.emitted -> cfdi-disponible (disparador REAL, routes/cfdi.ts)", ()
     const reserva = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
       headers: { ...auth(ownerToken), "idempotency-key": crypto.randomUUID() },
-      body: JSON.stringify({ roomTypeId, guestId, checkInDate: "2026-09-20", checkOutDate: "2026-09-21" }),
+      body: JSON.stringify({ roomTypeId, guestId, checkInDate: isoDate(11), checkOutDate: isoDate(12) }),
     });
     const reservationId = ((await reserva.json()) as { id: string }).id;
     const confirmada = await fixture.app.request(`/hoteles/${hotelId}/reservas/${reservationId}/transicion`, {

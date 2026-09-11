@@ -41,11 +41,17 @@ describe("night audit (REQ-REV-013)", () => {
   }
 
   it("postea el cargo de hospedaje de la noche a un folio en casa (check_in)", async () => {
-    const businessDate = "2026-09-10";
+    // Fecha relativa a "ahora" (no absoluta): la seed sólo cubre tarifa/disponibilidad
+    // desde "hoy" en adelante (ver comentario del test de no-show, más abajo, y
+    // createApiFixture/seedDev) -- un literal fijo se queda fuera de la ventana
+    // sembrada tarde o temprano (bug real de CI: la suite cruzando medianoche real deja
+    // el literal "de ayer" según el current_date de Postgres). Offset +1 reservado para
+    // este test en todo el archivo (ver mapa de offsets en el test de no-show).
+    const businessDate = isoDate(1);
     const { reservationId, folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
       checkInDate: businessDate,
-      checkOutDate: "2026-09-13",
+      checkOutDate: isoDate(4),
     });
     await fixture.app.request(`/hoteles/${hotelId}/reservas/${reservationId}/transicion`, {
       method: "PATCH",
@@ -67,11 +73,12 @@ describe("night audit (REQ-REV-013)", () => {
   });
 
   it("correr night audit DOS VECES para el mismo business_date da el MISMO resultado, sin duplicar el cargo", async () => {
-    const businessDate = "2026-09-11";
+    // Offset +2 reservado para este test (ver mapa de offsets en el test de no-show).
+    const businessDate = isoDate(2);
     const { reservationId, folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
       checkInDate: businessDate,
-      checkOutDate: "2026-09-14",
+      checkOutDate: isoDate(5),
     });
     await fixture.app.request(`/hoteles/${hotelId}/reservas/${reservationId}/transicion`, {
       method: "PATCH",
@@ -105,8 +112,13 @@ describe("night audit (REQ-REV-013)", () => {
     // -- ya no es "llegada ya pasada" respecto al negocio, es "fuera de la ventana
     // sembrada". Lo que importa para la semántica de no-show es que checkInDate quede
     // ANTES de businessDate, no que sea anterior al reloj real.
-    // Offsets +6/+7/+9 elegidos para no colisionar con las fechas fijas de los demás
-    // tests de este archivo (+1/+2/+4/+5/+11/+13 desde "hoy") -- el night audit es
+    // Offsets +6/+7/+9 elegidos para no colisionar con los de los demás tests de este
+    // archivo (+1/+2/+4/+5/+11/+13 desde "hoy", TODOS vía isoDate() desde el fix real
+    // de CI: los literales absolutos "2026-09-1X" que representaban estos mismos
+    // offsets en el momento de escribir el archivo dejaron de estarlo -- el 10-sep
+    // real, la suite corriendo cerca de medianoche UTC hizo que el `current_date` de
+    // Postgres avanzara al día siguiente antes de que corriera el primer test,
+    // dejando "2026-09-10" fuera de la ventana sembrada). El night audit es
     // idempotente por business_date (ver el test de arriba), así que reusar una fecha
     // "cierra el día" para cualquier otro test que la use después.
     const checkInDate = isoDate(6);
@@ -131,11 +143,12 @@ describe("night audit (REQ-REV-013)", () => {
   });
 
   it("night audit disparado dos veces concurrentemente para el mismo día: exactamente un cargo por folio", async () => {
-    const businessDate = "2026-09-20";
+    // Offsets +11/+13 reservados para este test (ver mapa de offsets en el test de no-show).
+    const businessDate = isoDate(11);
     const { reservationId, folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
       checkInDate: businessDate,
-      checkOutDate: "2026-09-22",
+      checkOutDate: isoDate(13),
     });
     await fixture.app.request(`/hoteles/${hotelId}/reservas/${reservationId}/transicion`, {
       method: "PATCH",
@@ -159,21 +172,22 @@ describe("night audit (REQ-REV-013)", () => {
     // los tests) y elige un `created_at` cuya fecha de calendario difiere entre "cast
     // crudo" (huso de la sesión/servidor) y "hora local del hotel" -- solo el segundo
     // debe coincidir con `businessDate`.
-    const businessDate = "2026-09-13";
+    // Offset +4 reservado para este test (ver mapa de offsets en el test de no-show).
+    const businessDate = isoDate(4);
     await fixture.engine.admin.query("update public.hotel set timezone = 'Asia/Tokyo' where id = $1;", [hotelId]);
     const { folioId } = await crearFolioConfirmado(fixture.app, gmToken, hotelId, {
       roomTypeId,
       checkInDate: businessDate,
-      checkOutDate: "2026-09-14",
+      checkOutDate: isoDate(5),
     });
-    // 2026-09-12T17:00:00Z == 2026-09-13 02:00 en Asia/Tokyo (UTC+9, coincide con
-    // businessDate) pero 2026-09-12 en cualquier huso America/* (UTC-5 a UTC-8, NO
-    // coincide) -- si el fix no convierte a la hora local del hotel, este cargo
-    // desaparece del resumen sin importar en qué huso corra la prueba.
+    // isoDate(3)T17:00:00Z == isoDate(4) 02:00 en Asia/Tokyo (UTC+9, coincide con
+    // businessDate=isoDate(4)) pero isoDate(3) en cualquier huso America/* (UTC-5 a
+    // UTC-8, NO coincide) -- si el fix no convierte a la hora local del hotel, este
+    // cargo desaparece del resumen sin importar en qué huso corra la prueba.
     await fixture.engine.admin.query(
       `insert into public.charge (tenant_id, hotel_id, folio_id, description, amount, tax_amount, concept, created_at)
-       values ($1, $2, $3, 'Consumo tardío de bar', 100, 16, 'ab', '2026-09-12T17:00:00Z');`,
-      [fixture.seed.orgId, hotelId, folioId],
+       values ($1, $2, $3, 'Consumo tardío de bar', 100, 16, 'ab', $4);`,
+      [fixture.seed.orgId, hotelId, folioId, `${isoDate(3)}T17:00:00Z`],
     );
 
     const res = await runAudit(businessDate);
@@ -191,7 +205,7 @@ describe("night audit (REQ-REV-013)", () => {
     const res = await fixture.app.request(`/hoteles/${hotelId}/night-audit`, {
       method: "POST",
       headers: { authorization: `Bearer ${hkToken}`, "content-type": "application/json" },
-      body: JSON.stringify({ businessDate: "2026-09-10" }),
+      body: JSON.stringify({ businessDate: isoDate(1) }),
     });
     expect(res.status).toBe(403);
   });

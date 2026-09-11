@@ -5,6 +5,20 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiFixture, destroyApiFixture, loginAs, type ApiFixture } from "../../support/api-fixture.ts";
 
+// Bug real de CI (10-sep-2026): las fechas de este archivo eran literales absolutos
+// ("2026-09-10" etc.) -- la seed sólo cubre tarifa/disponibilidad desde "hoy" en
+// adelante (ver createApiFixture/seedDev), así que un literal fijo se queda fuera de
+// la ventana sembrada tarde o temprano (la suite corriendo cerca de medianoche UTC
+// hizo que el `current_date` de Postgres avanzara al día siguiente antes de que
+// corriera el primer test, dejando ese literal en el pasado real -> 409 sin_tarifa).
+// Offsets relativos a "hoy" (nunca "hoy" mismo, para no colisionar con datos que
+// otro archivo de esta misma suite pueda sembrar en el día actual).
+function isoDate(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
 describe("apps/api: reservas + disponibilidad + folios (integración real)", () => {
   let fixture: ApiFixture;
   let gmToken: string;
@@ -31,7 +45,7 @@ describe("apps/api: reservas + disponibilidad + folios (integración real)", () 
     const res = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
       headers: { ...auth(), "content-type": "application/json" },
-      body: JSON.stringify({ roomTypeId, checkInDate: "2026-09-10", checkOutDate: "2026-09-11" }),
+      body: JSON.stringify({ roomTypeId, checkInDate: isoDate(1), checkOutDate: isoDate(2) }),
     });
     expect(res.status).toBe(400);
     const body = (await res.json()) as { code: string };
@@ -40,7 +54,7 @@ describe("apps/api: reservas + disponibilidad + folios (integración real)", () 
 
   it("crea una reserva real, con total calculado desde rate_plan y outbox emitido en la misma transacción", async () => {
     const key = randomUUID();
-    const body = { roomTypeId, checkInDate: "2026-09-10", checkOutDate: "2026-09-12" };
+    const body = { roomTypeId, checkInDate: isoDate(1), checkOutDate: isoDate(3) };
 
     const res = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
@@ -68,7 +82,7 @@ describe("apps/api: reservas + disponibilidad + folios (integración real)", () 
 
   it("misma Idempotency-Key + mismo cuerpo → misma respuesta, sin crear una segunda reserva", async () => {
     const key = randomUUID();
-    const body = { roomTypeId, checkInDate: "2026-09-15", checkOutDate: "2026-09-16" };
+    const body = { roomTypeId, checkInDate: isoDate(6), checkOutDate: isoDate(7) };
     const opts = {
       method: "POST" as const,
       headers: { ...auth(), "content-type": "application/json", "idempotency-key": key },
@@ -96,14 +110,14 @@ describe("apps/api: reservas + disponibilidad + folios (integración real)", () 
     const first = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
       headers: { ...auth(), "content-type": "application/json", "idempotency-key": key },
-      body: JSON.stringify({ roomTypeId, checkInDate: "2026-09-20", checkOutDate: "2026-09-21" }),
+      body: JSON.stringify({ roomTypeId, checkInDate: isoDate(11), checkOutDate: isoDate(12) }),
     });
     expect(first.status).toBe(201);
 
     const second = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
       headers: { ...auth(), "content-type": "application/json", "idempotency-key": key },
-      body: JSON.stringify({ roomTypeId, checkInDate: "2026-09-22", checkOutDate: "2026-09-23" }),
+      body: JSON.stringify({ roomTypeId, checkInDate: isoDate(13), checkOutDate: isoDate(14) }),
     });
     expect(second.status).toBe(422);
     const body = (await second.json()) as { code: string };
@@ -111,7 +125,7 @@ describe("apps/api: reservas + disponibilidad + folios (integración real)", () 
   });
 
   it("GET /hoteles/:id/disponibilidad devuelve el mínimo del rango por tipo de habitación", async () => {
-    const res = await fixture.app.request(`/hoteles/${hotelId}/disponibilidad?desde=2026-09-10&hasta=2026-09-11`, {
+    const res = await fixture.app.request(`/hoteles/${hotelId}/disponibilidad?desde=${isoDate(1)}&hasta=${isoDate(2)}`, {
       headers: auth(),
     });
     expect(res.status).toBe(200);
@@ -128,7 +142,7 @@ describe("apps/api: reservas + disponibilidad + folios (integración real)", () 
     const created = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
       headers: { ...auth(), "content-type": "application/json", "idempotency-key": key },
-      body: JSON.stringify({ roomTypeId, checkInDate: "2026-10-01", checkOutDate: "2026-10-02" }),
+      body: JSON.stringify({ roomTypeId, checkInDate: isoDate(22), checkOutDate: isoDate(23) }),
     });
     const { id } = (await created.json()) as { id: string };
 
@@ -154,7 +168,7 @@ describe("apps/api: reservas + disponibilidad + folios (integración real)", () 
     const created = await fixture.app.request(`/hoteles/${hotelId}/reservas`, {
       method: "POST",
       headers: { ...auth(), "content-type": "application/json", "idempotency-key": key },
-      body: JSON.stringify({ roomTypeId, checkInDate: "2026-10-05", checkOutDate: "2026-10-06" }),
+      body: JSON.stringify({ roomTypeId, checkInDate: isoDate(26), checkOutDate: isoDate(27) }),
     });
     const { id: reservationId } = (await created.json()) as { id: string };
 
