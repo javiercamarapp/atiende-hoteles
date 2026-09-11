@@ -39,6 +39,7 @@ import { atribucionCanalRoutes } from "./routes/atribucionCanal.ts";
 import { clubSegundoViajeRoutes } from "./routes/clubSegundoViaje.ts";
 import { fraudeRoutes } from "./routes/fraude.ts";
 import { pedidosFnbRoutes } from "./routes/pedidosFnb.ts";
+import { menuQrRoutes } from "./routes/menuQr.ts";
 import { fnbOfflineQueueRoutes } from "./routes/fnbOfflineQueue.ts";
 import { capturaCargosRoutes } from "./routes/capturaCargos.ts";
 import { checkinOnlineRoutes } from "./routes/checkinOnline.ts";
@@ -293,6 +294,7 @@ export function createApp(deps: AppDeps): Hono<HonoEnvBindings> {
   app.route("/", clubSegundoViajeRoutes(deps));
   app.route("/", fraudeRoutes(deps));
   app.route("/", pedidosFnbRoutes(deps));
+  app.route("/", menuQrRoutes(deps));
   app.route("/", fnbOfflineQueueRoutes(resolvedDeps));
   app.route("/", capturaCargosRoutes(resolvedDeps));
   app.route("/", checkinOnlineRoutes(deps));

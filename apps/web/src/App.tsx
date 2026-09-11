@@ -16,6 +16,7 @@ import { Onboarding } from "./pages/Onboarding";
 import { NotFound } from "./pages/NotFound";
 import { Privacidad } from "./pages/Privacidad";
 import { CheckinPublico } from "./pages/CheckinPublico";
+import { MenuPublico } from "./pages/MenuPublico";
 import { Terminos } from "./pages/Terminos";
 import { Landing } from "./pages/Landing";
 import { Suscripcion } from "./pages/Suscripcion";
@@ -79,6 +80,7 @@ export function App() {
                 <Route path="/terminos" element={<Terminos />} />
                 <Route path="/privacidad" element={<Privacidad />} />
                 <Route path="/checkin-publico/:token" element={<CheckinPublico />} />
+                <Route path="/menu/:locationCode" element={<MenuPublico />} />
 
                 <Route
                   path="/onboarding"
